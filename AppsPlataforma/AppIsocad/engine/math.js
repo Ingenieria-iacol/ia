@@ -7,7 +7,6 @@ window.CADMath = {
         const tileW = window.CONFIG.tileW;
         const tileH = window.CONFIG.tileH;
 
-        // Matriz de rotación dinámica
         const nx = x * Math.cos(angle) - y * Math.sin(angle);
         const ny = x * Math.sin(angle) + y * Math.cos(angle);
 
@@ -29,5 +28,13 @@ window.CADMath = {
             x: nx * Math.cos(-angle) - ny * Math.sin(-angle),
             y: nx * Math.sin(-angle) + ny * Math.cos(-angle)
         };
+    },
+
+    getDistance3D: function(p1, p2) {
+        return Math.sqrt(
+            Math.pow(p2.x - p1.x, 2) + 
+            Math.pow(p2.y - p1.y, 2) + 
+            Math.pow(p2.z - p1.z, 2)
+        );
     }
 };
