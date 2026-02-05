@@ -1,49 +1,44 @@
 /**
  * js/events.js
- * Orquestador de interacción: Rotación, Dibujo Técnico y Componentes
+ * Orquestador de interacción: Rotación, Pan, Dibujo Técnico y Componentes
  */
 const svgElement = document.getElementById('lienzo-cad');
+let mouseStartTime = 0;
+let isMovingMouse = false;
 
 // Desactivar menú contextual para usar el botón derecho para rotar
 svgElement.addEventListener('contextmenu', e => e.preventDefault());
 
 svgElement.addEventListener('mousedown', (e) => {
-    const rect = svgElement.getBoundingClientRect();
-    const xRaw = (e.clientX - rect.left - window.estado.view.x) / window.estado.view.scale;
-    const yRaw = (e.clientY - rect.top - window.estado.view.y) / window.estado.view.scale;
-    
-    const puntoRaw = window.CADMath.screenToIso(xRaw, yRaw);
-    const puntoIso = { x: Math.round(puntoRaw.x * 2) / 2, y: Math.round(puntoRaw.y * 2) / 2 };
+    window.estado.lastMouse = { x: e.clientX, y: e.clientY };
+    mouseStartTime = Date.now();
+    isMovingMouse = false;
 
-    if (e.button === 0) { // Click Izquierdo
-        if (window.estado.tool === 'tool-pipe') {
-            manejarDibujoTuberia(puntoIso);
-        } else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
-            window.AppCore.agregarElemento({
-                tipo: 'equipo',
-                x: puntoIso.x, y: puntoIso.y, z: window.estado.currentZ,
-                idCatalogo: window.estado.activeItem.id,
-                props: { ...window.estado.activeItem.props, name: window.estado.activeItem.name, tipo: window.estado.activeItem.id }
-            });
-        } else {
-            manejarSeleccion(xRaw, yRaw);
-        }
-    } else if (e.button === 2) { // Click Derecho: Iniciar Rotación
+    if (e.button === 0) { // Botón Izquierdo: Preparar Pan
+        window.estado.isPanning = true;
+    } else if (e.button === 2) { // Botón Derecho: Preparar Rotación
         window.estado.isRotating = true;
-        window.estado.lastMouse = { x: e.clientX, y: e.clientY };
     }
 });
 
 svgElement.addEventListener('mousemove', (e) => {
-    // 1. Lógica de Rotación Orbital
-    if (window.estado.isRotating) {
-        const dx = e.clientX - window.estado.lastMouse.x;
+    isMovingMouse = true;
+    const dx = e.clientX - window.estado.lastMouse.x;
+    const dy = e.clientY - window.estado.lastMouse.y;
+
+    // 1. Lógica de Desplazamiento (Pan) con Click Izquierdo
+    if (window.estado.isPanning) {
+        window.estado.view.x += dx;
+        window.estado.view.y += dy;
+        window.CADRenderer.actualizarTransformacion();
+    } 
+    // 2. Lógica de Rotación Orbital con Click Derecho
+    else if (window.estado.isRotating) {
         window.estado.view.angle += dx * 0.01;
-        window.estado.lastMouse = { x: e.clientX, y: e.clientY };
         window.CADRenderer.dibujarEscena();
     }
 
-    // 2. Línea Guía de Dibujo
+    // 3. Línea Guía de Dibujo (Feedback visual)
     if (window.estado.drawing && window.estado.inicio) {
         const rect = svgElement.getBoundingClientRect();
         const xRaw = (e.clientX - rect.left - window.estado.view.x) / window.estado.view.scale;
@@ -58,14 +53,44 @@ svgElement.addEventListener('mousemove', (e) => {
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", ePos.x); line.setAttribute("y2", ePos.y);
-        line.setAttribute("stroke", "white"); line.setAttribute("stroke-dasharray", "4,4");
+        line.setAttribute("stroke", "rgba(255,255,255,0.5)"); 
+        line.setAttribute("stroke-dasharray", "4,4");
         uiLayer.appendChild(line);
     }
+
+    window.estado.lastMouse = { x: e.clientX, y: e.clientY };
 });
 
-window.addEventListener('mouseup', () => {
+window.addEventListener('mouseup', (e) => {
+    const duration = Date.now() - mouseStartTime;
+    
+    // Si fue un clic corto y no hubo mucho arrastre, ejecutar acción de dibujo/selección
+    if (duration < 250 && !isMovingMouse && e.button === 0) {
+        ejecutarAccionPrincipal(e);
+    }
+
+    window.estado.isPanning = false;
     window.estado.isRotating = false;
 });
+
+function ejecutarAccionPrincipal(e) {
+    const rect = svgElement.getBoundingClientRect();
+    const xRaw = (e.clientX - rect.left - window.estado.view.x) / window.estado.view.scale;
+    const yRaw = (e.clientY - rect.top - window.estado.view.y) / window.estado.view.scale;
+    const puntoRaw = window.CADMath.screenToIso(xRaw, yRaw);
+    const puntoIso = { x: Math.round(puntoRaw.x * 2) / 2, y: Math.round(puntoRaw.y * 2) / 2 };
+
+    if (window.estado.tool === 'tool-pipe') {
+        manejarDibujoTuberia(puntoIso);
+    } else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
+        window.AppCore.agregarElemento({
+            tipo: 'equipo', x: puntoIso.x, y: puntoIso.y, z: window.estado.currentZ,
+            props: { ...window.estado.activeItem.props, name: window.estado.activeItem.name, tipo: window.estado.activeItem.id }
+        });
+    } else {
+        manejarSeleccion(xRaw, yRaw);
+    }
+}
 
 function manejarDibujoTuberia(punto) {
     if (!window.estado.drawing) {
@@ -101,17 +126,18 @@ function manejarSeleccion(clickX, clickY) {
 
     if (encontrado) {
         window.AppCore.seleccion = [encontrado.id];
-        window.PropsPanel.abrir(encontrado);
+        window.PropsPanel.abrir(encontrado); //
     } else {
         window.AppCore.seleccion = [];
-        window.PropsPanel.cerrar();
+        window.PropsPanel.cerrar(); //
     }
-    window.CADRenderer.dibujarEscena();
+    window.CADRenderer.dibujarEscena(); //
 }
 
 window.addEventListener('keydown', (e) => {
     const key = e.key.toLowerCase();
     
+    // ESC: Deseleccionar y volver a puntero
     if (e.key === 'Escape') {
         window.estado.drawing = false;
         window.estado.tool = 'select';
@@ -124,6 +150,7 @@ window.addEventListener('keydown', (e) => {
         window.CADRenderer.dibujarEscena();
     }
 
+    // Q/A: Elevación vertical con longitud manual
     if ((key === 'q' || key === 'a') && window.estado.drawing) {
         let L = parseFloat(prompt(`Longitud vertical (${key === 'q' ? 'SUBIR' : 'BAJAR'}):`, "1.0"));
         if (!isNaN(L)) {
@@ -141,6 +168,7 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
+// Zoom con Rueda
 svgElement.addEventListener('wheel', (e) => {
     e.preventDefault();
     const factor = e.deltaY > 0 ? 0.9 : 1.1;
