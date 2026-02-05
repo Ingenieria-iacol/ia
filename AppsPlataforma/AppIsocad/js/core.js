@@ -1,10 +1,9 @@
 /**
  * js/core.js
- * Gestión del estado y base de datos del proyecto
  */
 window.AppCore = {
-    elementos: [],
-    seleccion: [],
+    elementos: [], 
+    seleccion: [], 
     historial: [],
     indiceHistorial: -1,
     MAX_HISTORIAL: 50,
@@ -33,28 +32,19 @@ window.AppCore = {
         return nuevo;
     },
 
-    borrarSeleccion: function() {
-        if (this.seleccion.length === 0) return;
-        this.elementos = this.elementos.filter(el => !this.seleccion.includes(el.id));
-        this.seleccion = [];
-        this.guardarEstado();
-        if (window.CADRenderer) window.CADRenderer.dibujarEscena();
-    },
-
     actualizarBotonesUI: function() {
         const btnUndo = document.getElementById('btn-undo');
         if(btnUndo) btnUndo.disabled = (this.indiceHistorial <= 0);
     }
 };
 
-// Estado inicial garantizado
 window.estado = {
     tool: 'select',
-    view: { x: 0, y: 0, scale: 1, angle: Math.PI / 6 },
+    view: { x: 400, y: 300, scale: 1, angle: Math.PI / 6 },
     currentZ: 0,
     drawing: false,
     inicio: null,
     isPanning: false,
-    lastMouse: { x: 0, y: 0 },
-    activeItem: null
+    isRotating: false, // Nueva bandera para rotación
+    lastMouse: { x: 0, y: 0 }
 };
