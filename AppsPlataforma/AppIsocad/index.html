@@ -2,52 +2,46 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CAD Gas v2.5 - Edición Profesional Modular</title>
-    
+    <title>CAD Gas v2.5 - Modular</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-
-    <link rel="stylesheet" href="./css/style.css">
     <style>
-        /* Mantengo los estilos básicos aquí por si aún no creas el archivo .css */
         :root { --bg: #141414; --panel: #1f1f1f; --border: #333; --accent: #0071eb; --text: #e5e5e5; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        header { background-color: #000; height: 45px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; padding: 0 15px; z-index: 100; }
-        #workspace { flex-grow: 1; display: flex; position: relative; overflow: hidden; }
-        #main-area { flex-grow: 1; position: relative; background: #111; cursor: crosshair; }
-        svg { width: 100%; height: 100%; display: block; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        header { background: #000; height: 45px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; padding: 0 15px; z-index: 100; }
+        .btn { background: #333; color: #eee; border: 1px solid #444; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .btn.primary { background: var(--accent); border-color: #005a9e; }
+        .btn.active { border-color: var(--accent); box-shadow: 0 0 5px var(--accent); }
+        #workspace { flex-grow: 1; display: flex; position: relative; }
+        #left-panel { width: 250px; background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto; }
+        #main-area { flex-grow: 1; position: relative; background: #111; overflow: hidden; }
+        svg { width: 100%; height: 100%; cursor: crosshair; }
+        #prop-card { position: absolute; right: 20px; top: 20px; width: 280px; background: rgba(25,25,25,0.95); border: 1px solid #444; border-top: 3px solid var(--accent); display: none; z-index: 1000; padding: 15px; }
+        .prop-row { margin-bottom: 10px; }
+        .prop-row label { display: block; font-size: 0.7rem; color: #888; }
+        .prop-row input, .prop-row select { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 5px; }
+        .lib-group-title { padding: 10px; background: #252525; cursor: pointer; font-weight: bold; border-bottom: 1px solid #333; }
+        .tool-item { display: flex; align-items: center; gap: 10px; padding: 8px; cursor: pointer; }
+        .tool-item:hover { background: #333; }
+        .tool-icon svg { width: 20px; height: 20px; stroke: #ccc; fill: none; }
     </style>
 </head>
 <body>
 
 <header>
-    <div style="font-weight:700; color:#fff; margin-right:10px;">CAD<span>GAS</span> v2.5</div>
-    
+    <div style="font-weight:bold;">CAD GAS <span style="color:var(--accent)">v2.5</span></div>
     <button class="btn" id="btn-undo">↩</button>
     <button class="btn" id="btn-redo">↪</button>
     <div style="width:1px; height:20px; background:#444;"></div>
-    
-    <button class="btn" id="btn-save">💾 Guardar</button>
-    <button class="btn" id="btn-open">📂 Abrir</button>
-    
+    <button class="btn active" id="btn-tool-select">👆 Sel.</button>
     <div style="width:1px; height:20px; background:#444;"></div>
-    
-    <button class="btn active" id="tool-select">👆 Selección</button>
-    <button class="btn" id="tool-pipe">🛠️ Tubería</button>
-    <button class="btn" id="tool-cut">✂️ Cortar</button>
-    
-    <div style="width:1px; height:20px; background:#444;"></div>
-    
-    <button class="btn primary" id="btn-pdf">📄 Generar Reporte PDF</button>
+    <button class="btn primary" id="btn-pdf-gen">📄 Reporte PDF</button>
 </header>
 
 <div id="workspace">
-    <div id="left-panel" style="width: 260px; background: var(--panel); border-right: 1px solid var(--border);">
-        <div style="padding:10px; background:#000; font-size:0.8rem;">BIBLIOTECA DE COMPONENTES</div>
-        <div id="library-container" style="overflow-y:auto; height: calc(100% - 40px);">
-            </div>
+    <div id="left-panel">
+        <div id="library-container"></div>
     </div>
 
     <div id="main-area">
@@ -59,48 +53,31 @@
             </g>
         </svg>
 
-        <div id="hud" style="position:absolute; bottom:10px; right:10px; background:rgba(0,0,0,0.8); padding:10px; border-radius:5px; display:flex; gap:15px; font-family:monospace; font-size:0.8rem; border:1px solid #444;">
-            <div>Z: <span id="hud-z">0.00</span>m</div>
-            <div>Escala: <span id="hud-scale">100</span>%</div>
+        <div id="prop-card">
+            <div id="prop-content"></div>
         </div>
-    </div>
 
-    <div id="prop-card" style="position:absolute; right:20px; top:20px; width:300px; background:rgba(20,20,20,0.9); border:1px solid #444; display:none;">
-        <div style="padding:10px; background:var(--accent); display:flex; justify-content:space-between;">
-            <span>Propiedades</span>
-            <button onclick="this.parentElement.parentElement.style.display='none'">✕</button>
+        <div style="position:absolute; bottom:10px; left:10px; background:rgba(0,0,0,0.5); padding:5px; font-size:0.7rem; font-family:monospace;">
+            Z Actual: <span id="hud-z">0.00</span>m | Zoom: <span id="hud-scale">100</span>%
         </div>
-        <div id="prop-content" style="padding:15px;">
-            </div>
     </div>
 </div>
 
-<div id="modal-container" style="display:none;"></div>
-
 <script src="./js/config.js"></script>
 <script src="./js/utils.js"></script>
-
 <script src="./js/engine/math.js"></script>
 <script src="./js/engine/calc.js"></script>
-
 <script src="./js/core.js"></script>
-
 <script src="./js/ui/library.js"></script>
 <script src="./js/ui/props.js"></script>
-
-<script src="./js/io/files.js"></script>
-<script src="./js/io/pdf-export.js"></script>
-
 <script src="./js/renderer.js"></script>
 <script src="./js/events.js"></script>
 
 <script>
-    // Inicialización al cargar la página
     window.onload = () => {
-        console.log("CAD Gas v2.5 Modular cargado correctamente.");
-        // Aquí llamarás a las funciones de inicio de cada módulo
+        window.AppLibrary.init();
+        window.CADRenderer.dibujarEscena();
     };
 </script>
-
 </body>
 </html>
