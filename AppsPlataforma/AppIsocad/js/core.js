@@ -1,6 +1,5 @@
 /**
  * js/core.js
- * Gestión del estado, historial y base de datos del proyecto
  */
 window.AppCore = {
     elementos: [], 
@@ -22,7 +21,7 @@ window.AppCore = {
     agregarElemento: function(datos) {
         const nuevo = {
             id: Date.now() + Math.random(),
-            layerId: window.activeLayerId || 'gas',
+            layerId: 'gas',
             visible: true,
             props: datos.props || {},
             ...datos
@@ -42,26 +41,22 @@ window.AppCore = {
         if (window.PropsPanel) window.PropsPanel.cerrar();
     },
 
-    deshacer: function() {
-        if (this.indiceHistorial > 0) {
-            this.indiceHistorial--;
-            this.elementos = JSON.parse(this.historial[this.indiceHistorial]);
-            this.seleccion = [];
-            if (window.CADRenderer) window.CADRenderer.dibujarEscena();
-        }
+    centrarVista: function() {
+        window.estado.view.x = window.innerWidth / 2;
+        window.estado.view.y = window.innerHeight / 2;
+        window.estado.view.scale = 1;
+        window.CADRenderer.actualizarTransformacion();
     },
 
     actualizarBotonesUI: function() {
         const btnUndo = document.getElementById('btn-undo');
-        const btnRedo = document.getElementById('btn-redo');
         if(btnUndo) btnUndo.disabled = (this.indiceHistorial <= 0);
-        if(btnRedo) btnRedo.disabled = (this.indiceHistorial >= this.historial.length - 1);
     }
 };
 
 window.estado = {
     tool: 'select',
-    view: { x: 0, y: 0, scale: 1, angle: Math.PI / 6 },
+    view: { x: 400, y: 300, scale: 1, angle: Math.PI / 6 },
     currentZ: 0,
     drawing: false,
     inicio: null,
