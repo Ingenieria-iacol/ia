@@ -1,5 +1,6 @@
 /**
  * js/core.js
+ * Gestión del estado, historial y base de datos del proyecto
  */
 window.AppCore = {
     elementos: [], 
@@ -21,9 +22,9 @@ window.AppCore = {
     agregarElemento: function(datos) {
         const nuevo = {
             id: Date.now() + Math.random(),
-            layerId: 'gas',
+            layerId: window.activeLayerId || 'gas',
             visible: true,
-            props: {},
+            props: datos.props || {},
             ...datos
         };
         this.elementos.push(nuevo);
@@ -32,9 +33,29 @@ window.AppCore = {
         return nuevo;
     },
 
+    borrarSeleccion: function() {
+        if (this.seleccion.length === 0) return;
+        this.elementos = this.elementos.filter(el => !this.seleccion.includes(el.id));
+        this.seleccion = [];
+        this.guardarEstado();
+        if (window.CADRenderer) window.CADRenderer.dibujarEscena();
+        if (window.PropsPanel) window.PropsPanel.cerrar();
+    },
+
+    deshacer: function() {
+        if (this.indiceHistorial > 0) {
+            this.indiceHistorial--;
+            this.elementos = JSON.parse(this.historial[this.indiceHistorial]);
+            this.seleccion = [];
+            if (window.CADRenderer) window.CADRenderer.dibujarEscena();
+        }
+    },
+
     actualizarBotonesUI: function() {
         const btnUndo = document.getElementById('btn-undo');
+        const btnRedo = document.getElementById('btn-redo');
         if(btnUndo) btnUndo.disabled = (this.indiceHistorial <= 0);
+        if(btnRedo) btnRedo.disabled = (this.indiceHistorial >= this.historial.length - 1);
     }
 };
 
@@ -45,6 +66,7 @@ window.estado = {
     drawing: false,
     inicio: null,
     isPanning: false,
-    isRotating: false, // Control de rotación
-    lastMouse: { x: 0, y: 0 }
+    isRotating: false,
+    lastMouse: { x: 0, y: 0 },
+    activeItem: null 
 };
