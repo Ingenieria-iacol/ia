@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>CAD Gas v2.4.4 - Fixed Edition</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<style>
+    :root { 
+        --bg: #141414; 
+        --panel: #1f1f1f; 
+        --border: #333; 
+        --accent: #0071eb; 
+        --text: #e5e5e5; 
+        --input-bg: #2b2b2b;
+    }
+    body { font-family: 'Segoe UI', Consolas, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
+    
+    /* Header & Toolbar */
+    header { background-color: #000; height: 45px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; padding: 0 15px; z-index: 100; }
+    .brand { font-weight:700; color:#fff; margin-right:10px; font-size:1rem; letter-spacing:1px; }
+    .brand span { color: var(--accent); }
+    
+    button.btn, select.btn, input.btn-input { background: #333; color: #eee; border: 1px solid #444; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; display:flex; align-items:center; gap:6px; transition:0.2s; outline:none; }
+    button.btn:hover, select.btn:hover { background: #444; border-color: #666; }
+    button.primary { background: var(--accent); border-color: #005a9e; font-weight:600; color:#fff; }
+    button.primary:hover { background: #fff; color:var(--accent); box-shadow: 0 0 10px var(--accent); }
+    button.danger { background: #922; border-color: #600; }
+    button.active, .tool-item.active { background: #444; border-color: var(--accent); color: #fff; box-shadow: 0 0 5px var(--accent); }
+    
+    .toolbar-sep { width: 1px; height: 24px; background: #444; margin: 0 5px; }
+    
+    /* Layout */
+    #workspace { flex-grow: 1; display: flex; position: relative; overflow: hidden; }
+    #left-panel { width: 260px; background-color: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 90; transition: all 0.4s; flex-shrink: 0; }
+    .closed { width: 0 !important; min-width: 0 !important; border: none !important; opacity: 0; pointer-events: none; }
+    
+    .panel-handle { position: absolute; top: 50%; transform: translateY(-50%); width: 20px; height: 60px; background: #2d2d2d; border: 1px solid #444; color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 92; border-radius: 0 8px 8px 0; transition: 0.2s; font-size: 12px; }
+    .panel-handle:hover { background: #444; width: 25px; color: #fff; }
+    .handle-left { left: 0; }
+    #left-panel:not(.closed) + .handle-left { left: 260px; border-radius: 50%; width: 20px; height: 20px; margin-left: -10px; }
+
+    .panel-header { padding: 10px; background: #000; font-weight:600; color:#fff; border-bottom:1px solid var(--border); display:flex; justify-content: space-between; align-items: center; text-transform:uppercase; font-size:0.85rem; }
+    
+    .lib-group { border-bottom: 1px solid var(--border); }
+    .lib-group-title { padding: 8px 12px; cursor: pointer; font-size:0.8rem; font-weight:bold; color:#888; text-transform:uppercase; display:flex; justify-content:space-between; transition: 0.2s;}
+    .lib-group-title:hover { color: #fff; background: #333; }
+    .lib-items { display: none; padding: 5px; background: #161616; max-height: 400px; overflow-y: auto; } 
+    .lib-items.open { display: block; }
+    .lib-subheader { font-size: 0.7rem; color: var(--accent); font-weight: bold; margin: 10px 0 4px 5px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 2px; }
+    
+    .tool-item { position: relative; display: flex; align-items: center; gap: 10px; padding: 6px 10px; margin: 2px 0; cursor: pointer; border-radius: 4px; transition: 0.1s; border: 1px solid transparent; }
+    .tool-item:hover { background: #333; } 
+    .tool-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+    .tool-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2px; }
+    .tool-name { font-size: 0.85rem; }
+
+    /* ESTILOS DEL LIENZO CAD */
+    #main-area { flex-grow: 1; position: relative; background: #111; cursor: crosshair; }
+    svg { display: block; width: 100%; height: 100%; }
+
+    .grid-minor { stroke: #222; stroke-width: 0.5; fill: none; vector-effect: non-scaling-stroke; }
+    .grid-path { stroke: #333; stroke-width: 1; fill: none; vector-effect: non-scaling-stroke; }
+    .grid-axis { stroke: #555; stroke-width: 2; fill: none; vector-effect: non-scaling-stroke; }
+    
+    /* MODIFICADO: Eliminado 'vector-effect: non-scaling-stroke' para que la tubería escale con el zoom */
+    .tuberia { fill: none; cursor: pointer; stroke-linecap: round; } 
+    .tuberia:hover { stroke-opacity: 0.8; }
+    .fitting-auto { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+    .hover-halo { stroke: rgba(255,255,255,0.2); stroke-width: 10px; fill: none; stroke-linecap: round; pointer-events: none; vector-effect: non-scaling-stroke; }
+    .sel-halo { stroke: var(--accent); stroke-width: 3px; stroke-dasharray: 4,2; fill: none; pointer-events: none; vector-effect: non-scaling-stroke; }
+    
+    .label-tech { font-size: 10px; fill: #aaa; font-family: sans-serif; pointer-events: none; text-shadow: 1px 1px 2px #000; }
+    .dim-line { stroke: #777; stroke-width: 1; vector-effect: non-scaling-stroke; }
+    .dim-text { fill: #ffd700; font-size: 10px; font-family: monospace; }
+    
+    .snap-marker { fill:none; stroke:cyan; stroke-width:2; vector-effect: non-scaling-stroke; }
+    .cursor-crosshair { stroke: white; stroke-width: 1; vector-effect: non-scaling-stroke; }
+    .z-ref-line { stroke: #666; stroke-dasharray: 3,3; pointer-events: none; }
+
+    /* UI Flotante MEJORADA PARA DRAG & DROP */
+    #prop-card {
+        position: absolute; 
+        top: 60px; 
+        left: 20px; 
+        width: 320px; 
+        max-height: 85vh;
+        background: rgba(20, 20, 20, 0.95); 
+        backdrop-filter: blur(10px);
+        border: 1px solid #333; 
+        border-top: 3px solid var(--accent);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8); 
+        border-radius: 6px; 
+        z-index: 1000;
+        display: flex; 
+        flex-direction: column; 
+        opacity: 0; 
+        transform: scale(0.95); 
+        pointer-events: none; 
+        transition: opacity 0.3s, transform 0.3s;
+    }
+    #prop-card.active { opacity: 1; transform: scale(1); pointer-events: auto; }
+    
+    .pc-header { 
+        padding: 15px 20px; 
+        background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%); 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        cursor: move; 
+        user-select: none;
+    }
+    .pc-title { font-size: 1.1rem; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
+    .pc-close { background: transparent; border: none; color: #888; font-size: 1.2rem; cursor: pointer; }
+    .pc-hero { padding: 15px; display: flex; justify-content: center; background: radial-gradient(circle at center, #2b2b2b 0%, #141414 100%); border-bottom: 1px solid #333; }
+    .pc-hero-icon svg { width: 80px; height: 80px; filter: drop-shadow(0 0 15px rgba(0, 113, 235, 0.5)); stroke: #fff !important; }
+    .pc-content { overflow-y: auto; padding: 15px; flex: 1; }
+    
+    .prop-row { margin-bottom: 12px; }
+    .prop-row.row-h { display: flex; gap: 10px; align-items: center; }
+    .prop-row label { font-size: 0.75rem; color: #aaa; margin-bottom: 5px; display: block; font-weight: 500; }
+    .prop-row input[type="text"], .prop-row input[type="number"], .prop-row select {
+        background: var(--input-bg); border: 1px solid transparent; color: #fff; padding: 8px 10px; border-radius: 3px; width: 100%; box-sizing: border-box; font-size: 0.9rem;
+    }
+    .prop-row input:focus, .prop-row select:focus { background: #383838; border-color: var(--accent); outline: none; }
+    
+    .acc-group { margin-bottom: 5px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+    .acc-header { background: transparent; color: #ddd; font-weight: 600; padding: 10px 5px; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; display: flex; justify-content: space-between; }
+    .acc-content { display: block; padding: 5px 0; }
+    .acc-group.collapsed .acc-content { display: none; }
+
+    #cmd-panel { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(30, 30, 30, 0.9); border: 1px solid #444; padding: 5px; border-radius: 6px; display: flex; gap: 5px; backdrop-filter: blur(5px); z-index: 95; }
+    .hud-overlay { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 4px; color: #ccc; font-family: monospace; display: flex; gap: 12px; border: 1px solid #444; }
+    .hud-input { width: 50px; background: transparent; border: none; border-bottom: 1px solid #555; color: var(--accent); text-align: center; outline: none; }
+
+    .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:200; justify-content:center; align-items:center; backdrop-filter: blur(2px); }
+    .modal-box { background: #1f1f1f; padding:25px; border:1px solid #444; width:500px; border-radius:6px; box-shadow: 0 20px 50px rgba(0,0,0,0.7); max-height: 90vh; overflow-y: auto;}
+    
+    #dynamic-input-container, #vertical-input-container { position: absolute; background: rgba(30, 30, 30, 0.95); border: 1px solid var(--accent); padding: 5px 8px; border-radius: 4px; display: none; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    .float-input { width: 70px; background: #000; border: 1px solid #444; color: #fff; padding: 2px 5px; outline: none; }
+    
+    .layer-dropdown { position: relative; display: inline-block; }
+    .layer-content { display: none; position: absolute; top: 35px; left: 0; background-color: #1f1f1f; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.5); border: 1px solid #333; z-index: 200; border-radius: 4px; padding: 5px; }
+    .layer-content.show { display: block; }
+    .layer-row-header { display: flex; align-items: center; padding: 5px 10px; gap: 8px; cursor: pointer; }
+    .layer-row-header:hover { background: #333; }
+    .layer-row-header.active { border-left: 3px solid var(--accent); background: #2a2a2a; }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="brand"><span>CAD</span> GAS v2.4.4</div>
+    <div class="toolbar-sep"></div>
+    <button class="btn" id="btn-undo" onclick="undo()" title="Deshacer">↩</button>
+    <button class="btn" id="btn-redo" onclick="redo()" title="Rehacer">↪</button>
+    <div class="toolbar-sep"></div>
+    <button class="btn" onclick="guardarProyecto()">💾 Guardar</button>
+    <button class="btn" onclick="document.getElementById('file-input').click()">📂 Abrir</button>
+    <button class="btn danger" onclick="limpiarTodo()">🗑️ Nuevo</button>
+    <input type="file" id="file-input" style="display:none" onchange="cargarProyecto(this)">
+    <div class="toolbar-sep"></div>
+    <button id="btn-select" class="btn active" onclick="setTool('select')">👆 Sel.</button>
+    <button id="btn-cut" class="btn" onclick="setTool('cut')">✂️ Cortar</button>
+    <button id="btn-cota" class="btn" onclick="setTool('cota')">📏 Cota</button>
+    <button id="btn-texto" class="btn" onclick="setTool('texto')">T Texto</button>
+    <button id="btn-insert" class="btn" onclick="setTool('insert')">📍 Insertar</button>
+    <div class="toolbar-sep"></div>
+    <div class="layer-dropdown">
+        <button class="btn" onclick="toggleLayerMenu()">📚 Capas ▼</button>
+        <div id="layer-menu-content" class="layer-content">
+            <div id="lista-capas-header"></div>
+            <div style="padding:5px; border-top:1px solid #444;">
+                <button class="btn" style="width:100%" onclick="addLayer()">+ Nueva Capa</button>
+            </div>
+        </div>
+    </div>
+    <button id="btn-toggle-tags" class="btn active" onclick="toggleTags()">🏷️ Etiquetas</button>
+    <div class="toolbar-sep"></div>
+    <select class="btn" onchange="setUnit(this.value)">
+        <option value="m">Metros (m)</option>
+        <option value="dm">dm</option> <option value="cm">cm</option> <option value="mm">mm</option>
+    </select>
+    <div class="toolbar-sep"></div>
+ 
+    <button class="btn" onclick="mostrarReporte()">📋 Lista</button>
+    <button class="btn primary" onclick="prepararPDF()">📄 PDF Pro</button>
+    
+    <button class="btn" onclick="window.open('./Recursos/acerca_de.htm', '_blank')" title="Información de la App">ℹ️ Acerca de</button>
+    <div id="msg-guardado" style="display:none; color:#0f0; font-size:0.8rem; margin-left:10px;">Guardado OK</div>
+</header>
+
+<div id="workspace">
+    <div id="left-panel">
+        <div class="panel-header"><span>Biblioteca</span><span style="font-size:0.8rem; cursor:pointer;" onclick="togglePanel('left-panel')">✕</span></div>
+        <div class="lib-group"><div class="lib-group-title" onclick="toggleGroup('grp-mat')">Tuberías <span>▼</span></div><div class="lib-items open" id="grp-mat"></div></div>
+        <div class="lib-group"><div class="lib-group-title" onclick="toggleGroup('grp-comp')">Componentes <span>▼</span></div><div class="lib-items" id="grp-comp"></div></div>
+        <div class="lib-group"><div class="lib-group-title" onclick="toggleGroup('grp-eq')">Equipos <span>▼</span></div><div class="lib-items" id="grp-eq"></div></div>
+        <div class="lib-group"><div class="lib-group-title" onclick="toggleGroup('grp-inst')">Instrumentos <span>▼</span></div><div class="lib-items" id="grp-inst"></div></div>
+        <div class="lib-group"><div class="lib-group-title" onclick="toggleGroup('grp-perif')">Periféricos <span>▼</span></div><div class="lib-items" id="grp-perif"></div></div>
+        <div class="lib-group"><div class="lib-group-title" onclick="toggleGroup('grp-cons')">Consumibles <span>▼</span></div><div class="lib-items" id="grp-cons"></div></div>
+    </div>
+    <div class="panel-handle handle-left" onclick="togglePanel('left-panel')">🛠️</div>
+    
+    <div id="main-area">
+        <div id="cmd-panel">
+            <button id="cmd-grid" class="btn active" onclick="toggleConfig('grid')">Grid ▦</button>
+            <button id="cmd-snap" class="btn active" onclick="toggleConfig('snap')">Snap 🧲</button>
+            <div class="toolbar-sep"></div>
+            <button class="btn" onclick="resetView()">Centrar 🎯</button>
+        </div>
+        <svg id="lienzo-cad">
+            <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#f00" /></marker></defs>
+            <g id="world-transform">
+                <g id="grid-layer"><path id="grid-minor" class="grid-minor"></path><path id="grid-path" class="grid-path"></path><path id="grid-axis" class="grid-axis"></path></g>
+                <g id="capa-referencias"></g><g id="contenedor-elementos"></g><g id="capa-fittings"></g><g id="capa-seleccion"></g><g id="capa-hover"></g><g id="capa-interfaz"></g>
+            </g>
+        </svg>
+        <div id="gizmo-container" style="position: absolute; bottom: 50px; left: 20px; width: 80px; height: 80px; pointer-events: none;"><svg id="gizmo-svg" viewBox="0 0 100 100"><g id="gizmo-axes" transform="translate(50,50)"></g></svg></div>
+        <div class="hud-overlay">
+            <div><span style="color:#888; font-weight:bold; font-size:0.75rem;">Z:</span> <input type="number" id="hud-z-input" class="hud-input" value="0.00" step="0.10" onchange="updateZInput(this.value)"> <span id="hud-z-unit" style="font-size:0.7rem">m</span></div>
+            <div style="width:1px; background:#555;"></div>
+            <div><span style="color:#888; font-weight:bold; font-size:0.75rem;">ZOOM:</span> <input type="number" id="hud-scale-input" class="hud-input" value="100" onchange="updateZoomInput(this.value)"> %</div>
+            <div style="width:1px; background:#555;"></div>
+            <div><span style="color:#888; font-weight:bold; font-size:0.75rem;">ROT:</span> <input type="number" id="hud-rot-input" class="hud-input" value="45" onchange="updateRotInput(this.value)"> °</div>
+        </div>
+        <div id="dynamic-input-container"><span>L:</span><input type="text" id="dynamic-len" class="float-input"><span style="color:#0f0">✔</span></div>
+        <div id="vertical-input-container" style="flex-direction:column; align-items:flex-start; padding:10px; border-color:#0f0;"><div id="v-title" style="color:#0f0; font-weight:bold; margin-bottom:5px;"><span id="v-icon">⬆</span> <span id="v-text">SUBIENDO</span></div><input type="text" id="v-len" class="float-input" placeholder="0.00"><span style="font-size:0.7rem; color:#777;">[Enter] confirmar</span></div>
+        <div id="hover-tooltip" style="position:absolute; display:none; background:rgba(0,0,0,0.8); border:1px solid #777; padding:3px 8px; border-radius:4px; font-size:0.75rem; pointer-events:none;"></div>
+    </div>
+    
+    <div id="prop-card">
+        <div class="pc-header">
+            <span class="pc-title" id="pc-title-text">Propiedades</span>
+            <button class="pc-close" onclick="cerrarPropiedades()">✕</button>
+        </div>
+        <div class="pc-hero" id="pc-hero-container"></div>
+        <div class="pc-content">
+            <div id="prop-vacio" style="padding:20px; color:#666; text-align:center;">Nada seleccionado</div>
+            <div id="prop-form" style="display:none;">
+                <div class="acc-group" id="grp-general">
+                    <div class="acc-header" onclick="toggleAccordion('grp-general')">General</div>
+                    <div class="acc-content">
+                        <div class="prop-row row-h"><label style="flex:1">Visible</label><input type="checkbox" id="p-visible" onchange="updateRootProp('visible', this.checked)" style="width:auto;"></div>
+                        <div class="prop-row row-h"><label style="flex:1">Etiqueta</label><input type="checkbox" id="p-show-label" onchange="updateBooleanProp('mostrarEtiqueta', this.checked)" style="width:auto;"></div>
+                        <div class="prop-row"><label>Tag (Etiqueta)</label><input type="text" id="p-tag" onchange="updateStyleProp('tag', this.value)"></div>
+                        <div class="prop-row"><label>Capa</label><select id="p-capa" class="btn" onchange="updateStyleProp('layerId', this.value)"></select></div>
+                    </div>
+                </div>
+                <div class="acc-group" id="grp-geo">
+                    <div class="acc-header" onclick="toggleAccordion('grp-geo')">Geometría</div>
+                    <div class="acc-content">
+                        <div class="prop-row"><label>Elevación Z1 (<span id="lbl-unit-z">m</span>)</label><input type="text" id="p-altura" onchange="updateAltura(this.value)"></div>
+                        <div class="prop-row" id="row-altura-final"><label>Elevación Z2 (<span id="lbl-unit-z-final">m</span>)</label><input type="text" id="p-altura-final" onchange="updateAlturaFinal(this.value)"></div>
+                        <div class="prop-row" id="row-longitud"><label>Longitud (<span id="lbl-unit">m</span>)</label><input type="text" id="p-longitud" onchange="updateLongitud(this.value)"></div>
+                    </div>
+                </div>
+                
+                <div id="prop-datos-tecnicos-container"></div>
+                
+                <div class="acc-group" id="grp-app">
+                    <div class="acc-header" onclick="toggleAccordion('grp-app')">Apariencia</div>
+                    <div class="acc-content">
+                        <div id="obj-adjust-controls">
+                            <div class="prop-row"><label>Escala Visual</label><div style="display:flex; align-items:center; gap:5px;"><input type="range" id="p-scale" min="0.1" max="3" step="0.1" oninput="updateStyleProp('scaleFactor', this.value)"><span id="p-scale-val" style="font-size:0.7rem; color:#888;">1.0</span></div></div>
+                            <div class="prop-row"><label>Punto de Acople</label><select id="p-anchor" class="btn" onchange="updateStyleProp('anchor', this.value)"><option value="start">Inicio</option><option value="center">Centro</option><option value="end">Fin</option></select></div>
+                        </div>
+                        <div class="prop-row"><label>Color</label><input type="color" id="p-color" style="height:35px; padding:0; border:none;" onchange="updateStyleProp('color', this.value)"></div>
+                        <div class="prop-row" id="row-tipo-linea"><label>Estilo de Línea</label><select id="p-linestyle" class="btn" onchange="updateStyleProp('tipoLinea', this.value)"><option value="solid">Sólida</option><option value="dashed">Guiones</option><option value="dotted">Punteada</option></select></div>
+                        <div class="prop-row" id="row-grosor"><label>Grosor</label><input type="number" id="p-grosor" onchange="updateStyleProp('grosor', this.value)"></div>
+                        <div class="prop-row"><label>Rotación (°)</label><input type="number" id="p-rot" onchange="updateStyleProp('rotacion', this.value)"></div>
+                    </div>
+                </div>
+                <div style="margin-top:20px;"><button class="btn danger" onclick="borrarSeleccion()" style="width:100%; justify-content:center;">Eliminar Objeto</button></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-reporte" class="modal" onclick="this.style.display='none'"><div class="modal-box" onclick="event.stopPropagation()"><h3>Listado de Materiales</h3><table id="tabla-res" style="width:100%; font-size:0.9rem; border-collapse: collapse; color:#ccc;"></table><br><div style="display:flex; justify-content:space-between;"><button class="btn primary" onclick="exportarCSV()">Exportar CSV</button><button class="btn" onclick="document.getElementById('modal-reporte').style.display='none'">Cerrar</button></div></div></div>
+<div id="modal-guardar" class="modal"><div class="modal-box"><h3>Guardar Proyecto</h3><div style="margin-bottom:15px;">Nombre:</div><input type="text" id="input-filename" class="btn-input" value="proyecto_gas" style="width:100%; margin-bottom:15px;"><div style="display:flex; gap:10px; justify-content:flex-end;"><button class="btn" onclick="guardarEnNavegador()">Navegador</button><button class="btn primary" onclick="confirmarDescarga()">Descargar JSON</button><button class="btn" onclick="document.getElementById('modal-guardar').style.display='none'">Cancelar</button></div></div></div>
+<div id="modal-insertar" class="modal"><div class="modal-box"><h3>Insertar Elemento</h3><div class="prop-row"><label>Elemento:</label><select id="ins-select" class="btn" style="width:100%" onchange="checkInsertType()"></select></div><div class="prop-row row-h" style="margin-top:10px;"><label>Z1:</label><input type="text" id="ins-z1" class="btn-input" style="width:100px"><label>Z2 (Tub):</label><input type="text" id="ins-z2" class="btn-input" style="width:100px"></div><div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn primary" onclick="ejecutarInsercion()">Insertar</button><button class="btn" onclick="cerrarModalInsertar()">Cancelar</button></div></div></div>
+<div id="modal-pdf" class="modal"><div class="modal-box"><h3>Reporte PDF</h3><div class="prop-row"><label>Proyecto:</label><input type="text" id="pdf-nombre" class="btn-input"></div><div class="prop-row"><label>ID:</label><input type="text" id="pdf-id" class="btn-input"></div><div class="prop-row"><label>Autor:</label><input type="text" id="pdf-autor" class="btn-input"></div><div class="prop-row row-h"><label>Incluir Ecuaciones</label><input type="checkbox" id="pdf-include-eq"></div><div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn primary" onclick="generarPDF()">Generar</button><button class="btn" onclick="document.getElementById('modal-pdf').style.display='none'">Cancelar</button></div></div></div>
+<div id="modal-ecuaciones" class="modal" onclick="this.style.display='none'"><div class="modal-box" onclick="event.stopPropagation()"><h3>Fórmulas Mueller</h3><div style="background:#ddd; color:#000; padding:10px; margin-bottom:10px;"><b>Baja:</b> Q = ...</div><div style="background:#ddd; color:#000; padding:10px;"><b>Media:</b> Q = ...</div></div></div>
+
+<script src="./js/config.js"></script>
+<script src="./js/utils.js"></script>
+<script src="./js/engine/math.js"></script>
+<script src="./js/engine/calc.js"></script>
+<script src="./js/ui/props.js"></script>
+<script src="./js/ui/library.js"></script>
+<script src="./js/io/files.js"></script>
+<script src="./js/io/pdf-export.js"></script>
+<script src="./js/renderer.js"></script>
+<script src="./js/events.js"></script>
+
+<script>
+    window.onload = function() {
+        console.log("🚀 Iniciando CAD Gas v2.0 FIXED...");
+        if(typeof window.saveState === 'function') window.saveState(); 
+        if(typeof renderGrid === 'function') renderGrid(); 
+        if(typeof renderGizmo === 'function') renderGizmo(); 
+        if(typeof initLibrary === 'function') initLibrary();
+        
+        const canvas = document.getElementById('lienzo-cad');
+        if(canvas) {
+            const rectInit = canvas.getBoundingClientRect(); 
+            window.estado.view.x = rectInit.width/2; 
+            window.estado.view.y = rectInit.height/2; 
+            if(typeof updateTransform === 'function') updateTransform();
+        }
+        
+        setTimeout(function() {
+            const backup = localStorage.getItem('backup_cad_gas'); 
+            if (backup && confirm("Existe un proyecto guardado en memoria. ¿Deseas recuperarlo?")) { 
+                try { 
+                    const d = JSON.parse(backup); 
+                    window.layers = d.layers; 
+                    window.elementos = d.elementos; 
+                    window.saveState(); 
+                    if(typeof renderScene === 'function') renderScene(); 
+                    if(typeof renderLayersUI === 'function') renderLayersUI(); 
+                } catch(e) { console.error(e); } 
+            } 
+        }, 500);
+    };
+</script>
+</body>
+</html>
