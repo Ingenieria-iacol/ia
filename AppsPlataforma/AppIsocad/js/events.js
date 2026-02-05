@@ -1,6 +1,6 @@
 /**
  * js/events.js
- * Orquestador de interacción con Snap y Línea Guía
+ * Orquestador de interacción: Snap, Elevación y Rotación
  */
 
 const svgElement = document.getElementById('lienzo-cad');
@@ -12,17 +12,16 @@ svgElement.addEventListener('mousedown', (e) => {
     const xRaw = (e.clientX - rect.left - window.estado.view.x) / window.estado.view.scale;
     const yRaw = (e.clientY - rect.top - window.estado.view.y) / window.estado.view.scale;
     
-    // Obtener punto isométrico y aplicar SNAP (imán) cada 0.5 metros
     const puntoRaw = window.CADMath.screenToIso(xRaw, yRaw);
     const puntoIso = {
-        x: Math.round(puntoRaw.x * 2) / 2,
+        x: Math.round(puntoRaw.x * 2) / 2, // Snap cada 0.5m
         y: Math.round(puntoRaw.y * 2) / 2
     };
 
     if (e.button === 0) {
         if (window.estado.tool === 'tool-pipe') {
             manejarDibujoTuberia(puntoIso);
-        } else if (window.estado.tool === 'btn-tool-select') {
+        } else {
             manejarSeleccion(xRaw, yRaw);
         }
     }
@@ -44,7 +43,7 @@ svgElement.addEventListener('mousemove', (e) => {
         y: Math.round(puntoRaw.y * 2) / 2
     };
 
-    // 1. Lógica de Línea Guía (Feedback visual)
+    // Línea Guía Dinámica
     if (window.estado.drawing && window.estado.inicio) {
         const uiLayer = document.getElementById('ui-layer');
         uiLayer.innerHTML = ''; 
@@ -55,13 +54,12 @@ svgElement.addEventListener('mousemove', (e) => {
         const tempLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
         tempLine.setAttribute("x1", s.x); tempLine.setAttribute("y1", s.y);
         tempLine.setAttribute("x2", ePos.x); tempLine.setAttribute("y2", ePos.y);
-        tempLine.setAttribute("stroke", "white");
+        tempLine.setAttribute("stroke", "rgba(255,255,255,0.5)");
         tempLine.setAttribute("stroke-width", "1");
         tempLine.setAttribute("stroke-dasharray", "5,5");
         uiLayer.appendChild(tempLine);
     }
 
-    // 2. Lógica de Pan (Mover cámara)
     if (window.estado.isPanning) {
         const dx = e.clientX - window.estado.lastMouse.x;
         const dy = e.clientY - window.estado.lastMouse.y;
@@ -76,7 +74,44 @@ window.addEventListener('mouseup', () => {
     window.estado.isPanning = false;
 });
 
-// --- 2. FUNCIONES DE APOYO ---
+// --- 2. COMANDOS DE INGENIERÍA (TECLADO) ---
+
+window.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
+    const stepZ = 0.5; // Incremento de elevación en metros
+
+    // Elevación: Q (Subir), A (Bajar)
+    if (key === 'q') {
+        window.estado.currentZ += stepZ;
+        actualizarUIFeedback();
+    }
+    if (key === 'a') {
+        window.estado.currentZ = Math.max(0, window.estado.currentZ - stepZ);
+        actualizarUIFeedback();
+    }
+
+    // Rotación de Cámara: Flechas Izquierda/Derecha
+    if (e.key === 'ArrowLeft') {
+        window.estado.view.angle -= 0.1;
+        window.CADRenderer.dibujarEscena();
+    }
+    if (e.key === 'ArrowRight') {
+        window.estado.view.angle += 0.1;
+        window.CADRenderer.dibujarEscena();
+    }
+
+    if (e.key === 'Escape') {
+        cancelarAccion();
+    }
+});
+
+function actualizarUIFeedback() {
+    document.getElementById('hud-z').innerText = window.estado.currentZ.toFixed(2);
+    // Refrescar línea guía visualmente
+    if (window.estado.drawing) {
+        svgElement.dispatchEvent(new MouseEvent('mousemove'));
+    }
+}
 
 function manejarDibujoTuberia(punto) {
     if (!window.estado.drawing) {
@@ -84,7 +119,6 @@ function manejarDibujoTuberia(punto) {
         window.estado.inicio = { ...punto, z: window.estado.currentZ };
     } else {
         const fin = { ...punto, z: window.estado.currentZ };
-        
         window.AppCore.agregarElemento({
             tipo: 'tuberia',
             x: window.estado.inicio.x,
@@ -99,7 +133,6 @@ function manejarDibujoTuberia(punto) {
                 grosor: 2 
             }
         });
-        
         window.estado.drawing = false;
         document.getElementById('ui-layer').innerHTML = '';
     }
@@ -122,6 +155,14 @@ function manejarSeleccion(clickX, clickY) {
     window.CADRenderer.dibujarEscena();
 }
 
+function cancelarAccion() {
+    window.estado.drawing = false;
+    window.AppCore.seleccion = [];
+    document.getElementById('ui-layer').innerHTML = '';
+    window.PropsPanel.cerrar();
+    window.CADRenderer.dibujarEscena();
+}
+
 // Zoom con Rueda
 svgElement.addEventListener('wheel', (e) => {
     e.preventDefault();
@@ -129,45 +170,3 @@ svgElement.addEventListener('wheel', (e) => {
     window.estado.view.scale = Math.min(Math.max(window.estado.view.scale * factor, 0.1), 10);
     window.CADRenderer.actualizarTransformacion();
 }, { passive: false });
-
-// Atajos de Teclado
-// Añadir dentro de window.addEventListener('keydown', ...):
-
-window.addEventListener('keydown', (e) => {
-    // ... código anterior (Escape) ...
-
-    const stepZ = 0.5; // Incremento de 50cm por pulsación (ajustable en config)
-
-    if (e.key.toLowerCase() === 'q') {
-        window.estado.currentZ += stepZ;
-        console.log(`Elevación Z: ${window.estado.currentZ}m`);
-        actualizarHUD();
-    }
-    if (e.key.toLowerCase() === 'a') {
-        window.estado.currentZ -= stepZ;
-        if(window.estado.currentZ < 0) window.estado.currentZ = 0; // No bajar del suelo
-        actualizarHUD();
-    }
-
-    // Rotación de cámara con flechas
-    if (e.key === 'ArrowLeft') {
-        window.estado.view.angle -= 0.1;
-        window.CADRenderer.dibujarEscena();
-    }
-    if (e.key === 'ArrowRight') {
-        window.estado.view.angle += 0.1;
-        window.CADRenderer.dibujarEscena();
-    }
-});
-
-function actualizarHUD() {
-    const hudZ = document.getElementById('hud-z');
-    if(hudZ) hudZ.innerText = window.estado.currentZ.toFixed(2);
-    // Forzamos redibujo de línea guía si estamos dibujando
-    if(window.estado.drawing) {
-        // Disparar un mousemove ficticio para refrescar la línea guía
-        svgElement.dispatchEvent(new MouseEvent('mousemove'));
-    }
-}
-
-svgElement.addEventListener('contextmenu', e => e.preventDefault());
