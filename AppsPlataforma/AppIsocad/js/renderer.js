@@ -4,7 +4,6 @@
  */
 
 window.CADRenderer = {
-    // Referencias a las capas del SVG definidas en el index.html
     capas: {
         grid: document.getElementById('grid-layer'),
         elementos: document.getElementById('elements-layer'),
@@ -12,16 +11,15 @@ window.CADRenderer = {
     },
 
     /**
-     * Limpia y redibuja toda la escena
+     * Limpia y redibuja toda la escena (Rejilla + Elementos)
      */
     dibujarEscena: function() {
         this.limpiarCapas();
         this.dibujarGrid();
         
-        // Dibujamos cada elemento que existe en el Core
+        // Dibujar elementos guardados en el Core
         window.AppCore.elementos.forEach(el => {
             if (!el.visible) return;
-            
             if (el.tipo === 'tuberia') {
                 this.dibujarTuberia(el);
             } else {
@@ -33,79 +31,82 @@ window.CADRenderer = {
     },
 
     /**
-     * Dibuja una tubería (Línea isométrica)
+     * Dibuja la rejilla isométrica de fondo
+     */
+    dibujarGrid: function() {
+        const grid = this.capas.grid;
+        grid.innerHTML = '';
+        const tamano = 20; // Extensión de la rejilla en metros
+        let d = "";
+
+        for (let i = -tamano; i <= tamano; i++) {
+            // Líneas paralelas al eje X
+            let p1 = window.CADMath.isoToScreen(-tamano, i, 0);
+            let p2 = window.CADMath.isoToScreen(tamano, i, 0);
+            d += `M${p1.x},${p1.y} L${p2.x},${p2.y} `;
+
+            // Líneas paralelas al eje Y
+            let p3 = window.CADMath.isoToScreen(i, -tamano, 0);
+            let p4 = window.CADMath.isoToScreen(i, tamano, 0);
+            d += `M${p3.x},${p3.y} L${p4.x},${p4.y} `;
+        }
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", d);
+        path.setAttribute("stroke", "#222"); // Color oscuro para que no moleste
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke-width", "1");
+        grid.appendChild(path);
+    },
+
+    /**
+     * Dibuja una tubería fija
      */
     dibujarTuberia: function(el) {
-        const inicio = window.CADMath.isoToScreen(el.x, el.y, el.z);
-        const fin = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
+        const s = window.CADMath.isoToScreen(el.x, el.y, el.z);
+        const e = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
         
-        const linea = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        linea.setAttribute("x1", inicio.x);
-        linea.setAttribute("y1", inicio.y);
-        linea.setAttribute("x2", fin.x);
-        linea.setAttribute("y2", fin.y);
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", s.x);
+        line.setAttribute("y1", s.y);
+        line.setAttribute("x2", e.x);
+        line.setAttribute("y2", e.y);
         
-        // Estética profesional
+        // Estilo profesional
         const color = el.props.customColor || "#FFD700";
-        const grosor = window.Utils.parseInput(el.props.grosor) || 2;
+        const grosor = el.props.grosor || 2;
         
-        linea.setAttribute("stroke", color);
-        linea.setAttribute("stroke-width", grosor);
-        linea.setAttribute("stroke-linecap", "round");
+        line.setAttribute("stroke", color);
+        line.setAttribute("stroke-width", grosor);
+        line.setAttribute("stroke-linecap", "round");
         
-        // Si está seleccionado, le ponemos un brillo (halo)
         if (window.AppCore.seleccion.includes(el.id)) {
-            linea.setAttribute("filter", "drop-shadow(0 0 5px #0071eb)");
+            line.setAttribute("filter", "drop-shadow(0 0 5px #0071eb)");
+            line.setAttribute("stroke-width", grosor + 2);
         }
 
-        this.capas.elementos.appendChild(linea);
+        this.capas.elementos.appendChild(line);
     },
 
     /**
-     * Dibuja equipos o válvulas usando sus iconos
-     */
-    dibujarEquipo: function(el) {
-        const pos = window.CADMath.isoToScreen(el.x, el.y, el.z);
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        
-        // Si el elemento tiene un icono SVG en el catálogo
-        if (el.icon) {
-            const temp = document.createElement('div');
-            temp.innerHTML = el.icon;
-            const svgIcon = temp.querySelector('svg');
-            
-            if (svgIcon) {
-                const size = 30 * (el.props.scaleFactor || 1);
-                svgIcon.setAttribute("width", size);
-                svgIcon.setAttribute("height", size);
-                svgIcon.setAttribute("x", pos.x - size/2);
-                svgIcon.setAttribute("y", pos.y - size/2);
-                svgIcon.setAttribute("stroke", el.props.color || "#ccc");
-                g.appendChild(svgIcon);
-            }
-        }
-
-        this.capas.elementos.appendChild(g);
-    },
-
-    /**
-     * Aplica el zoom y el movimiento de cámara (Pan)
+     * Actualiza el Zoom y Pan en la pantalla
      */
     actualizarTransformacion: function() {
         const world = document.getElementById('world-transform');
         const v = window.estado.view;
         world.setAttribute('transform', `translate(${v.x}, ${v.y}) scale(${v.scale})`);
         
-        // Actualizamos el HUD del index.html
+        // Actualizar datos del HUD
         document.getElementById('hud-scale').innerText = Math.round(v.scale * 100);
+        document.getElementById('hud-z').innerText = window.estado.currentZ.toFixed(2);
     },
 
     limpiarCapas: function() {
         this.capas.elementos.innerHTML = '';
-        // No limpiamos el grid siempre para ahorrar procesador
+        this.capas.ui.innerHTML = '';
     },
 
-    dibujarGrid: function() {
-        // Aquí podrías mover tu lógica de dibujar las líneas de fondo
+    dibujarEquipo: function(el) {
+        // Lógica para iconos (puedes expandirla después)
     }
 };
