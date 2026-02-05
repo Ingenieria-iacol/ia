@@ -131,14 +131,43 @@ svgElement.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 // Atajos de Teclado
+// Añadir dentro de window.addEventListener('keydown', ...):
+
 window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        window.estado.drawing = false;
-        document.getElementById('ui-layer').innerHTML = '';
-        window.AppCore.seleccion = [];
-        window.PropsPanel.cerrar();
+    // ... código anterior (Escape) ...
+
+    const stepZ = 0.5; // Incremento de 50cm por pulsación (ajustable en config)
+
+    if (e.key.toLowerCase() === 'q') {
+        window.estado.currentZ += stepZ;
+        console.log(`Elevación Z: ${window.estado.currentZ}m`);
+        actualizarHUD();
+    }
+    if (e.key.toLowerCase() === 'a') {
+        window.estado.currentZ -= stepZ;
+        if(window.estado.currentZ < 0) window.estado.currentZ = 0; // No bajar del suelo
+        actualizarHUD();
+    }
+
+    // Rotación de cámara con flechas
+    if (e.key === 'ArrowLeft') {
+        window.estado.view.angle -= 0.1;
+        window.CADRenderer.dibujarEscena();
+    }
+    if (e.key === 'ArrowRight') {
+        window.estado.view.angle += 0.1;
         window.CADRenderer.dibujarEscena();
     }
 });
+
+function actualizarHUD() {
+    const hudZ = document.getElementById('hud-z');
+    if(hudZ) hudZ.innerText = window.estado.currentZ.toFixed(2);
+    // Forzamos redibujo de línea guía si estamos dibujando
+    if(window.estado.drawing) {
+        // Disparar un mousemove ficticio para refrescar la línea guía
+        svgElement.dispatchEvent(new MouseEvent('mousemove'));
+    }
+}
 
 svgElement.addEventListener('contextmenu', e => e.preventDefault());
