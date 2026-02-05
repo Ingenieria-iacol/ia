@@ -20,7 +20,7 @@ window.CADRenderer = {
 
     dibujarGrid: function() {
         const grid = this.capas.grid; grid.innerHTML = '';
-        const tam = 15; let d = "";
+        const tam = 20; let d = "";
         for (let i = -tam; i <= tam; i++) {
             let p1 = window.CADMath.isoToScreen(-tam, i, 0);
             let p2 = window.CADMath.isoToScreen(tam, i, 0);
@@ -41,14 +41,16 @@ window.CADRenderer = {
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
         line.setAttribute("stroke", window.AppCore.seleccion.includes(el.id) ? "#0071eb" : (el.props.isVertical ? "#00ff00" : "#ffd700"));
-        line.setAttribute("stroke-width", "2.5");
+        line.setAttribute("stroke-width", "3");
+        line.setAttribute("stroke-linecap", "round");
         this.capas.elementos.appendChild(line);
 
         if (el.props.longitudManual) {
             const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            txt.setAttribute("x", (s.x + e.x) / 2); txt.setAttribute("y", (s.y + e.y) / 2 - 5);
-            txt.setAttribute("fill", "white"); txt.setAttribute("font-size", "10px");
-            txt.setAttribute("text-anchor", "middle"); txt.textContent = el.props.longitudManual + "m";
+            txt.setAttribute("x", (s.x + e.x) / 2); txt.setAttribute("y", (s.y + e.y) / 2 - 8);
+            txt.setAttribute("fill", "white"); txt.setAttribute("font-size", "11px");
+            txt.setAttribute("text-anchor", "middle"); txt.setAttribute("font-weight", "bold");
+            txt.textContent = el.props.longitudManual + "m";
             this.capas.elementos.appendChild(txt);
         }
     },
@@ -61,7 +63,8 @@ window.CADRenderer = {
         
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
         foreignObj.setAttribute("width", size); foreignObj.setAttribute("height", size);
-        const iconHTML = window.ICONS[el.props.tipo?.replace('c_', '').replace('v_', '').replace('eq_', '').toUpperCase()] || window.ICONS.SOPORTE;
+        const idIcono = el.props.tipo?.replace('c_', '').replace('v_', '').replace('eq_', '').toUpperCase();
+        const iconHTML = window.ICONS[idIcono] || window.ICONS.SOPORTE;
         foreignObj.innerHTML = `<div style="color:${window.AppCore.seleccion.includes(el.id) ? '#0071eb' : '#fff'}; width:100%; height:100%;">${iconHTML}</div>`;
         
         group.appendChild(foreignObj);
