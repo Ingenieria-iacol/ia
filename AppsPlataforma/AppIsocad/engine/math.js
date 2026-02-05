@@ -1,41 +1,27 @@
 /**
- * engine/math.js - Refactorizado para Proyección Dinámica
+ * engine/math.js
+ * Motor matemático para proyecciones dinámicas y conversiones
  */
 window.CADMath = {
+    /**
+     * Proyecta puntos 3D a 2D usando el ángulo actual del estado
+     */
     isoToScreen: function(x, y, z) {
-        // Obtenemos el ángulo actual del estado (por defecto 45° o Math.PI/4)
-        const angle = window.estado.view.angle || Math.PI / 4;
+        // Leemos el ángulo dinámicamente del estado global
+        const angle = window.estado.view.angle;
         const tileW = window.CONFIG.tileW;
         const tileH = window.CONFIG.tileH;
 
-        // Proyección Isométrica Proporcional
-        // nx y ny rotan el plano base
+        // Rotación de coordenadas en el plano X-Y
         const nx = x * Math.cos(angle) - y * Math.sin(angle);
         const ny = x * Math.sin(angle) + y * Math.cos(angle);
 
         return {
             x: nx * tileW,
-            // Aplicamos la profundidad (y) y la elevación (z)
-            // El factor 0.7 es la relación de aspecto visual de la elevación
-            y: (ny * tileH) - (z * (tileW * 0.7)) 
+            // La elevación Z afecta la posición Y en pantalla (factor de escala 0.7 para realismo)
+            y: (ny * tileH) - (z * tileW * 0.7) 
         };
     },
-
-    screenToIso: function(sx, sy) {
-        const angle = window.estado.view.angle || Math.PI / 4;
-        const tileW = window.CONFIG.tileW;
-        const tileH = window.CONFIG.tileH;
-
-        // Inversa de la rotación para detectar coordenadas de plano
-        const nx = sx / tileW;
-        const ny = sy / tileH;
-
-        return {
-            x: nx * Math.cos(-angle) - ny * Math.sin(-angle),
-            y: nx * Math.sin(-angle) + ny * Math.cos(-angle)
-        };
-    }
-};
 
     /**
      * Convierte clics de pantalla a coordenadas del plano base (z=0)
@@ -48,15 +34,13 @@ window.CADMath = {
         const nx = sx / tileW;
         const ny = sy / tileH;
 
+        // Inversa de la rotación para hallar la posición en el espacio del modelo
         return {
             x: nx * Math.cos(-angle) - ny * Math.sin(-angle),
             y: nx * Math.sin(-angle) + ny * Math.cos(-angle)
         };
     },
 
-    /**
-     * Calcula la distancia real entre dos puntos en el espacio 3D
-     */
     getDistance3D: function(p1, p2) {
         return Math.sqrt(
             Math.pow(p2.x - p1.x, 2) + 
