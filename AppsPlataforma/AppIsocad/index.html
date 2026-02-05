@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>CAD Gas v2.5 - Modular (GitHub)</title>
+    <title>CAD Gas v2.5 - Modular (GitHub Edition)</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
@@ -27,6 +27,9 @@
         .tool-item { display: flex; align-items: center; gap: 10px; padding: 8px; cursor: pointer; }
         .tool-item.active { background: #333; border-left: 3px solid var(--accent); }
         .tool-icon svg { width: 20px; height: 20px; stroke: #ccc; fill: none; }
+        
+        /* Diagnóstico visual por si algo falla */
+        #error-console { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255,0,0,0.8); color: white; font-size: 10px; z-index: 9999; display: none; padding: 5px; }
     </style>
 </head>
 <body>
@@ -66,29 +69,37 @@
     </div>
 </div>
 
-<script src="js/config.js"></script>
-<script src="js/utils.js"></script>
+<div id="error-console"></div>
 
-<script src="engine/math.js"></script>
-<script src="engine/calc.js"></script>
+<script src="js/config.js" onerror="showErr('js/config.js')"></script>
+<script src="js/utils.js" onerror="showErr('js/utils.js')"></script>
 
-<script src="js/core.js"></script>
+<script src="engine/math.js" onerror="showErr('engine/math.js')"></script>
+<script src="engine/calc.js" onerror="showErr('engine/calc.js')"></script>
 
-<script src="iu/library.js"></script>
-<script src="iu/props.js"></script>
+<script src="js/core.js" onerror="showErr('js/core.js')"></script>
 
-<script src="io/files.js"></script>
-<script src="io/pdf-export.js"></script>
+<script src="iu/library.js" onerror="showErr('iu/library.js')"></script>
+<script src="iu/props.js" onerror="showErr('iu/props.js')"></script>
 
-<script src="js/renderer.js"></script>
-<script src="js/events.js"></script>
+<script src="io/files.js" onerror="showErr('io/files.js')"></script>
+<script src="io/pdf-export.js" onerror="showErr('io/pdf-export.js')"></script>
+
+<script src="js/renderer.js" onerror="showErr('js/renderer.js')"></script>
+<script src="js/events.js" onerror="showErr('js/events.js')"></script>
 
 <script>
-    // Inicialización del sistema una vez cargados todos los scripts
+    // Función de diagnóstico para detectar errores 404 de inmediato
+    function showErr(file) {
+        const console = document.getElementById('error-console');
+        console.style.display = 'block';
+        console.innerHTML += `ERROR: No se encontró el archivo "${file}". Revisa el nombre de la carpeta.<br>`;
+    }
+
     window.onload = () => {
-        console.log("🚀 Sistema CAD Gas v2.5 Iniciado");
-        if(window.AppLibrary) window.AppLibrary.init();
-        if(window.CADRenderer) window.CADRenderer.dibujarEscena();
+        console.log("🚀 Iniciando AppIsocad v2.5...");
+        if(window.AppLibrary) window.AppLibrary.init(); //
+        if(window.CADRenderer) window.CADRenderer.dibujarEscena(); //
     };
 </script>
 </body>
