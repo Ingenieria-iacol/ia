@@ -1,32 +1,41 @@
 /**
- * js/engine/math.js
- * Motor matemático para proyecciones y conversiones
+ * engine/math.js - Refactorizado para Proyección Dinámica
  */
 window.CADMath = {
-    // Configuración de ángulos para la vista isométrica profesional
-    // Usamos 30 grados (0.523 rad) para una verdadera proyección isométrica
-    ANGLE: Math.PI / 6, 
-
-    /**
-     * Proyecta puntos 3D (espacio del modelo) a 2D (pantalla SVG)
-     * @param {number} x, y, z - Coordenadas en metros
-     * @returns {object} {x, y} en pixeles
-     */
     isoToScreen: function(x, y, z) {
-        const angle = window.estado.view.angle;
+        // Obtenemos el ángulo actual del estado (por defecto 45° o Math.PI/4)
+        const angle = window.estado.view.angle || Math.PI / 4;
         const tileW = window.CONFIG.tileW;
         const tileH = window.CONFIG.tileH;
 
-        // Rotación de coordenadas basada en el ángulo de visión
+        // Proyección Isométrica Proporcional
+        // nx y ny rotan el plano base
         const nx = x * Math.cos(angle) - y * Math.sin(angle);
         const ny = x * Math.sin(angle) + y * Math.cos(angle);
 
-        // La altura (z) afecta verticalmente con un factor de escala
         return {
             x: nx * tileW,
-            y: (ny * tileH) - (z * tileW * 0.7) 
+            // Aplicamos la profundidad (y) y la elevación (z)
+            // El factor 0.7 es la relación de aspecto visual de la elevación
+            y: (ny * tileH) - (z * (tileW * 0.7)) 
         };
     },
+
+    screenToIso: function(sx, sy) {
+        const angle = window.estado.view.angle || Math.PI / 4;
+        const tileW = window.CONFIG.tileW;
+        const tileH = window.CONFIG.tileH;
+
+        // Inversa de la rotación para detectar coordenadas de plano
+        const nx = sx / tileW;
+        const ny = sy / tileH;
+
+        return {
+            x: nx * Math.cos(-angle) - ny * Math.sin(-angle),
+            y: nx * Math.sin(-angle) + ny * Math.cos(-angle)
+        };
+    }
+};
 
     /**
      * Convierte clics de pantalla a coordenadas del plano base (z=0)
