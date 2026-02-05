@@ -23,13 +23,22 @@ window.AppCore = {
             id: Date.now() + Math.random(),
             layerId: 'gas',
             visible: true,
-            props: {},
+            props: datos.props || {},
             ...datos
         };
         this.elementos.push(nuevo);
         this.guardarEstado();
         if (window.CADRenderer) window.CADRenderer.dibujarEscena();
         return nuevo;
+    },
+
+    borrarSeleccion: function() {
+        if (this.seleccion.length === 0) return;
+        this.elementos = this.elementos.filter(el => !this.seleccion.includes(el.id));
+        this.seleccion = [];
+        this.guardarEstado();
+        if (window.CADRenderer) window.CADRenderer.dibujarEscena();
+        if (window.PropsPanel) window.PropsPanel.cerrar();
     },
 
     actualizarBotonesUI: function() {
@@ -45,6 +54,7 @@ window.estado = {
     drawing: false,
     inicio: null,
     isPanning: false,
-    isRotating: false, // Control de rotación
-    lastMouse: { x: 0, y: 0 }
+    isRotating: false,
+    lastMouse: { x: 0, y: 0 },
+    activeItem: null // Almacena el componente seleccionado de la librería
 };
