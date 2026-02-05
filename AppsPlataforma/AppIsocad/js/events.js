@@ -1,36 +1,36 @@
 /**
  * js/events.js
- * Manejo de mouse, teclado y lógica de herramientas
+ * Orquestador de las interacciones del usuario
  */
 
-const svg = document.getElementById('lienzo-cad');
+const svgElement = document.getElementById('lienzo-cad');
 
-// 1. GESTIÓN DE RATÓN (MOUSE)
-svg.addEventListener('mousedown', e => {
-    const rect = svg.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+// --- 1. GESTIÓN DE RATÓN (MOUSE) ---
 
-    // Convertir clic de pantalla a coordenadas del mundo 3D
-    // Restamos la posición de la cámara (pan) y dividimos por el zoom
-    const worldX = (x - window.estado.view.x) / window.estado.view.scale;
-    const worldY = (y - window.estado.view.y) / window.estado.view.scale;
+svgElement.addEventListener('mousedown', (e) => {
+    const rect = svgElement.getBoundingClientRect();
     
-    const puntoIso = window.CADMath.screenToIso(worldX, worldY);
+    // 1.1. Coordenadas de pantalla a mundo (tomando en cuenta Zoom y Pan)
+    const xRaw = (e.clientX - rect.left - window.estado.view.x) / window.estado.view.scale;
+    const yRaw = (e.clientY - rect.top - window.estado.view.y) / window.estado.view.scale;
+    
+    // 1.2. Coordenadas de mundo a plano isométrico (Z=0)
+    const puntoIso = window.CADMath.screenToIso(xRaw, yRaw);
 
-    // Botón Izquierdo: Dibujar o Seleccionar
+    // BOTÓN IZQUIERDO: Acción de herramienta
     if (e.button === 0) {
-        handlePrincipalClick(puntoIso);
+        ejecutarAccionHerramienta(puntoIso);
     }
-    
-    // Botón Derecho: Mover cámara (Pan)
+
+    // BOTÓN DERECHO: Iniciar movimiento de cámara (Pan)
     if (e.button === 2) {
         window.estado.isPanning = true;
         window.estado.lastMouse = { x: e.clientX, y: e.clientY };
     }
 });
 
-window.addEventListener('mousemove', e => {
+svgElement.addEventListener('mousemove', (e) => {
+    // Lógica de Pan (Mover cámara)
     if (window.estado.isPanning) {
         const dx = e.clientX - window.estado.lastMouse.x;
         const dy = e.clientY - window.estado.lastMouse.y;
@@ -39,7 +39,7 @@ window.addEventListener('mousemove', e => {
         window.estado.view.y += dy;
         
         window.estado.lastMouse = { x: e.clientX, y: e.clientY };
-        window.CADRenderer.dibujarEscena();
+        window.CADRenderer.actualizarTransformacion();
     }
 });
 
@@ -47,18 +47,30 @@ window.addEventListener('mouseup', () => {
     window.estado.isPanning = false;
 });
 
-// 2. LÓGICA DE HERRAMIENTAS
-function handlePrincipalClick(punto) {
+// Lógica de Zoom con la rueda del ratón
+svgElement.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+    window.estado.view.scale *= zoomFactor;
+    
+    // Limitar zoom
+    window.estado.view.scale = Math.min(Math.max(window.estado.view.scale, 0.2), 10);
+    
+    window.CADRenderer.actualizarTransformacion();
+}, { passive: false });
+
+// --- 2. LÓGICA DE DIBUJO ---
+
+function ejecutarAccionHerramienta(punto) {
     const tool = window.estado.tool;
 
     if (tool === 'tool-pipe') {
         if (!window.estado.drawing) {
-            // Primer clic: Iniciar tubería
+            // Primer punto
             window.estado.drawing = true;
             window.estado.inicio = { ...punto, z: window.estado.currentZ };
-            console.log("Inicio de tubería en:", window.estado.inicio);
         } else {
-            // Segundo clic: Finalizar tubería
+            // Segundo punto: Crear tubería en el Cerebro
             const fin = { ...punto, z: window.estado.currentZ };
             
             window.AppCore.agregarElemento({
@@ -69,7 +81,11 @@ function handlePrincipalClick(punto) {
                 dx: fin.x - window.estado.inicio.x,
                 dy: fin.y - window.estado.inicio.y,
                 dz: fin.z - window.estado.inicio.z,
-                props: { material: 'acero', grosor: 3 }
+                props: { 
+                    material: window.estado.activeItem?.props.material || 'acero_sch40',
+                    diamNominal: window.estado.activeItem?.props.diametroNominal || '1/2"',
+                    grosor: 3 
+                }
             });
             
             window.estado.drawing = false;
@@ -77,18 +93,17 @@ function handlePrincipalClick(punto) {
     }
 }
 
-// 3. ATAJOS DE TECLADO
-window.addEventListener('keydown', e => {
+// --- 3. ATAJOS DE TECLADO ---
+
+window.addEventListener('keydown', (e) => {
+    // ESC para cancelar dibujo o limpiar selección
     if (e.key === 'Escape') {
         window.estado.drawing = false;
         window.AppCore.seleccion = [];
+        window.PropsPanel.cerrar();
         window.CADRenderer.dibujarEscena();
-    }
-    
-    if (e.key === 'Delete' || e.key === 'Backspace') {
-        window.AppCore.borrarSeleccion();
     }
 });
 
-// Desactivar menú contextual para usar el botón derecho para PAN
-svg.addEventListener('contextmenu', e => e.preventDefault());
+// Desactivar menú contextual para usar botón derecho libremente
+svgElement.addEventListener('contextmenu', e => e.preventDefault());
