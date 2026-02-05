@@ -40,11 +40,11 @@ window.AppCore = {
 
 window.estado = {
     tool: 'select',
-    view: { x: 400, y: 300, scale: 1, angle: Math.PI / 6 },
+    view: { x: 0, y: 0, scale: 1, angle: Math.PI / 6 },
     currentZ: 0,
     drawing: false,
     inicio: null,
     isPanning: false,
-    isRotating: false, // Nueva bandera para rotación
+    isRotating: false, // Control de rotación
     lastMouse: { x: 0, y: 0 }
 };
