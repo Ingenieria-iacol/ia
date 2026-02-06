@@ -1,5 +1,5 @@
 /**
- * js/renderer.js - RECONSTRUIDO
+ * js/renderer.js
  */
 window.CADRenderer = {
     capas: {
@@ -43,7 +43,6 @@ window.CADRenderer = {
 
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
-        // Recuperado: Colores originales (Verde vertical / Amarillo horizontal)
         line.setAttribute("stroke", isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700"));
         line.setAttribute("stroke-width", isSel ? "5" : "3");
         line.setAttribute("stroke-linecap", "round");
@@ -67,7 +66,6 @@ window.CADRenderer = {
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
         foreignObj.setAttribute("width", size); foreignObj.setAttribute("height", size);
         
-        // Recuperado: Lógica de iconos del catálogo
         let iconHTML = window.ICONS.SOPORTE;
         if (el.idCatalogo) {
             const idKey = el.idCatalogo.toUpperCase();
@@ -93,7 +91,7 @@ window.CADRenderer = {
             const v = window.estado.view;
             world.setAttribute('transform', `translate(${v.x}, ${v.y}) scale(${v.scale})`);
         }
-        // Recuperado: Actualización de HUD HUD-SCALE
+        
         const hudZ = document.getElementById('hud-z');
         const hudScale = document.getElementById('hud-scale');
         if (hudZ) hudZ.innerText = window.estado.currentZ.toFixed(2);
