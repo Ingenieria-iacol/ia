@@ -1,5 +1,5 @@
 /**
- * js/renderer.js - Versión Profesional Consolidada
+ * js/renderer.js - RESTAURADO Y MEJORADO
  */
 window.CADRenderer = {
     capas: {
@@ -9,7 +9,7 @@ window.CADRenderer = {
     },
 
     dibujarEscena: function() {
-        if (!this.capas.grid) return;
+        if (!this.capas.grid || !this.capas.elementos) return;
         this.capas.grid.innerHTML = '';
         this.capas.elementos.innerHTML = '';
         this.dibujarGrid();
@@ -41,34 +41,22 @@ window.CADRenderer = {
         const e = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
         const isSel = window.AppCore.seleccion.includes(el.id);
 
-        // Integración con Motor de Ingeniería para color dinámico
-        const calc = window.GasEngine.calculateFlow({
-            diamNominal: el.props.diamNominal || '1/2"',
-            longitud: el.props.longitudManual || 1,
-            caudal: el.props.caudal || 2.5,
-            tipoGas: 'NATURAL',
-            presionEntrada: 19
-        });
-
-        let colorBase = (el.dz !== 0 || el.props.isVertical) ? "#00ff00" : "#ffd700";
-        if (calc.estado === 'CRÍTICO') colorBase = "#ff0000";
-        else if (calc.estado === 'ALERTA') colorBase = "#ffa500";
-        
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
-        line.setAttribute("stroke", isSel ? "#0071eb" : colorBase);
+        
+        // Color: lógica original (Z != 0 -> verde, else amarillo)
+        let color = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
+        line.setAttribute("stroke", color);
         line.setAttribute("stroke-width", isSel ? "5" : "3");
         line.setAttribute("stroke-linecap", "round");
         this.capas.elementos.appendChild(line);
 
-        // Etiqueta de longitud y Tag si existe
-        if (el.props.longitudManual || el.props.tag) {
-            const label = el.props.tag ? `${el.props.tag} (${el.props.longitudManual}m)` : `${el.props.longitudManual}m`;
+        if (el.props.longitudManual) {
             const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            txt.setAttribute("x", (s.x + e.x) / 2); txt.setAttribute("y", (s.y + e.y) / 2 - 10);
-            txt.setAttribute("fill", "#fff"); txt.setAttribute("font-size", "9px");
-            txt.setAttribute("text-anchor", "middle"); txt.textContent = label;
+            txt.setAttribute("x", (s.x + e.x) / 2); txt.setAttribute("y", (s.y + e.y) / 2 - 8);
+            txt.setAttribute("fill", "white"); txt.setAttribute("font-size", "10px");
+            txt.setAttribute("text-anchor", "middle"); txt.textContent = el.props.longitudManual + "m";
             this.capas.elementos.appendChild(txt);
         }
     },
@@ -82,6 +70,7 @@ window.CADRenderer = {
         const color = isSel ? '#0071eb' : (el.props.colorRef || '#ffffff');
 
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        // Rotación sobre su propio eje (Centro)
         group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rot}) translate(${-size/2}, ${-size/2})`);
         
         let iconHTML = window.ICONS.SOPORTE;
@@ -97,12 +86,11 @@ window.CADRenderer = {
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
 
-        // Tag del equipo
+        // Renderizado de TAG debajo del objeto
         const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
         txt.setAttribute("x", p.x); txt.setAttribute("y", p.y + (size/2) + 12);
-        txt.setAttribute("fill", isSel ? "#0071eb" : "#888"); txt.setAttribute("font-size", "10px");
-        txt.setAttribute("font-weight", "bold"); txt.setAttribute("text-anchor", "middle"); 
-        txt.textContent = el.props.tag || el.props.name || "";
+        txt.setAttribute("fill", isSel ? "#0071eb" : "#888"); txt.setAttribute("font-size", "9px");
+        txt.setAttribute("text-anchor", "middle"); txt.textContent = el.props.tag || el.props.name || "";
         this.capas.elementos.appendChild(txt);
     },
 
@@ -112,6 +100,7 @@ window.CADRenderer = {
             const v = window.estado.view;
             world.setAttribute('transform', `translate(${v.x}, ${v.y}) scale(${v.scale})`);
         }
+        // Actualización HUD (Original restaurada)
         const hudZ = document.getElementById('hud-z');
         const hudScale = document.getElementById('hud-scale');
         if (hudZ) hudZ.innerText = window.estado.currentZ.toFixed(2);
