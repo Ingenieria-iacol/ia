@@ -10,7 +10,6 @@ window.PDFExport = {
     generarReporte: function() {
         console.log("📄 Iniciando generación de PDF profesional...");
         
-        // Verificación de existencia de librerías para evitar cuelgues
         if (!window.jspdf || !window.html2canvas) {
             console.error("Librerías jsPDF o html2canvas no encontradas.");
             alert("Error: Las librerías de exportación no están cargadas.");
@@ -26,17 +25,16 @@ window.PDFExport = {
             return;
         }
 
-        // Capturar el área de trabajo con alta calidad
         html2canvas(mainArea, {
-            backgroundColor: "#111", // Mantiene el esquema oscuro del CAD
-            scale: 2, // Mejora la definición de líneas y etiquetas
+            backgroundColor: "#111",
+            scale: 2,
             useCORS: true,
             logging: false
         }).then(canvas => {
             const imgData = canvas.toDataURL('image/png');
             
-            // --- ENCABEZADO DEL DOCUMENTO ---
-            doc.setFillColor(0, 113, 235); // Color acento del sistema
+            // --- ENCABEZADO ---
+            doc.setFillColor(0, 113, 235);
             doc.rect(0, 0, 210, 35, 'F');
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(18);
@@ -45,11 +43,9 @@ window.PDFExport = {
             doc.text(`Fecha de emisión: ${new Date().toLocaleString()}`, 105, 26, { align: 'center' });
             
             // --- IMAGEN DEL CAD ---
-            // Se posiciona el diseño capturado debajo del encabezado
             doc.addImage(imgData, 'PNG', 10, 40, 190, 100);
             
             // --- CÁLCULO DE LISTA DE MATERIALES (BOM) ---
-            // Agrupamos elementos para generar un conteo técnico preciso
             const resumen = {};
             
             window.AppCore.elementos.forEach(el => {
@@ -61,15 +57,38 @@ window.PDFExport = {
                     const diam = el.props.diamNominal || '1/2"';
                     nombre = `TUBERÍA ${diam}`;
                     unidad = "m";
-                    // Cálculo de longitud real 3D usando los deltas del motor
+                    // Cálculo de longitud real 3D
                     cantidad = Math.sqrt(
                         Math.pow(el.dx || 0, 2) + 
                         Math.pow(el.dy || 0, 2) + 
                         Math.pow(el.dz || 0, 2)
                     );
                 } else {
-                    // Prioriza el Tag asignado en el panel sobre el nombre genérico
-                    nombre = (el.props.tag || el.props.name || el.tipo).toUpperCase();
+                    // --- LÓGICA PARA ACCESORIOS (Codos, Tes, etc.) ---
+                    // Se busca identificar por subtipo, tag o tipo genérico
+                    const tipoAccesorio = (el.props.subtipo || el.tipo).toLowerCase();
+                    const diam = el.props.diamNominal || '1/2"';
+
+                    switch(tipoAccesorio) {
+                        case 'codo':
+                            nombre = `CODO ${el.props.angulo || '90'}° ${diam}`;
+                            break;
+                        case 'te':
+                        case 'tee':
+                            nombre = `TÉ GALVANIZADA ${diam}`;
+                            break;
+                        case 'reduccion':
+                            nombre = `REDUCCIÓN ${diam} x ${el.props.diamReducido || '3/8"'}`;
+                            break;
+                        case 'union':
+                            nombre = `UNIÓN SIMPLE ${diam}`;
+                            break;
+                        case 'valvula':
+                            nombre = `VÁLVULA DE BOLA ${diam}`;
+                            break;
+                        default:
+                            nombre = (el.props.tag || el.props.name || el.tipo).toUpperCase();
+                    }
                 }
 
                 if (!resumen[nombre]) {
@@ -78,7 +97,6 @@ window.PDFExport = {
                 resumen[nombre].cant += cantidad;
             });
 
-            // Formatear datos para la tabla
             const filasBOM = Object.keys(resumen).map(key => [
                 key,
                 resumen[key].cant.toFixed(2),
@@ -96,7 +114,7 @@ window.PDFExport = {
                 styles: { fontSize: 9 }
             });
 
-            // Pie de página con numeración
+            // Pie de página
             const totalPages = doc.internal.getNumberOfPages();
             for(let i = 1; i <= totalPages; i++) {
                 doc.setPage(i);
@@ -114,5 +132,4 @@ window.PDFExport = {
     }
 };
 
-// Asegurar la reconexión con el botón del encabezado
 document.getElementById('btn-pdf-gen')?.addEventListener('click', () => window.PDFExport.generarReporte());
