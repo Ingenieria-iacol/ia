@@ -1,5 +1,5 @@
 /**
- * iu/props.js - RESTAURADO Y FUNCIONAL
+ * iu/props.js - Revisión Quirúrgica V2.6.7
  */
 window.PropsPanel = {
     abrir: function(el) {
@@ -10,16 +10,16 @@ window.PropsPanel = {
         card.style.display = 'block';
         let html = `<h3 style="margin:0 0 10px 0; font-size:0.9rem; color:#0071eb; border-bottom:1px solid #333; padding-bottom:5px;">${el.tipo.toUpperCase()}</h3>`;
         
-        // Propiedad TAG (Nueva funcionalidad solicitada)
+        // --- SECCIÓN: IDENTIFICACIÓN ---
         html += `
             <div class="prop-row">
-                <label>Tag / Identificador</label>
+                <label>Tag / Identificador Técnico</label>
                 <input type="text" value="${el.props.tag || ''}" placeholder="Ej: V-101" 
                     onchange="window.PropsPanel.actualizarProp(${el.id}, 'tag', this.value)">
             </div>
         `;
 
-        // Elevación Z (Propiedad original restaurada)
+        // --- SECCIÓN: POSICIÓN (Original Preservada) ---
         html += `
             <div class="prop-row">
                 <label>Elevación Z (m)</label>
@@ -29,44 +29,64 @@ window.PropsPanel = {
         `;
 
         if (el.tipo === 'tuberia') {
-            // Selector de Diámetro (Original restaurado con más opciones)
+            // Lógica original de tuberías con integración a GasEngine
+            const caudal = el.props.caudal || 2.5;
+            const calc = window.GasEngine.calculateFlow({
+                diamNominal: el.props.diamNominal || '1/2"',
+                longitud: el.props.longitudManual || 1,
+                caudal: caudal,
+                tipoGas: 'NATURAL',
+                presionEntrada: el.props.presionEntrada || 19
+            });
+
             html += `
                 <div class="prop-row">
                     <label>Diámetro</label>
                     <select onchange="window.PropsPanel.actualizarProp(${el.id}, 'diamNominal', this.value)">
-                        <option value='1/2"' ${el.props.diamNominal === '1/2"' ? 'selected' : ''}>1/2"</option>
-                        <option value='3/4"' ${el.props.diamNominal === '3/4"' ? 'selected' : ''}>3/4"</option>
-                        <option value='1"' ${el.props.diamNominal === '1"' ? 'selected' : ''}>1"</option>
+                        ${Object.values(window.DIAMETROS_DISPONIBLES).flat().map(d => 
+                            `<option value='${d}' ${el.props.diamNominal === d ? 'selected' : ''}>${d}</option>`
+                        ).join('')}
                     </select>
+                </div>
+                <div class="prop-row">
+                    <label>Caudal (m³/h)</label>
+                    <input type="number" step="0.1" value="${caudal}" 
+                        onchange="window.PropsPanel.actualizarProp(${el.id}, 'caudal', parseFloat(this.value))">
+                </div>
+                <div style="background:#000; padding:8px; border-radius:4px; border-left:3px solid ${calc.estado === 'OK' ? '#0f0' : '#f00'}; margin-top:5px;">
+                    <div style="font-size:0.7rem; color:${calc.estado === 'OK' ? '#aaa' : '#ff4444'};">
+                        ΔP: ${calc.caidaPresionStr} | Vel: ${calc.velocidad}
+                    </div>
                 </div>
             `;
         } else {
-            // Propiedades de Rotación y Escala para Equipos
+            // --- SECCIÓN: TRANSFORMACIÓN DE EQUIPOS ---
             const rot = el.props.rotacionAxial || 0;
             html += `
                 <div class="prop-row">
-                    <label>Orientación</label>
-                    <button class="btn" style="width:100%; height:30px; cursor:pointer;" onclick="window.PropsPanel.toggleRotacion(${el.id})">
-                        ${rot === 0 ? '⬌ Horizontal' : '⬈ Vertical'}
+                    <label>Orientación Axial</label>
+                    <button class="btn" style="width:100%; height:32px; display:flex; align-items:center; justify-content:center; gap:5px;" 
+                        onclick="window.PropsPanel.toggleRotacion(${el.id})">
+                        <span style="transform:rotate(${rot}deg)">➔</span> ${rot === 0 ? 'Horizontal' : 'Vertical'}
                     </button>
                 </div>
                 <div class="prop-row">
-                    <label>Escala (Tamaño)</label>
+                    <label>Escala Proporcional: ${(el.props.escala || 1).toFixed(1)}x</label>
                     <input type="range" min="0.5" max="3" step="0.1" value="${el.props.escala || 1}" 
                         oninput="window.PropsPanel.actualizarProp(${el.id}, 'escala', parseFloat(this.value))">
                 </div>
                 <div class="prop-row">
-                    <label>Color</label>
+                    <label>Color de Objeto</label>
                     <input type="color" value="${el.props.colorRef || '#ffffff'}" 
                         onchange="window.PropsPanel.actualizarProp(${el.id}, 'colorRef', this.value)">
                 </div>
             `;
         }
 
-        // Botón de eliminar (Funcionalidad original AppCore.borrarSeleccion)
+        // Botón Eliminar (Vinculado a AppCore original)
         html += `
-            <button class="btn" style="width:100%; margin-top:15px; background:#922; color:white; border:none;" 
-                onclick="window.AppCore.borrarSeleccion()">Eliminar</button>
+            <button class="btn" style="width:100%; margin-top:15px; background:#400; color:#ff9999; border:1px solid #600;" 
+                onclick="window.AppCore.borrarSeleccion()">🗑 Eliminar Elemento</button>
         `;
         content.innerHTML = html;
     },
@@ -96,7 +116,7 @@ window.PropsPanel = {
             el.props[prop] = valor;
             window.AppCore.guardarEstado();
             window.CADRenderer.dibujarEscena();
-            if (prop === 'escala') this.abrir(el);
+            if (prop === 'escala' || prop === 'caudal') this.abrir(el);
         }
     },
 
