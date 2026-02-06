@@ -6,7 +6,6 @@ const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
 let isMovingMouse = false;
 
-// Desactivar menú contextual para usar el botón derecho para rotar
 svgElement.addEventListener('contextmenu', e => e.preventDefault());
 
 svgElement.addEventListener('mousedown', (e) => {
@@ -14,9 +13,9 @@ svgElement.addEventListener('mousedown', (e) => {
     mouseStartTime = Date.now();
     isMovingMouse = false;
 
-    if (e.button === 0) { // Botón Izquierdo: Preparar Pan
+    if (e.button === 0) {
         window.estado.isPanning = true;
-    } else if (e.button === 2) { // Botón Derecho: Preparar Rotación
+    } else if (e.button === 2) {
         window.estado.isRotating = true;
     }
 });
@@ -30,8 +29,7 @@ svgElement.addEventListener('mousemove', (e) => {
         window.estado.view.x += dx;
         window.estado.view.y += dy;
         window.CADRenderer.actualizarTransformacion();
-    } 
-    else if (window.estado.isRotating) {
+    } else if (window.estado.isRotating) {
         window.estado.view.angle += dx * 0.01;
         window.CADRenderer.dibujarEscena();
     }
@@ -39,18 +37,14 @@ svgElement.addEventListener('mousemove', (e) => {
     if (window.estado.drawing && window.estado.inicio) {
         actualizarGuiaVisual(e);
     }
-
     window.estado.lastMouse = { x: e.clientX, y: e.clientY };
 });
 
 window.addEventListener('mouseup', (e) => {
     const duration = Date.now() - mouseStartTime;
-    
-    // Si fue un clic corto sin mucho arrastre, ejecutar acción
     if (duration < 250 && !isMovingMouse && e.button === 0) {
         ejecutarAccionPrincipal(e);
     }
-
     window.estado.isPanning = false;
     window.estado.isRotating = false;
 });
@@ -60,26 +54,32 @@ function ejecutarAccionPrincipal(e) {
     const xRaw = (e.clientX - rect.left - window.estado.view.x) / window.estado.view.scale;
     const yRaw = (e.clientY - rect.top - window.estado.view.y) / window.estado.view.scale;
     const puntoRaw = window.CADMath.screenToIso(xRaw, yRaw);
-    const puntoIso = { x: Math.round(puntoRaw.x * 2) / 2, y: Math.round(puntoRaw.y * 2) / 2 };
+    
+    // CORRECCIÓN 1: Snap estricto antes de insertar o dibujar
+    const puntoIso = { 
+        x: Math.round(puntoRaw.x * 2) / 2, 
+        y: Math.round(puntoRaw.y * 2) / 2 
+    };
 
     if (window.estado.tool === 'tool-pipe') {
         manejarDibujoTuberia(puntoIso);
     } 
-    // LÓGICA DE INSERCIÓN DE OBJETOS
     else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
+        // CORRECCIÓN 2: Inserción vinculando el ID correcto para el icono
         window.AppCore.agregarElemento({
             tipo: 'equipo', 
             x: puntoIso.x, 
             y: puntoIso.y, 
             z: window.estado.currentZ,
-            idCatalogo: window.estado.activeItem.id,
+            idCatalogo: window.estado.activeItem.id, // Mantiene el ID para el renderizador
             props: { 
                 ...window.estado.activeItem.props, 
                 name: window.estado.activeItem.name,
-                tipo: window.estado.activeItem.id 
+                tipoOriginal: window.estado.activeItem.id 
             }
         });
     } else {
+        // CORRECCIÓN 3: Selección activa por defecto
         manejarSeleccion(xRaw, yRaw);
     }
 }
@@ -112,6 +112,13 @@ function manejarDibujoTuberia(punto) {
 function manejarSeleccion(clickX, clickY) {
     const encontrado = window.AppCore.elementos.find(el => {
         const pos = window.CADMath.isoToScreen(el.x, el.y, el.z);
+        // Colisión tipo línea para tuberías
+        if (el.tipo === 'tuberia') {
+            const final = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
+            const dist = distToSegment({x: clickX, y: clickY}, pos, final);
+            return dist < 10;
+        }
+        // Colisión tipo bloque para equipos
         const dist = Math.hypot(pos.x - clickX, pos.y - clickY);
         return dist < 20;
     });
@@ -126,17 +133,24 @@ function manejarSeleccion(clickX, clickY) {
     window.CADRenderer.dibujarEscena();
 }
 
+// Función auxiliar para detectar clic en líneas
+function distToSegment(p, v, w) {
+    const l2 = Math.pow(v.x - w.x, 2) + Math.pow(v.y - w.y, 2);
+    if (l2 == 0) return Math.hypot(p.x - v.x, p.y - v.y);
+    let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
+}
+
 function actualizarGuiaVisual(e) {
     const rect = svgElement.getBoundingClientRect();
     const xRaw = (e.clientX - rect.left - window.estado.view.x) / window.estado.view.scale;
     const yRaw = (e.clientY - rect.top - window.estado.view.y) / window.estado.view.scale;
     const puntoRaw = window.CADMath.screenToIso(xRaw, yRaw);
-    
     const uiLayer = document.getElementById('ui-layer');
     uiLayer.innerHTML = ''; 
     const s = window.CADMath.isoToScreen(window.estado.inicio.x, window.estado.inicio.y, window.estado.inicio.z);
     const ePos = window.CADMath.isoToScreen(Math.round(puntoRaw.x * 2) / 2, Math.round(puntoRaw.y * 2) / 2, window.estado.currentZ);
-    
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
     line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
     line.setAttribute("x2", ePos.x); line.setAttribute("y2", ePos.y);
@@ -157,7 +171,6 @@ window.addEventListener('keydown', (e) => {
         document.getElementById('btn-tool-select')?.classList.add('active');
         window.CADRenderer.dibujarEscena();
     }
-
     if ((key === 'q' || key === 'a') && window.estado.drawing) {
         let L = parseFloat(prompt(`Longitud vertical (${key === 'q' ? 'subir' : 'bajar'}):`, "1.0"));
         if (!isNaN(L)) {
