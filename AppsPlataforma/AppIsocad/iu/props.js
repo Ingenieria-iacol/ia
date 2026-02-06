@@ -1,5 +1,5 @@
 /**
- * iu/props.js - RESTAURACIÓN TOTAL
+ * iu/props.js - REVISIÓN QUIRÚRGICA V7.1
  */
 window.PropsPanel = {
     abrir: function(el) {
@@ -8,18 +8,18 @@ window.PropsPanel = {
         if (!card || !content) return;
 
         card.style.display = 'block';
-        let html = `<h3 style="margin:0; font-size:0.9rem; color:#0071eb;">${el.tipo.toUpperCase()}</h3>`;
+        let html = `<h3 style="margin:0 0 10px 0; font-size:0.9rem; color:#0071eb; border-bottom:1px solid #333; padding-bottom:5px;">${el.tipo.toUpperCase()}</h3>`;
         
-        // Propiedades de Identificación
+        // TAG (Identificador para ingeniería)
         html += `
             <div class="prop-row">
-                <label>Tag / ID</label>
-                <input type="text" value="${el.props.tag || ''}" 
+                <label>Tag / Identificador</label>
+                <input type="text" value="${el.props.tag || ''}" placeholder="Ej: V-101" 
                     onchange="window.PropsPanel.actualizarProp(${el.id}, 'tag', this.value)">
             </div>
         `;
 
-        // Elevación Z (Esencial para tu motor de gas)
+        // ELEVACIÓN Z (Propiedad original crítica para isometrico)
         html += `
             <div class="prop-row">
                 <label>Elevación Z (m)</label>
@@ -40,25 +40,31 @@ window.PropsPanel = {
                 </div>
             `;
         } else {
-            // Nuevas propiedades sin romper la inserción
+            // Rotación axial, escala y color para válvulas/equipos
             const rot = el.props.rotacionAxial || 0;
             html += `
                 <div class="prop-row">
-                    <label>Rotación Axial</label>
-                    <button class="btn" style="width:100%" onclick="window.PropsPanel.toggleRotacion(${el.id})">
-                        ${rot === 0 ? 'Horizontal' : 'Vertical'}
+                    <label>Orientación (Girar)</label>
+                    <button class="btn" style="width:100%; height:32px;" onclick="window.PropsPanel.toggleRotacion(${el.id})">
+                        ${rot === 0 ? '⬌ Horizontal' : '⬈ Vertical'}
                     </button>
                 </div>
                 <div class="prop-row">
-                    <label>Escala: ${(el.props.escala || 1).toFixed(1)}x</label>
+                    <label>Escala (Tamaño): ${(el.props.escala || 1).toFixed(1)}x</label>
                     <input type="range" min="0.5" max="3" step="0.1" value="${el.props.escala || 1}" 
-                        oninput="window.PropsPanel.actualizarProp(${el.id}, 'escala', parseFloat(this.value))">
+                        style="width:100%" oninput="window.PropsPanel.actualizarProp(${el.id}, 'escala', parseFloat(this.value))">
+                </div>
+                <div class="prop-row">
+                    <label>Color</label>
+                    <input type="color" value="${el.props.colorRef || '#ffffff'}" 
+                        onchange="window.PropsPanel.actualizarProp(${el.id}, 'colorRef', this.value)">
                 </div>
             `;
         }
 
+        // Botón eliminar original
         html += `
-            <button class="btn" style="width:100%; margin-top:15px; background:#922; color:white;" 
+            <button class="btn" style="width:100%; margin-top:15px; background:#922; color:white; border:none;" 
                 onclick="window.AppCore.borrarSeleccion()">Eliminar</button>
         `;
         content.innerHTML = html;
