@@ -1,5 +1,5 @@
 /**
- * js/core.js
+ * js/core.js - ORIGINAL RESTAURADO
  */
 window.AppCore = {
     elementos: [], 
