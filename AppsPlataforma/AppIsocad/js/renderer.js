@@ -1,5 +1,5 @@
 /**
- * js/renderer.js
+ * js/renderer.js - RECONSTRUIDO
  */
 window.CADRenderer = {
     capas: {
@@ -43,7 +43,8 @@ window.CADRenderer = {
 
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
-        line.setAttribute("stroke", isSel ? "#0071eb" : (el.dz !== 0 ? "#00ffcc" : "#ffd700"));
+        // Recuperado: Colores originales (Verde vertical / Amarillo horizontal)
+        line.setAttribute("stroke", isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700"));
         line.setAttribute("stroke-width", isSel ? "5" : "3");
         line.setAttribute("stroke-linecap", "round");
         this.capas.elementos.appendChild(line);
@@ -66,6 +67,7 @@ window.CADRenderer = {
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
         foreignObj.setAttribute("width", size); foreignObj.setAttribute("height", size);
         
+        // Recuperado: Lógica de iconos del catálogo
         let iconHTML = window.ICONS.SOPORTE;
         if (el.idCatalogo) {
             const idKey = el.idCatalogo.toUpperCase();
@@ -73,10 +75,16 @@ window.CADRenderer = {
         }
 
         const isSel = window.AppCore.seleccion.includes(el.id);
-        foreignObj.innerHTML = `<div style="color:${isSel ? '#0071eb' : '#fff'}; width:100%; height:100%;">${iconHTML}</div>`;
+        foreignObj.innerHTML = `<div style="color:${isSel ? '#0071eb' : '#fff'}; width:100%; height:100%; filter:${isSel ? 'drop-shadow(0 0 2px #0071eb)' : 'none'};">${iconHTML}</div>`;
         
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
+
+        const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        txt.setAttribute("x", p.x); txt.setAttribute("y", p.y + 25);
+        txt.setAttribute("fill", "#888"); txt.setAttribute("font-size", "9px");
+        txt.setAttribute("text-anchor", "middle"); txt.textContent = el.props.name || "";
+        this.capas.elementos.appendChild(txt);
     },
 
     actualizarTransformacion: function() {
@@ -85,6 +93,10 @@ window.CADRenderer = {
             const v = window.estado.view;
             world.setAttribute('transform', `translate(${v.x}, ${v.y}) scale(${v.scale})`);
         }
-        document.getElementById('hud-z').innerText = window.estado.currentZ.toFixed(2);
+        // Recuperado: Actualización de HUD HUD-SCALE
+        const hudZ = document.getElementById('hud-z');
+        const hudScale = document.getElementById('hud-scale');
+        if (hudZ) hudZ.innerText = window.estado.currentZ.toFixed(2);
+        if (hudScale) hudScale.innerText = Math.round(window.estado.view.scale * 100);
     }
 };
