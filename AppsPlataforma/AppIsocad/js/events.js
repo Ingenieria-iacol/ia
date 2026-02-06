@@ -1,19 +1,24 @@
 /**
- * js/events.js - VERSIÓN FINAL CON SNAP MAGNÉTICO
+ * js/events.js - VERSIÓN INTEGRAL RECONSTRUIDA
  */
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
 let isMovingMouse = false;
 let puntoSnapActivo = null; 
 
+// Bloquear menú contextual para usar clic derecho en rotación
 svgElement.addEventListener('contextmenu', e => e.preventDefault());
 
 svgElement.addEventListener('mousedown', (e) => {
     window.estado.lastMouse = { x: e.clientX, y: e.clientY };
     mouseStartTime = Date.now();
     isMovingMouse = false;
-    if (e.button === 0) window.estado.isPanning = true;
-    else if (e.button === 2) window.estado.isRotating = true;
+
+    if (e.button === 0) {
+        window.estado.isPanning = true;
+    } else if (e.button === 2) {
+        window.estado.isRotating = true;
+    }
 });
 
 svgElement.addEventListener('mousemove', (e) => {
@@ -21,6 +26,7 @@ svgElement.addEventListener('mousemove', (e) => {
     const dx = e.clientX - window.estado.lastMouse.x;
     const dy = e.clientY - window.estado.lastMouse.y;
 
+    // Recuperado: Pan y Rotación original
     if (window.estado.isPanning) {
         window.estado.view.x += dx;
         window.estado.view.y += dy;
@@ -30,7 +36,7 @@ svgElement.addEventListener('mousemove', (e) => {
         window.CADRenderer.dibujarEscena();
     }
 
-    // LÓGICA DE IMÁN: Buscar punto de acople en cada movimiento
+    // Nuevo: Magnetismo visual en tiempo real
     puntoSnapActivo = buscarPuntoSnap(e.clientX, e.clientY);
     actualizarGuiaVisual(e);
     
@@ -38,7 +44,8 @@ svgElement.addEventListener('mousemove', (e) => {
 });
 
 window.addEventListener('mouseup', (e) => {
-    if (Date.now() - mouseStartTime < 250 && !isMovingMouse && e.button === 0) {
+    const duration = Date.now() - mouseStartTime;
+    if (duration < 250 && !isMovingMouse && e.button === 0) {
         ejecutarAccionPrincipal(puntoSnapActivo);
     }
     window.estado.isPanning = false;
@@ -46,11 +53,11 @@ window.addEventListener('mouseup', (e) => {
 });
 
 /**
- * Proyecta todos los puntos y encuentra el más cercano al cursor en PÍXELES
+ * Lógica de Snap Magnético (Cálculo en píxeles de pantalla)
  */
 function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
-    let distanciaMinima = 40; // Radio de magnetismo (píxeles)
+    let distanciaMinima = 35; 
     const rect = svgElement.getBoundingClientRect();
 
     window.AppCore.elementos.forEach(el => {
@@ -64,7 +71,6 @@ function buscarPuntoSnap(mouseX, mouseY) {
 
         nodos.forEach(n => {
             const screenPos = window.CADMath.isoToScreen(n.x, n.y, n.z);
-            // Coordenadas reales en la pantalla
             const realX = rect.left + window.estado.view.x + (screenPos.x * window.estado.view.scale);
             const realY = rect.top + window.estado.view.y + (screenPos.y * window.estado.view.scale);
             
@@ -78,7 +84,6 @@ function buscarPuntoSnap(mouseX, mouseY) {
 
     if (mejorPunto) return mejorPunto;
 
-    // Si no hay imán, calcular posición normal redondeada
     const xRel = (mouseX - rect.left - window.estado.view.x) / window.estado.view.scale;
     const yRel = (mouseY - rect.top - window.estado.view.y) / window.estado.view.scale;
     const isoPos = window.CADMath.screenToIso(xRel, yRel);
@@ -100,7 +105,7 @@ function ejecutarAccionPrincipal(punto) {
             idCatalogo: window.estado.activeItem.id,
             props: { ...window.estado.activeItem.props, name: window.estado.activeItem.name }
         });
-        window.estado.currentZ = punto.z; // Sincronizar altura tras inserción
+        window.estado.currentZ = punto.z;
     } else {
         const rect = svgElement.getBoundingClientRect();
         const xRel = (window.estado.lastMouse.x - rect.left - window.estado.view.x) / window.estado.view.scale;
@@ -115,7 +120,7 @@ function manejarDibujoTuberia(punto) {
         window.estado.inicio = { ...punto };
         window.estado.currentZ = punto.z;
     } else {
-        let L = parseFloat(prompt("Longitud (m):", "1.0"));
+        let L = parseFloat(prompt("Longitud horizontal (m):", "1.0"));
         if (!isNaN(L) && L > 0) {
             const dx_r = punto.x - window.estado.inicio.x;
             const dy_r = punto.y - window.estado.inicio.y;
@@ -143,7 +148,6 @@ function actualizarGuiaVisual(e) {
     const p = puntoSnapActivo;
     const posScreen = window.CADMath.isoToScreen(p.x, p.y, p.z);
 
-    // INDICADOR DE SNAP (Círculo de acople)
     const circ = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circ.setAttribute("cx", posScreen.x); circ.setAttribute("cy", posScreen.y);
     circ.setAttribute("r", p.padreId ? "10" : "5"); 
@@ -172,6 +176,7 @@ function manejarSeleccion(clickX, clickY) {
         }
         return Math.hypot(pos.x - clickX, pos.y - clickY) < 20;
     });
+
     if (encontrado) {
         window.AppCore.seleccion = [encontrado.id];
         window.PropsPanel.abrir(encontrado);
@@ -191,11 +196,19 @@ function distToSegment(p, v, w) {
 
 window.addEventListener('keydown', (e) => {
     const key = e.key.toLowerCase();
+    // Recuperado: Escape para resetear herramientas
     if (e.key === 'Escape') {
         window.estado.drawing = false;
+        window.estado.tool = 'select';
+        window.estado.activeItem = null;
+        window.AppCore.seleccion = [];
         document.getElementById('ui-layer').innerHTML = '';
+        window.PropsPanel.cerrar();
+        document.querySelectorAll('.tool-item').forEach(el => el.classList.remove('active'));
+        document.getElementById('btn-tool-select')?.classList.add('active');
         window.CADRenderer.dibujarEscena();
     }
+    // Recuperado: Q/A para verticalidad
     if ((key === 'q' || key === 'a') && window.estado.drawing) {
         let L = parseFloat(prompt(`Longitud vertical (${key === 'q' ? 'subir' : 'bajar'}):`, "1.0"));
         if (!isNaN(L)) {
@@ -212,3 +225,11 @@ window.addEventListener('keydown', (e) => {
         }
     }
 });
+
+// Recuperado: Zoom con rueda
+svgElement.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    window.estado.view.scale = Math.min(Math.max(window.estado.view.scale * factor, 0.1), 10);
+    window.CADRenderer.actualizarTransformacion();
+}, { passive: false });
