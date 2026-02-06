@@ -1,6 +1,6 @@
 /**
  * js/events.js
- * Orquestador de interacción con lógica de Snap (Adherencia)
+ * Orquestador de interacción con Snap Proyectado (Pantalla a Iso)
  */
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
@@ -12,12 +12,8 @@ svgElement.addEventListener('mousedown', (e) => {
     window.estado.lastMouse = { x: e.clientX, y: e.clientY };
     mouseStartTime = Date.now();
     isMovingMouse = false;
-
-    if (e.button === 0) {
-        window.estado.isPanning = true;
-    } else if (e.button === 2) {
-        window.estado.isRotating = true;
-    }
+    if (e.button === 0) window.estado.isPanning = true;
+    else if (e.button === 2) window.estado.isRotating = true;
 });
 
 svgElement.addEventListener('mousemove', (e) => {
@@ -34,9 +30,8 @@ svgElement.addEventListener('mousemove', (e) => {
         window.CADRenderer.dibujarEscena();
     }
 
-    if (window.estado.drawing && window.estado.inicio) {
-        actualizarGuiaVisual(e);
-    }
+    // Actualizar siempre la guía visual para mostrar el Snap
+    actualizarGuiaVisual(e);
     window.estado.lastMouse = { x: e.clientX, y: e.clientY };
 });
 
@@ -50,40 +45,48 @@ window.addEventListener('mouseup', (e) => {
 });
 
 /**
- * Busca el punto de conexión más cercano (Snap)
+ * Busca el punto de conexión más cercano basándose en la proximidad visual (pantalla)
  */
-function buscarPuntoSnap(puntoMouse) {
-    let mejorPunto = { ...puntoMouse, z: window.estado.currentZ };
-    let distanciaMinima = 0.8; // Radio de snap en unidades de rejilla
+function buscarPuntoSnap(clickX, clickY) {
+    let mejorPunto = null;
+    let distanciaMinima = 30; // Píxeles de tolerancia en pantalla
 
     window.AppCore.elementos.forEach(el => {
-        let puntosInteres = [];
+        let puntos = [];
         if (el.tipo === 'tuberia') {
-            puntosInteres.push({ x: el.x, y: el.y, z: el.z });
-            puntosInteres.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz });
+            puntos.push({ x: el.x, y: el.y, z: el.z });
+            puntos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz });
         } else {
-            puntosInteres.push({ x: el.x, y: el.y, z: el.z });
+            puntos.push({ x: el.x, y: el.y, z: el.z });
         }
 
-        puntosInteres.forEach(p => {
-            const d = Math.hypot(puntoMouse.x - p.x, puntoMouse.y - p.y);
+        puntos.forEach(p => {
+            // Convertir punto iso a coordenadas de pantalla actuales
+            const screenPos = window.CADMath.isoToScreen(p.x, p.y, p.z);
+            // Aplicar transformación de vista (pan/zoom)
+            const tx = screenPos.x * window.estado.view.scale + window.estado.view.x;
+            const ty = screenPos.y * window.estado.view.scale + window.estado.view.y;
+            
+            const d = Math.hypot(clickX - tx, clickY - ty);
             if (d < distanciaMinima) {
                 distanciaMinima = d;
                 mejorPunto = { x: p.x, y: p.y, z: p.z };
             }
         });
     });
-    return mejorPunto;
+
+    if (mejorPunto) return mejorPunto;
+
+    // Si no hay snap, devolver posición del cursor proyectada al plano Z actual
+    const rect = svgElement.getBoundingClientRect();
+    const xRel = (clickX - rect.left - window.estado.view.x) / window.estado.view.scale;
+    const yRel = (clickY - rect.top - window.estado.view.y) / window.estado.view.scale;
+    const isoPos = window.CADMath.screenToIso(xRel, yRel);
+    return { x: Math.round(isoPos.x * 2) / 2, y: Math.round(isoPos.y * 2) / 2, z: window.estado.currentZ };
 }
 
 function ejecutarAccionPrincipal(e) {
-    const rect = svgElement.getBoundingClientRect();
-    const xRaw = (e.clientX - rect.left - window.estado.view.x) / window.estado.view.scale;
-    const yRaw = (e.clientY - rect.top - window.estado.view.y) / window.estado.view.scale;
-    const puntoRaw = window.CADMath.screenToIso(xRaw, yRaw);
-    
-    // Aplicar Snap
-    const puntoSnap = buscarPuntoSnap(puntoRaw);
+    const puntoSnap = buscarPuntoSnap(e.clientX, e.clientY);
 
     if (window.estado.tool === 'tool-pipe') {
         manejarDibujoTuberia(puntoSnap);
@@ -91,20 +94,17 @@ function ejecutarAccionPrincipal(e) {
     else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
         window.AppCore.agregarElemento({
             tipo: 'equipo', 
-            x: puntoSnap.x, 
-            y: puntoSnap.y, 
-            z: puntoSnap.z, // Hereda la altura del punto de snap
+            x: puntoSnap.x, y: puntoSnap.y, z: puntoSnap.z,
             idCatalogo: window.estado.activeItem.id,
-            props: { 
-                ...window.estado.activeItem.props, 
-                name: window.estado.activeItem.name
-            }
+            props: { ...window.estado.activeItem.props, name: window.estado.activeItem.name }
         });
-        // Actualizar la Z global a la del elemento insertado para facilitar la continuidad
         window.estado.currentZ = puntoSnap.z;
-        window.CADRenderer.actualizarTransformacion();
     } else {
-        manejarSeleccion(xRaw, yRaw);
+        // Para selección usamos las coordenadas relativas normales
+        const rect = svgElement.getBoundingClientRect();
+        const xRel = (e.clientX - rect.left - window.estado.view.x) / window.estado.view.scale;
+        const yRel = (e.clientY - rect.top - window.estado.view.y) / window.estado.view.scale;
+        manejarSeleccion(xRel, yRel);
     }
 }
 
@@ -112,16 +112,17 @@ function manejarDibujoTuberia(punto) {
     if (!window.estado.drawing) {
         window.estado.drawing = true;
         window.estado.inicio = { ...punto };
-        window.estado.currentZ = punto.z; // Ajustar Z a la del punto de inicio
+        window.estado.currentZ = punto.z;
     } else {
         let L = parseFloat(prompt("Longitud horizontal (m):", "1.0"));
         if (!isNaN(L) && L > 0) {
+            // Dirección basada en el mouse pero longitud fija
             const dx_r = punto.x - window.estado.inicio.x;
             const dy_r = punto.y - window.estado.inicio.y;
-            const dist = Math.sqrt(dx_r**2 + dy_r**2) || 1;
-            
-            const finX = window.estado.inicio.x + (dx_r / dist) * L;
-            const finY = window.estado.inicio.y + (dy_r / dist) * L;
+            const d_total = Math.sqrt(dx_r**2 + dy_r**2) || 1;
+
+            const finX = window.estado.inicio.x + (dx_r / d_total) * L;
+            const finY = window.estado.inicio.y + (dy_r / d_total) * L;
 
             window.AppCore.agregarElemento({
                 tipo: 'tuberia',
@@ -131,7 +132,35 @@ function manejarDibujoTuberia(punto) {
             });
             window.estado.inicio = { x: finX, y: finY, z: window.estado.inicio.z };
         }
-        document.getElementById('ui-layer').innerHTML = '';
+    }
+}
+
+function actualizarGuiaVisual(e) {
+    const uiLayer = document.getElementById('ui-layer');
+    if (!uiLayer) return;
+    uiLayer.innerHTML = ''; 
+
+    const puntoSnap = buscarPuntoSnap(e.clientX, e.clientY);
+    const posScreen = window.CADMath.isoToScreen(puntoSnap.x, puntoSnap.y, puntoSnap.z);
+
+    // Dibujar Círculo de Snap
+    const circ = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circ.setAttribute("cx", posScreen.x); circ.setAttribute("cy", posScreen.y);
+    circ.setAttribute("r", "6");
+    circ.setAttribute("fill", "none");
+    circ.setAttribute("stroke", "#0071eb");
+    circ.setAttribute("stroke-width", "2");
+    uiLayer.appendChild(circ);
+
+    // Si estamos dibujando tubería, mostrar línea elástica
+    if (window.estado.drawing && window.estado.inicio) {
+        const s = window.CADMath.isoToScreen(window.estado.inicio.x, window.estado.inicio.y, window.estado.inicio.z);
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
+        line.setAttribute("x2", posScreen.x); line.setAttribute("y2", posScreen.y);
+        line.setAttribute("stroke", "white");
+        line.setAttribute("stroke-dasharray", "4,4");
+        uiLayer.appendChild(line);
     }
 }
 
@@ -140,11 +169,9 @@ function manejarSeleccion(clickX, clickY) {
         const pos = window.CADMath.isoToScreen(el.x, el.y, el.z);
         if (el.tipo === 'tuberia') {
             const final = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
-            const dist = distToSegment({x: clickX, y: clickY}, pos, final);
-            return dist < 10;
+            return distToSegment({x: clickX, y: clickY}, pos, final) < 10;
         }
-        const dist = Math.hypot(pos.x - clickX, pos.y - clickY);
-        return dist < 20;
+        return Math.hypot(pos.x - clickX, pos.y - clickY) < 20;
     });
 
     if (encontrado) {
@@ -160,47 +187,15 @@ function manejarSeleccion(clickX, clickY) {
 function distToSegment(p, v, w) {
     const l2 = Math.pow(v.x - w.x, 2) + Math.pow(v.y - w.y, 2);
     if (l2 == 0) return Math.hypot(p.x - v.x, p.y - v.y);
-    let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
-    t = Math.max(0, Math.min(1, t));
+    let t = Math.max(0, Math.min(1, ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2));
     return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
-}
-
-function actualizarGuiaVisual(e) {
-    const rect = svgElement.getBoundingClientRect();
-    const xRaw = (e.clientX - rect.left - window.estado.view.x) / window.estado.view.scale;
-    const yRaw = (e.clientY - rect.top - window.estado.view.y) / window.estado.view.scale;
-    const puntoRaw = window.CADMath.screenToIso(xRaw, yRaw);
-    const puntoSnap = buscarPuntoSnap(puntoRaw);
-
-    const uiLayer = document.getElementById('ui-layer');
-    uiLayer.innerHTML = ''; 
-    const s = window.CADMath.isoToScreen(window.estado.inicio.x, window.estado.inicio.y, window.estado.inicio.z);
-    const ePos = window.CADMath.isoToScreen(puntoSnap.x, puntoSnap.y, puntoSnap.z);
-    
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
-    line.setAttribute("x2", ePos.x); line.setAttribute("y2", ePos.y);
-    line.setAttribute("stroke", "rgba(255,255,255,0.5)"); line.setAttribute("stroke-dasharray", "4,4");
-    uiLayer.appendChild(line);
-
-    // Círculo indicador de Snap
-    const circ = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    circ.setAttribute("cx", ePos.x); circ.setAttribute("cy", ePos.y);
-    circ.setAttribute("r", "5"); circ.setAttribute("fill", "none"); circ.setAttribute("stroke", "#0071eb");
-    uiLayer.appendChild(circ);
 }
 
 window.addEventListener('keydown', (e) => {
     const key = e.key.toLowerCase();
     if (e.key === 'Escape') {
         window.estado.drawing = false;
-        window.estado.tool = 'select';
-        window.estado.activeItem = null;
-        window.AppCore.seleccion = [];
         document.getElementById('ui-layer').innerHTML = '';
-        window.PropsPanel.cerrar();
-        document.querySelectorAll('.tool-item').forEach(el => el.classList.remove('active'));
-        document.getElementById('btn-tool-select')?.classList.add('active');
         window.CADRenderer.dibujarEscena();
     }
     if ((key === 'q' || key === 'a') && window.estado.drawing) {
