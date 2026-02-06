@@ -1,5 +1,5 @@
 /**
- * js/renderer.js - Revisión Quirúrgica V2.6.7
+ * js/renderer.js - RECUPERACIÓN QUIRÚRGICA
  */
 window.CADRenderer = {
     capas: {
@@ -14,7 +14,6 @@ window.CADRenderer = {
         this.capas.elementos.innerHTML = '';
         this.dibujarGrid();
         
-        // Dibujamos elementos respetando el orden del array
         window.AppCore.elementos.forEach(el => {
             if (el.tipo === 'tuberia') this.dibujarTuberia(el);
             else this.dibujarEquipo(el);
@@ -43,35 +42,23 @@ window.CADRenderer = {
         const e = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
         const isSel = window.AppCore.seleccion.includes(el.id);
 
-        // Lógica de ingeniería para alertas visuales
-        const calc = window.GasEngine.calculateFlow({
-            diamNominal: el.props.diamNominal || '1/2"',
-            longitud: el.props.longitudManual || 1,
-            caudal: el.props.caudal || 2.5,
-            tipoGas: 'NATURAL',
-            presionEntrada: 19
-        });
-
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
         
-        // Mantener colores originales + alertas de velocidad
-        let stroke = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
-        if (!isSel && calc.estado === 'CRÍTICO') stroke = "#ff4444";
+        // Color original restaurado: Verde si hay cambio en Z, Amarillo si es plano
+        let color = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
         
-        line.setAttribute("stroke", stroke);
+        line.setAttribute("stroke", color);
         line.setAttribute("stroke-width", isSel ? "5" : "3");
         line.setAttribute("stroke-linecap", "round");
         this.capas.elementos.appendChild(line);
 
-        // Etiqueta de longitud (Original)
         if (el.props.longitudManual) {
             const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
             txt.setAttribute("x", (s.x + e.x) / 2); txt.setAttribute("y", (s.y + e.y) / 2 - 8);
-            txt.setAttribute("fill", "#fff"); txt.setAttribute("font-size", "10px");
-            txt.setAttribute("text-anchor", "middle"); 
-            txt.textContent = (el.props.tag ? el.props.tag + ": " : "") + el.props.longitudManual + "m";
+            txt.setAttribute("fill", "white"); txt.setAttribute("font-size", "10px");
+            txt.setAttribute("text-anchor", "middle"); txt.textContent = el.props.longitudManual + "m";
             this.capas.elementos.appendChild(txt);
         }
     },
@@ -82,11 +69,13 @@ window.CADRenderer = {
         const size = 32 * escala;
         const rot = el.props.rotacionAxial || 0;
         const isSel = window.AppCore.seleccion.includes(el.id);
-        const color = isSel ? '#0071eb' : (el.props.colorRef || '#ffffff');
 
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        // Pivot point central para la rotación axial
+        // Lógica de centrado absoluto recuperada
         group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rot}) translate(${-size/2}, ${-size/2})`);
+        
+        const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+        foreignObj.setAttribute("width", size); foreignObj.setAttribute("height", size);
         
         let iconHTML = window.ICONS.SOPORTE;
         if (el.idCatalogo) {
@@ -94,19 +83,15 @@ window.CADRenderer = {
             iconHTML = window.ICONS[idKey] || window.ICONS[idKey.split('_').pop()] || window.ICONS.SOPORTE;
         }
 
-        const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-        foreignObj.setAttribute("width", size); foreignObj.setAttribute("height", size);
-        foreignObj.innerHTML = `<div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};">${iconHTML}</div>`;
-        
+        foreignObj.innerHTML = `<div style="color:${isSel ? '#0071eb' : '#fff'}; width:100%; height:100%;">${iconHTML}</div>`;
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
 
-        // Tag Identificador debajo del icono
+        // Texto descriptivo (Original)
         const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
         txt.setAttribute("x", p.x); txt.setAttribute("y", p.y + (size/2) + 12);
-        txt.setAttribute("fill", isSel ? "#0071eb" : "#888"); txt.setAttribute("font-size", "9px");
-        txt.setAttribute("font-weight", "bold"); txt.setAttribute("text-anchor", "middle"); 
-        txt.textContent = el.props.tag || el.props.name || "";
+        txt.setAttribute("fill", "#888"); txt.setAttribute("font-size", "9px");
+        txt.setAttribute("text-anchor", "middle"); txt.textContent = el.props.tag || el.props.name || "";
         this.capas.elementos.appendChild(txt);
     },
 
@@ -116,7 +101,7 @@ window.CADRenderer = {
             const v = window.estado.view;
             world.setAttribute('transform', `translate(${v.x}, ${v.y}) scale(${v.scale})`);
         }
-        // Restauración de HUD
+        
         const hudZ = document.getElementById('hud-z');
         const hudScale = document.getElementById('hud-scale');
         if (hudZ) hudZ.innerText = window.estado.currentZ.toFixed(2);
