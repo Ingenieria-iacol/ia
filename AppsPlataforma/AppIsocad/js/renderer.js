@@ -9,7 +9,10 @@ window.CADRenderer = {
     },
 
     dibujarEscena: function() {
-        this.limpiarCapas();
+        // NO limpiar la capa UI aquí para evitar parpadeo del Snap
+        this.capas.grid.innerHTML = '';
+        this.capas.elementos.innerHTML = '';
+        
         this.dibujarGrid();
         window.AppCore.elementos.forEach(el => {
             if (el.tipo === 'tuberia') this.dibujarTuberia(el);
@@ -19,8 +22,9 @@ window.CADRenderer = {
     },
 
     dibujarGrid: function() {
-        const grid = this.capas.grid; grid.innerHTML = '';
-        const tam = 15; let d = "";
+        const grid = this.capas.grid;
+        const tam = 15; 
+        let d = "";
         for (let i = -tam; i <= tam; i++) {
             let p1 = window.CADMath.isoToScreen(-tam, i, 0);
             let p2 = window.CADMath.isoToScreen(tam, i, 0);
@@ -42,7 +46,6 @@ window.CADRenderer = {
 
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
-        // Color: Azul si seleccionado, Verde si es vertical, Amarillo si es horizontal
         line.setAttribute("stroke", isSel ? "#0071eb" : (el.dz !== 0 ? "#00ffcc" : "#ffd700"));
         line.setAttribute("stroke-width", isSel ? "5" : "3");
         line.setAttribute("stroke-linecap", "round");
@@ -91,8 +94,7 @@ window.CADRenderer = {
             const v = window.estado.view;
             world.setAttribute('transform', `translate(${v.x}, ${v.y}) scale(${v.scale})`);
         }
-        const hudZ = document.getElementById('hud-z');
-        if (hudZ) hudZ.innerText = window.estado.currentZ.toFixed(2);
+        document.getElementById('hud-z').innerText = window.estado.currentZ.toFixed(2);
     },
 
     limpiarCapas: function() {
