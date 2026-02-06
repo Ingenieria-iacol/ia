@@ -1,5 +1,5 @@
 /**
- * iu/props.js - REVISIÓN QUIRÚRGICA V7.1
+ * iu/props.js - RESTAURACIÓN QUIRÚRGICA FINAL
  */
 window.PropsPanel = {
     abrir: function(el) {
@@ -10,7 +10,7 @@ window.PropsPanel = {
         card.style.display = 'block';
         let html = `<h3 style="margin:0 0 10px 0; font-size:0.9rem; color:#0071eb; border-bottom:1px solid #333; padding-bottom:5px;">${el.tipo.toUpperCase()}</h3>`;
         
-        // TAG (Identificador para ingeniería)
+        // --- IDENTIFICADOR (TAG) ---
         html += `
             <div class="prop-row">
                 <label>Tag / Identificador</label>
@@ -19,7 +19,7 @@ window.PropsPanel = {
             </div>
         `;
 
-        // ELEVACIÓN Z (Propiedad original crítica para isometrico)
+        // --- ELEVACIÓN Z (Crítica para el motor de gas) ---
         html += `
             <div class="prop-row">
                 <label>Elevación Z (m)</label>
@@ -40,12 +40,12 @@ window.PropsPanel = {
                 </div>
             `;
         } else {
-            // Rotación axial, escala y color para válvulas/equipos
+            // --- PROPIEDADES DE TRANSFORMACIÓN ---
             const rot = el.props.rotacionAxial || 0;
             html += `
                 <div class="prop-row">
-                    <label>Orientación (Girar)</label>
-                    <button class="btn" style="width:100%; height:32px;" onclick="window.PropsPanel.toggleRotacion(${el.id})">
+                    <label>Orientación Axial</label>
+                    <button class="btn" style="width:100%; height:32px; cursor:pointer;" onclick="window.PropsPanel.toggleRotacion(${el.id})">
                         ${rot === 0 ? '⬌ Horizontal' : '⬈ Vertical'}
                     </button>
                 </div>
@@ -55,14 +55,14 @@ window.PropsPanel = {
                         style="width:100%" oninput="window.PropsPanel.actualizarProp(${el.id}, 'escala', parseFloat(this.value))">
                 </div>
                 <div class="prop-row">
-                    <label>Color</label>
+                    <label>Color Personalizado</label>
                     <input type="color" value="${el.props.colorRef || '#ffffff'}" 
                         onchange="window.PropsPanel.actualizarProp(${el.id}, 'colorRef', this.value)">
                 </div>
             `;
         }
 
-        // Botón eliminar original
+        // Botón eliminar vinculado a AppCore
         html += `
             <button class="btn" style="width:100%; margin-top:15px; background:#922; color:white; border:none;" 
                 onclick="window.AppCore.borrarSeleccion()">Eliminar</button>
