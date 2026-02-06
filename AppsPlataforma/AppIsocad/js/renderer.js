@@ -1,6 +1,5 @@
 /**
  * js/renderer.js
- * Responsable de la representación gráfica de tuberías y componentes
  */
 window.CADRenderer = {
     capas: {
@@ -12,37 +11,26 @@ window.CADRenderer = {
     dibujarEscena: function() {
         this.limpiarCapas();
         this.dibujarGrid();
-        
-        // Dibujar todos los elementos guardados en el Core
         window.AppCore.elementos.forEach(el => {
-            if (!el.visible) return;
-            if (el.tipo === 'tuberia') {
-                this.dibujarTuberia(el);
-            } else {
-                this.dibujarEquipo(el); // Ahora procesa válvulas, medidores, etc.
-            }
+            if (el.tipo === 'tuberia') this.dibujarTuberia(el);
+            else this.dibujarEquipo(el); // ESTO FALTABA
         });
-
         this.actualizarTransformacion();
     },
 
     dibujarGrid: function() {
-        const grid = this.capas.grid;
-        grid.innerHTML = '';
-        const tamano = 20; 
-        let d = "";
-        for (let i = -tamano; i <= tamano; i++) {
-            let p1 = window.CADMath.isoToScreen(-tamano, i, 0);
-            let p2 = window.CADMath.isoToScreen(tamano, i, 0);
+        const grid = this.capas.grid; grid.innerHTML = '';
+        const tam = 15; let d = "";
+        for (let i = -tam; i <= tam; i++) {
+            let p1 = window.CADMath.isoToScreen(-tam, i, 0);
+            let p2 = window.CADMath.isoToScreen(tam, i, 0);
             d += `M${p1.x},${p1.y} L${p2.x},${p2.y} `;
-            let p3 = window.CADMath.isoToScreen(i, -tamano, 0);
-            let p4 = window.CADMath.isoToScreen(i, tamano, 0);
+            let p3 = window.CADMath.isoToScreen(i, -tam, 0);
+            let p4 = window.CADMath.isoToScreen(i, tam, 0);
             d += `M${p3.x},${p3.y} L${p4.x},${p4.y} `;
         }
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("d", d);
-        path.setAttribute("stroke", "#222");
-        path.setAttribute("fill", "none");
+        path.setAttribute("d", d); path.setAttribute("stroke", "#222"); path.setAttribute("fill", "none");
         grid.appendChild(path);
     },
 
@@ -60,46 +48,29 @@ window.CADRenderer = {
         if (el.props.longitudManual) {
             const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
             txt.setAttribute("x", (s.x + e.x) / 2); txt.setAttribute("y", (s.y + e.y) / 2 - 8);
-            txt.setAttribute("fill", "white"); txt.setAttribute("font-size", "11px");
+            txt.setAttribute("fill", "white"); txt.setAttribute("font-size", "10px");
             txt.setAttribute("text-anchor", "middle"); txt.textContent = el.props.longitudManual + "m";
             this.capas.elementos.appendChild(txt);
         }
     },
 
-    /**
-     * Dibuja componentes (Válvulas, Instrumentos, Equipos)
-     */
     dibujarEquipo: function(el) {
         const p = window.CADMath.isoToScreen(el.x, el.y, el.z);
-        const size = 32; // Tamaño estándar del icono en px
-        
+        const size = 32;
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
         group.setAttribute("transform", `translate(${p.x - size/2}, ${p.y - size/2})`);
         
-        // Extraer el ID del icono del catálogo
-        const idIcono = el.idCatalogo?.split('_').pop().toUpperCase() || 'SOPORTE';
-        const iconoHTML = window.ICONS[idIcono] || window.ICONS.SOPORTE;
-        
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-        foreignObj.setAttribute("width", size);
-        foreignObj.setAttribute("height", size);
+        foreignObj.setAttribute("width", size); foreignObj.setAttribute("height", size);
         
-        // Resaltar si está seleccionado
-        const color = window.AppCore.seleccion.includes(el.id) ? "#0071eb" : "#ffffff";
-        foreignObj.innerHTML = `<div style="color:${color}; width:100%; height:100%;">${iconoHTML}</div>`;
+        // Obtenemos el prefijo para buscar en ICONS (v_, eq_, c_)
+        const idIcono = el.idCatalogo?.split('_').pop().toUpperCase() || 'SOPORTE';
+        const iconHTML = window.ICONS[idIcono] || window.ICONS.SOPORTE;
+        
+        foreignObj.innerHTML = `<div style="color:${window.AppCore.seleccion.includes(el.id) ? '#0071eb' : '#fff'}; width:100%; height:100%;">${iconHTML}</div>`;
         
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
-
-        // Etiqueta identificadora debajo del componente
-        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        label.setAttribute("x", p.x);
-        label.setAttribute("y", p.y + 25);
-        label.setAttribute("fill", "#888");
-        label.setAttribute("font-size", "9px");
-        label.setAttribute("text-anchor", "middle");
-        label.textContent = el.props.name || "Componente";
-        this.capas.elementos.appendChild(label);
     },
 
     actualizarTransformacion: function() {
