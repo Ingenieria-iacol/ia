@@ -1,12 +1,11 @@
 /**
- * js/events.js - VERSIÓN INTEGRAL RECONSTRUIDA
+ * js/events.js
  */
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
 let isMovingMouse = false;
 let puntoSnapActivo = null; 
 
-// Bloquear menú contextual para usar clic derecho en rotación
 svgElement.addEventListener('contextmenu', e => e.preventDefault());
 
 svgElement.addEventListener('mousedown', (e) => {
@@ -26,7 +25,6 @@ svgElement.addEventListener('mousemove', (e) => {
     const dx = e.clientX - window.estado.lastMouse.x;
     const dy = e.clientY - window.estado.lastMouse.y;
 
-    // Recuperado: Pan y Rotación original
     if (window.estado.isPanning) {
         window.estado.view.x += dx;
         window.estado.view.y += dy;
@@ -36,7 +34,6 @@ svgElement.addEventListener('mousemove', (e) => {
         window.CADRenderer.dibujarEscena();
     }
 
-    // Nuevo: Magnetismo visual en tiempo real
     puntoSnapActivo = buscarPuntoSnap(e.clientX, e.clientY);
     actualizarGuiaVisual(e);
     
@@ -52,12 +49,9 @@ window.addEventListener('mouseup', (e) => {
     window.estado.isRotating = false;
 });
 
-/**
- * Lógica de Snap Magnético (Cálculo en píxeles de pantalla)
- */
 function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
-    let distanciaMinima = 35; 
+    let distanciaMinima = 40; 
     const rect = svgElement.getBoundingClientRect();
 
     window.AppCore.elementos.forEach(el => {
@@ -125,7 +119,6 @@ function manejarDibujoTuberia(punto) {
             const dx_r = punto.x - window.estado.inicio.x;
             const dy_r = punto.y - window.estado.inicio.y;
             const d_total = Math.sqrt(dx_r**2 + dy_r**2) || 1;
-
             const finX = window.estado.inicio.x + (dx_r / d_total) * L;
             const finY = window.estado.inicio.y + (dy_r / d_total) * L;
 
@@ -196,7 +189,6 @@ function distToSegment(p, v, w) {
 
 window.addEventListener('keydown', (e) => {
     const key = e.key.toLowerCase();
-    // Recuperado: Escape para resetear herramientas
     if (e.key === 'Escape') {
         window.estado.drawing = false;
         window.estado.tool = 'select';
@@ -208,7 +200,6 @@ window.addEventListener('keydown', (e) => {
         document.getElementById('btn-tool-select')?.classList.add('active');
         window.CADRenderer.dibujarEscena();
     }
-    // Recuperado: Q/A para verticalidad
     if ((key === 'q' || key === 'a') && window.estado.drawing) {
         let L = parseFloat(prompt(`Longitud vertical (${key === 'q' ? 'subir' : 'bajar'}):`, "1.0"));
         if (!isNaN(L)) {
@@ -226,7 +217,7 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// Recuperado: Zoom con rueda
+// EVENTO DE ZOOM RESTAURADO
 svgElement.addEventListener('wheel', (e) => {
     e.preventDefault();
     const factor = e.deltaY > 0 ? 0.9 : 1.1;
