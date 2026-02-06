@@ -1,5 +1,5 @@
 /**
- * iu/props.js
+ * iu/props.js - Versión Mejorada
  */
 window.PropsPanel = {
     abrir: function(el) {
@@ -8,8 +8,18 @@ window.PropsPanel = {
         if (!card || !content) return;
 
         card.style.display = 'block';
-        let html = `<h3 style="margin:0; font-size:0.9rem; color:#0071eb;">${el.tipo.toUpperCase()}</h3>`;
+        let html = `<h3 style="margin:0 0 10px 0; font-size:0.9rem; color:#0071eb; border-bottom:1px solid #333; padding-bottom:5px;">${el.tipo.toUpperCase()}</h3>`;
         
+        // --- PROPIEDAD: TAG ---
+        html += `
+            <div class="prop-row">
+                <label>Identificador (Tag)</label>
+                <input type="text" value="${el.props.tag || ''}" placeholder="Ej: V-01" 
+                    onchange="window.PropsPanel.actualizarProp(${el.id}, 'tag', this.value)">
+            </div>
+        `;
+
+        // --- PROPIEDAD: ELEVACIÓN (Existente) ---
         html += `
             <div class="prop-row">
                 <label>Elevación Z (m)</label>
@@ -29,13 +39,55 @@ window.PropsPanel = {
                     </select>
                 </div>
             `;
+        } else {
+            // --- PROPIEDADES PARA EQUIPOS/VÁLVULAS ---
+            
+            // Rotación 0/90
+            const rot = el.props.rotacionAxial || 0;
+            html += `
+                <div class="prop-row">
+                    <label>Orientación</label>
+                    <button class="btn" style="width:100%" onclick="window.PropsPanel.toggleRotacion(${el.id})">
+                        ${rot === 0 ? '⬌ Horizontal' : '⬈ Vertical'}
+                    </button>
+                </div>
+            `;
+
+            // Escala Proporcional
+            html += `
+                <div class="prop-row">
+                    <label>Tamaño (Escala)</label>
+                    <input type="range" min="0.5" max="3" step="0.1" value="${el.props.escala || 1}" 
+                        oninput="window.PropsPanel.actualizarProp(${el.id}, 'escala', this.value)">
+                </div>
+            `;
+
+            // Color del objeto
+            html += `
+                <div class="prop-row">
+                    <label>Color de Representación</label>
+                    <input type="color" value="${el.props.colorRef || '#ffffff'}" 
+                        onchange="window.PropsPanel.actualizarProp(${el.id}, 'colorRef', this.value)">
+                </div>
+            `;
         }
 
         html += `
             <button class="btn" style="width:100%; margin-top:15px; background:#922; color:white; border:none;" 
-                onclick="window.AppCore.borrarSeleccion()">Eliminar</button>
+                onclick="window.AppCore.borrarSeleccion()">Eliminar Objeto</button>
         `;
         content.innerHTML = html;
+    },
+
+    toggleRotacion: function(id) {
+        const el = window.AppCore.elementos.find(x => x.id === id);
+        if (el) {
+            const actual = el.props.rotacionAxial || 0;
+            el.props.rotacionAxial = (actual === 0) ? 90 : 0;
+            window.AppCore.guardarEstado();
+            window.CADRenderer.dibujarEscena();
+            this.abrir(el); // Refrescar panel
+        }
     },
 
     actualizar: function(id, campo, valor) {
@@ -50,7 +102,8 @@ window.PropsPanel = {
     actualizarProp: function(id, prop, valor) {
         const el = window.AppCore.elementos.find(x => x.id === id);
         if (el) {
-            el.props[prop] = valor;
+            // Convertir a número si es escala
+            el.props[prop] = (prop === 'escala') ? parseFloat(valor) : valor;
             window.AppCore.guardarEstado();
             window.CADRenderer.dibujarEscena();
         }
