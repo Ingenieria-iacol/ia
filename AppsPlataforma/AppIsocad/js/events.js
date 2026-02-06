@@ -1,15 +1,13 @@
 /**
  * js/events.js
- * Orquestador de interacción: Rotación, Pan, Dibujo Técnico y Componentes
+ * Orquestador de interacción: Rotación, Pan, Dibujo y Componentes
  */
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
 let isMovingMouse = false;
 
-// Desactivar menú contextual para usar el botón derecho para rotar libremente
+// Desactivar menú contextual para usar el botón derecho para rotar
 svgElement.addEventListener('contextmenu', e => e.preventDefault());
-
-// --- 1. GESTIÓN DE RATÓN (Mousedown, Mousemove, Mouseup) ---
 
 svgElement.addEventListener('mousedown', (e) => {
     window.estado.lastMouse = { x: e.clientX, y: e.clientY };
@@ -28,19 +26,16 @@ svgElement.addEventListener('mousemove', (e) => {
     const dx = e.clientX - window.estado.lastMouse.x;
     const dy = e.clientY - window.estado.lastMouse.y;
 
-    // Lógica de Desplazamiento (Pan) con Click Izquierdo
     if (window.estado.isPanning) {
         window.estado.view.x += dx;
         window.estado.view.y += dy;
         window.CADRenderer.actualizarTransformacion();
     } 
-    // Lógica de Rotación Orbital con Click Derecho
     else if (window.estado.isRotating) {
-        window.estado.view.angle += dx * 0.01; // Sensibilidad de giro
+        window.estado.view.angle += dx * 0.01;
         window.CADRenderer.dibujarEscena();
     }
 
-    // Feedback visual de línea guía durante el dibujo
     if (window.estado.drawing && window.estado.inicio) {
         actualizarGuiaVisual(e);
     }
@@ -51,7 +46,7 @@ svgElement.addEventListener('mousemove', (e) => {
 window.addEventListener('mouseup', (e) => {
     const duration = Date.now() - mouseStartTime;
     
-    // Si fue un clic corto sin arrastre, es una acción de dibujo o selección
+    // Si fue un clic corto sin mucho arrastre, ejecutar acción
     if (duration < 250 && !isMovingMouse && e.button === 0) {
         ejecutarAccionPrincipal(e);
     }
@@ -60,24 +55,18 @@ window.addEventListener('mouseup', (e) => {
     window.estado.isRotating = false;
 });
 
-// --- 2. LÓGICA DE ACCIONES (Dibujo, Inserción y Selección) ---
-
 function ejecutarAccionPrincipal(e) {
     const rect = svgElement.getBoundingClientRect();
     const xRaw = (e.clientX - rect.left - window.estado.view.x) / window.estado.view.scale;
     const yRaw = (e.clientY - rect.top - window.estado.view.y) / window.estado.view.scale;
     const puntoRaw = window.CADMath.screenToIso(xRaw, yRaw);
-    
-    // Snap magnético cada 0.5 metros para precisión de ingeniería
-    const puntoIso = { 
-        x: Math.round(puntoRaw.x * 2) / 2, 
-        y: Math.round(puntoRaw.y * 2) / 2 
-    };
+    const puntoIso = { x: Math.round(puntoRaw.x * 2) / 2, y: Math.round(puntoRaw.y * 2) / 2 };
 
     if (window.estado.tool === 'tool-pipe') {
         manejarDibujoTuberia(puntoIso);
-    } else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
-        // Inserción de componentes del catálogo (Válvulas, Medidores, etc.)
+    } 
+    // LÓGICA DE INSERCIÓN DE OBJETOS
+    else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
         window.AppCore.agregarElemento({
             tipo: 'equipo', 
             x: puntoIso.x, 
@@ -100,27 +89,20 @@ function manejarDibujoTuberia(punto) {
         window.estado.drawing = true;
         window.estado.inicio = { ...punto, z: window.estado.currentZ };
     } else {
-        let L_input = prompt("Longitud horizontal (m):", "1.0");
-        let L = parseFloat(L_input);
-        
+        let L = parseFloat(prompt("Longitud horizontal (m):", "1.0"));
         if (!isNaN(L) && L > 0) {
             const dx_r = punto.x - window.estado.inicio.x;
             const dy_r = punto.y - window.estado.inicio.y;
             const dist = Math.sqrt(dx_r**2 + dy_r**2) || 1;
-            
-            // Ajuste simétrico del tramo según la longitud ingresada
             const finX = window.estado.inicio.x + (dx_r / dist) * L;
             const finY = window.estado.inicio.y + (dy_r / dist) * L;
 
             window.AppCore.agregarElemento({
                 tipo: 'tuberia',
                 x: window.estado.inicio.x, y: window.estado.inicio.y, z: window.estado.inicio.z,
-                dx: finX - window.estado.inicio.x, 
-                dy: finY - window.estado.inicio.y, 
-                dz: 0,
+                dx: finX - window.estado.inicio.x, dy: finY - window.estado.inicio.y, dz: 0,
                 props: { longitudManual: L, diamNominal: '1/2"' }
             });
-            // El punto final se convierte en el nuevo inicio para dibujo continuo
             window.estado.inicio = { x: finX, y: finY, z: window.estado.currentZ };
         }
         document.getElementById('ui-layer').innerHTML = '';
@@ -131,15 +113,15 @@ function manejarSeleccion(clickX, clickY) {
     const encontrado = window.AppCore.elementos.find(el => {
         const pos = window.CADMath.isoToScreen(el.x, el.y, el.z);
         const dist = Math.hypot(pos.x - clickX, pos.y - clickY);
-        return dist < 20; // Tolerancia de clic en píxeles
+        return dist < 20;
     });
 
     if (encontrado) {
         window.AppCore.seleccion = [encontrado.id];
-        if (window.PropsPanel) window.PropsPanel.abrir(encontrado);
+        window.PropsPanel.abrir(encontrado);
     } else {
         window.AppCore.seleccion = [];
-        if (window.PropsPanel) window.PropsPanel.cerrar();
+        window.PropsPanel.cerrar();
     }
     window.CADRenderer.dibujarEscena();
 }
@@ -162,28 +144,22 @@ function actualizarGuiaVisual(e) {
     uiLayer.appendChild(line);
 }
 
-// --- 3. ATAJOS DE TECLADO Y ZOOM ---
-
 window.addEventListener('keydown', (e) => {
     const key = e.key.toLowerCase();
-    
-    // ESC: Cancelar acción actual y volver a Selección
     if (e.key === 'Escape') {
         window.estado.drawing = false;
         window.estado.tool = 'select';
         window.estado.activeItem = null;
         window.AppCore.seleccion = [];
         document.getElementById('ui-layer').innerHTML = '';
-        if (window.PropsPanel) window.PropsPanel.cerrar();
+        window.PropsPanel.cerrar();
         document.querySelectorAll('.tool-item').forEach(el => el.classList.remove('active'));
         document.getElementById('btn-tool-select')?.classList.add('active');
         window.CADRenderer.dibujarEscena();
     }
 
-    // Q (Subir) / A (Bajar): Tramos verticales con longitud manual
     if ((key === 'q' || key === 'a') && window.estado.drawing) {
-        let L_input = prompt(`Longitud vertical para ${key === 'q' ? 'SUBIR' : 'BAJAR'} (m):`, "1.0");
-        let L = parseFloat(L_input);
+        let L = parseFloat(prompt(`Longitud vertical (${key === 'q' ? 'subir' : 'bajar'}):`, "1.0"));
         if (!isNaN(L)) {
             const dz = (key === 'q') ? L : -L;
             window.AppCore.agregarElemento({
@@ -199,7 +175,6 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// Zoom con Rueda del Ratón
 svgElement.addEventListener('wheel', (e) => {
     e.preventDefault();
     const factor = e.deltaY > 0 ? 0.9 : 1.1;
