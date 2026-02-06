@@ -1,6 +1,5 @@
 /**
  * iu/props.js
- * Gestiona el panel de propiedades de los elementos seleccionados.
  */
 window.PropsPanel = {
     abrir: function(el) {
@@ -9,11 +8,8 @@ window.PropsPanel = {
         if (!card || !content) return;
 
         card.style.display = 'block';
-        
-        // Construcción del encabezado
         let html = `<h3 style="margin:0; font-size:0.9rem; color:#0071eb;">${el.tipo.toUpperCase()}</h3>`;
         
-        // Propiedad común: Elevación
         html += `
             <div class="prop-row">
                 <label>Elevación Z (m)</label>
@@ -22,7 +18,6 @@ window.PropsPanel = {
             </div>
         `;
 
-        // Propiedades específicas para tuberías
         if (el.tipo === 'tuberia') {
             html += `
                 <div class="prop-row">
@@ -36,12 +31,10 @@ window.PropsPanel = {
             `;
         }
 
-        // Botón de eliminación
         html += `
             <button class="btn" style="width:100%; margin-top:15px; background:#922; color:white; border:none;" 
                 onclick="window.AppCore.borrarSeleccion()">Eliminar</button>
         `;
-        
         content.innerHTML = html;
     },
 
