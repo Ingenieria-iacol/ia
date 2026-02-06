@@ -13,7 +13,7 @@ window.CADRenderer = {
         this.dibujarGrid();
         window.AppCore.elementos.forEach(el => {
             if (el.tipo === 'tuberia') this.dibujarTuberia(el);
-            else this.dibujarEquipo(el); // ESTO FALTABA
+            else this.dibujarEquipo(el);
         });
         this.actualizarTransformacion();
     },
@@ -41,7 +41,7 @@ window.CADRenderer = {
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
         line.setAttribute("stroke", window.AppCore.seleccion.includes(el.id) ? "#0071eb" : (el.props.isVertical ? "#00ff00" : "#ffd700"));
-        line.setAttribute("stroke-width", "3");
+        line.setAttribute("stroke-width", window.AppCore.seleccion.includes(el.id) ? "5" : "3");
         line.setAttribute("stroke-linecap", "round");
         this.capas.elementos.appendChild(line);
 
@@ -63,14 +63,26 @@ window.CADRenderer = {
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
         foreignObj.setAttribute("width", size); foreignObj.setAttribute("height", size);
         
-        // Obtenemos el prefijo para buscar en ICONS (v_, eq_, c_)
-        const idIcono = el.idCatalogo?.split('_').pop().toUpperCase() || 'SOPORTE';
-        const iconHTML = window.ICONS[idIcono] || window.ICONS.SOPORTE;
+        // Mapeo inteligente de iconos basado en el ID del catálogo
+        let idKey = "SOPORTE";
+        if (el.idCatalogo) {
+            const parts = el.idCatalogo.toUpperCase().split('_');
+            idKey = parts[parts.length - 1]; // Toma la última parte: BOLA, MEDIDOR, etc.
+        }
+
+        const iconHTML = window.ICONS[idKey] || window.ICONS.SOPORTE;
+        const isSel = window.AppCore.seleccion.includes(el.id);
         
-        foreignObj.innerHTML = `<div style="color:${window.AppCore.seleccion.includes(el.id) ? '#0071eb' : '#fff'}; width:100%; height:100%;">${iconHTML}</div>`;
+        foreignObj.innerHTML = `<div style="color:${isSel ? '#0071eb' : '#fff'}; width:100%; height:100%; filter:${isSel ? 'drop-shadow(0 0 2px #0071eb)' : 'none'};">${iconHTML}</div>`;
         
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
+
+        const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        txt.setAttribute("x", p.x); txt.setAttribute("y", p.y + 25);
+        txt.setAttribute("fill", "#888"); txt.setAttribute("font-size", "9px");
+        txt.setAttribute("text-anchor", "middle"); txt.textContent = el.props.name || "";
+        this.capas.elementos.appendChild(txt);
     },
 
     actualizarTransformacion: function() {
