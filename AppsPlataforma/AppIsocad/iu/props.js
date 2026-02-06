@@ -1,5 +1,5 @@
 /**
- * iu/props.js
+ * iu/props.js - CORREGIDO
  */
 window.PropsPanel = {
     abrir: function(el) {
@@ -8,32 +8,37 @@ window.PropsPanel = {
         if (!card || !content) return;
 
         card.style.display = 'block';
-        content.innerHTML = `
-            <h3 style="margin:0; font-size:0.9rem; color:#0071eb;">${el.tipo.toUpperCase()}</h3>
+        
+        // Construcción limpia del contenido
+        let html = `<h3 style="margin:0; font-size:0.9rem; color:#0071eb;">${el.tipo.toUpperCase()}</h3>`;
+        
+        html += `
             <div class="prop-row">
                 <label>Elevación Z (m)</label>
-                <input type="number" step="0.1" value="${el.z.toFixed(2)}" 
+                <input type="number" step="0.1" value="${(el.z || 0).toFixed(2)}" 
                     onchange="window.PropsPanel.actualizar(${el.id}, 'z', this.value)">
             </div>
         `;
 
         if (el.tipo === 'tuberia') {
-            content.innerHTML += `
+            html += `
                 <div class="prop-row">
                     <label>Diámetro</label>
                     <select onchange="window.PropsPanel.actualizarProp(${el.id}, 'diamNominal', this.value)">
                         <option value='1/2"' ${el.props.diamNominal === '1/2"' ? 'selected' : ''}>1/2"</option>
                         <option value='3/4"' ${el.props.diamNominal === '3/4"' ? 'selected' : ''}>3/4"</option>
+                        <option value='1"' ${el.props.diamNominal === '1"' ? 'selected' : ''}>1"</option>
                     </select>
                 </div>
             `;
         }
 
-        content.innerHTML += `
-            <button class="btn" style="width:100%; margin-top:15px; background:#922;" 
+        html += `
+            <button class="btn" style="width:100%; margin-top:15px; background:#922; color:white; border:none;" 
                 onclick="window.AppCore.borrarSeleccion()">Eliminar</button>
-        ```javascript
         `;
+        
+        content.innerHTML = html;
     },
 
     actualizar: function(id, campo, valor) {
