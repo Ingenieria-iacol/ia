@@ -1,5 +1,5 @@
 /**
- * iu/props.js - Versión Mejorada
+ * iu/props.js - Versión Funcional con Rotación, Escala y Color
  */
 window.PropsPanel = {
     abrir: function(el) {
@@ -10,16 +10,16 @@ window.PropsPanel = {
         card.style.display = 'block';
         let html = `<h3 style="margin:0 0 10px 0; font-size:0.9rem; color:#0071eb; border-bottom:1px solid #333; padding-bottom:5px;">${el.tipo.toUpperCase()}</h3>`;
         
-        // --- PROPIEDAD: TAG ---
+        // --- PROPIEDAD: TAG (Identificador) ---
         html += `
             <div class="prop-row">
-                <label>Identificador (Tag)</label>
-                <input type="text" value="${el.props.tag || ''}" placeholder="Ej: V-01" 
+                <label>Tag / Identificador</label>
+                <input type="text" value="${el.props.tag || ''}" placeholder="Ej: V-101" 
                     onchange="window.PropsPanel.actualizarProp(${el.id}, 'tag', this.value)">
             </div>
         `;
 
-        // --- PROPIEDAD: ELEVACIÓN (Existente) ---
+        // --- PROPIEDAD: ELEVACIÓN (Mantenida) ---
         html += `
             <div class="prop-row">
                 <label>Elevación Z (m)</label>
@@ -40,41 +40,41 @@ window.PropsPanel = {
                 </div>
             `;
         } else {
-            // --- PROPIEDADES PARA EQUIPOS/VÁLVULAS ---
+            // --- NUEVAS PROPIEDADES PARA VÁLVULAS Y EQUIPOS ---
             
-            // Rotación 0/90
+            // Botón de Rotación (Horizontal/Vertical)
             const rot = el.props.rotacionAxial || 0;
             html += `
                 <div class="prop-row">
-                    <label>Orientación</label>
-                    <button class="btn" style="width:100%" onclick="window.PropsPanel.toggleRotacion(${el.id})">
+                    <label>Orientación (Girar)</label>
+                    <button class="btn" style="width:100%; padding:8px;" onclick="window.PropsPanel.toggleRotacion(${el.id})">
                         ${rot === 0 ? '⬌ Horizontal' : '⬈ Vertical'}
                     </button>
                 </div>
             `;
 
-            // Escala Proporcional
+            // Slider de Escala (Tamaño Proporcional)
             html += `
                 <div class="prop-row">
-                    <label>Tamaño (Escala)</label>
+                    <label>Tamaño / Escala: ${(el.props.escala || 1).toFixed(1)}x</label>
                     <input type="range" min="0.5" max="3" step="0.1" value="${el.props.escala || 1}" 
-                        oninput="window.PropsPanel.actualizarProp(${el.id}, 'escala', this.value)">
+                        style="width:100%" oninput="window.PropsPanel.actualizarProp(${el.id}, 'escala', parseFloat(this.value))">
                 </div>
             `;
 
-            // Color del objeto
+            // Selector de Color
             html += `
                 <div class="prop-row">
-                    <label>Color de Representación</label>
+                    <label>Color del Objeto</label>
                     <input type="color" value="${el.props.colorRef || '#ffffff'}" 
-                        onchange="window.PropsPanel.actualizarProp(${el.id}, 'colorRef', this.value)">
+                        style="height:30px;" onchange="window.PropsPanel.actualizarProp(${el.id}, 'colorRef', this.value)">
                 </div>
             `;
         }
 
         html += `
             <button class="btn" style="width:100%; margin-top:15px; background:#922; color:white; border:none;" 
-                onclick="window.AppCore.borrarSeleccion()">Eliminar Objeto</button>
+                onclick="window.AppCore.borrarSeleccion()">Eliminar</button>
         `;
         content.innerHTML = html;
     },
@@ -82,11 +82,11 @@ window.PropsPanel = {
     toggleRotacion: function(id) {
         const el = window.AppCore.elementos.find(x => x.id === id);
         if (el) {
-            const actual = el.props.rotacionAxial || 0;
-            el.props.rotacionAxial = (actual === 0) ? 90 : 0;
+            // Cambia entre 0 y 90 grados
+            el.props.rotacionAxial = (el.props.rotacionAxial === 90) ? 0 : 90;
             window.AppCore.guardarEstado();
             window.CADRenderer.dibujarEscena();
-            this.abrir(el); // Refrescar panel
+            this.abrir(el); // Refresca el panel para ver el cambio de texto en el botón
         }
     },
 
@@ -102,10 +102,10 @@ window.PropsPanel = {
     actualizarProp: function(id, prop, valor) {
         const el = window.AppCore.elementos.find(x => x.id === id);
         if (el) {
-            // Convertir a número si es escala
-            el.props[prop] = (prop === 'escala') ? parseFloat(valor) : valor;
+            el.props[prop] = valor;
             window.AppCore.guardarEstado();
             window.CADRenderer.dibujarEscena();
+            if (prop === 'escala') this.abrir(el); // Actualiza el texto del label de escala
         }
     },
 
