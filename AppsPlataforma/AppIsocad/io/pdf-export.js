@@ -1,116 +1,118 @@
 /**
  * js/io/pdf-export.js
- * Generación de reportes profesionales con Lista de Materiales (BOM)
+ * Generación de reportes profesionales con Lista de Materiales (BOM) y captura de diseño.
  */
 
 window.PDFExport = {
     /**
-     * Genera el PDF usando jsPDF y html2canvas
+     * Genera el PDF usando jsPDF y html2canvas.
      */
     generarReporte: function() {
-        console.log("📄 Generando PDF Profesional...");
+        console.log("📄 Iniciando generación de PDF profesional...");
         
-        // Verificación de librerías para evitar errores de ejecución
+        // Verificación de existencia de librerías para evitar cuelgues
         if (!window.jspdf || !window.html2canvas) {
-            alert("Error: Librerías PDF no cargadas correctamente.");
+            console.error("Librerías jsPDF o html2canvas no encontradas.");
+            alert("Error: Las librerías de exportación no están cargadas.");
             return;
         }
 
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
-        const areaDibujo = document.getElementById('main-area');
+        const mainArea = document.getElementById('main-area');
 
-        if (!areaDibujo) {
-            alert("Error: No se encontró el área de dibujo.");
+        if (!mainArea) {
+            alert("Error: No se pudo localizar el área de dibujo.");
             return;
         }
 
-        // Capturar el área de dibujo (SVG + UI)
-        html2canvas(areaDibujo, {
-            backgroundColor: "#111", // Mantiene el fondo oscuro del CAD
-            scale: 2, // Mejora la resolución del reporte
+        // Capturar el área de trabajo con alta calidad
+        html2canvas(mainArea, {
+            backgroundColor: "#111", // Mantiene el esquema oscuro del CAD
+            scale: 2, // Mejora la definición de líneas y etiquetas
+            useCORS: true,
             logging: false
         }).then(canvas => {
             const imgData = canvas.toDataURL('image/png');
             
-            // --- ENCABEZADO ---
-            doc.setFillColor(31, 31, 31);
-            doc.rect(0, 0, 210, 40, 'F');
+            // --- ENCABEZADO DEL DOCUMENTO ---
+            doc.setFillColor(0, 113, 235); // Color acento del sistema
+            doc.rect(0, 0, 210, 35, 'F');
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(18);
-            doc.text("REPORTE TÉCNICO - ISOMÉTRICO DE GAS", 105, 20, { align: 'center' });
+            doc.text("REPORTE TÉCNICO - ISOMÉTRICO DE GAS", 105, 18, { align: 'center' });
             doc.setFontSize(10);
-            doc.text(`Generado el: ${new Date().toLocaleString()}`, 105, 28, { align: 'center' });
+            doc.text(`Fecha de emisión: ${new Date().toLocaleString()}`, 105, 26, { align: 'center' });
             
-            // --- IMAGEN DEL PROYECTO ---
-            // Ajustamos la imagen para que no se deforme
-            doc.addImage(imgData, 'PNG', 10, 45, 190, 100);
+            // --- IMAGEN DEL CAD ---
+            // Se posiciona el diseño capturado debajo del encabezado
+            doc.addImage(imgData, 'PNG', 10, 40, 190, 100);
             
-            // --- GENERACIÓN DE LISTA DE MATERIALES (BOM) ---
-            // Agrupamos elementos por tipo y diámetro para el conteo técnico
-            const inventario = {};
+            // --- CÁLCULO DE LISTA DE MATERIALES (BOM) ---
+            // Agrupamos elementos para generar un conteo técnico preciso
+            const resumen = {};
             
             window.AppCore.elementos.forEach(el => {
-                let nombreKey = "";
+                let nombre = "";
                 let cantidad = 1;
                 let unidad = "und";
 
                 if (el.tipo === 'tuberia') {
                     const diam = el.props.diamNominal || '1/2"';
-                    nombreKey = `TUBERÍA ${diam}`;
+                    nombre = `TUBERÍA ${diam}`;
                     unidad = "m";
-                    // Calculamos la longitud real usando la fórmula 3D del motor
+                    // Cálculo de longitud real 3D usando los deltas del motor
                     cantidad = Math.sqrt(
                         Math.pow(el.dx || 0, 2) + 
                         Math.pow(el.dy || 0, 2) + 
                         Math.pow(el.dz || 0, 2)
                     );
                 } else {
-                    // Para válvulas y equipos usamos su nombre de catálogo o Tag
-                    nombreKey = (el.props.tag || el.props.name || el.tipo).toUpperCase();
+                    // Prioriza el Tag asignado en el panel sobre el nombre genérico
+                    nombre = (el.props.tag || el.props.name || el.tipo).toUpperCase();
                 }
 
-                if (!inventario[nombreKey]) {
-                    inventario[nombreKey] = { cant: 0, uni: unidad };
+                if (!resumen[nombre]) {
+                    resumen[nombre] = { cant: 0, uni: unidad };
                 }
-                inventario[nombreKey].cant += cantidad;
+                resumen[nombre].cant += cantidad;
             });
 
-            // Convertimos el objeto de inventario en filas para la tabla
-            const filasTabla = Object.keys(inventario).map(nombre => [
-                nombre,
-                inventario[nombre].cant.toFixed(2),
-                inventario[nombre].uni
+            // Formatear datos para la tabla
+            const filasBOM = Object.keys(resumen).map(key => [
+                key,
+                resumen[key].cant.toFixed(2),
+                resumen[key].uni
             ]);
 
-            // --- TABLA DE MATERIALES ---
+            // --- TABLA DE INGENIERÍA ---
             doc.autoTable({
-                startY: 155,
-                head: [['Descripción del Material / Componente', 'Cantidad', 'Unidad']],
-                body: filasTabla,
-                headStyles: { fillColor: [0, 113, 235], textColor: 255 },
-                alternateRowStyles: { fillColor: [245, 245, 245] },
-                margin: { top: 10 },
-                theme: 'grid'
+                startY: 145,
+                head: [['Descripción del Material', 'Cantidad', 'Unidad']],
+                body: filasBOM,
+                headStyles: { fillColor: [0, 113, 235] },
+                alternateRowStyles: { fillColor: [240, 240, 240] },
+                theme: 'grid',
+                styles: { fontSize: 9 }
             });
 
-            // Pie de página
-            const pageCount = doc.internal.getNumberOfPages();
-            for(let i = 1; i <= pageCount; i++) {
+            // Pie de página con numeración
+            const totalPages = doc.internal.getNumberOfPages();
+            for(let i = 1; i <= totalPages; i++) {
                 doc.setPage(i);
                 doc.setFontSize(8);
-                doc.setTextColor(150);
-                doc.text(`CAD Gas v2.6.7 - Página ${i} de ${pageCount}`, 105, 285, { align: 'center' });
+                doc.setTextColor(100);
+                doc.text(`CAD Gas v2.6 - Página ${i} de ${totalPages}`, 105, 285, { align: 'center' });
             }
 
-            doc.save(`Reporte_Ingenieria_${Date.now()}.pdf`);
-            console.log("✅ PDF generado con éxito.");
+            doc.save(`Reporte_Gas_${Date.now()}.pdf`);
+            console.log("✅ Reporte PDF generado exitosamente.");
         }).catch(err => {
-            console.error("❌ Error en PDF:", err);
-            alert("Hubo un problema al generar el reporte.");
+            console.error("Error capturando el área de dibujo:", err);
+            alert("Hubo un error al procesar la imagen del diseño.");
         });
     }
 };
 
-// Reconectar el botón de la interfaz para asegurar que use la nueva función
+// Asegurar la reconexión con el botón del encabezado
 document.getElementById('btn-pdf-gen')?.addEventListener('click', () => window.PDFExport.generarReporte());
