@@ -1,5 +1,5 @@
 /**
- * js/renderer.js - Versión Integrada y Protegida
+ * js/renderer.js - Versión Integrada
  */
 window.CADRenderer = {
     capas: {
@@ -9,7 +9,6 @@ window.CADRenderer = {
     },
 
     dibujarEscena: function() {
-        if (!this.capas.grid || !this.capas.elementos) return; // Protección contra errores de carga
         this.capas.grid.innerHTML = '';
         this.capas.elementos.innerHTML = '';
         this.dibujarGrid();
@@ -42,19 +41,13 @@ window.CADRenderer = {
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         const isSel = window.AppCore.seleccion.includes(el.id);
 
-        // Se mantiene la lógica de colores por tipo (vertical/horizontal)
-        // pero se añade soporte para color personalizado si existe en props
-        let colorTuberia = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
-        if (!isSel && el.props.colorRef) colorTuberia = el.props.colorRef;
-
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
-        line.setAttribute("stroke", colorTuberia);
+        line.setAttribute("stroke", isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700"));
         line.setAttribute("stroke-width", isSel ? "5" : "3");
         line.setAttribute("stroke-linecap", "round");
         this.capas.elementos.appendChild(line);
 
-        // Renderizado de etiqueta de longitud
         if (el.props.longitudManual) {
             const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
             txt.setAttribute("x", (s.x + e.x) / 2); txt.setAttribute("y", (s.y + e.y) / 2 - 8);
@@ -67,16 +60,15 @@ window.CADRenderer = {
     dibujarEquipo: function(el) {
         const p = window.CADMath.isoToScreen(el.x, el.y, el.z);
         
-        // --- NUEVAS PROPIEDADES DINÁMICAS ---
+        // 1. Lógica de Tamaño (Escala)
         const escala = el.props.escala || 1;
-        const size = 32 * escala; // Escala proporcional aplicada
-        const rot = el.props.rotacionAxial || 0; // Rotación en su propio eje
-        const colorBase = el.props.colorRef || "#ffffff"; // Color desde el panel
-        const isSel = window.AppCore.seleccion.includes(el.id);
-        const finalColor = isSel ? '#0071eb' : colorBase;
+        const size = 32 * escala; 
+        
+        // 2. Lógica de Rotación Axial
+        const rot = el.props.rotacionAxial || 0;
 
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        // Transformación: Mueve al punto ISO -> Rota -> Centra el icono
+        // IMPORTANTE: Primero trasladamos al punto, luego rotamos, luego centramos el icono
         group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rot}) translate(${-size/2}, ${-size/2})`);
         
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
@@ -89,23 +81,27 @@ window.CADRenderer = {
             iconHTML = window.ICONS[idKey] || window.ICONS[idKey.split('_').pop()] || window.ICONS.SOPORTE;
         }
 
+        // 3. Lógica de Color
+        const isSel = window.AppCore.seleccion.includes(el.id);
+        const colorFinal = isSel ? '#0071eb' : (el.props.colorRef || '#ffffff');
+        
         foreignObj.innerHTML = `
-            <div style="color:${finalColor}; width:100%; height:100%; filter:${isSel ? 'drop-shadow(0 0 2px #0071eb)' : 'none'};">
+            <div style="color:${colorFinal}; width:100%; height:100%; filter:${isSel ? 'drop-shadow(0 0 2px #0071eb)' : 'none'};">
                 ${iconHTML}
             </div>`;
         
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
 
-        // --- RENDERIZADO DE TAG / IDENTIFICADOR ---
+        // 4. Lógica de TAG / Texto
         const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
         txt.setAttribute("x", p.x); 
-        txt.setAttribute("y", p.y + (size/2) + 12); // Posición dinámica según tamaño
+        txt.setAttribute("y", p.y + (size/2) + 12);
         txt.setAttribute("fill", isSel ? "#0071eb" : "#888"); 
-        txt.setAttribute("font-size", "9px");
+        txt.setAttribute("font-size", "10px");
         txt.setAttribute("font-weight", "bold");
         txt.setAttribute("text-anchor", "middle"); 
-        // Prioriza el Tag asignado sobre el nombre del catálogo
+        // Mostrar el TAG si existe, sino el nombre por defecto
         txt.textContent = el.props.tag || el.props.name || "";
         this.capas.elementos.appendChild(txt);
     },
@@ -117,7 +113,6 @@ window.CADRenderer = {
             world.setAttribute('transform', `translate(${v.x}, ${v.y}) scale(${v.scale})`);
         }
         
-        // Mantenimiento de la información HUD
         const hudZ = document.getElementById('hud-z');
         const hudScale = document.getElementById('hud-scale');
         if (hudZ) hudZ.innerText = window.estado.currentZ.toFixed(2);
