@@ -1,5 +1,5 @@
 /**
- * js/renderer.js - RESTAURADO Y MEJORADO
+ * js/renderer.js - Revisión Quirúrgica V2.6.7
  */
 window.CADRenderer = {
     capas: {
@@ -13,6 +13,8 @@ window.CADRenderer = {
         this.capas.grid.innerHTML = '';
         this.capas.elementos.innerHTML = '';
         this.dibujarGrid();
+        
+        // Dibujamos elementos respetando el orden del array
         window.AppCore.elementos.forEach(el => {
             if (el.tipo === 'tuberia') this.dibujarTuberia(el);
             else this.dibujarEquipo(el);
@@ -41,22 +43,35 @@ window.CADRenderer = {
         const e = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
         const isSel = window.AppCore.seleccion.includes(el.id);
 
+        // Lógica de ingeniería para alertas visuales
+        const calc = window.GasEngine.calculateFlow({
+            diamNominal: el.props.diamNominal || '1/2"',
+            longitud: el.props.longitudManual || 1,
+            caudal: el.props.caudal || 2.5,
+            tipoGas: 'NATURAL',
+            presionEntrada: 19
+        });
+
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
         
-        // Color: lógica original (Z != 0 -> verde, else amarillo)
-        let color = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
-        line.setAttribute("stroke", color);
+        // Mantener colores originales + alertas de velocidad
+        let stroke = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
+        if (!isSel && calc.estado === 'CRÍTICO') stroke = "#ff4444";
+        
+        line.setAttribute("stroke", stroke);
         line.setAttribute("stroke-width", isSel ? "5" : "3");
         line.setAttribute("stroke-linecap", "round");
         this.capas.elementos.appendChild(line);
 
+        // Etiqueta de longitud (Original)
         if (el.props.longitudManual) {
             const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
             txt.setAttribute("x", (s.x + e.x) / 2); txt.setAttribute("y", (s.y + e.y) / 2 - 8);
-            txt.setAttribute("fill", "white"); txt.setAttribute("font-size", "10px");
-            txt.setAttribute("text-anchor", "middle"); txt.textContent = el.props.longitudManual + "m";
+            txt.setAttribute("fill", "#fff"); txt.setAttribute("font-size", "10px");
+            txt.setAttribute("text-anchor", "middle"); 
+            txt.textContent = (el.props.tag ? el.props.tag + ": " : "") + el.props.longitudManual + "m";
             this.capas.elementos.appendChild(txt);
         }
     },
@@ -70,7 +85,7 @@ window.CADRenderer = {
         const color = isSel ? '#0071eb' : (el.props.colorRef || '#ffffff');
 
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        // Rotación sobre su propio eje (Centro)
+        // Pivot point central para la rotación axial
         group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rot}) translate(${-size/2}, ${-size/2})`);
         
         let iconHTML = window.ICONS.SOPORTE;
@@ -81,16 +96,17 @@ window.CADRenderer = {
 
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
         foreignObj.setAttribute("width", size); foreignObj.setAttribute("height", size);
-        foreignObj.innerHTML = `<div style="color:${color}; width:100%; height:100%; filter:${isSel ? 'drop-shadow(0 0 2px #0071eb)' : 'none'};">${iconHTML}</div>`;
+        foreignObj.innerHTML = `<div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};">${iconHTML}</div>`;
         
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
 
-        // Renderizado de TAG debajo del objeto
+        // Tag Identificador debajo del icono
         const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
         txt.setAttribute("x", p.x); txt.setAttribute("y", p.y + (size/2) + 12);
         txt.setAttribute("fill", isSel ? "#0071eb" : "#888"); txt.setAttribute("font-size", "9px");
-        txt.setAttribute("text-anchor", "middle"); txt.textContent = el.props.tag || el.props.name || "";
+        txt.setAttribute("font-weight", "bold"); txt.setAttribute("text-anchor", "middle"); 
+        txt.textContent = el.props.tag || el.props.name || "";
         this.capas.elementos.appendChild(txt);
     },
 
@@ -100,7 +116,7 @@ window.CADRenderer = {
             const v = window.estado.view;
             world.setAttribute('transform', `translate(${v.x}, ${v.y}) scale(${v.scale})`);
         }
-        // Actualización HUD (Original restaurada)
+        // Restauración de HUD
         const hudZ = document.getElementById('hud-z');
         const hudScale = document.getElementById('hud-scale');
         if (hudZ) hudZ.innerText = window.estado.currentZ.toFixed(2);
