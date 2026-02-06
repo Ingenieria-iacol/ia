@@ -1,70 +1,127 @@
 /**
- * js/engine/calc.js
- * Lógica de ingeniería y cálculos hidráulicos
+ * iu/props.js - Versión Profesional Consolidada
  */
-window.GasEngine = {
-    // Gravedad específica por tipo de gas
-    GAS_PROPERTIES: {
-        'NATURAL': 0.60,
-        'GLP': 1.52
-    },
+window.PropsPanel = {
+    abrir: function(el) {
+        const card = document.getElementById('prop-card');
+        const content = document.getElementById('prop-content');
+        if (!card || !content) return;
 
-    /**
-     * Convierte diámetros comerciales (pulgadas o mm) a metros reales para cálculos
-     * @param {string} diamStr - Ejemplo: '1/2"' o '25mm'
-     * @returns {number} Diámetro en metros
-     */
-    getInternalDiameter: function(diamStr) {
-        if (!diamStr) return 0.0127; // 1/2" por defecto si hay error
-
-        if (diamStr.includes('"')) {
-            const parts = diamStr.replace('"', '').split('/');
-            const inches = parts.length === 2 ? 
-                parseFloat(parts[0]) / parseFloat(parts[1]) : 
-                parseFloat(parts[0]);
-            return inches * 0.0254; // Convertir pulgadas a metros
-        } 
+        card.style.display = 'block';
+        let html = `<h3 style="margin:0 0 10px 0; font-size:0.9rem; color:#0071eb; border-bottom:1px solid #333; padding-bottom:5px;">${el.tipo.toUpperCase()}</h3>`;
         
-        if (diamStr.toLowerCase().includes('mm')) {
-            return parseFloat(diamStr) / 1000; // Convertir mm a metros
+        // --- PROPIEDAD: TAG (Identificador único para planos) ---
+        html += `
+            <div class="prop-row">
+                <label>Tag / Identificador</label>
+                <input type="text" value="${el.props.tag || ''}" placeholder="Ej: V-101" 
+                    onchange="window.PropsPanel.actualizarProp(${el.id}, 'tag', this.value)">
+            </div>
+        `;
+
+        // --- PROPIEDAD: ELEVACIÓN (Original preservada) ---
+        html += `
+            <div class="prop-row">
+                <label>Elevación Z (m)</label>
+                <input type="number" step="0.1" value="${(el.z || 0).toFixed(2)}" 
+                    onchange="window.PropsPanel.actualizar(${el.id}, 'z', this.value)">
+            </div>
+        `;
+
+        if (el.tipo === 'tuberia') {
+            // Lógica de Ingeniería para tuberías
+            const caudal = el.props.caudal || 2.5;
+            const presion = el.props.presionEntrada || 19;
+            const calc = window.GasEngine.calculateFlow({
+                diamNominal: el.props.diamNominal || '1/2"',
+                longitud: el.props.longitudManual || 1,
+                caudal: caudal,
+                tipoGas: 'NATURAL',
+                presionEntrada: presion
+            });
+
+            html += `
+                <div class="prop-row">
+                    <label>Diámetro Comercial</label>
+                    <select onchange="window.PropsPanel.actualizarProp(${el.id}, 'diamNominal', this.value)">
+                        ${Object.values(window.DIAMETROS_DISPONIBLES).flat().map(d => 
+                            `<option value='${d}' ${el.props.diamNominal === d ? 'selected' : ''}>${d}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+                <div class="prop-row">
+                    <label>Caudal (m³/h)</label>
+                    <input type="number" step="0.1" value="${caudal}" 
+                        onchange="window.PropsPanel.actualizarProp(${el.id}, 'caudal', parseFloat(this.value))">
+                </div>
+                
+                <div style="background:#000; padding:10px; border-radius:4px; margin-top:10px; border-left:3px solid ${calc.estado === 'OK' ? '#0f0' : '#f00'};">
+                    <div style="font-size:0.65rem; color:#888; text-transform:uppercase;">Cálculo de Mueller:</div>
+                    <div style="font-size:0.85rem; font-weight:bold; color:#fff;">ΔP: ${calc.caidaPresionStr} (${calc.porcentajeCaida})</div>
+                    <div style="font-size:0.75rem; color:${calc.estado === 'OK' ? '#aaa' : '#ff4444'};">Vel: ${calc.velocidad} - ${calc.estado}</div>
+                </div>
+            `;
+        } else {
+            // Propiedades para Equipos/Válvulas
+            const rot = el.props.rotacionAxial || 0;
+            html += `
+                <div class="prop-row">
+                    <label>Orientación</label>
+                    <button class="btn" style="width:100%; height:30px;" onclick="window.PropsPanel.toggleRotacion(${el.id})">
+                        ${rot === 0 ? '⬌ Horizontal' : '⬈ Vertical'}
+                    </button>
+                </div>
+                <div class="prop-row">
+                    <label>Tamaño (Escala): ${(el.props.escala || 1).toFixed(1)}x</label>
+                    <input type="range" min="0.5" max="3" step="0.1" value="${el.props.escala || 1}" 
+                        oninput="window.PropsPanel.actualizarProp(${el.id}, 'escala', parseFloat(this.value))">
+                </div>
+                <div class="prop-row">
+                    <label>Color Personalizado</label>
+                    <input type="color" value="${el.props.colorRef || '#ffffff'}" 
+                        onchange="window.PropsPanel.actualizarProp(${el.id}, 'colorRef', this.value)">
+                </div>
+            `;
         }
 
-        return parseFloat(diamStr);
+        html += `
+            <button class="btn" style="width:100%; margin-top:15px; background:#922; color:white; border:none;" 
+                onclick="window.AppCore.borrarSeleccion()">Eliminar Objeto</button>
+        `;
+        content.innerHTML = html;
     },
 
-    /**
-     * Ejecuta el cálculo de Mueller (Aproximación para redes de gas)
-     * @param {object} p - Parámetros: diamNominal, longitud, caudal, tipoGas, presionEntrada
-     */
-    calculateFlow: function(p) {
-        const D = this.getInternalDiameter(p.diamNominal);
-        const L = p.longitud <= 0 ? 0.001 : p.longitud;
-        const S = this.GAS_PROPERTIES[p.tipoGas.toUpperCase()] || 0.60;
-        
-        // Diámetro en pulgadas para la fórmula estándar de Mueller
-        const D_inches = D / 0.0254;
+    toggleRotacion: function(id) {
+        const el = window.AppCore.elementos.find(x => x.id === id);
+        if (el) {
+            el.props.rotacionAxial = (el.props.rotacionAxial === 90) ? 0 : 90;
+            window.AppCore.guardarEstado();
+            window.CADRenderer.dibujarEscena();
+            this.abrir(el);
+        }
+    },
 
-        // Fórmula de caída de presión (mbar)
-        // DeltaP = (Q^2 * L * S) / (1000 * D^5)
-        const drop = (Math.pow(p.caudal, 2) * L * S) / (1000 * Math.pow(D_inches, 5));
-        
-        // Cálculo de Velocidad (m/s)
-        const area = Math.PI * Math.pow(D / 2, 2);
-        const velocity = (p.caudal / 3600) / area;
+    actualizar: function(id, campo, valor) {
+        const el = window.AppCore.elementos.find(x => x.id === id);
+        if (el) {
+            el[campo] = parseFloat(valor);
+            window.AppCore.guardarEstado();
+            window.CADRenderer.dibujarEscena();
+        }
+    },
 
-        // Evaluación de estado según velocidad
-        let status = "OK";
-        if (velocity > 20) status = "ALERTA";
-        if (velocity > 30) status = "CRÍTICO";
+    actualizarProp: function(id, prop, valor) {
+        const el = window.AppCore.elementos.find(x => x.id === id);
+        if (el) {
+            el.props[prop] = valor;
+            window.AppCore.guardarEstado();
+            window.CADRenderer.dibujarEscena();
+            if (prop === 'escala' || prop === 'caudal') this.abrir(el);
+        }
+    },
 
-        return {
-            caidaPresion: drop,
-            caidaPresionStr: drop.toFixed(4) + " mbar",
-            porcentajeCaida: ((drop / p.presionEntrada) * 100).toFixed(2) + "%",
-            velocidad: velocity.toFixed(2) + " m/s",
-            presionSalida: (p.presionEntrada - drop).toFixed(2),
-            estado: status,
-            alerta: (velocity > 20) ? "Velocidad fuera de norma (>20m/s)" : ""
-        };
+    cerrar: function() {
+        const card = document.getElementById('prop-card');
+        if(card) card.style.display = 'none';
     }
 };
