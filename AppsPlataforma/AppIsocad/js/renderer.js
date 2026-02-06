@@ -9,10 +9,8 @@ window.CADRenderer = {
     },
 
     dibujarEscena: function() {
-        // NO limpiar la capa UI aquí para evitar parpadeo del Snap
         this.capas.grid.innerHTML = '';
         this.capas.elementos.innerHTML = '';
-        
         this.dibujarGrid();
         window.AppCore.elementos.forEach(el => {
             if (el.tipo === 'tuberia') this.dibujarTuberia(el);
@@ -23,8 +21,7 @@ window.CADRenderer = {
 
     dibujarGrid: function() {
         const grid = this.capas.grid;
-        const tam = 15; 
-        let d = "";
+        const tam = 15; let d = "";
         for (let i = -tam; i <= tam; i++) {
             let p1 = window.CADMath.isoToScreen(-tam, i, 0);
             let p2 = window.CADMath.isoToScreen(tam, i, 0);
@@ -80,12 +77,6 @@ window.CADRenderer = {
         
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
-
-        const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        txt.setAttribute("x", p.x); txt.setAttribute("y", p.y + 25);
-        txt.setAttribute("fill", "#888"); txt.setAttribute("font-size", "9px");
-        txt.setAttribute("text-anchor", "middle"); txt.textContent = el.props.name || "";
-        this.capas.elementos.appendChild(txt);
     },
 
     actualizarTransformacion: function() {
@@ -95,10 +86,5 @@ window.CADRenderer = {
             world.setAttribute('transform', `translate(${v.x}, ${v.y}) scale(${v.scale})`);
         }
         document.getElementById('hud-z').innerText = window.estado.currentZ.toFixed(2);
-    },
-
-    limpiarCapas: function() {
-        this.capas.elementos.innerHTML = '';
-        this.capas.ui.innerHTML = '';
     }
 };
