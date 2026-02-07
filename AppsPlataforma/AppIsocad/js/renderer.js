@@ -1,5 +1,5 @@
 /**
- * js/renderer.js - VERSIÓN: RENDERIZADO CARDINAL SINCRONIZADO
+ * js/renderer.js - VERSIÓN: ESCALADO FÍSICO REAL
  */
 window.CADRenderer = {
     capas: {
@@ -59,8 +59,14 @@ window.CADRenderer = {
 
     dibujarEquipo: function(el) {
         const p = window.CADMath.isoToScreen(el.x, el.y, el.z);
-        const escala = el.props.escala || 1;
-        const size = 32 * escala;
+        
+        // --- ESCALADO FÍSICO COHERENTE ---
+        // Usamos la longitudReal (0.1m, 0.2m, etc.) para determinar el tamaño visual.
+        // Un objeto de 1m tendrá 64px de ancho. Uno de 10cm (0.1m) tendrá 6.4px.
+        const factorEscalaMundo = 64; 
+        const longitudFisica = el.props.longitudReal || 0.1;
+        const size = longitudFisica * factorEscalaMundo * (el.props.escala || 1);
+        
         const viewDeg = (window.estado.view.angle * 180) / Math.PI;
         const rotFinal = (el.props.rotacionAxial || 0) + viewDeg;
         const isSel = window.AppCore.seleccion.includes(el.id);
@@ -80,7 +86,7 @@ window.CADRenderer = {
         }
 
         foreignObj.innerHTML = `
-            <div style="color:${color}; width:100%; height:100%; background:#111; display:flex; align-items:center; justify-content:center; filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};">
+            <div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};">
                 ${iconHTML}
             </div>`;
         group.appendChild(foreignObj);
