@@ -1,5 +1,5 @@
 /**
- * js/renderer.js - VERSIÓN CON LIMPIEZA VISUAL DE ACCESORIOS
+ * js/renderer.js - VERSIÓN OPTIMIZADA PARA ACOPLAMIENTOS
  */
 window.CADRenderer = {
     capas: {
@@ -46,6 +46,7 @@ window.CADRenderer = {
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
         
+        // Colores: Verde para vertical, Amarillo para horizontal
         let color = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
         
         line.setAttribute("stroke", color);
@@ -71,10 +72,14 @@ window.CADRenderer = {
         const color = isSel ? '#0071eb' : (el.props.colorRef || '#ffffff');
 
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rot}) translate(${-size/2}, ${-size/2})`);
+        // Ajuste quirúrgico: La rotación se aplica sobre el centro exacto para coincidir con los puertos
+        group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rot})`);
         
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-        foreignObj.setAttribute("width", size); foreignObj.setAttribute("height", size);
+        foreignObj.setAttribute("x", -size/2); // Centrado exacto
+        foreignObj.setAttribute("y", -size/2); 
+        foreignObj.setAttribute("width", size); 
+        foreignObj.setAttribute("height", size);
         
         let iconHTML = window.ICONS.SOPORTE;
         if (el.idCatalogo) {
@@ -82,14 +87,13 @@ window.CADRenderer = {
             iconHTML = window.ICONS[idKey] || window.ICONS[idKey.split('_').pop()] || window.ICONS.SOPORTE;
         }
 
-        // --- FONDO SÓLIDO PARA EVITAR SOBREPOSICIÓN VISUAL ---
+        // Fondo sólido para ocultar la tubería sobrante si no se acortó
         foreignObj.innerHTML = `
             <div style="
                 color:${color}; 
                 width:100%; height:100%; 
                 background: #111; 
                 display: flex; align-items: center; justify-content: center;
-                border-radius: 4px;
                 filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};
             ">
                 ${iconHTML}
@@ -98,6 +102,7 @@ window.CADRenderer = {
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
 
+        // Texto informativo del equipo
         const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
         txt.setAttribute("x", p.x); txt.setAttribute("y", p.y + (size/2) + 12);
         txt.setAttribute("fill", isSel ? "#0071eb" : "#888"); txt.setAttribute("font-size", "9px");
