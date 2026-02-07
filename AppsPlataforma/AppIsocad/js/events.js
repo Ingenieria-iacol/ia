@@ -1,5 +1,5 @@
 /**
- * js/events.js - VERSIÓN DEFINITIVA: PRECISIÓN 0.01m Y 4 PUERTOS CARDINALES
+ * js/events.js - VERSIÓN CORREGIDA: PRECISIÓN 0.01m + RESTAURACIÓN DE ESCAPE Y PANELES
  */
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
@@ -48,7 +48,7 @@ function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
     let distanciaMinima = 30; 
     const rect = svgElement.getBoundingClientRect();
-    const distAcople = 0.01; // Precisión máxima solicitada
+    const distAcople = 0.01; 
 
     window.AppCore.elementos.forEach(el => {
         let nodos = [];
@@ -57,8 +57,6 @@ function buscarPuntoSnap(mouseX, mouseY) {
             nodos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz, padreId: el.id, esInicio: false });
         } else {
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
-            
-            // Puertos anclados rígidamente a los ejes del objeto (0, 90, 180, 270 grados)
             const baseRot = ((el.props.rotacionAxial || 0) * Math.PI) / 180;
             for(let i=0; i<4; i++) {
                 const angulo = baseRot + (i * Math.PI / 2);
@@ -213,7 +211,11 @@ function manejarSeleccion(clickX, clickY) {
         return Math.hypot(pos.x - clickX, pos.y - clickY) < 20;
     });
     window.AppCore.seleccion = encontrado ? [encontrado.id] : [];
-    if (encontrado) window.PropsPanel.abrir(encontrado); else window.PropsPanel.cerrar();
+    if (encontrado) {
+        window.PropsPanel.abrir(encontrado);
+    } else {
+        window.PropsPanel.cerrar();
+    }
     window.CADRenderer.dibujarEscena();
 }
 
@@ -226,12 +228,21 @@ function distToSegment(p, v, w) {
 
 window.addEventListener('keydown', (e) => {
     const key = e.key.toLowerCase();
+    
+    // --- RESTAURACIÓN TECLA ESC ---
     if (e.key === 'Escape') {
         window.estado.drawing = false;
         window.estado.tool = 'select';
+        window.estado.activeItem = null;
         window.AppCore.seleccion = [];
+        window.PropsPanel.cerrar();
+        document.querySelectorAll('.tool-item').forEach(el => el.classList.remove('active'));
+        document.getElementById('btn-tool-select')?.classList.add('active');
+        const uiL = document.getElementById('ui-layer');
+        if(uiL) uiL.innerHTML = '';
         window.CADRenderer.dibujarEscena();
     }
+
     if ((key === 'q' || key === 'a') && window.estado.drawing) {
         let L = parseFloat(prompt("Longitud vertical:", "1.0"));
         if (!isNaN(L)) {
