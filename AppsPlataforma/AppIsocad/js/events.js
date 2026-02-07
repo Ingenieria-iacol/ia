@@ -1,5 +1,5 @@
 /**
- * js/events.js - VERSIÓN INTEGRAL QUIRÚRGICA
+ * js/events.js - VERSIÓN INTEGRAL CORREGIDA
  * Gestión de eventos, snap de puertos y prevención de superposiciones.
  */
 const svgElement = document.getElementById('lienzo-cad');
@@ -58,14 +58,12 @@ function buscarPuntoSnap(mouseX, mouseY) {
     window.AppCore.elementos.forEach(el => {
         let nodos = [];
         if (el.tipo === 'tuberia') {
-            // Identificamos extremos para acople inteligente
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id, esInicio: true });
             nodos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz, padreId: el.id, esInicio: false });
         } else {
-            // Nodo Central del equipo
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
             
-            // Puertos de imantado en extremos (Entrada y Salida)
+            // Puertos de imantado en extremos
             const rotRad = ((el.props.rotacionAxial || 0) * Math.PI) / 180;
             const ox = Math.cos(rotRad) * 0.5;
             const oy = Math.sin(rotRad) * 0.5;
@@ -104,35 +102,35 @@ function ejecutarAccionPrincipal(punto) {
         manejarDibujoTuberia(punto);
     } 
     else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
-        const offsetValvula = 0.5; 
+        const offsetAccesorio = 0.5; 
         let finalX = punto.x;
         let finalY = punto.y;
 
-        // 1. Si insertamos sobre una tubería, la acortamos para hacer espacio
+        // Si insertamos sobre una tubería, la acortamos
         if (punto.padreId) {
             const elPadre = window.AppCore.elementos.find(e => e.id === punto.padreId);
             if (elPadre && elPadre.tipo === 'tuberia') {
                 const distT = Math.hypot(elPadre.dx, elPadre.dy, elPadre.dz);
-                if (distT > offsetValvula) {
-                    const ux = elPadre.dx / distT;
-                    const uy = elPadre.dy / distT;
-                    const uz = elPadre.dz / distT;
+                if (distT > offsetAccesorio) {
+                    const ux = elPadre.dx / (distT || 1);
+                    const uy = elPadre.dy / (distT || 1);
+                    const uz = elPadre.dz / (distT || 1);
 
                     if (punto.esInicio) {
-                        elPadre.x += ux * offsetValvula; elPadre.y += uy * offsetValvula; elPadre.z += uz * offsetValvula;
-                        elPadre.dx -= ux * offsetValvula; elPadre.dy -= uy * offsetValvula; elPadre.dz -= uz * offsetValvula;
+                        elPadre.x += ux * offsetAccesorio; elPadre.y += uy * offsetAccesorio; elPadre.z += uz * offsetAccesorio;
+                        elPadre.dx -= ux * offsetAccesorio; elPadre.dy -= uy * offsetAccesorio; elPadre.dz -= uz * offsetAccesorio;
                     } else {
-                        elPadre.dx -= ux * offsetValvula; elPadre.dy -= uy * offsetValvula; elPadre.dz -= uz * offsetValvula;
+                        elPadre.dx -= ux * offsetAccesorio; elPadre.dy -= uy * offsetAccesorio; elPadre.dz -= uz * offsetAccesorio;
                     }
                 }
             }
         }
 
-        // 2. Si es un puerto de otra válvula, ajustamos posición axial
+        // Si es un puerto de otra válvula, desplazamos el centro
         if (punto.isPort) {
             const rotRad = ((window.estado.activeItem.props.rotacionAxial || 0) * Math.PI) / 180;
-            finalX += Math.cos(rotRad) * offsetValvula;
-            finalY += Math.sin(rotRad) * offsetValvula;
+            finalX += Math.cos(rotRad) * offsetAccesorio;
+            finalY += Math.sin(rotRad) * offsetAccesorio;
         }
 
         window.AppCore.agregarElemento({
@@ -186,7 +184,6 @@ function actualizarGuiaVisual(e) {
     const circ = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circ.setAttribute("cx", posScreen.x); circ.setAttribute("cy", posScreen.y);
     
-    // Estilo diferenciado para puertos (receptáculos verdes)
     circ.setAttribute("r", p.isPort ? "6" : (p.padreId ? "10" : "5")); 
     circ.setAttribute("fill", p.isPort ? "#00ff64" : (p.padreId ? "rgba(0, 113, 235, 0.2)" : "none"));
     circ.setAttribute("stroke", p.isPort ? "#fff" : "#0071eb");
