@@ -80,7 +80,7 @@ window.CADRenderer = {
         }
 
         foreignObj.innerHTML = `
-            <div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};">
+            <div style="color:${color}; width:100%; height:100%; background:#111; display:flex; align-items:center; justify-content:center; filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};">
                 ${iconHTML}
             </div>`;
         group.appendChild(foreignObj);
