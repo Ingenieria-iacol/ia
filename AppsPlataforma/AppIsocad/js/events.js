@@ -1,5 +1,5 @@
 /**
- * js/events.js - VERSIÓN: CONEXIÓN POR EXTREMOS (BORDE A BORDE)
+ * js/events.js - VERSIÓN: INGENIERÍA DE PRECISIÓN DINÁMICA
  */
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
@@ -48,9 +48,6 @@ function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
     let distanciaMinima = 30; 
     const rect = svgElement.getBoundingClientRect();
-    
-    // RADIO DEL OBJETO: 0.5m asegura que los puertos estén en los bordes del icono
-    const radioObjeto = 0.5; 
 
     window.AppCore.elementos.forEach(el => {
         let nodos = [];
@@ -58,15 +55,17 @@ function buscarPuntoSnap(mouseX, mouseY) {
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id, esInicio: true });
             nodos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz, padreId: el.id, esInicio: false });
         } else {
+            // --- DIMENSIONADO REAL ---
+            // Si el objeto tiene longitud definida la usamos, sino, 0.1m (10cm) como estándar de válvula
+            const radioFisico = (el.props.longitudReal || 0.1) / 2; 
+
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
-            
-            // Puertos en los EXTREMOS (Norte, Sur, Este, Oeste del objeto)
             const baseRot = ((el.props.rotacionAxial || 0) * Math.PI) / 180;
             for(let i=0; i<4; i++) {
                 const angulo = baseRot + (i * Math.PI / 2);
                 nodos.push({ 
-                    x: el.x + Math.cos(angulo) * radioObjeto, 
-                    y: el.y + Math.sin(angulo) * radioObjeto, 
+                    x: el.x + Math.cos(angulo) * radioFisico, 
+                    y: el.y + Math.sin(angulo) * radioFisico, 
                     z: el.z, padreId: el.id, isPort: true 
                 });
             }
@@ -96,17 +95,35 @@ function ejecutarAccionPrincipal(punto) {
         manejarDibujoTuberia(punto);
     } 
     else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
-        const radioObjeto = 0.5; 
+        // Obtenemos la longitud del catálogo o usamos 0.1m (10cm) por defecto
+        const longitudComp = window.estado.activeItem.props.longitudReal || 0.1;
+        const radioComp = longitudComp / 2;
         let finalX = punto.x;
         let finalY = punto.y;
 
-        // Si es un puerto de otra válvula, desplazamos el centro para que los bordes se toquen
+        if (punto.padreId) {
+            const elPadre = window.AppCore.elementos.find(e => e.id === punto.padreId);
+            if (elPadre && elPadre.tipo === 'tuberia') {
+                const distT = Math.hypot(elPadre.dx, elPadre.dy, elPadre.dz);
+                if (distT > radioComp) {
+                    const ux = elPadre.dx / (distT || 1);
+                    const uy = elPadre.dy / (distT || 1);
+                    const uz = elPadre.dz / (distT || 1);
+                    if (punto.esInicio) {
+                        elPadre.x += ux * radioComp; elPadre.y += uy * radioComp; elPadre.z += uz * radioComp;
+                        elPadre.dx -= ux * radioComp; elPadre.dy -= uy * radioComp; elPadre.dz -= uz * radioComp;
+                    } else {
+                        elPadre.dx -= ux * radioComp; elPadre.dy -= uy * offset; elPadre.dz -= uz * radioComp;
+                    }
+                }
+            }
+        }
+
         if (punto.isPort) {
             const elPadre = window.AppCore.elementos.find(e => e.id === punto.padreId);
             if(elPadre) {
                 const dx = punto.x - elPadre.x;
                 const dy = punto.y - elPadre.y;
-                // Empujamos el nuevo objeto exactamente una unidad de radio hacia afuera
                 finalX = punto.x + dx; 
                 finalY = punto.y + dy;
             }
@@ -116,13 +133,17 @@ function ejecutarAccionPrincipal(punto) {
             tipo: window.estado.activeItem.type, 
             x: finalX, y: finalY, z: punto.z,
             idCatalogo: window.estado.activeItem.id,
-            props: { ...window.estado.activeItem.props, name: window.estado.activeItem.name }
+            props: { 
+                ...window.estado.activeItem.props, 
+                name: window.estado.activeItem.name,
+                longitudReal: longitudComp // Guardamos la dimensión física
+            }
         });
         window.estado.currentZ = punto.z;
     } else {
         const rect = svgElement.getBoundingClientRect();
         const xRel = (window.estado.lastMouse.x - rect.left - window.estado.view.x) / window.estado.view.scale;
-        const yRel = (window.estado.lastMouse.y - rect.top - window.estado.view.y) / window.estado.view.scale;
+        const yRel = (mouseY - rect.top - window.estado.view.y) / window.estado.view.scale;
         manejarSeleccion(xRel, yRel);
     }
 }
@@ -132,7 +153,7 @@ function manejarDibujoTuberia(punto) {
         window.estado.drawing = true;
         window.estado.inicio = { ...punto };
     } else {
-        let L = parseFloat(prompt("Longitud (m):", "1.0"));
+        let L = parseFloat(prompt("Longitud real (m):", "1.0"));
         if (!isNaN(L) && L > 0) {
             const dx_r = punto.x - window.estado.inicio.x;
             const dy_r = punto.y - window.estado.inicio.y;
@@ -212,8 +233,6 @@ function distToSegment(p, v, w) {
 }
 
 window.addEventListener('keydown', (e) => {
-    const key = e.key.toLowerCase();
-    
     if (e.key === 'Escape') {
         window.estado.drawing = false;
         window.estado.tool = 'select';
@@ -226,9 +245,9 @@ window.addEventListener('keydown', (e) => {
         if(uiL) uiL.innerHTML = '';
         window.CADRenderer.dibujarEscena();
     }
-
+    const key = e.key.toLowerCase();
     if ((key === 'q' || key === 'a') && window.estado.drawing) {
-        let L = parseFloat(prompt("Longitud vertical:", "1.0"));
+        let L = parseFloat(prompt("Longitud vertical (m):", "1.0"));
         if (!isNaN(L)) {
             const dz = (key === 'q') ? L : -L;
             window.AppCore.agregarElemento({
