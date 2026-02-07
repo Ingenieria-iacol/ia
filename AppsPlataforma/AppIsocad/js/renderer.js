@@ -1,5 +1,5 @@
 /**
- * js/renderer.js - VERSIÓN SINCRONIZADA
+ * js/renderer.js - VERSIÓN CORREGIDA: ROTACIÓN ANCLADA AL MUNDO
  */
 window.CADRenderer = {
     capas: {
@@ -66,12 +66,17 @@ window.CADRenderer = {
         const p = window.CADMath.isoToScreen(el.x, el.y, el.z);
         const escala = el.props.escala || 1;
         const size = 32 * escala;
-        const rot = el.props.rotacionAxial || 0;
+        
+        // --- CORRECCIÓN DE ROTACIÓN ---
+        // Convertimos el ángulo de la vista de radianes a grados y lo sumamos a la rotación axial
+        const viewDeg = (window.estado.view.angle * 180) / Math.PI;
+        const rotFinal = (el.props.rotacionAxial || 0) + viewDeg;
+        
         const isSel = window.AppCore.seleccion.includes(el.id);
         const color = isSel ? '#0071eb' : (el.props.colorRef || '#ffffff');
 
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rot})`);
+        group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rotFinal})`);
         
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
         foreignObj.setAttribute("x", -size/2); 
