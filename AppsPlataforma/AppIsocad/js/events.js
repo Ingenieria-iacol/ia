@@ -1,5 +1,5 @@
 /**
- * js/events.js
+ * js/events.js - VERSIÓN CORREGIDA PARA ACOPLAMIENTOS
  */
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
@@ -57,8 +57,8 @@ function buscarPuntoSnap(mouseX, mouseY) {
     window.AppCore.elementos.forEach(el => {
         let nodos = [];
         if (el.tipo === 'tuberia') {
-            nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
-            nodos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz, padreId: el.id });
+            nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id, esInicio: true });
+            nodos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz, padreId: el.id, esInicio: false });
         } else {
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
         }
@@ -93,6 +93,34 @@ function ejecutarAccionPrincipal(punto) {
         manejarDibujoTuberia(punto);
     } 
     else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
+        // --- LÓGICA DE ACOPLAMIENTO QUIRÚRGICA ---
+        const offset = 0.2; // Espacio para el accesorio en metros
+        
+        if (punto.padreId) {
+            const elPadre = window.AppCore.elementos.find(e => e.id === punto.padreId);
+            if (elPadre && elPadre.tipo === 'tuberia') {
+                const distTotal = Math.hypot(elPadre.dx, elPadre.dy, elPadre.dz);
+                if (distTotal > offset) {
+                    const ux = elPadre.dx / distTotal;
+                    const uy = elPadre.dy / distTotal;
+                    const uz = elPadre.dz / distTotal;
+
+                    if (punto.esInicio) {
+                        elPadre.x += ux * offset;
+                        elPadre.y += uy * offset;
+                        elPadre.z += uz * offset;
+                        elPadre.dx -= ux * offset;
+                        elPadre.dy -= uy * offset;
+                        elPadre.dz -= uz * offset;
+                    } else {
+                        elPadre.dx -= ux * offset;
+                        elPadre.dy -= uy * offset;
+                        elPadre.dz -= uz * offset;
+                    }
+                }
+            }
+        }
+
         window.AppCore.agregarElemento({
             tipo: 'equipo', 
             x: punto.x, y: punto.y, z: punto.z,
@@ -217,7 +245,6 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// EVENTO DE ZOOM RESTAURADO
 svgElement.addEventListener('wheel', (e) => {
     e.preventDefault();
     const factor = e.deltaY > 0 ? 0.9 : 1.1;
