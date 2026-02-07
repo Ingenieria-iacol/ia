@@ -39,7 +39,7 @@ window.DIAMETROS_DISPONIBLES = {
 };
 
 // ==========================================
-// ICONOS SVG (Estilo P&ID) - CORREGIDO: SE GUARDA EN WINDOW
+// ICONOS SVG (Estilo P&ID)
 // ==========================================
 window.ICONS = {
     PIPE: `<svg viewBox="0 0 24 24"><line x1="2" y1="20" x2="22" y2="4" /></svg>`,
@@ -67,10 +67,7 @@ window.ICONS = {
     BROCHA: `<svg viewBox="0 0 24 24"><rect x="8" y="4" width="8" height="6" /><line x1="8" y1="10" x2="8" y2="13" /><line x1="11" y1="10" x2="11" y2="13" /><line x1="13" y1="10" x2="13" y2="13" /><line x1="16" y1="10" x2="16" y2="13" /><path d="M10,13 L14,13 L13,20 L11,20 Z" /></svg>`
 };
 
-// ALIAS LOCAL (Para que el resto del archivo no se rompa si usa 'ICONS')
 const ICONS = window.ICONS;
-
-// Props Default para Flujo
 const defaultFlow = { diamIn: '1/2"', typeIn: 'hembra', diamOut: '1/2"', typeOut: 'hembra' };
 
 // CATÁLOGO COMPLETO
@@ -87,9 +84,9 @@ window.CATALOGO = {
         { subCat: 'Plásticas', id: 't_pe_met', name: 'PE Métrico', color: '#FFD700', icon: ICONS.PIPE, type: 'tuberia', props: { material: 'pe_metric', diametroNominal: '32mm' } }
     ],
     comp: [
-        { subCat: 'Uniones', id: 'c_union', name: 'Unión Universal', icon: ICONS.UNION, type: 'equipo', props: { tipo: 'accesorio', ...defaultFlow } },
-        { subCat: 'Uniones', id: 'c_brida', name: 'Brida', icon: ICONS.BRIDA, type: 'equipo', props: { tipo: 'accesorio', diamIn:'2"', typeIn:'brida', diamOut:'2"', typeOut:'brida' } },
-        { subCat: 'Válvulas (Aislamiento)', id: 'v_bola', name: 'V. Bola', icon: ICONS.V_BOLA, type: 'valvula', props: { tipo: 'bola', rotacion: 0, ...defaultFlow }, info: { title: "Válvula de Bola", desc: "Cierre rápido 90°." } },
+        { subCat: 'Uniones', id: 'c_union', name: 'Unión Universal', icon: ICONS.UNION, type: 'equipo', props: { tipo: 'accesorio', longitudReal: 0.06, ...defaultFlow } },
+        { subCat: 'Uniones', id: 'c_brida', name: 'Brida', icon: ICONS.BRIDA, type: 'equipo', props: { tipo: 'accesorio', longitudReal: 0.04, diamIn:'2"', typeIn:'brida', diamOut:'2"', typeOut:'brida' } },
+        { subCat: 'Válvulas (Aislamiento)', id: 'v_bola', name: 'V. Bola', icon: ICONS.V_BOLA, type: 'valvula', props: { tipo: 'bola', longitudReal: 0.08, rotacion: 0, ...defaultFlow }, info: { title: "Válvula de Bola", desc: "Cierre rápido 90°." } },
         { 
             subCat: 'Válvulas (Aislamiento)', 
             id: 'v_actuada', 
@@ -98,6 +95,7 @@ window.CATALOGO = {
             type: 'valvula', 
             props: { 
                 tipo: 'actuada', 
+                longitudReal: 0.15,
                 rotacion: 0,
                 voltaje: '24V',
                 corriente: 'DC',
@@ -110,24 +108,24 @@ window.CATALOGO = {
             }, 
             info: { title: "Válvula Actuada", desc: "Control eléctrico/neumático." } 
         },
-        { subCat: 'Válvulas (Regulación)', id: 'v_aguja', name: 'V. Aguja', icon: ICONS.V_AGUJA, type: 'valvula', props: { tipo: 'aguja', rotacion: 0, ...defaultFlow }, info: { title: "V. Aguja", desc: "Control fino." } },
-        { subCat: 'Válvulas (Regulación)', id: 'v_globo', name: 'V. Globo', icon: ICONS.V_GLOBO, type: 'valvula', props: { tipo: 'globo', rotacion: 0, ...defaultFlow }, info: { title: "V. Globo", desc: "Estrangulamiento." } },
-        { subCat: 'Válvulas (Seguridad)', id: 'v_check', name: 'V. Cheque', icon: ICONS.V_CHECK, type: 'valvula', props: { tipo: 'retencion', rotacion: 0, ...defaultFlow }, info: { title: "V. Cheque", desc: "Una vía." } },
-        { subCat: 'Válvulas (Seguridad)', id: 'v_exceso', name: 'Exc. Flujo', icon: ICONS.V_EXCESO, type: 'valvula', props: { tipo: 'exceso', rotacion: 0, ...defaultFlow }, info: { title: "Exc. Flujo", desc: "Cierre por ruptura." } }
+        { subCat: 'Válvulas (Regulación)', id: 'v_aguja', name: 'V. Aguja', icon: ICONS.V_AGUJA, type: 'valvula', props: { tipo: 'aguja', longitudReal: 0.07, rotacion: 0, ...defaultFlow }, info: { title: "V. Aguja", desc: "Control fino." } },
+        { subCat: 'Válvulas (Regulación)', id: 'v_globo', name: 'V. Globo', icon: ICONS.V_GLOBO, type: 'valvula', props: { tipo: 'globo', longitudReal: 0.10, rotacion: 0, ...defaultFlow }, info: { title: "V. Globo", desc: "Estrangulamiento." } },
+        { subCat: 'Válvulas (Seguridad)', id: 'v_check', name: 'V. Cheque', icon: ICONS.V_CHECK, type: 'valvula', props: { tipo: 'retencion', longitudReal: 0.08, rotacion: 0, ...defaultFlow }, info: { title: "V. Cheque", desc: "Una vía." } },
+        { subCat: 'Válvulas (Seguridad)', id: 'v_exceso', name: 'Exc. Flujo', icon: ICONS.V_EXCESO, type: 'valvula', props: { tipo: 'exceso', longitudReal: 0.06, rotacion: 0, ...defaultFlow }, info: { title: "Exc. Flujo", desc: "Cierre por ruptura." } }
     ],
     eq: [
-        { subCat: 'Medición', id: 'eq_medidor', name: 'Medidor G4', icon: ICONS.MEDIDOR, type: 'equipo', props: { modelo: 'G4', diamIn:'1"', typeIn:'macho', diamOut:'1"', typeOut:'macho' } },
-        { subCat: 'Medición', id: 'eq_ecor', name: 'Electro-corrector', icon: ICONS.CORRECTOR, type: 'equipo', props: { modelo: 'EC', ...defaultFlow } },
-        { subCat: 'Regulación', id: 'eq_reg', name: 'Regulador', icon: ICONS.REGULADOR, type: 'equipo', props: { cap: '5 m3/h', diamIn:'1/2"', typeIn:'hembra', diamOut:'1"', typeOut:'hembra' } },
-        { subCat: 'Compresión', id: 'eq_comp', name: 'Compresor', icon: ICONS.COMPRESOR, type: 'equipo', props: { cap: 'HP', ...defaultFlow } }
+        { subCat: 'Medición', id: 'eq_medidor', name: 'Medidor G4', icon: ICONS.MEDIDOR, type: 'equipo', props: { modelo: 'G4', longitudReal: 0.22, diamIn:'1"', typeIn:'macho', diamOut:'1"', typeOut:'macho' } },
+        { subCat: 'Medición', id: 'eq_ecor', name: 'Electro-corrector', icon: ICONS.CORRECTOR, type: 'equipo', props: { modelo: 'EC', longitudReal: 0.18, ...defaultFlow } },
+        { subCat: 'Regulación', id: 'eq_reg', name: 'Regulador', icon: ICONS.REGULADOR, type: 'equipo', props: { cap: '5 m3/h', longitudReal: 0.14, diamIn:'1/2"', typeIn:'hembra', diamOut:'1"', typeOut:'hembra' } },
+        { subCat: 'Compresión', id: 'eq_comp', name: 'Compresor', icon: ICONS.COMPRESOR, type: 'equipo', props: { cap: 'HP', longitudReal: 0.40, ...defaultFlow } }
     ],
     inst: [
-          { subCat: 'Presión', id: 'i_mano', name: 'Manómetro', icon: ICONS.MANOMETRO, type: 'equipo', props: { rango: '0-60 psi', diamIn:'1/4"', typeIn:'macho' } },
-          { subCat: 'Presión', id: 'i_pres', name: 'Presostato', icon: ICONS.PRESOSTATO, type: 'equipo', props: { set: 'High', diamIn:'1/4"', typeIn:'hembra' } },
-          { subCat: 'Seguridad', id: 'i_ion', name: 'Sensor Ionizado', icon: ICONS.SENSOR, type: 'equipo', props: { tipo: 'Ion' } }
+          { subCat: 'Presión', id: 'i_mano', name: 'Manómetro', icon: ICONS.MANOMETRO, type: 'equipo', props: { rango: '0-60 psi', longitudReal: 0.05, diamIn:'1/4"', typeIn:'macho' } },
+          { subCat: 'Presión', id: 'i_pres', name: 'Presostato', icon: ICONS.PRESOSTATO, type: 'equipo', props: { set: 'High', longitudReal: 0.08, diamIn:'1/4"', typeIn:'hembra' } },
+          { subCat: 'Seguridad', id: 'i_ion', name: 'Sensor Ionizado', icon: ICONS.SENSOR, type: 'equipo', props: { tipo: 'Ion', longitudReal: 0.04 } }
     ],
     perif: [
-        { subCat: 'Soportes', id: 'p_sop', name: 'Soporte', icon: ICONS.SOPORTE, type: 'equipo', props: { tipo: 'soporte' } },
+        { subCat: 'Soportes', id: 'p_sop', name: 'Soporte', icon: ICONS.SOPORTE, type: 'equipo', props: { tipo: 'soporte', longitudReal: 0.05 } },
         { 
             subCat: 'Tanques', 
             id: 'p_tanque', 
@@ -135,20 +133,13 @@ window.CATALOGO = {
             icon: ICONS.TANQUE, 
             type: 'equipo', 
             props: { 
-            tipo: 'tanque_glp',
-            diametro: 2.0,       
-            longitud: 6.0,       
-            capacidadGalones: 1000,
-            numConexiones: 2,
-            rotacion: 0, 
-            checklist: {         
-                    rotogate: false,
-                    indicadorLlenado: true,
-                    multivalvulas: false,
-                    drenaje: true,
-                    valvulaAlivio: true,
-                    valvulaLlenado: true
-                }
+                tipo: 'tanque_glp',
+                longitudReal: 2.50,
+                diametro: 2.0,       
+                longitud: 6.0,       
+                capacidadGalones: 1000,
+                numConexiones: 2,
+                rotacion: 0
             } 
         }
     ],
