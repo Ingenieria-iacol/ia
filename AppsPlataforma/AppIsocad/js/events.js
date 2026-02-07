@@ -1,5 +1,5 @@
 /**
- * js/events.js - VERSIÓN: ACOPLE PRECISO Y MARCADOR DE CRUZ
+ * js/events.js - VERSIÓN: 4 PUNTOS DE ACOPLE (CRUCES)
  */
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
@@ -48,7 +48,7 @@ function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
     let distanciaMinima = 30; 
     const rect = svgElement.getBoundingClientRect();
-    const offsetContacto = 0.25; // Distancia reducida para que se toquen ligeramente
+    const distAcople = 0.25; 
 
     window.AppCore.elementos.forEach(el => {
         let nodos = [];
@@ -56,13 +56,23 @@ function buscarPuntoSnap(mouseX, mouseY) {
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id, esInicio: true });
             nodos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz, padreId: el.id, esInicio: false });
         } else {
+            // Nodo Central
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
-            const rotRad = ((el.props.rotacionAxial || 0) * Math.PI) / 180 + window.estado.view.angle;
-            const ox = Math.cos(rotRad) * offsetContacto;
-            const oy = Math.sin(rotRad) * offsetContacto;
-
-            nodos.push({ x: el.x - ox, y: el.y - oy, z: el.z, padreId: el.id, isPort: true });
-            nodos.push({ x: el.x + ox, y: el.y + oy, z: el.z, padreId: el.id, isPort: true });
+            
+            // --- NUEVA LÓGICA: 4 PUNTOS CARDINALES (CRUCES) ---
+            // Esto asegura que siempre haya un punto alineado con la tubería
+            const baseRot = ((el.props.rotacionAxial || 0) * Math.PI) / 180 + window.estado.view.angle;
+            
+            for(let i=0; i<4; i++) {
+                const angulo = baseRot + (i * Math.PI / 2); // 0, 90, 180, 270 grados
+                nodos.push({ 
+                    x: el.x + Math.cos(angulo) * distAcople, 
+                    y: el.y + Math.sin(angulo) * distAcople, 
+                    z: el.z, 
+                    padreId: el.id, 
+                    isPort: true 
+                });
+            }
         }
 
         nodos.forEach(n => {
@@ -93,7 +103,7 @@ function ejecutarAccionPrincipal(punto) {
         let finalX = punto.x;
         let finalY = punto.y;
 
-        // Acortar tubería ligeramente para el contacto
+        // Acortar tubería si se inserta en un extremo
         if (punto.padreId) {
             const elPadre = window.AppCore.elementos.find(e => e.id === punto.padreId);
             if (elPadre && elPadre.tipo === 'tuberia') {
@@ -114,9 +124,16 @@ function ejecutarAccionPrincipal(punto) {
 
         // Si es un puerto de válvula, posicionar centro para que se toquen
         if (punto.isPort) {
-            const rotRad = ((window.estado.activeItem.props.rotacionAxial || 0) * Math.PI) / 180 + window.estado.view.angle;
-            finalX += Math.cos(rotRad) * distAcople;
-            finalY += Math.sin(rotRad) * distAcople;
+            // El desplazamiento ahora debe ser inverso al ángulo del puerto para centrar el objeto
+            // Simplificamos: el punto de snap 'isPort' ya está en la posición ideal para el borde.
+            // Para que el objeto no se desalinee, calculamos el vector desde el puerto al centro del objeto padre
+            const elPadre = window.AppCore.elementos.find(e => e.id === punto.padreId);
+            if(elPadre) {
+                const dx = punto.x - elPadre.x;
+                const dy = punto.y - elPadre.y;
+                finalX = punto.x + dx; 
+                finalY = punto.y + dy;
+            }
         }
 
         window.AppCore.agregarElemento({
@@ -166,28 +183,26 @@ function actualizarGuiaVisual(e) {
     const pos = window.CADMath.isoToScreen(p.x, p.y, p.z);
 
     if (p.padreId) {
-        // --- DIBUJAR CRUZ (+) EN LUGAR DE CÍRCULO ---
-        const size = 6; 
+        const size = 4; // Cruz más pequeña como solicitaste
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        const l1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        const l2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        
         const color = p.isPort ? "#00ff64" : "#0071eb";
         
-        [l1, l2].forEach((l, i) => {
-            l.setAttribute("x1", i === 0 ? pos.x - size : pos.x);
-            l.setAttribute("y1", i === 0 ? pos.y : pos.y - size);
-            l.setAttribute("x2", i === 0 ? pos.x + size : pos.x);
-            l.setAttribute("y2", i === 0 ? pos.y : pos.y + size);
-            l.setAttribute("stroke", color);
-            l.setAttribute("stroke-width", "2");
-            g.appendChild(l);
-        });
+        const l1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        l1.setAttribute("x1", pos.x - size); l1.setAttribute("y1", pos.y);
+        l1.setAttribute("x2", pos.x + size); l1.setAttribute("y2", pos.y);
+        l1.setAttribute("stroke", color); l1.setAttribute("stroke-width", "1.5");
+        
+        const l2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        l2.setAttribute("x1", pos.x); l2.setAttribute("y1", pos.y - size);
+        l2.setAttribute("x2", pos.x); l2.setAttribute("y2", pos.y + size);
+        l2.setAttribute("stroke", color); l2.setAttribute("stroke-width", "1.5");
+        
+        g.appendChild(l1); g.appendChild(l2);
         uiLayer.appendChild(g);
     } else {
         const circ = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         circ.setAttribute("cx", pos.x); circ.setAttribute("cy", pos.y);
-        circ.setAttribute("r", "3"); circ.setAttribute("fill", "#555");
+        circ.setAttribute("r", "2"); circ.setAttribute("fill", "#666");
         uiLayer.appendChild(circ);
     }
 
