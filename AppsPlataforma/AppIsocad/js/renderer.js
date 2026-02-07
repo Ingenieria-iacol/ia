@@ -1,5 +1,5 @@
 /**
- * js/renderer.js - VERSIÓN CORREGIDA: ROTACIÓN ANCLADA AL MUNDO
+ * js/renderer.js - VERSIÓN: RENDERIZADO ANCLADO Y LIMPIO
  */
 window.CADRenderer = {
     capas: {
@@ -13,7 +13,6 @@ window.CADRenderer = {
         this.capas.grid.innerHTML = '';
         this.capas.elementos.innerHTML = '';
         this.dibujarGrid();
-        
         window.AppCore.elementos.forEach(el => {
             if (el.tipo === 'tuberia') this.dibujarTuberia(el);
             else this.dibujarEquipo(el);
@@ -41,18 +40,14 @@ window.CADRenderer = {
         const s = window.CADMath.isoToScreen(el.x, el.y, el.z);
         const e = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
         const isSel = window.AppCore.seleccion.includes(el.id);
-
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
-        
         let color = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
-        
         line.setAttribute("stroke", color);
         line.setAttribute("stroke-width", isSel ? "5" : "3");
         line.setAttribute("stroke-linecap", "round");
         this.capas.elementos.appendChild(line);
-
         if (el.props.longitudManual) {
             const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
             txt.setAttribute("x", (s.x + e.x) / 2); txt.setAttribute("y", (s.y + e.y) / 2 - 8);
@@ -66,12 +61,8 @@ window.CADRenderer = {
         const p = window.CADMath.isoToScreen(el.x, el.y, el.z);
         const escala = el.props.escala || 1;
         const size = 32 * escala;
-        
-        // --- CORRECCIÓN DE ROTACIÓN ---
-        // Convertimos el ángulo de la vista de radianes a grados y lo sumamos a la rotación axial
         const viewDeg = (window.estado.view.angle * 180) / Math.PI;
         const rotFinal = (el.props.rotacionAxial || 0) + viewDeg;
-        
         const isSel = window.AppCore.seleccion.includes(el.id);
         const color = isSel ? '#0071eb' : (el.props.colorRef || '#ffffff');
 
@@ -79,10 +70,8 @@ window.CADRenderer = {
         group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rotFinal})`);
         
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-        foreignObj.setAttribute("x", -size/2); 
-        foreignObj.setAttribute("y", -size/2); 
-        foreignObj.setAttribute("width", size); 
-        foreignObj.setAttribute("height", size);
+        foreignObj.setAttribute("x", -size/2); foreignObj.setAttribute("y", -size/2); 
+        foreignObj.setAttribute("width", size); foreignObj.setAttribute("height", size);
         
         let iconHTML = window.ICONS.SOPORTE;
         if (el.idCatalogo) {
@@ -91,16 +80,9 @@ window.CADRenderer = {
         }
 
         foreignObj.innerHTML = `
-            <div style="
-                color:${color}; 
-                width:100%; height:100%; 
-                background: #111; 
-                display: flex; align-items: center; justify-content: center;
-                filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};
-            ">
+            <div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};">
                 ${iconHTML}
             </div>`;
-            
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
 
