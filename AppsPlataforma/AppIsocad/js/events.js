@@ -98,33 +98,30 @@ function buscarPuntoSnap(mouseX, mouseY) {
     };
 }
 
+// - js/events.js
 function ejecutarAccionPrincipal(punto) {
     if (window.estado.tool === 'tool-pipe') {
         manejarDibujoTuberia(punto);
     } 
-  // Localiza el bloque 'tool-insert' dentro de ejecutarAccionPrincipal en js/events.js
-else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
-    let posX = punto.x;
-    let posY = punto.y;
+    else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
+        let finalX = punto.x;
+        let finalY = punto.y;
 
-    // Si estamos haciendo snap a un punto que NO es el centro de otro objeto, 
-    // desplazamos el centro de la nueva válvula para que su extremo toque el punto.
-    if (punto.padreId && window.estado.activeItem.type === 'valvula') {
-        const offset = 0.5; 
-        const rot = (window.estado.activeItem.props.rotacionAxial || 0) * (Math.PI / 180);
-        // Empujamos el centro media unidad para que el borde quede en el snap
-        posX += Math.cos(rot) * offset;
-        posY += Math.sin(rot) * offset;
-    }
+        // Si el snap es a un "puerto", ajustamos la posición para que no se solapen los centros
+        if (punto.isPort) {
+            const rotRad = ((window.estado.activeItem.props.rotacionAxial || 0) * Math.PI) / 180;
+            finalX += Math.cos(rotRad) * 0.5;
+            finalY += Math.sin(rotRad) * 0.5;
+        }
 
-    window.AppCore.agregarElemento({
-        tipo: window.estado.activeItem.type, 
-        x: posX, y: posY, z: punto.z,
-        idCatalogo: window.estado.activeItem.id,
-        props: { ...window.estado.activeItem.props, name: window.estado.activeItem.name }
-    });
-    window.estado.currentZ = punto.z;
-}
+        window.AppCore.agregarElemento({
+            tipo: window.estado.activeItem.type, // Dinámico según catálogo
+            x: finalX, y: finalY, z: punto.z,
+            idCatalogo: window.estado.activeItem.id,
+            props: { ...window.estado.activeItem.props, name: window.estado.activeItem.name }
+        });
+        window.estado.currentZ = punto.z;
+    } else {
         
         if (punto.padreId) {
             const elPadre = window.AppCore.elementos.find(e => e.id === punto.padreId);
