@@ -49,7 +49,6 @@ window.addEventListener('mouseup', (e) => {
     window.estado.isRotating = false;
 });
 
-// Localiza esta función en js/events.js y reemplázala con esta versión mejorada
 function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
     let distanciaMinima = 40; 
@@ -61,30 +60,17 @@ function buscarPuntoSnap(mouseX, mouseY) {
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
             nodos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz, padreId: el.id });
         } else {
-            // PUNTO CENTRAL (Existente)
+            // Nodo Central
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
             
-            // NUEVO: PUNTOS DE ACOPLAMIENTO PARA VÁLVULAS Y EQUIPOS
-            // Calculamos los extremos basados en la rotación axial (0° horizontal, 90° vertical en ISO)
-            const offset = 0.5; // Distancia del centro al extremo en unidades de mundo
-            const rot = (el.props.rotacionAxial || 0) * (Math.PI / 180);
-            
-            // Extremo A (Entrada)
-            nodos.push({ 
-                x: el.x - Math.cos(rot) * offset, 
-                y: el.y - Math.sin(rot) * offset, 
-                z: el.z, 
-                padreId: el.id,
-                isPort: true 
-            });
-            // Extremo B (Salida)
-            nodos.push({ 
-                x: el.x + Math.cos(rot) * offset, 
-                y: el.y + Math.sin(rot) * offset, 
-                z: el.z, 
-                padreId: el.id,
-                isPort: true 
-            });
+            // NUEVO: Puertos de imantado en extremos (Entrada y Salida)
+            // Usamos un offset de 0.5 unidades de mundo para los receptáculos
+            const rotRad = ((el.props.rotacionAxial || 0) * Math.PI) / 180;
+            const ox = Math.cos(rotRad) * 0.5;
+            const oy = Math.sin(rotRad) * 0.5;
+
+            nodos.push({ x: el.x - ox, y: el.y - oy, z: el.z, padreId: el.id, isPort: true });
+            nodos.push({ x: el.x + ox, y: el.y + oy, z: el.z, padreId: el.id, isPort: true });
         }
 
         nodos.forEach(n => {
@@ -102,7 +88,6 @@ function buscarPuntoSnap(mouseX, mouseY) {
 
     if (mejorPunto) return mejorPunto;
 
-    // Si no hay snap a objeto, snap a grilla (Existente)
     const xRel = (mouseX - rect.left - window.estado.view.x) / window.estado.view.scale;
     const yRel = (mouseY - rect.top - window.estado.view.y) / window.estado.view.scale;
     const isoPos = window.CADMath.screenToIso(xRel, yRel);
