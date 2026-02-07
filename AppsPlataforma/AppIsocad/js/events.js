@@ -1,6 +1,5 @@
 /**
- * js/events.js - VERSIÓN INTEGRAL CORREGIDA
- * Gestión de eventos, snap de puertos y prevención de superposiciones.
+ * js/events.js - VERSIÓN INTEGRAL: SNAP DINÁMICO
  */
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
@@ -32,6 +31,7 @@ svgElement.addEventListener('mousemove', (e) => {
         window.CADRenderer.actualizarTransformacion();
     } else if (window.estado.isRotating) {
         window.estado.view.angle += dx * 0.01;
+        // Redibujamos la escena completa para que los objetos roten con la cámara
         window.CADRenderer.dibujarEscena();
     }
 
@@ -63,8 +63,8 @@ function buscarPuntoSnap(mouseX, mouseY) {
         } else {
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
             
-            // Puertos de imantado en extremos
-            const rotRad = ((el.props.rotacionAxial || 0) * Math.PI) / 180;
+            // --- CÁLCULO DE PUERTOS RELATIVO A LA VISTA ---
+            const rotRad = ((el.props.rotacionAxial || 0) * Math.PI) / 180 + window.estado.view.angle;
             const ox = Math.cos(rotRad) * 0.5;
             const oy = Math.sin(rotRad) * 0.5;
 
@@ -106,7 +106,6 @@ function ejecutarAccionPrincipal(punto) {
         let finalX = punto.x;
         let finalY = punto.y;
 
-        // Si insertamos sobre una tubería, la acortamos
         if (punto.padreId) {
             const elPadre = window.AppCore.elementos.find(e => e.id === punto.padreId);
             if (elPadre && elPadre.tipo === 'tuberia') {
@@ -126,9 +125,8 @@ function ejecutarAccionPrincipal(punto) {
             }
         }
 
-        // Si es un puerto de otra válvula, desplazamos el centro
         if (punto.isPort) {
-            const rotRad = ((window.estado.activeItem.props.rotacionAxial || 0) * Math.PI) / 180;
+            const rotRad = ((window.estado.activeItem.props.rotacionAxial || 0) * Math.PI) / 180 + window.estado.view.angle;
             finalX += Math.cos(rotRad) * offsetAccesorio;
             finalY += Math.sin(rotRad) * offsetAccesorio;
         }
