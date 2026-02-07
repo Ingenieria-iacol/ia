@@ -1,5 +1,5 @@
 /**
- * js/renderer.js - VERSIÓN: ESCALADO FÍSICO REAL
+ * js/renderer.js - RESTAURACIÓN TOTAL HUD Y ESCALA
  */
 window.CADRenderer = {
     capas: {
@@ -13,6 +13,7 @@ window.CADRenderer = {
         this.capas.grid.innerHTML = '';
         this.capas.elementos.innerHTML = '';
         this.dibujarGrid();
+        
         window.AppCore.elementos.forEach(el => {
             if (el.tipo === 'tuberia') this.dibujarTuberia(el);
             else this.dibujarEquipo(el);
@@ -24,11 +25,9 @@ window.CADRenderer = {
         const grid = this.capas.grid;
         const tam = 15; let d = "";
         for (let i = -tam; i <= tam; i++) {
-            let p1 = window.CADMath.isoToScreen(-tam, i, 0);
-            let p2 = window.CADMath.isoToScreen(tam, i, 0);
+            let p1 = window.CADMath.isoToScreen(-tam, i, 0), p2 = window.CADMath.isoToScreen(tam, i, 0);
             d += `M${p1.x},${p1.y} L${p2.x},${p2.y} `;
-            let p3 = window.CADMath.isoToScreen(i, -tam, 0);
-            let p4 = window.CADMath.isoToScreen(i, tam, 0);
+            let p3 = window.CADMath.isoToScreen(i, -tam, 0), p4 = window.CADMath.isoToScreen(i, tam, 0);
             d += `M${p3.x},${p3.y} L${p4.x},${p4.y} `;
         }
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -48,32 +47,18 @@ window.CADRenderer = {
         line.setAttribute("stroke-width", isSel ? "5" : "3");
         line.setAttribute("stroke-linecap", "round");
         this.capas.elementos.appendChild(line);
-        if (el.props.longitudManual) {
-            const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            txt.setAttribute("x", (s.x + e.x) / 2); txt.setAttribute("y", (s.y + e.y) / 2 - 8);
-            txt.setAttribute("fill", "white"); txt.setAttribute("font-size", "10px");
-            txt.setAttribute("text-anchor", "middle"); txt.textContent = el.props.longitudManual + "m";
-            this.capas.elementos.appendChild(txt);
-        }
     },
 
     dibujarEquipo: function(el) {
         const p = window.CADMath.isoToScreen(el.x, el.y, el.z);
-        
-        // --- ESCALADO FÍSICO COHERENTE ---
-        // Usamos la longitudReal (0.1m, 0.2m, etc.) para determinar el tamaño visual.
-        // Un objeto de 1m tendrá 64px de ancho. Uno de 10cm (0.1m) tendrá 6.4px.
-        const factorEscalaMundo = 64; 
-        const longitudFisica = el.props.longitudReal || 0.1;
-        const size = longitudFisica * factorEscalaMundo * (el.props.escala || 1);
-        
-        const viewDeg = (window.estado.view.angle * 180) / Math.PI;
-        const rotFinal = (el.props.rotacionAxial || 0) + viewDeg;
+        const factorScale = 64; 
+        const size = (el.props.longitudReal || 0.1) * factorScale * (el.props.escala || 1);
+        const rot = (el.props.rotacionAxial || 0) + (window.estado.view.angle * 180 / Math.PI);
         const isSel = window.AppCore.seleccion.includes(el.id);
         const color = isSel ? '#0071eb' : (el.props.colorRef || '#ffffff');
 
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rotFinal})`);
+        group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rot})`);
         
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
         foreignObj.setAttribute("x", -size/2); foreignObj.setAttribute("y", -size/2); 
@@ -82,13 +67,10 @@ window.CADRenderer = {
         let iconHTML = window.ICONS.SOPORTE;
         if (el.idCatalogo) {
             const idKey = el.idCatalogo.toUpperCase();
-            iconHTML = window.ICONS[idKey] || window.ICONS[idKey.split('_').pop()] || window.ICONS.SOPORTE;
+            iconHTML = window.ICONS[idKey] || window.ICONS.SOPORTE;
         }
 
-        foreignObj.innerHTML = `
-            <div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};">
-                ${iconHTML}
-            </div>`;
+        foreignObj.innerHTML = `<div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#111; filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};">${iconHTML}</div>`;
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
 
