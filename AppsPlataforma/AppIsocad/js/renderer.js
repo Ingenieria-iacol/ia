@@ -1,5 +1,5 @@
 /**
- * js/renderer.js - VERSIÓN: RENDERIZADO ANCLADO Y LIMPIO
+ * js/renderer.js - VERSIÓN: RENDERIZADO CARDINAL
  */
 window.CADRenderer = {
     capas: {
