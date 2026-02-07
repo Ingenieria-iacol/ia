@@ -139,7 +139,15 @@ window.CATALOGO = {
                 longitud: 6.0,       
                 capacidadGalones: 1000,
                 numConexiones: 2,
-                rotacionAxial: 0
+                rotacionAxial: 0,
+                checklist: {         
+                    rotogate: false,
+                    indicadorLlenado: true,
+                    multivalvulas: false,
+                    drenaje: true,
+                    valvulaAlivio: true,
+                    valvulaLlenado: true
+                }
             } 
         }
     ],
