@@ -86,7 +86,7 @@ window.CATALOGO = {
     comp: [
         { subCat: 'Uniones', id: 'c_union', name: 'Unión Universal', icon: ICONS.UNION, type: 'equipo', props: { tipo: 'accesorio', longitudReal: 0.06, ...defaultFlow } },
         { subCat: 'Uniones', id: 'c_brida', name: 'Brida', icon: ICONS.BRIDA, type: 'equipo', props: { tipo: 'accesorio', longitudReal: 0.04, diamIn:'2"', typeIn:'brida', diamOut:'2"', typeOut:'brida' } },
-        { subCat: 'Válvulas (Aislamiento)', id: 'v_bola', name: 'V. Bola', icon: ICONS.V_BOLA, type: 'valvula', props: { tipo: 'bola', longitudReal: 0.08, rotacion: 0, ...defaultFlow }, info: { title: "Válvula de Bola", desc: "Cierre rápido 90°." } },
+        { subCat: 'Válvulas (Aislamiento)', id: 'v_bola', name: 'V. Bola', icon: ICONS.V_BOLA, type: 'valvula', props: { tipo: 'bola', longitudReal: 0.08, rotacionAxial: 0, ...defaultFlow }, info: { title: "Válvula de Bola", desc: "Cierre rápido 90°." } },
         { 
             subCat: 'Válvulas (Aislamiento)', 
             id: 'v_actuada', 
@@ -96,7 +96,7 @@ window.CATALOGO = {
             props: { 
                 tipo: 'actuada', 
                 longitudReal: 0.15,
-                rotacion: 0,
+                rotacionAxial: 0,
                 voltaje: '24V',
                 corriente: 'DC',
                 estadoCompuerta: 'N/C',
@@ -108,10 +108,10 @@ window.CATALOGO = {
             }, 
             info: { title: "Válvula Actuada", desc: "Control eléctrico/neumático." } 
         },
-        { subCat: 'Válvulas (Regulación)', id: 'v_aguja', name: 'V. Aguja', icon: ICONS.V_AGUJA, type: 'valvula', props: { tipo: 'aguja', longitudReal: 0.07, rotacion: 0, ...defaultFlow }, info: { title: "V. Aguja", desc: "Control fino." } },
-        { subCat: 'Válvulas (Regulación)', id: 'v_globo', name: 'V. Globo', icon: ICONS.V_GLOBO, type: 'valvula', props: { tipo: 'globo', longitudReal: 0.10, rotacion: 0, ...defaultFlow }, info: { title: "V. Globo", desc: "Estrangulamiento." } },
-        { subCat: 'Válvulas (Seguridad)', id: 'v_check', name: 'V. Cheque', icon: ICONS.V_CHECK, type: 'valvula', props: { tipo: 'retencion', longitudReal: 0.08, rotacion: 0, ...defaultFlow }, info: { title: "V. Cheque", desc: "Una vía." } },
-        { subCat: 'Válvulas (Seguridad)', id: 'v_exceso', name: 'Exc. Flujo', icon: ICONS.V_EXCESO, type: 'valvula', props: { tipo: 'exceso', longitudReal: 0.06, rotacion: 0, ...defaultFlow }, info: { title: "Exc. Flujo", desc: "Cierre por ruptura." } }
+        { subCat: 'Válvulas (Regulación)', id: 'v_aguja', name: 'V. Aguja', icon: ICONS.V_AGUJA, type: 'valvula', props: { tipo: 'aguja', longitudReal: 0.07, rotacionAxial: 0, ...defaultFlow }, info: { title: "V. Aguja", desc: "Control fino." } },
+        { subCat: 'Válvulas (Regulación)', id: 'v_globo', name: 'V. Globo', icon: ICONS.V_GLOBO, type: 'valvula', props: { tipo: 'globo', longitudReal: 0.10, rotacionAxial: 0, ...defaultFlow }, info: { title: "V. Globo", desc: "Estrangulamiento." } },
+        { subCat: 'Válvulas (Seguridad)', id: 'v_check', name: 'V. Cheque', icon: ICONS.V_CHECK, type: 'valvula', props: { tipo: 'retencion', longitudReal: 0.08, rotacionAxial: 0, ...defaultFlow }, info: { title: "V. Cheque", desc: "Una vía." } },
+        { subCat: 'Válvulas (Seguridad)', id: 'v_exceso', name: 'Exc. Flujo', icon: ICONS.V_EXCESO, type: 'valvula', props: { tipo: 'exceso', longitudReal: 0.06, rotacionAxial: 0, ...defaultFlow }, info: { title: "Exc. Flujo", desc: "Cierre por ruptura." } }
     ],
     eq: [
         { subCat: 'Medición', id: 'eq_medidor', name: 'Medidor G4', icon: ICONS.MEDIDOR, type: 'equipo', props: { modelo: 'G4', longitudReal: 0.22, diamIn:'1"', typeIn:'macho', diamOut:'1"', typeOut:'macho' } },
@@ -139,7 +139,7 @@ window.CATALOGO = {
                 longitud: 6.0,       
                 capacidadGalones: 1000,
                 numConexiones: 2,
-                rotacion: 0
+                rotacionAxial: 0
             } 
         }
     ],
