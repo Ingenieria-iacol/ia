@@ -1,5 +1,6 @@
 /**
- * js/events.js - VERSIÓN CORREGIDA: PRECISIÓN 0.01m + RESTAURACIÓN DE ESCAPE Y PANELES
+ * js/events.js - VERSIÓN INTEGRAL RESTAURADA
+ * Precisión 0.01m, Cruces Cardinales y Funciones de Interfaz (ESC)
  */
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
@@ -57,6 +58,7 @@ function buscarPuntoSnap(mouseX, mouseY) {
             nodos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz, padreId: el.id, esInicio: false });
         } else {
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
+            // Puertos alineados a los ejes del objeto, sin importar la cámara
             const baseRot = ((el.props.rotacionAxial || 0) * Math.PI) / 180;
             for(let i=0; i<4; i++) {
                 const angulo = baseRot + (i * Math.PI / 2);
@@ -229,7 +231,6 @@ function distToSegment(p, v, w) {
 window.addEventListener('keydown', (e) => {
     const key = e.key.toLowerCase();
     
-    // --- RESTAURACIÓN TECLA ESC ---
     if (e.key === 'Escape') {
         window.estado.drawing = false;
         window.estado.tool = 'select';
