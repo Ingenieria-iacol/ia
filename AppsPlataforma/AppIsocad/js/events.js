@@ -1,5 +1,5 @@
 /**
- * js/events.js - VERSIÓN INTEGRAL: SNAP DINÁMICO
+ * js/events.js - VERSIÓN: ACOPLE PRECISO Y MARCADOR DE CRUZ
  */
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
@@ -12,12 +12,8 @@ svgElement.addEventListener('mousedown', (e) => {
     window.estado.lastMouse = { x: e.clientX, y: e.clientY };
     mouseStartTime = Date.now();
     isMovingMouse = false;
-
-    if (e.button === 0) {
-        window.estado.isPanning = true;
-    } else if (e.button === 2) {
-        window.estado.isRotating = true;
-    }
+    if (e.button === 0) window.estado.isPanning = true;
+    else if (e.button === 2) window.estado.isRotating = true;
 });
 
 svgElement.addEventListener('mousemove', (e) => {
@@ -31,13 +27,11 @@ svgElement.addEventListener('mousemove', (e) => {
         window.CADRenderer.actualizarTransformacion();
     } else if (window.estado.isRotating) {
         window.estado.view.angle += dx * 0.01;
-        // Redibujamos la escena completa para que los objetos roten con la cámara
         window.CADRenderer.dibujarEscena();
     }
 
     puntoSnapActivo = buscarPuntoSnap(e.clientX, e.clientY);
     actualizarGuiaVisual(e);
-    
     window.estado.lastMouse = { x: e.clientX, y: e.clientY };
 });
 
@@ -52,8 +46,9 @@ window.addEventListener('mouseup', (e) => {
 
 function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
-    let distanciaMinima = 40; 
+    let distanciaMinima = 30; 
     const rect = svgElement.getBoundingClientRect();
+    const offsetContacto = 0.25; // Distancia reducida para que se toquen ligeramente
 
     window.AppCore.elementos.forEach(el => {
         let nodos = [];
@@ -62,11 +57,9 @@ function buscarPuntoSnap(mouseX, mouseY) {
             nodos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz, padreId: el.id, esInicio: false });
         } else {
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
-            
-            // --- CÁLCULO DE PUERTOS RELATIVO A LA VISTA ---
             const rotRad = ((el.props.rotacionAxial || 0) * Math.PI) / 180 + window.estado.view.angle;
-            const ox = Math.cos(rotRad) * 0.5;
-            const oy = Math.sin(rotRad) * 0.5;
+            const ox = Math.cos(rotRad) * offsetContacto;
+            const oy = Math.sin(rotRad) * offsetContacto;
 
             nodos.push({ x: el.x - ox, y: el.y - oy, z: el.z, padreId: el.id, isPort: true });
             nodos.push({ x: el.x + ox, y: el.y + oy, z: el.z, padreId: el.id, isPort: true });
@@ -76,7 +69,6 @@ function buscarPuntoSnap(mouseX, mouseY) {
             const screenPos = window.CADMath.isoToScreen(n.x, n.y, n.z);
             const realX = rect.left + window.estado.view.x + (screenPos.x * window.estado.view.scale);
             const realY = rect.top + window.estado.view.y + (screenPos.y * window.estado.view.scale);
-            
             const dist = Math.hypot(mouseX - realX, mouseY - realY);
             if (dist < distanciaMinima) {
                 distanciaMinima = dist;
@@ -86,15 +78,10 @@ function buscarPuntoSnap(mouseX, mouseY) {
     });
 
     if (mejorPunto) return mejorPunto;
-
     const xRel = (mouseX - rect.left - window.estado.view.x) / window.estado.view.scale;
     const yRel = (mouseY - rect.top - window.estado.view.y) / window.estado.view.scale;
     const isoPos = window.CADMath.screenToIso(xRel, yRel);
-    return { 
-        x: Math.round(isoPos.x * 2) / 2, 
-        y: Math.round(isoPos.y * 2) / 2, 
-        z: window.estado.currentZ 
-    };
+    return { x: Math.round(isoPos.x * 2) / 2, y: Math.round(isoPos.y * 2) / 2, z: window.estado.currentZ };
 }
 
 function ejecutarAccionPrincipal(punto) {
@@ -102,33 +89,34 @@ function ejecutarAccionPrincipal(punto) {
         manejarDibujoTuberia(punto);
     } 
     else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
-        const offsetAccesorio = 0.5; 
+        const distAcople = 0.25; 
         let finalX = punto.x;
         let finalY = punto.y;
 
+        // Acortar tubería ligeramente para el contacto
         if (punto.padreId) {
             const elPadre = window.AppCore.elementos.find(e => e.id === punto.padreId);
             if (elPadre && elPadre.tipo === 'tuberia') {
                 const distT = Math.hypot(elPadre.dx, elPadre.dy, elPadre.dz);
-                if (distT > offsetAccesorio) {
+                if (distT > distAcople) {
                     const ux = elPadre.dx / (distT || 1);
                     const uy = elPadre.dy / (distT || 1);
                     const uz = elPadre.dz / (distT || 1);
-
                     if (punto.esInicio) {
-                        elPadre.x += ux * offsetAccesorio; elPadre.y += uy * offsetAccesorio; elPadre.z += uz * offsetAccesorio;
-                        elPadre.dx -= ux * offsetAccesorio; elPadre.dy -= uy * offsetAccesorio; elPadre.dz -= uz * offsetAccesorio;
+                        elPadre.x += ux * distAcople; elPadre.y += uy * distAcople; elPadre.z += uz * distAcople;
+                        elPadre.dx -= ux * distAcople; elPadre.dy -= uy * distAcople; elPadre.dz -= uz * distAcople;
                     } else {
-                        elPadre.dx -= ux * offsetAccesorio; elPadre.dy -= uy * offsetAccesorio; elPadre.dz -= uz * offsetAccesorio;
+                        elPadre.dx -= ux * distAcople; elPadre.dy -= uy * distAcople; elPadre.dz -= uz * distAcople;
                     }
                 }
             }
         }
 
+        // Si es un puerto de válvula, posicionar centro para que se toquen
         if (punto.isPort) {
             const rotRad = ((window.estado.activeItem.props.rotacionAxial || 0) * Math.PI) / 180 + window.estado.view.angle;
-            finalX += Math.cos(rotRad) * offsetAccesorio;
-            finalY += Math.sin(rotRad) * offsetAccesorio;
+            finalX += Math.cos(rotRad) * distAcople;
+            finalY += Math.sin(rotRad) * distAcople;
         }
 
         window.AppCore.agregarElemento({
@@ -150,51 +138,65 @@ function manejarDibujoTuberia(punto) {
     if (!window.estado.drawing) {
         window.estado.drawing = true;
         window.estado.inicio = { ...punto };
-        window.estado.currentZ = punto.z;
     } else {
-        let L = parseFloat(prompt("Longitud horizontal (m):", "1.0"));
+        let L = parseFloat(prompt("Longitud (m):", "1.0"));
         if (!isNaN(L) && L > 0) {
             const dx_r = punto.x - window.estado.inicio.x;
             const dy_r = punto.y - window.estado.inicio.y;
-            const d_total = Math.sqrt(dx_r**2 + dy_r**2) || 1;
-            const finX = window.estado.inicio.x + (dx_r / d_total) * L;
-            const finY = window.estado.inicio.y + (dy_r / d_total) * L;
-
+            const d_t = Math.sqrt(dx_r**2 + dy_r**2) || 1;
+            const fX = window.estado.inicio.x + (dx_r / d_t) * L;
+            const fY = window.estado.inicio.y + (dy_r / d_t) * L;
             window.AppCore.agregarElemento({
                 tipo: 'tuberia',
                 x: window.estado.inicio.x, y: window.estado.inicio.y, z: window.estado.inicio.z,
-                dx: finX - window.estado.inicio.x, dy: finY - window.estado.inicio.y, dz: 0,
+                dx: fX - window.estado.inicio.x, dy: fY - window.estado.inicio.y, dz: 0,
                 props: { longitudManual: L, diamNominal: '1/2"' }
             });
-            window.estado.inicio = { x: finX, y: finY, z: window.estado.inicio.z };
+            window.estado.inicio = { x: fX, y: fY, z: window.estado.inicio.z };
         }
     }
 }
 
 function actualizarGuiaVisual(e) {
     const uiLayer = document.getElementById('ui-layer');
-    if(!uiLayer) return;
+    if(!uiLayer || !puntoSnapActivo) return;
     uiLayer.innerHTML = ''; 
 
     const p = puntoSnapActivo;
-    const posScreen = window.CADMath.isoToScreen(p.x, p.y, p.z);
+    const pos = window.CADMath.isoToScreen(p.x, p.y, p.z);
 
-    const circ = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    circ.setAttribute("cx", posScreen.x); circ.setAttribute("cy", posScreen.y);
-    
-    circ.setAttribute("r", p.isPort ? "6" : (p.padreId ? "10" : "5")); 
-    circ.setAttribute("fill", p.isPort ? "#00ff64" : (p.padreId ? "rgba(0, 113, 235, 0.2)" : "none"));
-    circ.setAttribute("stroke", p.isPort ? "#fff" : "#0071eb");
-    circ.setAttribute("stroke-width", "2");
-    uiLayer.appendChild(circ);
+    if (p.padreId) {
+        // --- DIBUJAR CRUZ (+) EN LUGAR DE CÍRCULO ---
+        const size = 6; 
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        const l1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        const l2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        
+        const color = p.isPort ? "#00ff64" : "#0071eb";
+        
+        [l1, l2].forEach((l, i) => {
+            l.setAttribute("x1", i === 0 ? pos.x - size : pos.x);
+            l.setAttribute("y1", i === 0 ? pos.y : pos.y - size);
+            l.setAttribute("x2", i === 0 ? pos.x + size : pos.x);
+            l.setAttribute("y2", i === 0 ? pos.y : pos.y + size);
+            l.setAttribute("stroke", color);
+            l.setAttribute("stroke-width", "2");
+            g.appendChild(l);
+        });
+        uiLayer.appendChild(g);
+    } else {
+        const circ = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circ.setAttribute("cx", pos.x); circ.setAttribute("cy", pos.y);
+        circ.setAttribute("r", "3"); circ.setAttribute("fill", "#555");
+        uiLayer.appendChild(circ);
+    }
 
     if (window.estado.drawing && window.estado.inicio) {
         const s = window.CADMath.isoToScreen(window.estado.inicio.x, window.estado.inicio.y, window.estado.inicio.z);
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
-        line.setAttribute("x2", posScreen.x); line.setAttribute("y2", posScreen.y);
-        line.setAttribute("stroke", "white");
-        line.setAttribute("stroke-dasharray", "4,4");
+        line.setAttribute("x2", pos.x); line.setAttribute("y2", pos.y);
+        line.setAttribute("stroke", "white"); line.setAttribute("stroke-dasharray", "4,4");
         uiLayer.appendChild(line);
     }
 }
@@ -208,14 +210,8 @@ function manejarSeleccion(clickX, clickY) {
         }
         return Math.hypot(pos.x - clickX, pos.y - clickY) < 20;
     });
-
-    if (encontrado) {
-        window.AppCore.seleccion = [encontrado.id];
-        window.PropsPanel.abrir(encontrado);
-    } else {
-        window.AppCore.seleccion = [];
-        window.PropsPanel.cerrar();
-    }
+    window.AppCore.seleccion = encontrado ? [encontrado.id] : [];
+    if (encontrado) window.PropsPanel.abrir(encontrado); else window.PropsPanel.cerrar();
     window.CADRenderer.dibujarEscena();
 }
 
@@ -231,23 +227,17 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         window.estado.drawing = false;
         window.estado.tool = 'select';
-        window.estado.activeItem = null;
         window.AppCore.seleccion = [];
-        document.getElementById('ui-layer').innerHTML = '';
-        window.PropsPanel.cerrar();
-        document.querySelectorAll('.tool-item').forEach(el => el.classList.remove('active'));
-        document.getElementById('btn-tool-select')?.classList.add('active');
         window.CADRenderer.dibujarEscena();
     }
     if ((key === 'q' || key === 'a') && window.estado.drawing) {
-        let L = parseFloat(prompt(`Longitud vertical (${key === 'q' ? 'subir' : 'bajar'}):`, "1.0"));
+        let L = parseFloat(prompt("Longitud vertical:", "1.0"));
         if (!isNaN(L)) {
             const dz = (key === 'q') ? L : -L;
             window.AppCore.agregarElemento({
                 tipo: 'tuberia',
                 x: window.estado.inicio.x, y: window.estado.inicio.y, z: window.estado.inicio.z,
-                dx: 0, dy: 0, dz: dz,
-                props: { longitudManual: L, isVertical: true }
+                dx: 0, dy: 0, dz: dz, props: { longitudManual: L, isVertical: true }
             });
             window.estado.currentZ += dz;
             window.estado.inicio.z = window.estado.currentZ;
