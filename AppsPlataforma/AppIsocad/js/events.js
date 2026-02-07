@@ -1,6 +1,5 @@
 /**
- * js/events.js - VERSIÓN INTEGRAL RESTAURADA
- * Precisión 0.01m, Cruces Cardinales y Funciones de Interfaz (ESC)
+ * js/events.js - VERSIÓN: CONEXIÓN POR EXTREMOS (BORDE A BORDE)
  */
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
@@ -49,7 +48,9 @@ function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
     let distanciaMinima = 30; 
     const rect = svgElement.getBoundingClientRect();
-    const distAcople = 0.01; 
+    
+    // RADIO DEL OBJETO: 0.5m asegura que los puertos estén en los bordes del icono
+    const radioObjeto = 0.5; 
 
     window.AppCore.elementos.forEach(el => {
         let nodos = [];
@@ -58,13 +59,14 @@ function buscarPuntoSnap(mouseX, mouseY) {
             nodos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz, padreId: el.id, esInicio: false });
         } else {
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
-            // Puertos alineados a los ejes del objeto, sin importar la cámara
+            
+            // Puertos en los EXTREMOS (Norte, Sur, Este, Oeste del objeto)
             const baseRot = ((el.props.rotacionAxial || 0) * Math.PI) / 180;
             for(let i=0; i<4; i++) {
                 const angulo = baseRot + (i * Math.PI / 2);
                 nodos.push({ 
-                    x: el.x + Math.cos(angulo) * distAcople, 
-                    y: el.y + Math.sin(angulo) * distAcople, 
+                    x: el.x + Math.cos(angulo) * radioObjeto, 
+                    y: el.y + Math.sin(angulo) * radioObjeto, 
                     z: el.z, padreId: el.id, isPort: true 
                 });
             }
@@ -94,33 +96,17 @@ function ejecutarAccionPrincipal(punto) {
         manejarDibujoTuberia(punto);
     } 
     else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
-        const distAcople = 0.01; 
+        const radioObjeto = 0.5; 
         let finalX = punto.x;
         let finalY = punto.y;
 
-        if (punto.padreId) {
-            const elPadre = window.AppCore.elementos.find(e => e.id === punto.padreId);
-            if (elPadre && elPadre.tipo === 'tuberia') {
-                const distT = Math.hypot(elPadre.dx, elPadre.dy, elPadre.dz);
-                if (distT > distAcople) {
-                    const ux = elPadre.dx / (distT || 1);
-                    const uy = elPadre.dy / (distT || 1);
-                    const uz = elPadre.dz / (distT || 1);
-                    if (punto.esInicio) {
-                        elPadre.x += ux * distAcople; elPadre.y += uy * distAcople; elPadre.z += uz * distAcople;
-                        elPadre.dx -= ux * distAcople; elPadre.dy -= uy * distAcople; elPadre.dz -= uz * distAcople;
-                    } else {
-                        elPadre.dx -= ux * distAcople; elPadre.dy -= uy * distAcople; elPadre.dz -= uz * distAcople;
-                    }
-                }
-            }
-        }
-
+        // Si es un puerto de otra válvula, desplazamos el centro para que los bordes se toquen
         if (punto.isPort) {
             const elPadre = window.AppCore.elementos.find(e => e.id === punto.padreId);
             if(elPadre) {
                 const dx = punto.x - elPadre.x;
                 const dy = punto.y - elPadre.y;
+                // Empujamos el nuevo objeto exactamente una unidad de radio hacia afuera
                 finalX = punto.x + dx; 
                 finalY = punto.y + dy;
             }
@@ -173,17 +159,17 @@ function actualizarGuiaVisual(e) {
     const pos = window.CADMath.isoToScreen(p.x, p.y, p.z);
 
     if (p.padreId) {
-        const size = 3.5; 
+        const size = 4; 
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
         const color = p.isPort ? "#00ff64" : "#0071eb";
         const l1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
         l1.setAttribute("x1", pos.x - size); l1.setAttribute("y1", pos.y);
         l1.setAttribute("x2", pos.x + size); l1.setAttribute("y2", pos.y);
-        l1.setAttribute("stroke", color); l1.setAttribute("stroke-width", "1");
+        l1.setAttribute("stroke", color); l1.setAttribute("stroke-width", "1.5");
         const l2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
         l2.setAttribute("x1", pos.x); l2.setAttribute("y1", pos.y - size);
         l2.setAttribute("x2", pos.x); l2.setAttribute("y2", pos.y + size);
-        l2.setAttribute("stroke", color); l2.setAttribute("stroke-width", "1");
+        l2.setAttribute("stroke", color); l2.setAttribute("stroke-width", "1.5");
         g.appendChild(l1); g.appendChild(l2);
         uiLayer.appendChild(g);
     } else {
@@ -213,11 +199,8 @@ function manejarSeleccion(clickX, clickY) {
         return Math.hypot(pos.x - clickX, pos.y - clickY) < 20;
     });
     window.AppCore.seleccion = encontrado ? [encontrado.id] : [];
-    if (encontrado) {
-        window.PropsPanel.abrir(encontrado);
-    } else {
-        window.PropsPanel.cerrar();
-    }
+    if (encontrado) window.PropsPanel.abrir(encontrado); 
+    else window.PropsPanel.cerrar();
     window.CADRenderer.dibujarEscena();
 }
 
