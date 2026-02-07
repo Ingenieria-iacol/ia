@@ -198,9 +198,10 @@ function actualizarGuiaVisual(e) {
 
     const circ = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circ.setAttribute("cx", posScreen.x); circ.setAttribute("cy", posScreen.y);
-    circ.setAttribute("r", p.padreId ? (p.isPort ? "7" : "10") : "5"); 
-    circ.setAttribute("fill", p.isPort ? "rgba(0, 255, 100, 0.3)" : (p.padreId ? "rgba(0, 113, 235, 0.2)" : "none"));
-    circ.setAttribute("stroke", p.isPort ? "#00ff64" : "#0071eb");
+    
+    circ.setAttribute("r", p.isPort ? "6" : (p.padreId ? "10" : "5")); 
+    circ.setAttribute("fill", p.isPort ? "#00ff64" : (p.padreId ? "rgba(0, 113, 235, 0.2)" : "none"));
+    circ.setAttribute("stroke", p.isPort ? "#fff" : "#0071eb");
     circ.setAttribute("stroke-width", "2");
     uiLayer.appendChild(circ);
 
