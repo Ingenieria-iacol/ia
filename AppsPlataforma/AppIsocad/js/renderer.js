@@ -1,5 +1,5 @@
 /**
- * js/renderer.js - RESTAURACIÓN TOTAL COMPROBADA
+ * js/renderer.js - VERSIÓN CON LIMPIEZA VISUAL DE ACCESORIOS
  */
 window.CADRenderer = {
     capas: {
@@ -46,7 +46,6 @@ window.CADRenderer = {
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
         
-        // Recuperamos colores originales: Verde (Vertical) / Amarillo (Horizontal)
         let color = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
         
         line.setAttribute("stroke", color);
@@ -72,7 +71,6 @@ window.CADRenderer = {
         const color = isSel ? '#0071eb' : (el.props.colorRef || '#ffffff');
 
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        // Centrado y rotación corregidos para no perder la posición ISO
         group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rot}) translate(${-size/2}, ${-size/2})`);
         
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
@@ -84,7 +82,19 @@ window.CADRenderer = {
             iconHTML = window.ICONS[idKey] || window.ICONS[idKey.split('_').pop()] || window.ICONS.SOPORTE;
         }
 
-        foreignObj.innerHTML = `<div style="color:${color}; width:100%; height:100%; filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};">${iconHTML}</div>`;
+        // --- FONDO SÓLIDO PARA EVITAR SOBREPOSICIÓN VISUAL ---
+        foreignObj.innerHTML = `
+            <div style="
+                color:${color}; 
+                width:100%; height:100%; 
+                background: #111; 
+                display: flex; align-items: center; justify-content: center;
+                border-radius: 4px;
+                filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};
+            ">
+                ${iconHTML}
+            </div>`;
+            
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
 
@@ -101,7 +111,6 @@ window.CADRenderer = {
             const v = window.estado.view;
             world.setAttribute('transform', `translate(${v.x}, ${v.y}) scale(${v.scale})`);
         }
-        // HUD restaurado
         const hudZ = document.getElementById('hud-z');
         const hudScale = document.getElementById('hud-scale');
         if (hudZ) hudZ.innerText = window.estado.currentZ.toFixed(2);
