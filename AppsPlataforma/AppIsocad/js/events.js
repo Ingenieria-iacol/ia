@@ -1,5 +1,5 @@
 /**
- * js/events.js - VERSIÓN: PRESIÓN QUIRÚRGICA 0.01m
+ * js/events.js - VERSIÓN DEFINITIVA: PRECISIÓN 0.01m Y 4 PUERTOS CARDINALES
  */
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
@@ -48,7 +48,7 @@ function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
     let distanciaMinima = 30; 
     const rect = svgElement.getBoundingClientRect();
-    const distAcople = 0.01; // Tu solicitud: Contacto a tope
+    const distAcople = 0.01; // Precisión máxima solicitada
 
     window.AppCore.elementos.forEach(el => {
         let nodos = [];
@@ -56,21 +56,16 @@ function buscarPuntoSnap(mouseX, mouseY) {
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id, esInicio: true });
             nodos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz, padreId: el.id, esInicio: false });
         } else {
-            // Nodo Central
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
             
-            // --- CORRECCIÓN: PUERTOS ANCLADOS AL MUNDO (Sin View Angle) ---
-            // Los ángulos 0, 90, 180, 270 ahora son absolutos respecto al objeto
+            // Puertos anclados rígidamente a los ejes del objeto (0, 90, 180, 270 grados)
             const baseRot = ((el.props.rotacionAxial || 0) * Math.PI) / 180;
-            
             for(let i=0; i<4; i++) {
                 const angulo = baseRot + (i * Math.PI / 2);
                 nodos.push({ 
                     x: el.x + Math.cos(angulo) * distAcople, 
                     y: el.y + Math.sin(angulo) * distAcople, 
-                    z: el.z, 
-                    padreId: el.id, 
-                    isPort: true 
+                    z: el.z, padreId: el.id, isPort: true 
                 });
             }
         }
@@ -103,7 +98,6 @@ function ejecutarAccionPrincipal(punto) {
         let finalX = punto.x;
         let finalY = punto.y;
 
-        // Si insertamos sobre una tubería, la ajustamos para el contacto a tope
         if (punto.padreId) {
             const elPadre = window.AppCore.elementos.find(e => e.id === punto.padreId);
             if (elPadre && elPadre.tipo === 'tuberia') {
@@ -122,11 +116,9 @@ function ejecutarAccionPrincipal(punto) {
             }
         }
 
-        // Si es un puerto de válvula, posicionar centro exactamente en el eje
         if (punto.isPort) {
             const elPadre = window.AppCore.elementos.find(e => e.id === punto.padreId);
             if(elPadre) {
-                // Mantenemos la dirección longitudinal perfecta
                 const dx = punto.x - elPadre.x;
                 const dy = punto.y - elPadre.y;
                 finalX = punto.x + dx; 
@@ -181,21 +173,17 @@ function actualizarGuiaVisual(e) {
     const pos = window.CADMath.isoToScreen(p.x, p.y, p.z);
 
     if (p.padreId) {
-        // --- MARCADOR: CRUZ (+) ULTRA PEQUEÑA Y TÉCNICA ---
         const size = 3.5; 
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
         const color = p.isPort ? "#00ff64" : "#0071eb";
-        
         const l1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
         l1.setAttribute("x1", pos.x - size); l1.setAttribute("y1", pos.y);
         l1.setAttribute("x2", pos.x + size); l1.setAttribute("y2", pos.y);
         l1.setAttribute("stroke", color); l1.setAttribute("stroke-width", "1");
-        
         const l2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
         l2.setAttribute("x1", pos.x); l2.setAttribute("y1", pos.y - size);
         l2.setAttribute("x2", pos.x); l2.setAttribute("y2", pos.y + size);
         l2.setAttribute("stroke", color); l2.setAttribute("stroke-width", "1");
-        
         g.appendChild(l1); g.appendChild(l2);
         uiLayer.appendChild(g);
     } else {
@@ -214,4 +202,55 @@ function actualizarGuiaVisual(e) {
         uiLayer.appendChild(line);
     }
 }
-// ... resto de funciones de selección y teclado
+
+function manejarSeleccion(clickX, clickY) {
+    const encontrado = window.AppCore.elementos.find(el => {
+        const pos = window.CADMath.isoToScreen(el.x, el.y, el.z);
+        if (el.tipo === 'tuberia') {
+            const final = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
+            return distToSegment({x: clickX, y: clickY}, pos, final) < 10;
+        }
+        return Math.hypot(pos.x - clickX, pos.y - clickY) < 20;
+    });
+    window.AppCore.seleccion = encontrado ? [encontrado.id] : [];
+    if (encontrado) window.PropsPanel.abrir(encontrado); else window.PropsPanel.cerrar();
+    window.CADRenderer.dibujarEscena();
+}
+
+function distToSegment(p, v, w) {
+    const l2 = Math.pow(v.x - w.x, 2) + Math.pow(v.y - w.y, 2);
+    if (l2 == 0) return Math.hypot(p.x - v.x, p.y - v.y);
+    let t = Math.max(0, Math.min(1, ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2));
+    return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
+}
+
+window.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
+    if (e.key === 'Escape') {
+        window.estado.drawing = false;
+        window.estado.tool = 'select';
+        window.AppCore.seleccion = [];
+        window.CADRenderer.dibujarEscena();
+    }
+    if ((key === 'q' || key === 'a') && window.estado.drawing) {
+        let L = parseFloat(prompt("Longitud vertical:", "1.0"));
+        if (!isNaN(L)) {
+            const dz = (key === 'q') ? L : -L;
+            window.AppCore.agregarElemento({
+                tipo: 'tuberia',
+                x: window.estado.inicio.x, y: window.estado.inicio.y, z: window.estado.inicio.z,
+                dx: 0, dy: 0, dz: dz, props: { longitudManual: L, isVertical: true }
+            });
+            window.estado.currentZ += dz;
+            window.estado.inicio.z = window.estado.currentZ;
+            window.CADRenderer.dibujarEscena();
+        }
+    }
+});
+
+svgElement.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    window.estado.view.scale = Math.min(Math.max(window.estado.view.scale * factor, 0.1), 10);
+    window.CADRenderer.actualizarTransformacion();
+}, { passive: false });
