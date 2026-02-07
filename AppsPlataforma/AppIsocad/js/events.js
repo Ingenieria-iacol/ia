@@ -117,9 +117,29 @@ function ejecutarAccionPrincipal(punto) {
     if (window.estado.tool === 'tool-pipe') {
         manejarDibujoTuberia(punto);
     } 
-    else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
-        // --- LÓGICA DE ACOPLAMIENTO QUIRÚRGICA ---
-        const offset = 0.2; // Espacio para el accesorio en metros
+  // Localiza el bloque 'tool-insert' dentro de ejecutarAccionPrincipal en js/events.js
+else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
+    let posX = punto.x;
+    let posY = punto.y;
+
+    // Si estamos haciendo snap a un punto que NO es el centro de otro objeto, 
+    // desplazamos el centro de la nueva válvula para que su extremo toque el punto.
+    if (punto.padreId && window.estado.activeItem.type === 'valvula') {
+        const offset = 0.5; 
+        const rot = (window.estado.activeItem.props.rotacionAxial || 0) * (Math.PI / 180);
+        // Empujamos el centro media unidad para que el borde quede en el snap
+        posX += Math.cos(rot) * offset;
+        posY += Math.sin(rot) * offset;
+    }
+
+    window.AppCore.agregarElemento({
+        tipo: window.estado.activeItem.type, 
+        x: posX, y: posY, z: punto.z,
+        idCatalogo: window.estado.activeItem.id,
+        props: { ...window.estado.activeItem.props, name: window.estado.activeItem.name }
+    });
+    window.estado.currentZ = punto.z;
+}
         
         if (punto.padreId) {
             const elPadre = window.AppCore.elementos.find(e => e.id === punto.padreId);
