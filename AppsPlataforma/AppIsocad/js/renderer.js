@@ -1,5 +1,5 @@
 /**
- * js/renderer.js - VERSIÓN OPTIMIZADA PARA ACOPLAMIENTOS
+ * js/renderer.js - VERSIÓN SINCRONIZADA
  */
 window.CADRenderer = {
     capas: {
@@ -46,7 +46,6 @@ window.CADRenderer = {
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
         
-        // Colores: Verde para vertical, Amarillo para horizontal
         let color = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
         
         line.setAttribute("stroke", color);
@@ -72,11 +71,10 @@ window.CADRenderer = {
         const color = isSel ? '#0071eb' : (el.props.colorRef || '#ffffff');
 
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        // Ajuste quirúrgico: La rotación se aplica sobre el centro exacto para coincidir con los puertos
         group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rot})`);
         
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-        foreignObj.setAttribute("x", -size/2); // Centrado exacto
+        foreignObj.setAttribute("x", -size/2); 
         foreignObj.setAttribute("y", -size/2); 
         foreignObj.setAttribute("width", size); 
         foreignObj.setAttribute("height", size);
@@ -87,7 +85,6 @@ window.CADRenderer = {
             iconHTML = window.ICONS[idKey] || window.ICONS[idKey.split('_').pop()] || window.ICONS.SOPORTE;
         }
 
-        // Fondo sólido para ocultar la tubería sobrante si no se acortó
         foreignObj.innerHTML = `
             <div style="
                 color:${color}; 
@@ -102,7 +99,6 @@ window.CADRenderer = {
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
 
-        // Texto informativo del equipo
         const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
         txt.setAttribute("x", p.x); txt.setAttribute("y", p.y + (size/2) + 12);
         txt.setAttribute("fill", isSel ? "#0071eb" : "#888"); txt.setAttribute("font-size", "9px");
