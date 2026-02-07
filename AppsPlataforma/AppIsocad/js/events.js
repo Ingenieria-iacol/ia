@@ -1,5 +1,6 @@
 /**
- * js/events.js - VERSIÓN CORREGIDA PARA ACOPLAMIENTOS
+ * js/events.js - VERSIÓN INTEGRAL QUIRÚRGICA
+ * Gestión de eventos, snap de puertos y prevención de superposiciones.
  */
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
@@ -57,14 +58,14 @@ function buscarPuntoSnap(mouseX, mouseY) {
     window.AppCore.elementos.forEach(el => {
         let nodos = [];
         if (el.tipo === 'tuberia') {
-            nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
-            nodos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz, padreId: el.id });
+            // Identificamos extremos para acople inteligente
+            nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id, esInicio: true });
+            nodos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz, padreId: el.id, esInicio: false });
         } else {
-            // Nodo Central
+            // Nodo Central del equipo
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
             
-            // NUEVO: Puertos de imantado en extremos (Entrada y Salida)
-            // Usamos un offset de 0.5 unidades de mundo para los receptáculos
+            // Puertos de imantado en extremos (Entrada y Salida)
             const rotRad = ((el.props.rotacionAxial || 0) * Math.PI) / 180;
             const ox = Math.cos(rotRad) * 0.5;
             const oy = Math.sin(rotRad) * 0.5;
@@ -98,59 +99,45 @@ function buscarPuntoSnap(mouseX, mouseY) {
     };
 }
 
-// - js/events.js
 function ejecutarAccionPrincipal(punto) {
     if (window.estado.tool === 'tool-pipe') {
         manejarDibujoTuberia(punto);
     } 
     else if (window.estado.tool === 'tool-insert' && window.estado.activeItem) {
+        const offsetValvula = 0.5; 
         let finalX = punto.x;
         let finalY = punto.y;
 
-        // Si el snap es a un "puerto", ajustamos la posición para que no se solapen los centros
-        if (punto.isPort) {
-            const rotRad = ((window.estado.activeItem.props.rotacionAxial || 0) * Math.PI) / 180;
-            finalX += Math.cos(rotRad) * 0.5;
-            finalY += Math.sin(rotRad) * 0.5;
-        }
-
-        window.AppCore.agregarElemento({
-            tipo: window.estado.activeItem.type, // Dinámico según catálogo
-            x: finalX, y: finalY, z: punto.z,
-            idCatalogo: window.estado.activeItem.id,
-            props: { ...window.estado.activeItem.props, name: window.estado.activeItem.name }
-        });
-        window.estado.currentZ = punto.z;
-    } else {
-        
+        // 1. Si insertamos sobre una tubería, la acortamos para hacer espacio
         if (punto.padreId) {
             const elPadre = window.AppCore.elementos.find(e => e.id === punto.padreId);
             if (elPadre && elPadre.tipo === 'tuberia') {
-                const distTotal = Math.hypot(elPadre.dx, elPadre.dy, elPadre.dz);
-                if (distTotal > offset) {
-                    const ux = elPadre.dx / distTotal;
-                    const uy = elPadre.dy / distTotal;
-                    const uz = elPadre.dz / distTotal;
+                const distT = Math.hypot(elPadre.dx, elPadre.dy, elPadre.dz);
+                if (distT > offsetValvula) {
+                    const ux = elPadre.dx / distT;
+                    const uy = elPadre.dy / distT;
+                    const uz = elPadre.dz / distT;
 
                     if (punto.esInicio) {
-                        elPadre.x += ux * offset;
-                        elPadre.y += uy * offset;
-                        elPadre.z += uz * offset;
-                        elPadre.dx -= ux * offset;
-                        elPadre.dy -= uy * offset;
-                        elPadre.dz -= uz * offset;
+                        elPadre.x += ux * offsetValvula; elPadre.y += uy * offsetValvula; elPadre.z += uz * offsetValvula;
+                        elPadre.dx -= ux * offsetValvula; elPadre.dy -= uy * offsetValvula; elPadre.dz -= uz * offsetValvula;
                     } else {
-                        elPadre.dx -= ux * offset;
-                        elPadre.dy -= uy * offset;
-                        elPadre.dz -= uz * offset;
+                        elPadre.dx -= ux * offsetValvula; elPadre.dy -= uy * offsetValvula; elPadre.dz -= uz * offsetValvula;
                     }
                 }
             }
         }
 
+        // 2. Si es un puerto de otra válvula, ajustamos posición axial
+        if (punto.isPort) {
+            const rotRad = ((window.estado.activeItem.props.rotacionAxial || 0) * Math.PI) / 180;
+            finalX += Math.cos(rotRad) * offsetValvula;
+            finalY += Math.sin(rotRad) * offsetValvula;
+        }
+
         window.AppCore.agregarElemento({
-            tipo: 'equipo', 
-            x: punto.x, y: punto.y, z: punto.z,
+            tipo: window.estado.activeItem.type, 
+            x: finalX, y: finalY, z: punto.z,
             idCatalogo: window.estado.activeItem.id,
             props: { ...window.estado.activeItem.props, name: window.estado.activeItem.name }
         });
@@ -199,6 +186,7 @@ function actualizarGuiaVisual(e) {
     const circ = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circ.setAttribute("cx", posScreen.x); circ.setAttribute("cy", posScreen.y);
     
+    // Estilo diferenciado para puertos (receptáculos verdes)
     circ.setAttribute("r", p.isPort ? "6" : (p.padreId ? "10" : "5")); 
     circ.setAttribute("fill", p.isPort ? "#00ff64" : (p.padreId ? "rgba(0, 113, 235, 0.2)" : "none"));
     circ.setAttribute("stroke", p.isPort ? "#fff" : "#0071eb");
