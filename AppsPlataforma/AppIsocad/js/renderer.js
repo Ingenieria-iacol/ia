@@ -1,5 +1,5 @@
 /**
- * js/renderer.js - RESTAURACIÓN TOTAL HUD Y ESCALA
+ * js/renderer.js - VERSIÓN CONSOLIDADA CON GROSOR PROPORCIONAL
  */
 window.CADRenderer = {
     capas: {
@@ -39,13 +39,29 @@ window.CADRenderer = {
         const s = window.CADMath.isoToScreen(el.x, el.y, el.z);
         const e = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
         const isSel = window.AppCore.seleccion.includes(el.id);
+        
+        // --- CÁLCULO DE PROPORCIONALIDAD MÉTRICA ---
+        const factorScale = 64; 
+        const diamStr = el.props.diamNominal || '1/2"';
+        // Extraemos el número (ej: de '1-1/4"' extrae 1.25)
+        const valorNumerico = parseFloat(diamStr.replace('-', ' '));
+        const diamPulgadas = isNaN(valorNumerico) ? 0.5 : valorNumerico; 
+        const diamMetros = diamPulgadas * 0.0254; 
+        
+        // Grosor proporcional al factor del sistema (64 unidades/metro)
+        const grosorProporcional = diamMetros * factorScale;
+
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
+        
         let color = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
         line.setAttribute("stroke", color);
-        line.setAttribute("stroke-width", isSel ? "5" : "3");
+        
+        // Aplicamos el grosor. Si está seleccionado, resaltamos ligeramente.
+        line.setAttribute("stroke-width", isSel ? grosorProporcional * 1.3 : grosorProporcional);
         line.setAttribute("stroke-linecap", "round");
+        
         this.capas.elementos.appendChild(line);
     },
 
@@ -66,11 +82,11 @@ window.CADRenderer = {
         
         let iconHTML = window.ICONS.SOPORTE;
         if (el.idCatalogo) {
-            const idKey = el.idCatalogo.toUpperCase();
+            const idKey = el.idCatalogo.replace('c_', '').replace('v_', '').replace('eq_', '').replace('i_', '').replace('p_', '').toUpperCase();
             iconHTML = window.ICONS[idKey] || window.ICONS.SOPORTE;
         }
 
-        foreignObj.innerHTML = `<div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#111; filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};">${iconHTML}</div>`;
+        foreignObj.innerHTML = `<div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:transparent; filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};">${iconHTML}</div>`;
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
 
