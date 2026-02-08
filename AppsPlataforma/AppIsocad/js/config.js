@@ -2,9 +2,9 @@
 
 // CONFIGURACIÓN POR DEFECTO
 window.CONFIG = { 
-    tileW: 100, 
-    tileH: 50, 
-    zStep: 1, 
+    tileW: 100, // 1 metro = 100 píxeles base
+    tileH: 50,  // Proporción isométrica 2:1
+    zStep: 0.1, // Pasos de 10cm para elevación
     snapRadius: 10, 
     showGrid: true, 
     enableSnap: true, 
