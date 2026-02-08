@@ -1,5 +1,5 @@
 /**
- * js/renderer.js - REPARACIÓN DE GROSOR PROPORCIONAL Y VISIBILIDAD DE OBJETOS
+ * js/renderer.js - RESTRUCTURACIÓN PARA ESCALA MÉTRICA REAL
  */
 window.CADRenderer = {
     capas: {
@@ -23,16 +23,42 @@ window.CADRenderer = {
 
     dibujarGrid: function() {
         const grid = this.capas.grid;
-        const tam = 15; let d = "";
-        for (let i = -tam; i <= tam; i++) {
-            let p1 = window.CADMath.isoToScreen(-tam, i, 0), p2 = window.CADMath.isoToScreen(tam, i, 0);
-            d += `M${p1.x},${p1.y} L${p2.x},${p2.y} `;
-            let p3 = window.CADMath.isoToScreen(i, -tam, 0), p4 = window.CADMath.isoToScreen(i, tam, 0);
-            d += `M${p3.x},${p3.y} L${p4.x},${p4.y} `;
+        const tam = 10; // 10 metros de radio
+        let dMetros = "";
+        let dDecimetros = "";
+        let dCentimetros = "";
+
+        for (let i = -tam; i <= tam; i += 0.1) {
+            // Redondeo para evitar errores de punto flotante
+            let pos = Math.round(i * 10) / 10;
+            let p1 = window.CADMath.isoToScreen(-tam, pos, 0);
+            let p2 = window.CADMath.isoToScreen(tam, pos, 0);
+            let p3 = window.CADMath.isoToScreen(pos, -tam, 0);
+            let p4 = window.CADMath.isoToScreen(pos, tam, 0);
+
+            let pathData = `M${p1.x},${p1.y} L${p2.x},${p2.y} M${p3.x},${p3.y} L${p4.x},${p4.y} `;
+
+            if (pos % 1 === 0) {
+                dMetros += pathData; // Línea de Metro
+            } else if ((pos * 10) % 5 === 0) {
+                dDecimetros += pathData; // Cada 50cm
+            } else {
+                dCentimetros += pathData; // Cada 10cm
+            }
         }
+
+        this.crearPathGrid(dCentimetros, "#222", 0.3);   // Centímetros (tenue)
+        this.crearPathGrid(dDecimetros, "#333", 0.6);    // Medios metros
+        this.crearPathGrid(dMetros, "#444", 1.2);         // Metros (fuerte)
+    },
+
+    crearPathGrid: function(d, color, width) {
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("d", d); path.setAttribute("stroke", "#222"); path.setAttribute("fill", "none");
-        grid.appendChild(path);
+        path.setAttribute("d", d);
+        path.setAttribute("stroke", color);
+        path.setAttribute("stroke-width", width);
+        path.setAttribute("fill", "none");
+        this.capas.grid.appendChild(path);
     },
 
     dibujarTuberia: function(el) {
@@ -40,22 +66,18 @@ window.CADRenderer = {
         const e = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
         const isSel = window.AppCore.seleccion.includes(el.id);
         
-        // --- CORRECCIÓN DE CÁLCULO DE DIÁMETRO ---
-        const factorScale = 64; 
+        // --- PROPORCIÓN MÉTRICA DEL GROSOR ---
+        const factorScale = window.CONFIG.tileW; // 100px por metro según config.js
         const diamStr = el.props.diamNominal || '1/2"';
         
-        // Extraemos el valor numérico considerando fracciones (ej: 1-1/4" -> 1.25)
-        let pulg = 0.5;
-        if (diamStr.includes('-')) {
-            const partes = diamStr.replace('"', '').split('-');
-            pulg = parseFloat(partes[0]) + (eval(partes[1]) || 0);
-        } else {
-            pulg = parseFloat(diamStr) || 0.5;
-        }
+        // Convertir fracción a decimal (ej: "1-1/4" -> 1.25)
+        const pulg = diamStr.includes('-') ? 
+            (partes => parseFloat(partes[0]) + eval(partes[1].replace('"', '')))(diamStr.split('-')) : 
+            parseFloat(diamStr) || 0.5;
 
         const diamMetros = pulg * 0.0254; 
-        // Aumentamos la base visual para que sea perceptible (factor x5 sobre el real para visibilidad CAD)
-        const grosorBase = diamMetros * factorScale * 5; 
+        // El grosor en pantalla es: Diámetro real * Factor de escala del lienzo
+        const grosorVisible = diamMetros * factorScale;
 
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
@@ -63,7 +85,7 @@ window.CADRenderer = {
         
         let color = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
         line.setAttribute("stroke", color);
-        line.setAttribute("stroke-width", isSel ? grosorBase * 1.5 : grosorBase);
+        line.setAttribute("stroke-width", isSel ? grosorVisible + 2 : grosorVisible);
         line.setAttribute("stroke-linecap", "round");
         
         this.capas.elementos.appendChild(line);
@@ -71,7 +93,7 @@ window.CADRenderer = {
 
     dibujarEquipo: function(el) {
         const p = window.CADMath.isoToScreen(el.x, el.y, el.z);
-        const factorScale = 64; 
+        const factorScale = window.CONFIG.tileW; 
         const size = (el.props.longitudReal || 0.1) * factorScale * (el.props.escala || 1);
         const rot = (el.props.rotacionAxial || 0) + (window.estado.view.angle * 180 / Math.PI);
         const isSel = window.AppCore.seleccion.includes(el.id);
@@ -86,24 +108,18 @@ window.CADRenderer = {
         
         let iconHTML = window.ICONS.SOPORTE;
         if (el.idCatalogo) {
-            // Buscamos el icono en el catálogo basándonos en la clave
-            const idKey = el.idCatalogo.split('_')[1]?.toUpperCase() || 'SOPORTE';
+            const idKey = el.idCatalogo.split('_')[1]?.toUpperCase();
             iconHTML = window.ICONS[idKey] || window.ICONS.SOPORTE;
         }
 
-        // Restauramos background:#111 para que los objetos sean sólidos y visibles
-        foreignObj.innerHTML = `
-            <div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#111; border-radius:2px; filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};">
-                ${iconHTML}
-            </div>`;
-        
+        foreignObj.innerHTML = `<div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#111; border:1px solid #333;">${iconHTML}</div>`;
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
 
         const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        txt.setAttribute("x", p.x); txt.setAttribute("y", p.y + (size/2) + 12);
-        txt.setAttribute("fill", isSel ? "#0071eb" : "#888"); txt.setAttribute("font-size", "9px");
-        txt.setAttribute("text-anchor", "middle"); txt.textContent = el.props.tag || el.props.name || "";
+        txt.setAttribute("x", p.x); txt.setAttribute("y", p.y + (size/2) + 10);
+        txt.setAttribute("fill", isSel ? "#0071eb" : "#666"); txt.setAttribute("font-size", "8px");
+        txt.setAttribute("text-anchor", "middle"); txt.textContent = el.props.tag || "";
         this.capas.elementos.appendChild(txt);
     },
 
@@ -115,7 +131,7 @@ window.CADRenderer = {
         }
         const hudZ = document.getElementById('hud-z');
         const hudScale = document.getElementById('hud-scale');
-        if (hudZ) hudZ.innerText = window.estado.currentZ.toFixed(2);
-        if (hudScale) hudScale.innerText = Math.round(window.estado.view.scale * 100);
+        if (hudZ) hudZ.innerText = window.estado.currentZ.toFixed(3);
+        if (hudScale) hudScale.innerText = (window.estado.view.scale * 100).toFixed(0);
     }
 };
