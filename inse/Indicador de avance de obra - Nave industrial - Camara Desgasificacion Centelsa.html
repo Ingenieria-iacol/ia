@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Entalpia Hub - Dashboard CENTELSA</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --emerald-metal: #10b981;
+            --dark-bg: #05070a;
+            --card-bg: rgba(15, 23, 42, 0.9);
+            --border: rgba(16, 185, 129, 0.2);
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 15px;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .logo-area h1 { font-family: 'Orbitron', sans-serif; font-size: 0.65rem; color: var(--emerald-metal); letter-spacing: 4px; margin: 0; }
+        .logo-area h2 { font-size: 1.4rem; margin: 5px 0 0 0; text-transform: uppercase; font-weight: 700; }
+
+        /* KPI ZONE */
+        .kpi-zone {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) { .kpi-zone { grid-template-columns: 1fr; } }
+
+        .countdown-card {
+            background: #000;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .countdown-title { font-family: 'Orbitron', sans-serif; font-size: 0.75rem; color: var(--emerald-metal); letter-spacing: 3px; margin-bottom: 10px; font-weight: bold; }
+        
+        .time-wrapper { display: flex; align-items: baseline; justify-content: center; }
+        .time-part { display: flex; flex-direction: column; align-items: center; }
+        .val { 
+            display: inline-block; 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 1.8rem; 
+            color: #fff; 
+            font-variant-numeric: tabular-nums; 
+            text-align: center;
+            width: 2.2ch; 
+        }
+        #ms { color: var(--emerald-metal); width: 2.5ch; }
+        .unit { font-size: 0.55rem; color: #475569; font-weight: bold; }
+        .ms-part { border-left: 1px solid #1e293b; margin-left: 10px; padding-left: 10px; }
+
+        /* CÍRCULO GLOBAL DINÁMICO */
+        .global-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 10px;
+            position: relative;
+        }
+
+        .circle-svg { transform: rotate(-90deg); width: 85px; height: 85px; }
+        .circle-bg { fill: none; stroke: #1e293b; stroke-width: 8; }
+        .circle-bar { 
+            fill: none; 
+            stroke: var(--emerald-metal); 
+            stroke-width: 8; 
+            stroke-dasharray: 251.2; /* Circunferencia (2 * PI * 40) */
+            stroke-dashoffset: 251.2; 
+            stroke-linecap: round; 
+            transition: stroke-dashoffset 1s ease-out;
+            filter: drop-shadow(0 0 4px var(--emerald-metal)); 
+        }
+        .circle-num { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Orbitron'; font-size: 1.2rem; font-weight: bold; color: #fff; }
+
+        /* BARRAS DE PROGRESO DINÁMICAS */
+        .card { background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .card-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--emerald-metal); margin-bottom: 15px; font-weight: bold; }
+        .bar-row { margin-bottom: 15px; }
+        .bar-info { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px; align-items: baseline; }
+        .label-pct { color: var(--emerald-metal); font-family: 'Orbitron'; font-weight: bold; font-size: 1.1rem; }
+        .bar-outer { background: #1e293b; height: 10px; border-radius: 5px; overflow: hidden; }
+        .bar-inner { height: 100%; background: var(--emerald-metal); width: 0%; transition: width 1s ease-out; border-radius: 5px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
+
+        /* GANTT */
+        .gantt-card { overflow-x: auto; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.7rem; text-align: center; }
+        th { background: #0f172a; padding: 10px; border: 1px solid #1e293b; color: #94a3b8; }
+        td { border: 1px solid #1e293b; height: 35px; }
+        .task-name { text-align: left; padding-left: 15px; width: 190px; color: #cbd5e1; font-weight: 600; }
+        .bg-gas { background: #9a3412; } .bg-combustion { background: #7f1d1d; } .bg-pruebas { background: #166534; } .bg-entrega { background: #a16207; border: 1px solid #facc15; }
+
+        /* CHECKLISTS */
+        .checklist-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        @media (max-width: 900px) { .checklist-grid { grid-template-columns: 1fr; } }
+        .check-card { background: rgba(15, 23, 42, 0.5); border-radius: 10px; padding: 15px; border-top: 2px solid var(--emerald-metal); }
+        .check-header { font-size: 0.75rem; font-weight: bold; color: var(--emerald-metal); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid #1e293b; padding-bottom: 5px; }
+        .check-item { display: flex; justify-content: space-between; font-size: 0.65rem; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03); color: #94a3b8; }
+        
+        /* Sistema de aceptación */
+        .check-item.checked { color: var(--emerald-metal); font-weight: 600; }
+        .check-item.checked span:first-child::before { content: '✔ '; font-weight: bold; margin-right: 5px; }
+
+        .weight-tag { color: #475569; font-size: 0.6rem; font-family: 'Orbitron'; }
+        footer { text-align: center; padding: 30px 20px; font-size: 0.7rem; color: #475569; border-top: 1px solid #1e293b; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="logo-area">
+            <h1>INDICADOR DE AVANCE DE OBRA · INSE</h1>
+            <h2>Cámara de Desgasificación <span style="color:var(--emerald-metal)">CENTELSA</span></h2>
+        </div>
+    </header>
+
+    <div class="kpi-zone">
+        <div class="countdown-card">
+            <div class="countdown-title">DÍAS PARA ENTREGA</div>
+            <div class="time-wrapper">
+                <div class="time-part"><span class="val" id="d">00</span><span class="unit">DÍAS</span></div>
+                <div class="time-part"><span class="val" id="h">00</span><span class="unit">HR</span></div>
+                <div class="time-part"><span class="val" id="m">00</span><span class="unit">MIN</span></div>
+                <div class="time-part"><span class="val" id="s">00</span><span class="unit">SEG</span></div>
+                <div class="time-part ms-part"><span class="val" id="ms">00</span><span class="unit">DÉC</span></div>
+            </div>
+        </div>
+        <div class="global-card">
+            <svg class="circle-svg">
+                <circle class="circle-bg" cx="42" cy="42" r="40"></circle>
+                <circle id="global-circle" class="circle-bar" cx="42" cy="42" r="40"></circle>
+            </svg>
+            <div id="global-pct-text" class="circle-num">0%</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Avance por Frente de Trabajo</div>
+        <div class="bar-row" id="frente-nave">
+            <div class="bar-info">
+                <span><span class="label-main">Nave Industrial</span> <span class="label-weight">(45%)</span></span>
+                <span class="label-pct" id="pct-nave">0%</span>
+            </div>
+            <div class="bar-outer"><div class="bar-inner" id="inner-nave"></div></div>
+        </div>
+        <div class="bar-row" id="frente-combustion">
+            <div class="bar-info">
+                <span><span class="label-main">Sistema de Combustión</span> <span class="label-weight">(35%)</span></span>
+                <span class="label-pct" id="pct-combustion">0%</span>
+            </div>
+            <div class="bar-outer"><div class="bar-inner" id="inner-combustion"></div></div>
+        </div>
+        <div class="bar-row" id="frente-gas">
+            <div class="bar-info">
+                <span><span class="label-main">Red de Gas</span> <span class="label-weight">(20%)</span></span>
+                <span class="label-pct" id="pct-gas">0%</span>
+            </div>
+            <div class="bar-outer"><div class="bar-inner" id="inner-gas"></div></div>
+        </div>
+    </div>
+
+    <div class="card gantt-card">
+        <div class="card-title">Cronograma de Obra</div>
+        <table>
+            <thead><tr><th class="task-name">Actividad</th><th>09/02</th><th>10/02</th><th>11/02</th><th>12/02</th><th>13/02</th><th>14/02</th><th>15/02</th></tr></thead>
+            <tbody>
+                <tr><td class="task-name">Red de gas</td><td colspan="3" class="bg-gas"></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td class="task-name">Sistema de combustión</td><td colspan="4" class="bg-combustion"></td><td></td><td></td><td></td></tr>
+                <tr><td class="task-name">Pruebas y ajuste fino</td><td></td><td></td><td></td><td colspan="3" class="bg-pruebas"></td><td></td></tr>
+                <tr><td class="task-name">Entrega del proyecto</td><td></td><td></td><td></td><td></td><td></td><td colspan="2" class="bg-entrega">ENTREGA</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="checklist-grid">
+        <div class="check-card" data-frente="nave" data-peso-max="45">
+            <div class="check-header">Nave Industrial (45%)</div>
+            <div class="check-list">
+                <div class="check-item checked"><span>Compras</span><span class="weight-tag">2.0%</span></div>
+                <div class="check-item checked"><span>Transf. material</span><span class="weight-tag">3.0%</span></div>
+                <div class="check-item checked"><span>Elab. columnas</span><span class="weight-tag">3.5%</span></div>
+         	<div class="check-item checked"><span>Elab. paneles</span><span class="weight-tag">3.5%</span></div>
+                <div class="check-item"><span>Elab. techo</span><span class="weight-tag">2.0%</span></div>
+                <div class="check-item"><span>Elab. sobre techo</span><span class="weight-tag">5.0%</span></div>
+                <div class="check-item"><span>Elab. puertas</span><span class="weight-tag">2.0%</span></div>
+                <div class="check-item"><span>escuadra</span><span class="weight-tag">2.0%</span></div>
+                <div class="check-item checked"><span>Inst. paneles</span><span class="weight-tag">3.0%</span></div>
+                <div class="check-item checked"><span>Inst. columnas</span><span class="weight-tag">3.0%</span></div>
+                <div class="check-item"><span>Inst. techo / sobre techo</span><span class="weight-tag">3.5%</span></div>
+                <div class="check-item"><span>Inst. techo / sobre techo</span><span class="weight-tag">3.5%</span></div>
+                <div class="check-item"><span>Inst. puertas</span><span class="weight-tag">2.0%</span></div>
+                <div class="check-item"><span>Elab. ductos</span><span class="weight-tag">0.5%</span></div>
+                <div class="check-item"><span>Elab. conductos</span><span class="weight-tag">0.5%</span></div>
+                <div class="check-item"><span>Elab. collarines</span><span class="weight-tag">0.5%</span></div>
+                <div class="check-item"><span>Elab. hoguera</span><span class="weight-tag">0.5%</span></div>
+                <div class="check-item"><span>Sellado y hermeticidad</span><span class="weight-tag">2.0%</span></div>
+                <div class="check-item"><span>Acabados, pruebas y ensayos</span><span class="weight-tag">3.0%</span></div>
+            </div>
+        </div>
+
+        <div class="check-card" data-frente="combustion" data-peso-max="35">
+            <div class="check-header">Sistema Combustión (35%)</div>
+            <div class="check-list">
+                <div class="check-item checked"><span>Compras</span><span class="weight-tag">1.0%</span></div>
+                <div class="check-item"><span>Interconexion a red electrica</span><span class="weight-tag">1.0%</span></div>
+		<div class="check-item"><span>Proteccion electrica</span><span class="weight-tag">2.0%</span></div>
+		<div class="check-item"><span>Protocolo de seguridad termica*</span><span class="weight-tag">3.0%</span></div>
+		<div class="check-item"><span>Elab. panel eléctronico</span><span class="weight-tag">3.0%</span></div>
+                <div class="check-item"><span>Cableado y sensado</span><span class="weight-tag">2.0%</span></div>
+                <div class="check-item checked"><span>Prog. PLC</span><span class="weight-tag">4.0%</span></div>
+                <div class="check-item"><span>Integracion Pantalla táctil</span><span class="weight-tag">1.5%</span></div>
+                <div class="check-item"><span>Seteo</span><span class="weight-tag">1.5%</span></div>
+                <div class="check-item"><span>Instalación turbinas</span><span class="weight-tag">2.5%</span></div>
+                <div class="check-item"><span>Instegracion de turbinas a modulo de control turbinas</span><span class="weight-tag">1.5%</span></div>
+                <div class="check-item checked"><span>Suministro quemador</span><span class="weight-tag">3.0%</span></div>
+		<div class="check-item"><span>Integracion de quemador a modulo de control</span><span class="weight-tag">1.5%</span></div>
+                <div class="check-item"><span>Config. sistema de recirculación</span><span class="weight-tag">4.0%</span></div>
+                <div class="check-item"><span>Pruebas y ajuste fino</span><span class="weight-tag">3.0%</span></div>
+            </div>
+        </div>
+
+        <div class="check-card" data-frente="gas" data-peso-max="20">
+            <div class="check-header">Red de Gas (20%)</div>
+            <div class="check-list">
+                <div class="check-item checked"><span>Gestion administrativa transversal</span><span class="weight-tag">3.0%</span></div>
+		<div class="check-item checked"><span>Suministro de tuberias</span><span class="weight-tag">1.0%</span></div>
+		<div class="check-item checked"><span>Suministro regulador 1ra Et</span><span class="weight-tag">1.0%</span></div>
+                <div class="check-item checked"><span>Suministro regulador 2da Et</span><span class="weight-tag">1.0%</span></div>
+                <div class="check-item"><span>Instalacion soportería</span><span class="weight-tag">1.5%</span></div>
+                <div class="check-item"><span>Tendido de tuberia</span><span class="weight-tag">3.0%</span></div>
+		<div class="check-item"><span>Montaje regulador 1ra Et</span><span class="weight-tag">1.25%</span></div>
+                <div class="check-item"><span>Montaje regulador 2da Et</span><span class="weight-tag">1.25%</span></div>
+                <div class="check-item"><span>Instalación válvulas</span><span class="weight-tag">0.75%</span></div>
+                <div class="check-item"><span>Instalación baston / ctrl de presion</span><span class="weight-tag">0.75%</span></div>
+                <div class="check-item"><span>Instalación ctrl de presion</span><span class="weight-tag">1.0%</span></div>
+                <div class="check-item"><span>Acople red existente</span><span class="weight-tag">1.0%</span></div>
+                <div class="check-item"><span>Pruebas y puesta servicio</span><span class="weight-tag">1.5%</span></div>
+                <div class="check-item"><span>Conexion equipo</span><span class="weight-tag">1.0%</span></div>
+                <div class="check-item"><span>Acabados obra</span><span class="weight-tag">1.0%</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer>Entalpia: Hub de ingeniería - SofI.A. - 2026</footer>
+
+<script>
+    // --- LÓGICA DE AVANCE DINÁMICO ---
+    function calcularAvances() {
+        let globalTotal = 0;
+        const frentes = ['nave', 'combustion', 'gas'];
+
+        frentes.forEach(frente => {
+            const card = document.querySelector(`.check-card[data-frente="${frente}"]`);
+            const itemsChecked = card.querySelectorAll('.check-item.checked');
+            const pesoMaximoFrente = parseFloat(card.dataset.pesoMax);
+            
+            let sumaFrente = 0;
+            itemsChecked.forEach(item => {
+                const pesoTexto = item.querySelector('.weight-tag').innerText;
+                sumaFrente += parseFloat(pesoTexto);
+            });
+
+            // Actualizar barra y texto del frente
+            const pctRelativo = (sumaFrente / pesoMaximoFrente) * 100;
+            document.getElementById(`pct-${frente}`).innerText = sumaFrente.toFixed(2) + '%';
+            document.getElementById(`inner-${frente}`).style.width = pctRelativo + '%';
+            
+            globalTotal += sumaFrente;
+        });
+
+        // Actualizar Círculo Global
+        document.getElementById('global-pct-text').innerText = Math.round(globalTotal) + '%';
+        const offset = 251.2 - (251.2 * globalTotal / 100);
+        document.getElementById('global-circle').style.strokeDashoffset = offset;
+    }
+
+    // --- CONTADOR (CON 2 DÉCIMAS Y SIN VIBRACIÓN) ---
+    const target = new Date(2026, 1, 15, 23, 59, 59).getTime();
+
+    function updateTimer() {
+        const diff = target - new Date().getTime();
+        if (diff <= 0) {
+            document.querySelector('.countdown-card').innerHTML = "PROYECTO ENTREGADO";
+            return;
+        }
+
+        document.getElementById('d').textContent = Math.floor(diff / 86400000).toString().padStart(2, '0');
+        document.getElementById('h').textContent = Math.floor((diff % 86400000) / 3600000).toString().padStart(2, '0');
+        document.getElementById('m').textContent = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+        document.getElementById('s').textContent = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+        document.getElementById('ms').textContent = Math.floor((diff % 1000) / 10).toString().padStart(2, '0');
+
+        requestAnimationFrame(updateTimer);
+    }
+
+    // Inicializar todo
+    calcularAvances();
+    updateTimer();
+</script>
+</body>
+</html>
