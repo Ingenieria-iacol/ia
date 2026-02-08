@@ -1,11 +1,11 @@
 /**
  * js/io/pdf-export.js
- * Reporte profesional con BOM (Bill of Materials) escalado métricamente.
+ * Reporte con BOM y Memoria de Cálculo de Ingeniería (Mueller)
  */
 
 window.PDFExport = {
     generarReporte: function() {
-        console.log("📄 Generando reporte métrico...");
+        console.log("📄 Generando reporte técnico integral...");
         
         if (!window.jspdf || !window.html2canvas) {
             alert("Error: Librerías de exportación no cargadas.");
@@ -23,66 +23,91 @@ window.PDFExport = {
         }).then(canvas => {
             const imgData = canvas.toDataURL('image/png');
             
-            // ENCABEZADO PRO
+            // --- ENCABEZADO ---
             doc.setFillColor(0, 113, 235);
             doc.rect(0, 0, 210, 35, 'F');
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(18);
-            doc.text("REPORTE TÉCNICO DE INGENIERÍA - GAS", 105, 18, { align: 'center' });
+            doc.text("MEMORIA TÉCNICA Y DE CÁLCULO - GAS", 105, 18, { align: 'center' });
             doc.setFontSize(10);
-            doc.text(`Proyecto: Isométrico Proporcional | Fecha: ${new Date().toLocaleString()}`, 105, 26, { align: 'center' });
+            doc.text(`Fecha: ${new Date().toLocaleString()} | Normativa: Mueller / NFPA 54`, 105, 26, { align: 'center' });
             
-            // VISTA DEL DISEÑO
+            // --- VISTA ISOMÉTRICA ---
             doc.addImage(imgData, 'PNG', 10, 40, 190, 100);
             
-            // CÁLCULO DE MATERIALES (SIMETRÍA MÉTRICA)
-            const resumen = {};
+            const resumenBOM = {};
+            const datosIngenieria = [];
             
             window.AppCore.elementos.forEach(el => {
-                let nombre = "";
-                let cantidad = 1;
-                let unidad = "und";
-
                 if (el.tipo === 'tuberia') {
+                    // 1. Lógica para Lista de Materiales (BOM)
                     const diam = el.props.diamNominal || '1/2"';
-                    nombre = `TUBERÍA DE GAS - Ø ${diam}`;
-                    unidad = "m";
+                    const nombreBOM = `TUBERÍA - Ø ${diam}`;
+                    const longReal = Math.sqrt(Math.pow(el.dx||0,2)+Math.pow(el.dy||0,2)+Math.pow(el.dz||0,2));
                     
-                    // Cálculo de longitud real usando el motor matemático 3D
-                    // Se calcula la hipotenusa de dx, dy y dz para obtener metros reales
-                    cantidad = Math.sqrt(
-                        Math.pow(el.dx || 0, 2) + 
-                        Math.pow(el.dy || 0, 2) + 
-                        Math.pow(el.dz || 0, 2)
-                    );
-                } else {
-                    // Identificación de accesorios por nombre de catálogo
-                    nombre = (el.props.tag || el.props.name || "Accesorio").toUpperCase();
-                    const diam = el.props.diamNominal || (el.props.diamIn ? el.props.diamIn : "");
-                    if(diam) nombre += ` - Ø ${diam}`;
-                }
+                    if (!resumenBOM[nombreBOM]) resumenBOM[nombreBOM] = { cant: 0, uni: "m" };
+                    resumenBOM[nombreBOM].cant += longReal;
 
-                if (!resumen[nombre]) {
-                    resumen[nombre] = { cant: 0, uni: unidad };
+                    // 2. Lógica para Memoria de Cálculo (Ingeniería)
+                    // Usamos el motor de GasEngine definido en calc.js
+                    const calc = window.GasEngine.calculateFlow({
+                        diamNominal: diam,
+                        longitud: el.props.longitudManual || longReal,
+                        caudal: el.props.caudal || 2.5,
+                        tipoGas: 'NATURAL',
+                        presionEntrada: el.props.presionEntrada || 19
+                    });
+
+                    datosIngenieria.push([
+                        el.props.tag || "Tramo",
+                        diam,
+                        (el.props.longitudManual || longReal).toFixed(2) + " m",
+                        (el.props.caudal || 2.5).toFixed(2),
+                        calc.caidaPresionStr,
+                        calc.velocidad,
+                        calc.estado
+                    ]);
+                } else {
+                    const nombre = (el.props.tag || el.props.name || "Accesorio").toUpperCase();
+                    if (!resumenBOM[nombre]) resumenBOM[nombre] = { cant: 0, uni: "und" };
+                    resumenBOM[nombre].cant += 1;
                 }
-                resumen[nombre].cant += cantidad;
             });
 
-            const filasBOM = Object.keys(resumen).map(key => [
-                key,
-                resumen[key].cant.toFixed(2),
-                resumen[key].uni
-            ]);
-
-            // TABLA DE MATERIALES
+            // --- TABLA 1: LISTA DE MATERIALES ---
+            doc.setTextColor(0, 113, 235);
+            doc.setFontSize(12);
+            doc.text("1. LISTA DE MATERIALES (BOM)", 10, 148);
+            
             doc.autoTable({
-                startY: 145,
-                head: [['Descripción del Material', 'Cantidad', 'Unidad']],
-                body: filasBOM,
-                headStyles: { fillColor: [0, 113, 235], fontSize: 10 },
-                alternateRowStyles: { fillColor: [245, 245, 245] },
+                startY: 152,
+                head: [['Descripción', 'Cantidad', 'Unidad']],
+                body: Object.keys(resumenBOM).map(k => [k, resumenBOM[k].cant.toFixed(2), resumenBOM[k].uni]),
+                headStyles: { fillColor: [0, 113, 235] },
                 theme: 'grid',
-                styles: { fontSize: 9, cellPadding: 3 }
+                styles: { fontSize: 8 }
+            });
+
+            // --- TABLA 2: CÁLCULOS HIDRÁULICOS ---
+            doc.setTextColor(0, 113, 235);
+            doc.setFontSize(12);
+            doc.text("2. MEMORIA DE CÁLCULO HIDRÁULICO (MUELLER)", 10, doc.lastAutoTable.finalY + 10);
+
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 14,
+                head: [['Tag', 'Ø', 'Long.', 'Q (m³/h)', 'ΔP', 'Vel.', 'Estado']],
+                body: datosIngenieria,
+                headStyles: { fillColor: [40, 40, 40] },
+                columnStyles: {
+                    6: { fontStyle: 'bold' } // Columna Estado
+                },
+                didParseCell: function(data) {
+                    if (data.column.index === 6 && data.cell.raw === 'CRÍTICO') {
+                        data.cell.styles.textColor = [255, 0, 0];
+                    }
+                },
+                theme: 'striped',
+                styles: { fontSize: 7 }
             });
 
             // PIE DE PÁGINA
@@ -91,13 +116,12 @@ window.PDFExport = {
                 doc.setPage(i);
                 doc.setFontSize(8);
                 doc.setTextColor(100);
-                doc.text(`CAD Gas v2.10.4 - Sistema Métrico Proporcional - Página ${i} de ${totalPages}`, 105, 285, { align: 'center' });
+                doc.text(`CAD Gas v2.10.4 - Reporte de Ingeniería - Página ${i}/${totalPages}`, 105, 285, { align: 'center' });
             }
 
-            doc.save(`Reporte_Ingenieria_${Date.now()}.pdf`);
+            doc.save(`Memoria_Tecnica_Gas_${Date.now()}.pdf`);
         });
     }
 };
 
-// Vinculación con el botón del Header
 document.getElementById('btn-pdf-gen')?.addEventListener('click', () => window.PDFExport.generarReporte());
