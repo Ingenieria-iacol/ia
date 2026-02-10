@@ -27,6 +27,7 @@
             min-height: 100vh;
         }
 
+        /* Banner Mantenimiento */
         #maint-banner {
             display: none;
             background: var(--warning);
@@ -58,7 +59,7 @@
             box-shadow: 0 0 25px rgba(0, 242, 255, 0.2);
         }
 
-        /* Sección de Avisos Dinámicos */
+        /* Sección de Avisos */
         .notices-container {
             width: 90%;
             max-width: 460px;
@@ -68,27 +69,19 @@
             border-radius: 8px;
             margin-bottom: 20px;
             box-sizing: border-box;
-            animation: slideIn 0.5s ease;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
         }
 
         .notices-container h4 {
             margin: 0 0 5px 0;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             color: var(--accent);
             text-transform: uppercase;
-            letter-spacing: 1px;
         }
 
         .notices-container p {
             margin: 0;
             font-size: 0.85rem;
             line-height: 1.4;
-            font-style: italic;
         }
 
         .search-container { width: 90%; max-width: 460px; margin-bottom: 20px; }
@@ -121,19 +114,7 @@
 
         .app-icon { width: 45px; height: 45px; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
 
-        .logout-btn { 
-            margin: 20px; 
-            background: transparent; 
-            border: 1px solid #ff4d4d; 
-            color: #ff4d4d; 
-            padding: 10px 30px; 
-            border-radius: 25px; 
-            cursor: pointer; 
-            font-weight: bold;
-            transition: 0.3s;
-        }
-
-        .logout-btn:hover { background: #ff4d4d; color: white; }
+        .logout-btn { margin: 20px; background: transparent; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px 30px; border-radius: 25px; cursor: pointer; font-weight: bold; }
 
         #maint-screen {
             display: none;
@@ -157,7 +138,7 @@
 
     <div id="main-content">
         <section class="header-profile">
-            <div class="avatar">MI</div>
+            <div class="avatar">MUI</div>
             <div class="company-info">
                 <h1>ENTHALPIA</h1>
                 <p>Muihub de Ingeniería</p>
@@ -165,8 +146,8 @@
         </section>
 
         <div class="notices-container">
-            <h4 id="notice-tag">📢 Recomendación del día</h4>
-            <p id="notice-text">Cargando aviso...</p>
+            <h4>📢 Aviso Reciente</h4>
+            <p id="notice-text">Bienvenido al Hub. Recuerde sincronizar sus reportes de obra antes de las 5:00 PM.</p>
         </div>
 
         <div class="search-container">
@@ -174,21 +155,21 @@
         </div>
 
         <main class="hub-container" id="appGrid">
-            <a href="../inse/Indicador de avance de obra - Nave industrial - Camara Desgasificacion Centelsa.html" class="app-card">
+            <a href="inse/Indicador de avance de obra - Nave industrial - Camara Desgasificacion Centelsa.html" class="app-card">
                 <div class="app-icon">📊</div>
                 <div class="app-details">
                     <h3>Indicador Centelsa</h3>
                     <p>Avance de Obra - Desgasificación</p>
                 </div>
             </a>
-            <a href="../inse/carpeta_compartida_inse.html" class="app-card">
+            <a href="inse/carpeta_compartida_inse.html" class="app-card">
                 <div class="app-icon">📁</div>
                 <div class="app-details">
                     <h3>Portal Carpeta Compartida</h3>
                     <p>Gestión Documental INSE</p>
                 </div>
             </a>
-            <a href="../inse/portal_colgas_inse.html" class="app-card">
+            <a href="inse/portal_colgas_inse.html" class="app-card">
                 <div class="app-icon">⚡</div>
                 <div class="app-details">
                     <h3>Portal Colgas</h3>
@@ -203,34 +184,14 @@
     </div>
 
     <script>
-        // 1. CONFIGURACIÓN DE MANTENIMIENTO
+        // CONFIGURACIÓN
         const MODO_MANTENIMIENTO = false; 
 
-        // 2. LISTA DE AVISOS (Puedes agregar los que quieras)
-        const avisos = [
-            "Recuerde sincronizar sus reportes antes de las 5:00 PM.",
-            "La seguridad es primero: use su EPP completo en campo.",
-            "Revise la carpeta compartida para las últimas normativas INSE.",
-            "Actualice el avance de Centelsa tras cada jornada técnica.",
-            "Muihub: Conectando la ingeniería de Entalpia.",
-            "Verifique la conexión VPN si tiene problemas con el portal Colgas."
-        ];
-
-        // Función para cargar aviso aleatorio
-        function loadRandomNotice() {
-            const index = Math.floor(Math.random() * avisos.length);
-            document.getElementById('notice-text').innerText = avisos[index];
+        if (MODO_MANTENIMIENTO) {
+            document.getElementById('maint-screen').style.display = 'flex';
+            document.getElementById('maint-banner').style.display = 'block';
+            document.getElementById('main-content').style.display = 'none';
         }
-
-        // Ejecutar al cargar
-        window.onload = function() {
-            loadRandomNotice();
-            if (MODO_MANTENIMIENTO) {
-                document.getElementById('maint-screen').style.display = 'flex';
-                document.getElementById('maint-banner').style.display = 'block';
-                document.getElementById('main-content').style.display = 'none';
-            }
-        };
 
         function filterApps() {
             let input = document.getElementById('appSearch').value.toLowerCase();
@@ -241,12 +202,14 @@
             }
         }
 
+        // FUNCIÓN VOLVER REAL
         function goBack() {
-            if (document.referrer !== "" && document.referrer.includes(window.location.hostname)) {
+            if (document.referrer !== "") {
                 window.history.back();
             } else {
                 if(confirm("¿Desea cerrar el Muihub?")) {
-                    window.location.href = "about:blank";
+                    window.close(); // Intenta cerrar la pestaña
+                    window.location.href = "about:blank"; // Fallback
                 }
             }
         }
