@@ -12,6 +12,7 @@
             --bg: #0a0e14;      
             --card-bg: rgba(255, 255, 255, 0.05);
             --text: #e0e0e0;
+            --warning: #ffcc00;
         }
 
         body {
@@ -24,10 +25,22 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            overflow-x: hidden;
         }
 
-        /* Perfil de Empresa */
+        #maint-banner {
+            display: none;
+            background: var(--warning);
+            color: #000;
+            width: 100%;
+            text-align: center;
+            padding: 10px 0;
+            font-weight: bold;
+            font-size: 0.8rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
         .header-profile {
             width: 100%;
             padding: 30px 20px;
@@ -36,29 +49,49 @@
         }
 
         .avatar {
-            width: 70px;
-            height: 70px;
+            width: 70px; height: 70px;
             background: var(--accent);
-            border-radius: 20px; /* Estilo App moderna */
+            border-radius: 20px;
             margin: 0 auto 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.4rem;
-            color: var(--primary);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1.4rem; color: var(--primary);
             box-shadow: 0 0 25px rgba(0, 242, 255, 0.2);
         }
 
-        .company-info h1 { margin: 0; font-size: 1.6rem; letter-spacing: 2px; }
-        .company-info p { margin: 5px 0; opacity: 0.6; font-size: 0.85rem; }
-
-        /* Buscador */
-        .search-container {
+        /* Sección de Avisos Dinámicos */
+        .notices-container {
             width: 90%;
             max-width: 460px;
+            background: rgba(0, 242, 255, 0.1);
+            border-left: 4px solid var(--accent);
+            padding: 15px;
+            border-radius: 8px;
             margin-bottom: 20px;
+            box-sizing: border-box;
+            animation: slideIn 0.5s ease;
         }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .notices-container h4 {
+            margin: 0 0 5px 0;
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .notices-container p {
+            margin: 0;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            font-style: italic;
+        }
+
+        .search-container { width: 90%; max-width: 460px; margin-bottom: 20px; }
 
         #appSearch {
             width: 100%;
@@ -68,21 +101,9 @@
             border-radius: 25px;
             color: white;
             outline: none;
-            box-sizing: border-box;
-            transition: 0.3s;
         }
 
-        #appSearch:focus {
-            border-color: var(--accent);
-            background: rgba(255,255,255,0.12);
-        }
-
-        /* Contenedor de Apps */
-        .hub-container {
-            width: 90%;
-            max-width: 500px;
-            flex-grow: 1;
-        }
+        .hub-container { width: 90%; max-width: 500px; flex-grow: 1; }
 
         .app-card {
             background: var(--card-bg);
@@ -91,127 +112,144 @@
             border-radius: 16px;
             padding: 18px;
             margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: white;
-            transition: all 0.3s ease;
-            animation: fadeIn 0.5s ease forwards;
+            display: flex; align-items: center;
+            text-decoration: none; color: white;
+            transition: 0.3s;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .app-card:hover { border-color: var(--accent); background: rgba(0, 242, 255, 0.1); }
 
-        .app-card:hover {
-            border-color: var(--accent);
-            background: rgba(0, 242, 255, 0.05);
-        }
+        .app-icon { width: 45px; height: 45px; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
 
-        .app-icon {
-            width: 45px;
-            height: 45px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-            margin-right: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-        }
-
-        .app-details h3 { margin: 0; font-size: 1rem; }
-        .app-details p { margin: 3px 0 0; font-size: 0.75rem; color: var(--accent); opacity: 0.7; }
-
-        /* Botón Salir */
-        .logout-btn {
-            margin: 20px 0;
-            background: transparent;
-            border: 1px solid #ff4d4d;
-            color: #ff4d4d;
-            padding: 8px 25px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.8rem;
+        .logout-btn { 
+            margin: 20px; 
+            background: transparent; 
+            border: 1px solid #ff4d4d; 
+            color: #ff4d4d; 
+            padding: 10px 30px; 
+            border-radius: 25px; 
+            cursor: pointer; 
+            font-weight: bold;
             transition: 0.3s;
         }
 
         .logout-btn:hover { background: #ff4d4d; color: white; }
 
-        .footer { font-size: 0.65rem; opacity: 0.3; padding: 15px; letter-spacing: 1px; }
+        #maint-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            z-index: 9999;
+            flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
     </style>
 </head>
 <body>
 
-    <section class="header-profile">
-        <div class="avatar">MUI</div>
-        <div class="company-info">
-            <h1>ENTHALPIA</h1>
-            <p>Muihub de Ingeniería</p>
-        </div>
-    </section>
+    <div id="maint-banner">⚠️ MODO MANTENIMIENTO ACTIVO</div>
 
-    <div class="search-container">
-        <input type="text" id="appSearch" placeholder="Buscar herramienta o proyecto..." onkeyup="filterApps()">
+    <div id="maint-screen">
+        <div class="avatar" style="background: var(--warning);">!</div>
+        <h1>SISTEMA EN ACTUALIZACIÓN</h1>
+        <p>Estamos optimizando las herramientas.<br>Vuelve pronto.</p>
     </div>
 
-    <main class="hub-container" id="appGrid">
-        
-        <a href="../inse/Indicador de avance de obra - Nave industrial - Camara Desgasificacion Centelsa.html" class="app-card">
-            <div class="app-icon">📊</div>
-            <div class="app-details">
-                <h3>Indicador Centelsa</h3>
-                <p>Avance de Obra - Cámara Desgasificación</p>
+    <div id="main-content">
+        <section class="header-profile">
+            <div class="avatar">MUI</div>
+            <div class="company-info">
+                <h1>ENTHALPIA</h1>
+                <p>Muihub de Ingeniería</p>
             </div>
-        </a>
+        </section>
 
-        <a href="../inse/carpeta_compartida_inse.html" class="app-card">
-            <div class="app-icon">📁</div>
-            <div class="app-details">
-                <h3>Portal Carpeta Compartida</h3>
-                <p>Gestión Documental INSE</p>
-            </div>
-        </a>
+        <div class="notices-container">
+            <h4 id="notice-tag">📢 Recomendación del día</h4>
+            <p id="notice-text">Cargando aviso...</p>
+        </div>
 
-        <a href="../inse/portal_colgas_inse.html" class="app-card">
-            <div class="app-icon">⚡</div>
-            <div class="app-details">
-                <h3>Portal Colgas</h3>
-                <p>Herramientas y Recursos Colgas</p>
-            </div>
-        </a>
+        <div class="search-container">
+            <input type="text" id="appSearch" placeholder="Buscar herramienta..." onkeyup="filterApps()">
+        </div>
 
-    </main>
+        <main class="hub-container" id="appGrid">
+            <a href="inse/Indicador de avance de obra - Nave industrial - Camara Desgasificacion Centelsa.html" class="app-card">
+                <div class="app-icon">📊</div>
+                <div class="app-details">
+                    <h3>Indicador Centelsa</h3>
+                    <p>Avance de Obra - Desgasificación</p>
+                </div>
+            </a>
+            <a href="inse/carpeta_compartida_inse.html" class="app-card">
+                <div class="app-icon">📁</div>
+                <div class="app-details">
+                    <h3>Portal Carpeta Compartida</h3>
+                    <p>Gestión Documental INSE</p>
+                </div>
+            </a>
+            <a href="inse/portal_colgas_inse.html" class="app-card">
+                <div class="app-icon">⚡</div>
+                <div class="app-details">
+                    <h3>Portal Colgas</h3>
+                    <p>Recursos Colgas</p>
+                </div>
+            </a>
+        </main>
 
-    <button class="logout-btn" onclick="exitApp()">CERRAR SESIÓN</button>
-
-    <footer class="footer">
-        SISTEMA DE GESTIÓN CENTRALIZADO &copy; 2024
-    </footer>
+        <center>
+            <button class="logout-btn" onclick="goBack()">VOLVER / SALIR</button>
+        </center>
+    </div>
 
     <script>
+        // 1. CONFIGURACIÓN DE MANTENIMIENTO
+        const MODO_MANTENIMIENTO = false; 
+
+        // 2. LISTA DE AVISOS (Puedes agregar los que quieras)
+        const avisos = [
+            "Recuerde sincronizar sus reportes antes de las 5:00 PM.",
+            "La seguridad es primero: use su EPP completo en campo.",
+            "Revise la carpeta compartida para las últimas normativas INSE.",
+            "Actualice el avance de Centelsa tras cada jornada técnica.",
+            "Muihub: Conectando la ingeniería de Entalpia.",
+            "Verifique la conexión VPN si tiene problemas con el portal Colgas."
+        ];
+
+        // Función para cargar aviso aleatorio
+        function loadRandomNotice() {
+            const index = Math.floor(Math.random() * avisos.length);
+            document.getElementById('notice-text').innerText = avisos[index];
+        }
+
+        // Ejecutar al cargar
+        window.onload = function() {
+            loadRandomNotice();
+            if (MODO_MANTENIMIENTO) {
+                document.getElementById('maint-screen').style.display = 'flex';
+                document.getElementById('maint-banner').style.display = 'block';
+                document.getElementById('main-content').style.display = 'none';
+            }
+        };
+
         function filterApps() {
             let input = document.getElementById('appSearch').value.toLowerCase();
             let cards = document.getElementsByClassName('app-card');
-            
             for (let i = 0; i < cards.length; i++) {
-                let title = cards[i].querySelector('h3').innerText.toLowerCase();
-                let desc = cards[i].querySelector('p').innerText.toLowerCase();
-                if (title.includes(input) || desc.includes(input)) {
-                    cards[i].style.display = "flex";
-                } else {
-                    cards[i].style.display = "none";
-                }
+                let text = cards[i].innerText.toLowerCase();
+                cards[i].style.display = text.includes(input) ? "flex" : "none";
             }
         }
 
-        function exitApp() {
-            if(confirm("¿Desea cerrar el Muihub de Ingeniería?")) {
-                window.location.href = "about:blank"; // Simula salida
+        function goBack() {
+            if (document.referrer !== "" && document.referrer.includes(window.location.hostname)) {
+                window.history.back();
+            } else {
+                if(confirm("¿Desea cerrar el Muihub?")) {
+                    window.location.href = "about:blank";
+                }
             }
         }
     </script>
 </body>
-
 </html>
