@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan de Mantenimiento SIDOC - INSE</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #e67e22;
+            --bg: #f8f9fa;
+            --planeado: #2980b9;
+            --ejecutado: #27ae60;
+            --text: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        /* Encabezado */
+        header {
+            text-align: center;
+            border-bottom: 4px solid var(--accent);
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+        }
+
+        h1 { margin: 0; color: var(--primary); font-size: 1.8em; }
+        .sub-header { color: #666; margin-top: 5px; font-weight: 500; }
+
+        /* Leyenda de Colores */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f1f2f6;
+            border-radius: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .dot {
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .bg-planeado { background-color: var(--planeado); }
+        .bg-ejecutado { background-color: var(--ejecutado); }
+
+        /* Tabla Interactiva */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        th {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px;
+            font-size: 0.85em;
+            text-transform: uppercase;
+        }
+
+        td {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 0.9em;
+        }
+
+        .actividad-info {
+            text-align: left;
+            min-width: 250px;
+            background-color: #fdfdfd;
+        }
+
+        .actividad-title {
+            display: block;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .actividad-desc {
+            display: block;
+            font-size: 0.8em;
+            color: #7f8c8d;
+            margin-top: 4px;
+        }
+
+        /* Estilos de Fechas */
+        .date-badge {
+            display: block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 2px 0;
+            font-size: 0.85em;
+        }
+
+        .planeado { color: var(--planeado); font-weight: 600; border: 1px dashed var(--planeado); }
+        .ejecutado { background-color: #eafaf1; color: var(--ejecutado); font-weight: bold; }
+        .na { color: #bdc3c7; font-style: italic; }
+
+        /* Sección de Notas */
+        .notes-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 0.85em;
+        }
+
+        .card-tech { background-color: #e3f2fd; border-left: 5px solid #2196f3; }
+        .card-normative { background-color: #fff3e0; border-left: 5px solid var(--accent); }
+
+        h3 { margin-top: 0; font-size: 1.1em; color: var(--secondary); }
+
+        ul { padding-left: 20px; margin: 0; }
+        li { margin-bottom: 8px; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Programa de Mantenimiento: SIDOC S.A.S</h1>
+        <div class="sub-header">Instalación Gas Combustible - Res. 90902:2013 | Elaborado por: INSE</div>
+    </header>
+
+    <div class="legend">
+        <div class="legend-item">
+            <span class="dot bg-planeado"></span>
+            <span style="color: var(--planeado)">AZUL: PLANEADO (Programación teórica)</span>
+        </div>
+        <div class="legend-item">
+            <span class="dot bg-ejecutado"></span>
+            <span style="color: var(--ejecutado)">VERDE: EJECUTADO (Registro realizado)</span>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Actividad y Descripción</th>
+                    <th>Frecuencia</th>
+                    <th>2023</th>
+                    <th>2024</th>
+                    <th>2025</th>
+                    <th>2026</th>
+                    <th>2027</th>
+                    <th>2028</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="actividad-info">
+                        <span class="actividad-title">Prueba de Hermeticidad y Presión</span>
+                        <span class="actividad-desc">Detección de fugas mediante odómetro y presión según operación.</span>
+                    </td>
+                    <td>Anual / 5 años</td>
+                    <td>
+                        <span class="date-badge planeado">31/08/2023</span>
+                        <span class="date-badge ejecutado">11/2023</span>
+                    </td>
+                    <td><span class="date-badge planeado">11/06/2024</span></td>
+                    <td><span class="date-badge planeado">01/08/2025</span></td>
+                    <td><span class="date-badge planeado">01/05/2026</span></td>
+                    <td><span class="date-badge planeado">01/09/2027</span></td>
+                    <td>
+                        <span class="date-badge planeado">01/08/2028</span>
+                        <span class="date-badge ejecutado">10/2028</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="actividad-info">
+                        <span class="actividad-title">Verificación de Corrosión</span>
+                        <span class="actividad-desc">Inspección visual de superficies pintadas y recubrimientos.</span>
+                    </td>
+                    <td>Periódica</td>
+                    <td><span class="date-badge ejecutado">11/2023</span></td>
+                    <td><span class="date-badge planeado">11/05/2024</span></td>
+                    <td><span class="date-badge planeado">01/11/2025</span></td>
+                    <td><span class="date-badge planeado">01/06/2026</span></td>
+                    <td><span class="na">--</span></td>
+                    <td><span class="date-badge planeado">01/05/2028</span></td>
+                </tr>
+                <tr>
+                    <td class="actividad-info">
+                        <span class="actividad-title">Pruebas Puesta a Tierra (SPT)</span>
+                        <span class="actividad-desc">Medición de resistencia y corrientes espurias.</span>
+                    </td>
+                    <td>Anual</td>
+                    <td><span class="date-badge planeado">11/01/2023</span></td>
+                    <td><span class="date-badge planeado">14/09/2024</span></td>
+                    <td><span class="date-badge planeado">01/08/2025</span></td>
+                    <td><span class="date-badge planeado">01/09/2026</span></td>
+                    <td><span class="date-badge planeado">01/02/2027</span></td>
+                    <td><span class="date-badge planeado">03/06/2028</span></td>
+                </tr>
+                <tr>
+                    <td class="actividad-info">
+                        <span class="actividad-title">Certificación de Conformidad</span>
+                        <span class="actividad-desc">Evaluación por organismo de inspección acreditado (ONAC).</span>
+                    </td>
+                    <td>Ciclo RTR</td>
+                    <td><span class="date-badge ejecutado">11/2023</span></td>
+                    <td><span class="na">NA</span></td>
+                    <td><span class="na">NA</span></td>
+                    <td><span class="na">NA</span></td>
+                    <td><span class="na">NA</span></td>
+                    <td><span class="date-badge planeado">10/2028</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="notes-section">
+        <div class="card card-tech">
+            <h3>Información Técnica (INSE)</h3>
+            <ul>
+                <li>Cada mantenimiento debe generar un registro documental obligatorio[cite: 7].</li>
+                <li>Fugas detectadas deben corregirse ANTES del ensayo de presión[cite: 8].</li>
+                <li>Personal ejecutor debe ser competente en instalaciones industriales[cite: 10].</li>
+            </ul>
+        </div>
+        <div class="card card-normative">
+            <h3>Requisitos de Ley (Res. 90902)</h3>
+            <ul>
+                <li>Pruebas de SPT requieren personal con matrícula <strong>CONTE/TE</strong>[cite: 11].</li>
+                <li>La vigencia del programa se sustenta en los registros de pruebas y correcciones[cite: 12].</li>
+                <li>Defectos en protección o SPT se corrigen como parte del mantenimiento[cite: 9].</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
