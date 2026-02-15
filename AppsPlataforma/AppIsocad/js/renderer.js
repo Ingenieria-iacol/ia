@@ -28,7 +28,6 @@ window.CADRenderer = {
         let dDecimetros = "";
         let dCentimetros = "";
 
-        // Generamos líneas cada 0.01m (1cm) para máxima precisión visual al hacer zoom
         for (let i = -radio; i <= radio; i += 0.1) {
             let pos = Math.round(i * 10) / 10;
             let p1 = window.CADMath.isoToScreen(-radio, pos, 0);
@@ -47,11 +46,8 @@ window.CADRenderer = {
             }
         }
 
-        // 1. Centímetros: Líneas muy tenues y delgadas
         this.crearPathGrid(dCentimetros, "#1a1a1a", 0.2);
-        // 2. Decímetros: Líneas intermedias
         this.crearPathGrid(dDecimetros, "#222", 0.4);
-        // 3. Metros: Ejes principales más visibles
         this.crearPathGrid(dMetros, "#333", 0.8);
     },
 
@@ -69,11 +65,9 @@ window.CADRenderer = {
         const e = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
         const isSel = window.AppCore.seleccion.includes(el.id);
         
-        // --- PROPORCIÓN MÉTRICA CON AJUSTE ESTÉTICO ---
-        const tileW = window.CONFIG.tileW; // 100px = 1m
+        const tileW = window.CONFIG.tileW; 
         const diamStr = el.props.diamNominal || '1/2"';
         
-        // Conversión precisa de pulgadas a metros
         let pulg = 0.5;
         if (diamStr.includes('-')) {
             const partes = diamStr.split('-');
@@ -83,9 +77,6 @@ window.CADRenderer = {
         }
 
         const diamMetros = pulg * 0.0254;
-
-        // Factor para equilibrar la visibilidad técnica con la estética
-        // Un valor de 3.5 permite que 1/2" sea una línea clara pero no un bloque
         const factorEstetico = 1.5; 
         const grosorFinal = diamMetros * tileW * factorEstetico;
 
@@ -95,28 +86,32 @@ window.CADRenderer = {
         
         let color = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
         line.setAttribute("stroke", color);
-        
-        // Aplicamos el grosor: si está seleccionado aumentamos un 30% para destacar
         line.setAttribute("stroke-width", isSel ? grosorFinal * 1.3 : grosorFinal);
         line.setAttribute("stroke-linecap", "round");
         
         this.capas.elementos.appendChild(line);
     },
 
+    // --- FUNCIÓN ACTUALIZADA ---
     dibujarEquipo: function(el) {
         const p = window.CADMath.isoToScreen(el.x, el.y, el.z);
         const tileW = window.CONFIG.tileW; 
         const size = (el.props.longitudReal || 0.1) * tileW * (el.props.escala || 1);
         const rot = (el.props.rotacionAxial || 0) + (window.estado.view.angle * 180 / Math.PI);
         const isSel = window.AppCore.seleccion.includes(el.id);
-        const color = isSel ? '#0071eb' : (el.props.colorRef || '#ffffff');
+        
+        // Asegurar color claro (si es negro o muy oscuro, ajustamos a cian)
+        let color = isSel ? '#0071eb' : (el.props.colorRef || '#00d4ff');
+        if (color === '#000000' || color === '#111111') color = '#00d4ff'; 
 
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
         group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rot})`);
         
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-        foreignObj.setAttribute("x", -size/2); foreignObj.setAttribute("y", -size/2); 
-        foreignObj.setAttribute("width", size); foreignObj.setAttribute("height", size);
+        foreignObj.setAttribute("x", -size/2); 
+        foreignObj.setAttribute("y", -size/2); 
+        foreignObj.setAttribute("width", size); 
+        foreignObj.setAttribute("height", size);
         
         let iconHTML = window.ICONS.SOPORTE;
         if (el.idCatalogo) {
@@ -124,18 +119,24 @@ window.CADRenderer = {
             iconHTML = window.ICONS[idKey] || window.ICONS.SOPORTE;
         }
 
+        // Diseño limpio: fondo transparente y sombreado suave para profundidad
         foreignObj.innerHTML = `
-            <div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#111; border:0.5px solid #333; box-sizing:border-box; filter:${isSel ? 'drop-shadow(0 0 3px #0071eb)' : 'none'};">
+            <div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:transparent; border:none; box-sizing:border-box; filter:${isSel ? 'drop-shadow(0 0 5px #0071eb)' : 'drop-shadow(0 0 2px rgba(255,255,255,0.2))'};">
                 ${iconHTML}
             </div>`;
         
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
 
+        // Etiqueta (Tag) con color suavizado y mayor visibilidad
         const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        txt.setAttribute("x", p.x); txt.setAttribute("y", p.y + (size/2) + 12);
-        txt.setAttribute("fill", isSel ? "#0071eb" : "#888"); txt.setAttribute("font-size", "9px");
-        txt.setAttribute("text-anchor", "middle"); txt.textContent = el.props.tag || "";
+        txt.setAttribute("x", p.x); 
+        txt.setAttribute("y", p.y + (size/2) + 12);
+        txt.setAttribute("fill", isSel ? "#0071eb" : "#aaa"); 
+        txt.setAttribute("font-size", "10px");
+        txt.setAttribute("font-weight", "bold");
+        txt.setAttribute("text-anchor", "middle"); 
+        txt.textContent = el.props.tag || "";
         this.capas.elementos.appendChild(txt);
     },
 
