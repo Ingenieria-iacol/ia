@@ -1,10 +1,12 @@
 // js/config.js
 
+// ==========================================
 // CONFIGURACIÓN POR DEFECTO
+// ==========================================
 window.CONFIG = { 
-    tileW: 100, // 1 metro = 100 píxeles base
-    tileH: 50,  // Proporción isométrica 2:1
-    zStep: 0.1, // Pasos de 10cm para elevación
+    tileW: 100,    // 1 metro = 100 píxeles base
+    tileH: 50,     // Proporción isométrica 2:1
+    zStep: 0.1,    // Pasos de 10cm para elevación
     snapRadius: 10, 
     showGrid: true, 
     enableSnap: true, 
@@ -12,7 +14,9 @@ window.CONFIG = {
     showTags: true 
 };
 
+// ==========================================
 // CONSTANTES DE UNIDADES
+// ==========================================
 window.UNITS = { 
     'm': { factor: 1, label: 'm', precision: 2 }, 
     'dm': { factor: 10, label: 'cm', precision: 1 }, 
@@ -20,7 +24,9 @@ window.UNITS = {
     'mm': { factor: 1000, label: 'mm', precision: 0 } 
 };
 
+// ==========================================
 // DIÁMETROS DISPONIBLES
+// ==========================================
 window.DIAMETROS_DISPONIBLES = {
     'acero_sch40': ['1/4"', '1/2"', '3/4"', '1"', '1-1/4"', '1-1/2"', '2"', '2-1/2"', '3"', '4"', '6"'],
     'acero_sch80': ['1/2"', '3/4"', '1"', '1-1/4"', '1-1/2"', '2"', '3"', '4"'],
@@ -39,38 +45,79 @@ window.DIAMETROS_DISPONIBLES = {
 };
 
 // ==========================================
-// ICONOS SVG (Estilo P&ID)
+// ICONOS SVG MEJORADOS (Estilo Profesional P&ID)
 // ==========================================
 window.ICONS = {
-    PIPE: `<svg viewBox="0 0 24 24"><line x1="2" y1="20" x2="22" y2="4" /></svg>`,
-    PIPE_FLEX: `<svg viewBox="0 0 24 24"><path d="M2,20 C8,20 8,12 12,12 S16,4 22,4" /></svg>`,
-    UNION: `<svg viewBox="0 0 24 24"><path d="M7,12 L17,12 M7,8 L7,16 M17,8 L17,16" /></svg>`, 
-    BRIDA: `<svg viewBox="0 0 24 24"><line x1="12" y1="4" x2="12" y2="20" stroke-width="3"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="16" x2="16" y2="16"/></svg>`,
-    V_GATE: `<svg viewBox="0 0 24 24"><path d="M2,8 L12,16 L22,8 L22,16 L12,8 L2,16 Z" class="filled" fill="currentColor" stroke="none"/></svg>`, 
-   V_BOLA: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2,7 L12,12 L2,17 Z M22,7 L12,12 L22,17 Z" /><circle cx="12" cy="12" r="3" fill="currentColor" /></svg>`,
-    V_ACTUADA: `<svg viewBox="0 0 24 24"><path d="M2,8 L12,13 L2,18 Z" /><path d="M22,8 L12,13 L22,18 Z" /><line x1="12" y1="13" x2="12" y2="6" stroke-width="1.5"/><rect x="8" y="2" width="8" height="5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`, 
-    V_GLOBO: `<svg viewBox="0 0 24 24"><path d="M2,7 L12,12 L2,17 Z" /><path d="M22,7 L12,12 L22,17 Z" /><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>`, 
-    V_AGUJA: `<svg viewBox="0 0 24 24"><path d="M2,12 L22,12 M12,12 L12,20 M8,16 L16,16" /><path d="M12,12 L8,4 L16,4 Z" /></svg>`, 
-    V_CHECK: `<svg viewBox="0 0 24 24"><path d="M4,17 L14,12 L4,7 Z" /><line x1="14" y1="7" x2="14" y2="17" /></svg>`, 
-    V_EXCESO: `<svg viewBox="0 0 24 24"><path d="M2,12 L22,12" /><path d="M16,7 L8,12 L16,17 Z" fill="currentColor"/></svg>`, 
-    MEDIDOR: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12,12 L16,8" /><text x="8" y="16" font-size="8" font-family="Arial" stroke="none" fill="currentColor">M</text></svg>`,
-    CORRECTOR: `<svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2" /><path d="M8,12 L16,12" /></svg>`,
-    REGULADOR: `<svg viewBox="0 0 24 24"><path d="M4,12 L20,12" /><path d="M12,12 L8,4 L16,4 Z" /></svg>`,
-    COMPRESOR: `<svg viewBox="0 0 24 24"><path d="M4,20 L20,4 M20,20 L4,4" /><circle cx="12" cy="12" r="8" /></svg>`,
-    MANOMETRO: `<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="7" /><line x1="12" y1="15" x2="12" y2="22" /><text x="12" y="10" text-anchor="middle" font-size="8" stroke="none" fill="currentColor">PI</text></svg>`,
-    PRESOSTATO: `<svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" /><text x="12" y="15" text-anchor="middle" font-size="8" stroke="none" fill="currentColor">PS</text></svg>`,
-    SENSOR: `<svg viewBox="0 0 24 24"><path d="M12,2 L15,8 L21,9 L17,14 L18,20 L12,17 L6,20 L7,14 L3,9 L9,8 Z" /></svg>`,
-    SOPORTE: `<svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="20" y2="20" stroke-width="3"/><line x1="12" y1="20" x2="12" y2="8"/><path d="M8,8 L16,8 L12,14 Z"/></svg>`,
-    TANQUE: `<svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="4" /><line x1="8" y1="6" x2="8" y2="18" /><line x1="16" y1="6" x2="16" y2="18" /></svg>`,
-    CINTA: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" stroke-width="3"/><path d="M12,6 L18,2" stroke-width="1"/></svg>`,
-    BOTELLA: `<svg viewBox="0 0 24 24"><path d="M9,20 L15,20 L15,10 L9,10 Z" /><path d="M12,10 L12,6" /><rect x="10" y="4" width="4" height="2" /></svg>`,
-    BROCHA: `<svg viewBox="0 0 24 24"><rect x="8" y="4" width="8" height="6" /><line x1="8" y1="10" x2="8" y2="13" /><line x1="11" y1="10" x2="11" y2="13" /><line x1="13" y1="10" x2="13" y2="13" /><line x1="16" y1="10" x2="16" y2="13" /><path d="M10,13 L14,13 L13,20 L11,20 Z" /></svg>`
+    // Tubería con grosor visual
+    PIPE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="2" y1="12" x2="22" y2="12" /></svg>`,
+    
+    PIPE_FLEX: `<svg viewBox="0 0 24 24"><path d="M2,20 C8,20 8,12 12,12 S16,4 22,4" fill="none" stroke="currentColor" stroke-width="2"/></svg>`,
+
+    // Válvula de Bola (Símbolo estándar con círculo central)
+    V_BOLA: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M2,7 L12,12 L2,17 Z M22,7 L12,12 L22,17 Z" fill="white"/>
+        <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+    </svg>`,
+
+    // Válvula Check (Flecha de dirección de flujo)
+    V_CHECK: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <polygon points="6,7 14,12 6,17" fill="currentColor"/>
+        <line x1="14" y1="7" x2="14" y2="17" stroke-width="2"/>
+    </svg>`,
+
+    // Regulador (Símbolo de diafragma)
+    REGULADOR: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M2,12 L22,12" />
+        <path d="M7,12 Q12,2 17,12" />
+        <circle cx="12" cy="8" r="1" fill="currentColor" />
+    </svg>`,
+
+    // Manómetro (Dial con aguja detallada)
+    MANOMETRO: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="9" r="7" />
+        <path d="M12,9 L15,6" stroke-width="2" />
+        <line x1="12" y1="16" x2="12" y2="22" />
+        <text x="12" y="11" text-anchor="middle" font-size="5" font-weight="bold" fill="currentColor" stroke="none">P</text>
+    </svg>`,
+
+    // Brida (Representación de dos caras)
+    BRIDA: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="10" y1="6" x2="10" y2="18" />
+        <line x1="14" y1="6" x2="14" y2="18" />
+        <line x1="6" y1="12" x2="10" y2="12" stroke-width="1"/>
+        <line x1="14" y1="12" x2="18" y2="12" stroke-width="1"/>
+    </svg>`,
+
+    // Tanque (Forma de recipiente a presión)
+    TANQUE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="7" width="18" height="10" rx="5" />
+        <line x1="8" y1="7" x2="8" y2="17" opacity="0.5" />
+        <line x1="16" y1="7" x2="16" y2="17" opacity="0.5" />
+    </svg>`,
+
+    // Otros iconos necesarios para el catálogo
+    UNION: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7,12 L17,12 M7,8 L7,16 M17,8 L17,16" /></svg>`,
+    V_ACTUADA: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2,8 L12,13 L2,18 Z" /><path d="M22,8 L12,13 L22,18 Z" /><line x1="12" y1="13" x2="12" y2="6"/><rect x="8" y="2" width="8" height="5"/></svg>`,
+    V_AGUJA: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2,12 L22,12 M12,12 L12,20 M8,16 L16,16" /><path d="M12,12 L8,4 L16,4 Z" /></svg>`,
+    V_GLOBO: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2,7 L12,12 L2,17 Z" /><path d="M22,7 L12,12 L22,17 Z" /><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>`,
+    V_EXCESO: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2,12 L22,12" /><path d="M16,7 L8,12 L16,17 Z" fill="currentColor"/></svg>`,
+    MEDIDOR: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9" /><text x="12" y="15" text-anchor="middle" font-size="8" fill="currentColor" stroke="none">M</text></svg>`,
+    CORRECTOR: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="6" width="16" height="12" rx="2" /><path d="M8,12 L16,12" /></svg>`,
+    COMPRESOR: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8" /><path d="M4,20 L20,4 M20,20 L4,4" /></svg>`,
+    PRESOSTATO: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="6" width="12" height="12" /><text x="12" y="15" text-anchor="middle" font-size="6" fill="currentColor" stroke="none">PS</text></svg>`,
+    SENSOR: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12,2 L15,8 L21,9 L17,14 L18,20 L12,17 L6,20 L7,14 L3,9 L9,8 Z" /></svg>`,
+    SOPORTE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="20"/><line x1="12" y1="20" x2="12" y2="8"/><path d="M8,8 L16,8 L12,14 Z"/></svg>`,
+    CINTA: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="6"/><path d="M12,6 L18,2" stroke-width="1"/></svg>`,
+    BOTELLA: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9,20 L15,20 L15,10 L9,10 Z" /><path d="M12,10 L12,6" /><rect x="10" y="4" width="4" height="2" /></svg>`,
+    BROCHA: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="8" y="4" width="8" height="6" /><path d="M10,13 L14,13 L13,20 L11,20 Z" /></svg>`
 };
 
+// ==========================================
+// CATÁLOGO DE COMPONENTES
+// ==========================================
 const ICONS = window.ICONS;
 const defaultFlow = { diamIn: '1/2"', typeIn: 'hembra', diamOut: '1/2"', typeOut: 'hembra' };
 
-// CATÁLOGO COMPLETO
 window.CATALOGO = {
     mat: [
         { subCat: 'Acero al Carbón', id: 't_ac_40', name: 'Sch40', color: '#444444', icon: ICONS.PIPE, type: 'tuberia', props: { material: 'acero_sch40', diametroNominal: '1"' } },
@@ -140,10 +187,10 @@ window.CATALOGO = {
                 capacidadGalones: 1000,
                 numConexiones: 2,
                 rotacionAxial: 0,
-                checklist: {         
+                checklist: {          
                     rotogate: false,
                     indicadorLlenado: true,
-                    multivalvulas: false,
+                    multiválvulas: false,
                     drenaje: true,
                     valvulaAlivio: true,
                     valvulaLlenado: true
