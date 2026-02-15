@@ -1,5 +1,6 @@
 /**
  * js/renderer.js - MOTOR DE RENDERIZADO MÉTRICO DE ALTA PRECISIÓN
+ * Optimizado para grosores de tubería reales.
  */
 window.CADRenderer = {
     capas: {
@@ -23,7 +24,7 @@ window.CADRenderer = {
 
     dibujarGrid: function() {
         const grid = this.capas.grid;
-        const radio = 10; // Radio de 10 metros para el área de trabajo
+        const radio = 10; 
         let dMetros = "";
         let dDecimetros = "";
         let dCentimetros = "";
@@ -38,11 +39,11 @@ window.CADRenderer = {
             let pathData = `M${p1.x},${p1.y} L${p2.x},${p2.y} M${p3.x},${p3.y} L${p4.x},${p4.y} `;
 
             if (Math.abs(pos % 1) < 0.01) {
-                dMetros += pathData;      // Cada 1 metro
+                dMetros += pathData;
             } else if (Math.abs((pos * 10) % 5) < 0.1) {
-                dDecimetros += pathData;  // Cada 50 centímetros
+                dDecimetros += pathData;
             } else {
-                dCentimetros += pathData; // Cada 10 centímetros
+                dCentimetros += pathData;
             }
         }
 
@@ -60,6 +61,9 @@ window.CADRenderer = {
         this.capas.grid.appendChild(path);
     },
 
+    /**
+     * Dibuja tuberías con grosor proporcional al diámetro real (pulgadas -> metros -> px)
+     */
     dibujarTuberia: function(el) {
         const s = window.CADMath.isoToScreen(el.x, el.y, el.z);
         const e = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
@@ -68,31 +72,43 @@ window.CADRenderer = {
         const tileW = window.CONFIG.tileW; 
         const diamStr = el.props.diamNominal || '1/2"';
         
+        // 1. Parseo avanzado de pulgadas (Ejemplos: "1", "1/2", "1-1/4")
         let pulg = 0.5;
-        if (diamStr.includes('-')) {
-            const partes = diamStr.split('-');
-            pulg = parseFloat(partes[0]) + (eval(partes[1].replace('"', '')) || 0);
-        } else {
-            pulg = parseFloat(diamStr) || 0.5;
+        try {
+            const limpia = diamStr.replace(/"/g, '').trim();
+            if (limpia.includes('-')) {
+                const partes = limpia.split('-');
+                const fraccion = partes[1].split('/');
+                pulg = parseFloat(partes[0]) + (parseFloat(fraccion[0]) / parseFloat(fraccion[1]));
+            } else if (limpia.includes('/')) {
+                const fraccion = limpia.split('/');
+                pulg = parseFloat(fraccion[0]) / parseFloat(fraccion[1]);
+            } else {
+                pulg = parseFloat(limpia) || 0.5;
+            }
+        } catch (err) {
+            pulg = 0.5;
         }
 
+        // 2. Cálculo de grosor real: (Pulgadas * 0.0254) nos da Metros. 
+        // Metros * tileW nos da la representación exacta en píxeles.
         const diamMetros = pulg * 0.0254;
-        const factorEstetico = 1.5; 
-        const grosorFinal = diamMetros * tileW * factorEstetico;
+        const grosorBase = diamMetros * tileW;
 
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
         
         let color = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
+        
         line.setAttribute("stroke", color);
-        line.setAttribute("stroke-width", isSel ? grosorFinal * 1.3 : grosorFinal);
+        // Aplicamos el grosor real. Si está seleccionado, sumamos 2px para que destaque.
+        line.setAttribute("stroke-width", isSel ? grosorBase + 2 : grosorBase);
         line.setAttribute("stroke-linecap", "round");
         
         this.capas.elementos.appendChild(line);
     },
 
-    // --- FUNCIÓN ACTUALIZADA ---
     dibujarEquipo: function(el) {
         const p = window.CADMath.isoToScreen(el.x, el.y, el.z);
         const tileW = window.CONFIG.tileW; 
@@ -100,7 +116,6 @@ window.CADRenderer = {
         const rot = (el.props.rotacionAxial || 0) + (window.estado.view.angle * 180 / Math.PI);
         const isSel = window.AppCore.seleccion.includes(el.id);
         
-        // Asegurar color claro (si es negro o muy oscuro, ajustamos a cian)
         let color = isSel ? '#0071eb' : (el.props.colorRef || '#00d4ff');
         if (color === '#000000' || color === '#111111') color = '#00d4ff'; 
 
@@ -119,7 +134,6 @@ window.CADRenderer = {
             iconHTML = window.ICONS[idKey] || window.ICONS.SOPORTE;
         }
 
-        // Diseño limpio: fondo transparente y sombreado suave para profundidad
         foreignObj.innerHTML = `
             <div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:transparent; border:none; box-sizing:border-box; filter:${isSel ? 'drop-shadow(0 0 5px #0071eb)' : 'drop-shadow(0 0 2px rgba(255,255,255,0.2))'};">
                 ${iconHTML}
@@ -128,7 +142,6 @@ window.CADRenderer = {
         group.appendChild(foreignObj);
         this.capas.elementos.appendChild(group);
 
-        // Etiqueta (Tag) con color suavizado y mayor visibilidad
         const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
         txt.setAttribute("x", p.x); 
         txt.setAttribute("y", p.y + (size/2) + 12);
