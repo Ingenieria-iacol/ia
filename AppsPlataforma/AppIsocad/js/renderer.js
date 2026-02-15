@@ -86,7 +86,7 @@ window.CADRenderer = {
 
         // Factor para equilibrar la visibilidad técnica con la estética
         // Un valor de 3.5 permite que 1/2" sea una línea clara pero no un bloque
-        const factorEstetico = 3.5; 
+        const factorEstetico = 2.5; 
         const grosorFinal = diamMetros * tileW * factorEstetico;
 
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
