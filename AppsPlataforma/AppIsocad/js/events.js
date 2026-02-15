@@ -1,5 +1,5 @@
 /**
- * js/events.js - RESTAURACIÓN TOTAL QUIRÚRGICA
+ * js/events.js - RESTAURACIÓN TOTAL QUIRÚRGICA CON SNAPS MEJORADOS
  */
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
@@ -41,7 +41,6 @@ svgElement.addEventListener('mousemove', (e) => {
 
 window.addEventListener('mouseup', (e) => {
     const duration = Date.now() - mouseStartTime;
-    // Clic corto sin arrastre significativo
     if (duration < 250 && !isMovingMouse && e.button === 0) {
         ejecutarAccionPrincipal(puntoSnapActivo);
     }
@@ -49,6 +48,10 @@ window.addEventListener('mouseup', (e) => {
     window.estado.isRotating = false;
 });
 
+/**
+ * BUSCAR PUNTO SNAP (ACTUALIZADA)
+ * Localiza nodos de conexión o puntos en el espacio isométrico.
+ */
 function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
     let distanciaMinima = 40; 
@@ -60,13 +63,30 @@ function buscarPuntoSnap(mouseX, mouseY) {
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id, esInicio: true });
             nodos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz, padreId: el.id, esInicio: false });
         } else {
+            // LÓGICA ACTUALIZADA PARA EQUIPOS/ACCESORIOS
             const radioReal = (el.props.longitudReal || 0.1) / 2;
-            nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id });
+            nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id }); // Centro total
+
             const baseRot = ((el.props.rotacionAxial || 0) * Math.PI) / 180;
-            for(let i=0; i<4; i++) {
-                const ang = baseRot + (i * Math.PI / 2);
-                nodos.push({ x: el.x + Math.cos(ang) * radioReal, y: el.y + Math.sin(ang) * radioReal, z: el.z, padreId: el.id, isPort: true });
-            }
+            const offsets = [
+                { dx: radioReal, dy: 0 },  // Centro Fin
+                { dx: -radioReal, dy: 0 }, // Centro Inicio
+                { dx: 0, dy: radioReal },  // Centro Lateral Derecho
+                { dx: 0, dy: -radioReal }  // Centro Lateral Izquierdo
+            ];
+
+            offsets.forEach(off => {
+                // Rotación de los puntos según la orientación del objeto
+                const rx = off.dx * Math.cos(baseRot) - off.dy * Math.sin(baseRot);
+                const ry = off.dx * Math.sin(baseRot) + off.dy * Math.cos(baseRot);
+                nodos.push({ 
+                    x: el.x + rx, 
+                    y: el.y + ry, 
+                    z: el.z, 
+                    padreId: el.id, 
+                    isPort: true 
+                });
+            });
         }
 
         nodos.forEach(n => {
@@ -82,6 +102,8 @@ function buscarPuntoSnap(mouseX, mouseY) {
     });
 
     if (mejorPunto) return mejorPunto;
+    
+    // Si no hay punto de interés, proyectar sobre el plano base
     const xRel = (mouseX - rect.left - window.estado.view.x) / window.estado.view.scale;
     const yRel = (mouseY - rect.top - window.estado.view.y) / window.estado.view.scale;
     const isoPos = window.CADMath.screenToIso(xRel, yRel);
