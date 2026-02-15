@@ -69,7 +69,7 @@ window.CADRenderer = {
         const e = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
         const isSel = window.AppCore.seleccion.includes(el.id);
         
-        // --- PROPORCIÓN MÉTRICA REAL ---
+        // --- PROPORCIÓN MÉTRICA CON AJUSTE ESTÉTICO ---
         const tileW = window.CONFIG.tileW; // 100px = 1m
         const diamStr = el.props.diamNominal || '1/2"';
         
@@ -83,8 +83,11 @@ window.CADRenderer = {
         }
 
         const diamMetros = pulg * 0.0254;
-        // Grosor = Diámetro en metros * Píxeles por metro
-        const grosorMétrico = diamMetros * tileW;
+
+        // Factor para equilibrar la visibilidad técnica con la estética
+        // Un valor de 3.5 permite que 1/2" sea una línea clara pero no un bloque
+        const factorEstetico = 3.5; 
+        const grosorFinal = diamMetros * tileW * factorEstetico;
 
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
@@ -92,8 +95,9 @@ window.CADRenderer = {
         
         let color = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
         line.setAttribute("stroke", color);
-        // Ajustamos el grosor mínimo para que no desaparezca en escalas pequeñas
-        line.setAttribute("stroke-width", isSel ? grosorMétrico * 1.5 : Math.max(grosorMétrico, 1.5));
+        
+        // Aplicamos el grosor: si está seleccionado aumentamos un 30% para destacar
+        line.setAttribute("stroke-width", isSel ? grosorFinal * 1.3 : grosorFinal);
         line.setAttribute("stroke-linecap", "round");
         
         this.capas.elementos.appendChild(line);
@@ -102,7 +106,6 @@ window.CADRenderer = {
     dibujarEquipo: function(el) {
         const p = window.CADMath.isoToScreen(el.x, el.y, el.z);
         const tileW = window.CONFIG.tileW; 
-        // El tamaño del icono ahora depende directamente de su longitudReal en metros
         const size = (el.props.longitudReal || 0.1) * tileW * (el.props.escala || 1);
         const rot = (el.props.rotacionAxial || 0) + (window.estado.view.angle * 180 / Math.PI);
         const isSel = window.AppCore.seleccion.includes(el.id);
@@ -144,7 +147,6 @@ window.CADRenderer = {
         }
         const hudZ = document.getElementById('hud-z');
         const hudScale = document.getElementById('hud-scale');
-        // HUD con precisión milimétrica (3 decimales)
         if (hudZ) hudZ.innerText = window.estado.currentZ.toFixed(3);
         if (hudScale) hudScale.innerText = Math.round(window.estado.view.scale * 100);
     }
