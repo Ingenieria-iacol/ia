@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Metrología - Fanalca</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .header-fanalca { background-color: #004a99; color: white; padding: 20px; margin-bottom: 30px; border-radius: 0 0 15px 15px; }
+        .card-stat { border: none; border-radius: 10px; transition: transform 0.3s; }
+        .card-stat:hover { transform: translateY(-5px); }
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-fanalca shadow">
+        <h2 class="m-0">Plan de Aseguramiento Metrológico</h2>
+        <p class="mb-0 opacity-75">Hub de Ingeniería - Visualización de Equipos</p>
+    </div>
+
+    <div class="row mb-4 text-center">
+        <div class="col-md-4">
+            <div class="card card-stat bg-white shadow-sm p-3">
+                <h6 class="text-muted">Total Equipos</h6>
+                <h3 id="total-equipos">0</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-stat bg-white shadow-sm p-3">
+                <h6 class="text-muted">Última Actualización</h6>
+                <h3 id="last-update" style="font-size: 1.2rem;">--:--</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-stat bg-primary text-white shadow-sm p-3">
+                <h6 class="opacity-75">Sede</h6>
+                <h3>Fanalca</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title m-0">Inventario de Instrumentos</h5>
+                <input type="text" id="searchInput" class="form-control w-25" placeholder="Buscar equipo...">
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Instrumento</th>
+                            <th>Especificaciones</th>
+                            <th>Estado</th>
+                            <th>Última Calib.</th>
+                            <th>Próxima Calib.</th>
+                            <th>Error %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // URL DE TU GOOGLE APPS SCRIPT (CÁMBIALA AQUÍ)
+    const WEB_APP_URL = 'ESCRIBE_AQUI_TU_URL_DE_APPS_SCRIPT';
+
+    async function fetchData() {
+        try {
+            const response = await fetch(WEB_APP_URL);
+            const data = await response.json();
+            renderTable(data.equipos);
+            document.getElementById('total-equipos').innerText = data.equipos.length;
+            document.getElementById('last-update').innerText = new Date().toLocaleTimeString();
+        } catch (error) {
+            console.error('Error cargando datos:', error);
+        }
+    }
+
+    function renderTable(equipos) {
+        const tbody = document.getElementById('table-body');
+        tbody.innerHTML = '';
+
+        equipos.forEach(item => {
+            const row = document.createElement('tr');
+            
+            // Lógica simple de color para el estado
+            const statusClass = item["Estado"] === 'Auto' ? 'bg-success text-white' : 'bg-warning text-dark';
+            
+            row.innerHTML = `
+                <td><strong>${item["ID (A)"] || item["ID"]}</strong></td>
+                <td>${item["Instrumento (B)"] || item["Instrumento"]}</td>
+                <td><small>${item["Especificaciones (C)"] || item["Especificaciones"]}</small></td>
+                <td><span class="status-badge ${statusClass}">${item["Estado (D)"] || item["Estado"]}</span></td>
+                <td>${formatDate(item["Última Calib. (E)"] || item["Última Calib."])}</td>
+                <td>${item["Próxima Calib. (G)"] || item["Próxima Calib."]}</td>
+                <td>${item["Error % (H)"] || item["Error %"]}%</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function formatDate(dateStr) {
+        if(!dateStr) return "-";
+        const date = new Date(dateStr);
+        return isNaN(date) ? dateStr : date.toLocaleDateString();
+    }
+
+    // Buscador en tiempo real
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        const value = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#table-body tr');
+        rows.forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(value) ? '' : 'none';
+        });
+    });
+
+    // Carga inicial y actualización automática cada 5 minutos
+    fetchData();
+    setInterval(fetchData, 300000); 
+</script>
+
+</body>
+</html>
