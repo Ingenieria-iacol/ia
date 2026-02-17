@@ -40,6 +40,8 @@
     <button class="btn" onclick="window.AppCore.centrarVista()" title="Centrar dibujo">🎯 Centrar</button>
     <div style="width:1px; height:20px; background:#444;"></div>
     <button class="btn" id="btn-save">💾 Guardar</button>
+    <button class="btn" onclick="document.getElementById('input-load').click()">📂 Abrir</button>
+    <input type="file" id="input-load" accept=".json" style="display:none;" onchange="window.AppFiles.cargarProyecto(this.files[0])">
     <button class="btn primary" id="btn-pdf-gen">📄 Reporte PDF</button>
 </header>
 
