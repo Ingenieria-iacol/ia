@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Visor CAD Gas - Solo Lectura</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
+    <style>
+        :root { --bg: #141414; --panel: #1f1f1f; --border: #333; --accent: #0071eb; --text: #e5e5e5; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        header { background: #000; height: 45px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; padding: 0 15px; z-index: 100; }
+        .btn { background: #333; color: #eee; border: 1px solid #444; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .btn.primary { background: var(--accent); border-color: #005a9e; }
+        #workspace { flex-grow: 1; display: flex; position: relative; }
+        #main-area { flex-grow: 1; position: relative; background: #111; overflow: hidden; }
+        svg { width: 100%; height: 100%; cursor: move; }
+        #prop-card { position: absolute; right: 20px; top: 20px; width: 280px; background: rgba(25,25,25,0.95); border: 1px solid #444; border-top: 3px solid var(--accent); display: none; z-index: 1000; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .prop-row { margin-bottom: 10px; }
+        .prop-row label { display: block; font-size: 0.7rem; color: #888; margin-bottom: 4px; }
+        .prop-val { background: #000; border: 1px solid #444; color: #00d4ff; padding: 5px; font-family: monospace; font-size: 0.85rem; }
+        .badge-read-only { background: #444; color: #aaa; font-size: 0.6rem; padding: 2px 6px; border-radius: 10px; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="font-weight:bold;">VISOR CAD GAS <span class="badge-read-only">Solo Lectura</span></div>
+    <div style="flex-grow: 1;"></div>
+    <button class="btn" onclick="window.AppCore.centrarVista()">🎯 Centrar</button>
+    <button class="btn primary" onclick="document.getElementById('input-load').click()">📂 Cargar Proyecto (.json)</button>
+    <input type="file" id="input-load" accept=".json" style="display:none;" onchange="window.AppFiles.cargarProyecto(this.files[0])">
+    <button class="btn" id="btn-pdf-gen">📄 Exportar PDF</button>
+</header>
+
+<div id="workspace">
+    <div id="main-area">
+        <svg id="lienzo-cad">
+            <g id="world-transform">
+                <g id="grid-layer"></g>
+                <g id="elements-layer"></g>
+                <g id="ui-layer"></g>
+            </g>
+        </svg>
+
+        <div id="prop-card">
+            <div id="prop-content"></div>
+            <button class="btn" style="width:100%; margin-top:10px;" onclick="window.PropsPanel.cerrar()">Cerrar</button>
+        </div>
+
+        <div style="position:absolute; bottom:10px; left:10px; background:rgba(0,0,0,0.5); padding:5px; font-size:0.7rem; font-family:monospace; pointer-events: none;">
+            Z: <span id="hud-z">0.00</span>m | Zoom: <span id="hud-scale">100</span>% | <span style="color:var(--accent)">Modo Visor</span>
+        </div>
+    </div>
+</div>
+
+<script>
+/** * LÓGICA CONSOLIDADA Y RESTRINGIDA (READ-ONLY)
+ */
+
+// 1. CONFIGURACIÓN
+window.CONFIG = { tileW: 100, tileH: 50, showGrid: true, unit: 'm' };
+window.ICONS = {
+    PIPE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="2" y1="12" x2="22" y2="12" /></svg>`,
+    V_BOLA: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2,7 L12,12 L2,17 Z M22,7 L12,12 L22,17 Z" fill="white"/><circle cx="12" cy="12" r="2.5" fill="currentColor" /></svg>`,
+    REGULADOR: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2,12 L22,12" /><path d="M7,12 Q12,2 17,12" /><circle cx="12" cy="8" r="1" fill="currentColor" /></svg>`,
+    MANOMETRO: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="9" r="7" /><path d="M12,9 L15,6" stroke-width="2" /><line x1="12" y1="16" x2="12" y2="22" /><text x="12" y="11" text-anchor="middle" font-size="5" font-weight="bold" fill="currentColor" stroke="none">P</text></svg>`,
+    TANQUE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="18" height="10" rx="5" /><line x1="8" y1="7" x2="8" y2="17" opacity="0.5" /><line x1="16" y1="7" x2="16" y2="17" opacity="0.5" /></svg>`,
+    SOPORTE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="20"/><line x1="12" y1="20" x2="12" y2="8"/><path d="M8,8 L16,8 L12,14 Z"/></svg>`
+};
+
+// 2. MATH ENGINE
+window.CADMath = {
+    isoToScreen: (x, y, z) => {
+        const angle = window.estado.view.angle;
+        const nx = x * Math.cos(angle) - y * Math.sin(angle);
+        const ny = x * Math.sin(angle) + y * Math.cos(angle);
+        return { x: nx * window.CONFIG.tileW, y: (ny * window.CONFIG.tileH) - (z * window.CONFIG.tileW * 0.7) };
+    }
+};
+
+// 3. CORE (Restringido)
+window.AppCore = {
+    elementos: [],
+    seleccion: [],
+    centrarVista: function() {
+        window.estado.view.x = window.innerWidth / 2;
+        window.estado.view.y = window.innerHeight / 2;
+        window.estado.view.scale = 1;
+        window.CADRenderer.actualizarTransformacion();
+    }
+};
+
+window.estado = {
+    view: { x: 400, y: 300, scale: 1, angle: Math.PI / 6 },
+    isPanning: false,
+    isRotating: false,
+    lastMouse: { x: 0, y: 0 }
+};
+
+// 4. RENDERER
+window.CADRenderer = {
+    dibujarEscena: function() {
+        const grid = document.getElementById('grid-layer');
+        const elems = document.getElementById('elements-layer');
+        if (!grid || !elems) return;
+        grid.innerHTML = ''; elems.innerHTML = '';
+        
+        // Dibujar elementos cargados
+        window.AppCore.elementos.forEach(el => {
+            if (el.tipo === 'tuberia') this.dibujarTuberia(el);
+            else this.dibujarEquipo(el);
+        });
+        this.actualizarTransformacion();
+    },
+    dibujarTuberia: function(el) {
+        const s = window.CADMath.isoToScreen(el.x, el.y, el.z);
+        const e = window.CADMath.isoToScreen(el.x + (el.dx||0), el.y + (el.dy||0), el.z + (el.dz||0));
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
+        line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
+        line.setAttribute("stroke", window.AppCore.seleccion.includes(el.id) ? "#0071eb" : "#ffd700");
+        line.setAttribute("stroke-width", "3");
+        line.setAttribute("stroke-linecap", "round");
+        document.getElementById('elements-layer').appendChild(line);
+    },
+    dibujarEquipo: function(el) {
+        const p = window.CADMath.isoToScreen(el.x, el.y, el.z);
+        const size = (el.props.escala || 1) * 30;
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${(el.props.rotacionAxial || 0)})`);
+        
+        const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+        fo.setAttribute("x", -size/2); fo.setAttribute("y", -size/2);
+        fo.setAttribute("width", size); fo.setAttribute("height", size);
+        
+        const idKey = el.idCatalogo?.split('_')[1]?.toUpperCase() || 'SOPORTE';
+        fo.innerHTML = `<div style="color:${window.AppCore.seleccion.includes(el.id) ? '#0071eb' : '#00d4ff'}; width:100%; height:100%;">${window.ICONS[idKey] || window.ICONS.SOPORTE}</div>`;
+        
+        g.appendChild(fo);
+        document.getElementById('elements-layer').appendChild(g);
+    },
+    actualizarTransformacion: function() {
+        const world = document.getElementById('world-transform');
+        world.setAttribute('transform', `translate(${window.estado.view.x}, ${window.estado.view.y}) scale(${window.estado.view.scale})`);
+        document.getElementById('hud-scale').innerText = Math.round(window.estado.view.scale * 100);
+    }
+};
+
+// 5. PANEL DE PROPIEDADES (Solo lectura)
+window.PropsPanel = {
+    abrir: function(el) {
+        const card = document.getElementById('prop-card');
+        card.style.display = 'block';
+        let html = `<h3 style="color:var(--accent); margin:0 0 10px 0;">${el.tipo.toUpperCase()}</h3>`;
+        html += `<div class="prop-row"><label>ID Técnico</label><div class="prop-val">${el.props.tag || 'N/A'}</div></div>`;
+        html += `<div class="prop-row"><label>Elevación</label><div class="prop-val">${el.z.toFixed(2)} m</div></div>`;
+        
+        if(el.tipo === 'tuberia') {
+            html += `<div class="prop-row"><label>Diámetro</label><div class="prop-val">${el.props.diamNominal || '1/2"'}</div></div>`;
+        }
+        
+        document.getElementById('prop-content').innerHTML = html;
+    },
+    cerrar: () => document.getElementById('prop-card').style.display = 'none'
+};
+
+// 6. EVENTOS (Navegación preservada, Edición bloqueada)
+const svg = document.getElementById('lienzo-cad');
+
+svg.addEventListener('mousedown', e => {
+    window.estado.lastMouse = { x: e.clientX, y: e.clientY };
+    if (e.button === 0) window.estado.isPanning = true;
+    if (e.button === 2) window.estado.isRotating = true;
+});
+
+window.addEventListener('mousemove', e => {
+    const dx = e.clientX - window.estado.lastMouse.x;
+    const dy = e.clientY - window.estado.lastMouse.y;
+    if (window.estado.isPanning) {
+        window.estado.view.x += dx; window.estado.view.y += dy;
+        window.CADRenderer.actualizarTransformacion();
+    } else if (window.estado.isRotating) {
+        window.estado.view.angle += dx * 0.01;
+        window.CADRenderer.dibujarEscena();
+    }
+    window.estado.lastMouse = { x: e.clientX, y: e.clientY };
+});
+
+window.addEventListener('mouseup', e => {
+    // Si fue un clic corto, intentar seleccionar para ver propiedades
+    if (e.button === 0 && !window.estado.isPanning) {
+        const rect = svg.getBoundingClientRect();
+        const xRel = (e.clientX - rect.left - window.estado.view.x) / window.estado.view.scale;
+        const yRel = (e.clientY - rect.top - window.estado.view.y) / window.estado.view.scale;
+        
+        const encontrado = window.AppCore.elementos.find(el => {
+            const p = window.CADMath.isoToScreen(el.x, el.y, el.z);
+            return Math.hypot(p.x - xRel, p.y - yRel) < 20;
+        });
+
+        if (encontrado) {
+            window.AppCore.seleccion = [encontrado.id];
+            window.PropsPanel.abrir(encontrado);
+        } else {
+            window.AppCore.seleccion = [];
+            window.PropsPanel.cerrar();
+        }
+        window.CADRenderer.dibujarEscena();
+    }
+    window.estado.isPanning = false;
+    window.estado.isRotating = false;
+});
+
+svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    window.estado.view.scale *= (e.deltaY > 0 ? 0.9 : 1.1);
+    window.CADRenderer.actualizarTransformacion();
+}, { passive: false });
+
+// 7. ARCHIVOS
+window.AppFiles = {
+    cargarProyecto: function(file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const data = JSON.parse(e.target.result);
+                window.AppCore.elementos = data.elementos || [];
+                window.CADRenderer.dibujarEscena();
+                window.AppCore.centrarVista();
+            } catch(err) { alert("Error al cargar JSON"); }
+        };
+        reader.readAsText(file);
+    }
+};
+
+window.onload = () => {
+    window.AppCore.centrarVista();
+    console.log("Visor Iniciado en modo Solo Lectura");
+};
+</script>
+
+</body>
+</html>
