@@ -1,6 +1,6 @@
 /**
  * js/renderer.js - MOTOR DE RENDERIZADO MÉTRICO DE ALTA PRECISIÓN
- * Optimizado para grosores de tubería reales y etiquetas técnicas.
+ * Optimizado para grosores de tubería reales y etiquetas técnicas interactivas.
  */
 window.CADRenderer = {
     capas: {
@@ -62,7 +62,7 @@ window.CADRenderer = {
     },
 
     /**
-     * Dibuja tuberías con grosor proporcional al diámetro real e inserta etiquetas técnicas.
+     * Dibuja tuberías con grosor proporcional al diámetro real e inserta etiquetas técnicas interactivas.
      */
     dibujarTuberia: function(el) {
         const s = window.CADMath.isoToScreen(el.x, el.y, el.z);
@@ -107,34 +107,41 @@ window.CADRenderer = {
         
         this.capas.elementos.appendChild(line);
 
-        // --- SECCIÓN DE ETIQUETA TÉCNICA ---
+        // --- SECCIÓN DE ETIQUETA TÉCNICA INTERACTIVA ---
         if (window.CONFIG.showTags) {
+            // Calcular punto medio base
             const midX = (s.x + e.x) / 2;
             const midY = (s.y + e.y) / 2;
+
+            // Aplicar offset personalizado si existe
+            const offX = el.props.tagOffX || 0;
+            const offY = el.props.tagOffY || 0;
+
+            const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+            foreignObj.setAttribute("x", midX + offX);
+            foreignObj.setAttribute("y", midY + offY);
+            foreignObj.setAttribute("width", "130");
+            foreignObj.setAttribute("height", "50");
+            foreignObj.style.cursor = "move";
             
+            // Datos técnicos para la etiqueta
             const longReal = Math.sqrt(Math.pow(el.dx||0, 2) + Math.pow(el.dy||0, 2) + Math.pow(el.dz||0, 2));
             const L = (el.props.longitudManual || longReal).toFixed(2);
-            const mat = (el.props.material || "Acero").split('_')[0].toUpperCase();
             const Q = el.props.caudal || 2.5;
             const P = el.props.presionEntrada || 19;
 
-            const textGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            textGroup.setAttribute("transform", `translate(${midX + 5}, ${midY - 5})`);
-
-            const labelHtml = `
-                <div style="color:#fff; font-family:monospace; font-size:9px; background:rgba(0,0,0,0.7); padding:2px 4px; border-radius:3px; white-space:nowrap; pointer-events:none; border-left: 2px solid ${color};">
-                    ${diamStr} | ${L}m | ${mat}<br>
-                    Q:${Q} m³/h | P:${P} mbar
+            foreignObj.innerHTML = `
+                <div class="tag-label" 
+                     style="color:#fff; font-family:monospace; font-size:9px; background:rgba(0,0,0,0.8); 
+                            padding:4px; border-radius:3px; border:1px solid #555; pointer-events:auto; border-left: 3px solid ${color};"
+                     onmousedown="window.TagManager.startDrag(event, ${el.id})"
+                     ondblclick="window.PropsPanel.abrir(window.AppCore.elementos.find(x=>x.id===${el.id}))">
+                    <b>${el.props.tag || 'Tramo'}</b><br>
+                    ${diamStr} | ${L}m | ${Q}m³/h<br>
+                    P: ${P} mbar
                 </div>
             `;
-
-            const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-            foreignObj.setAttribute("width", "120");
-            foreignObj.setAttribute("height", "30");
-            foreignObj.innerHTML = labelHtml;
-            
-            textGroup.appendChild(foreignObj);
-            this.capas.elementos.appendChild(textGroup);
+            this.capas.elementos.appendChild(foreignObj);
         }
     },
 
