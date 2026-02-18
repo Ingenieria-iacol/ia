@@ -1,6 +1,6 @@
 /**
  * js/renderer.js - MOTOR DE RENDERIZADO MÉTRICO DE ALTA PRECISIÓN
- * Optimizado para grosores de tubería reales.
+ * Optimizado para grosores de tubería reales y etiquetas técnicas.
  */
 window.CADRenderer = {
     capas: {
@@ -62,7 +62,7 @@ window.CADRenderer = {
     },
 
     /**
-     * Dibuja tuberías con grosor proporcional al diámetro real (pulgadas -> metros -> px)
+     * Dibuja tuberías con grosor proporcional al diámetro real e inserta etiquetas técnicas.
      */
     dibujarTuberia: function(el) {
         const s = window.CADMath.isoToScreen(el.x, el.y, el.z);
@@ -72,7 +72,7 @@ window.CADRenderer = {
         const tileW = window.CONFIG.tileW; 
         const diamStr = el.props.diamNominal || '1/2"';
         
-        // 1. Parseo avanzado de pulgadas (Ejemplos: "1", "1/2", "1-1/4")
+        // 1. Parseo avanzado de pulgadas
         let pulg = 0.5;
         try {
             const limpia = diamStr.replace(/"/g, '').trim();
@@ -90,11 +90,11 @@ window.CADRenderer = {
             pulg = 0.5;
         }
 
-        // 2. Cálculo de grosor real: (Pulgadas * 0.0254) nos da Metros. 
-        // Metros * tileW nos da la representación exacta en píxeles.
+        // 2. Cálculo de grosor real
         const diamMetros = pulg * 0.0254;
         const grosorBase = diamMetros * tileW;
 
+        // Dibujo de la línea
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
@@ -102,11 +102,40 @@ window.CADRenderer = {
         let color = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
         
         line.setAttribute("stroke", color);
-        // Aplicamos el grosor real. Si está seleccionado, sumamos 2px para que destaque.
         line.setAttribute("stroke-width", isSel ? grosorBase + 2 : grosorBase);
         line.setAttribute("stroke-linecap", "round");
         
         this.capas.elementos.appendChild(line);
+
+        // --- SECCIÓN DE ETIQUETA TÉCNICA ---
+        if (window.CONFIG.showTags) {
+            const midX = (s.x + e.x) / 2;
+            const midY = (s.y + e.y) / 2;
+            
+            const longReal = Math.sqrt(Math.pow(el.dx||0, 2) + Math.pow(el.dy||0, 2) + Math.pow(el.dz||0, 2));
+            const L = (el.props.longitudManual || longReal).toFixed(2);
+            const mat = (el.props.material || "Acero").split('_')[0].toUpperCase();
+            const Q = el.props.caudal || 2.5;
+            const P = el.props.presionEntrada || 19;
+
+            const textGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            textGroup.setAttribute("transform", `translate(${midX + 5}, ${midY - 5})`);
+
+            const labelHtml = `
+                <div style="color:#fff; font-family:monospace; font-size:9px; background:rgba(0,0,0,0.7); padding:2px 4px; border-radius:3px; white-space:nowrap; pointer-events:none; border-left: 2px solid ${color};">
+                    ${diamStr} | ${L}m | ${mat}<br>
+                    Q:${Q} m³/h | P:${P} mbar
+                </div>
+            `;
+
+            const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+            foreignObj.setAttribute("width", "120");
+            foreignObj.setAttribute("height", "30");
+            foreignObj.innerHTML = labelHtml;
+            
+            textGroup.appendChild(foreignObj);
+            this.capas.elementos.appendChild(textGroup);
+        }
     },
 
     dibujarEquipo: function(el) {
