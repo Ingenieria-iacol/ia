@@ -1,5 +1,5 @@
 /**
- * iu/props.js - Versión Profesional Consolidada
+ * iu/props.js - Versión Profesional Consolidada (Material y Presión añadidos)
  */
 window.PropsPanel = {
     abrir: function(el) {
@@ -10,7 +10,7 @@ window.PropsPanel = {
         card.style.display = 'block';
         let html = `<h3 style="margin:0 0 10px 0; font-size:0.9rem; color:#0071eb; border-bottom:1px solid #333; padding-bottom:5px;">${el.tipo.toUpperCase()}</h3>`;
         
-        // --- PROPIEDAD: TAG (Identificador único para planos) ---
+        // --- PROPIEDAD: TAG (Identificador único) ---
         html += `
             <div class="prop-row">
                 <label>Tag / Identificador</label>
@@ -19,7 +19,7 @@ window.PropsPanel = {
             </div>
         `;
 
-        // --- PROPIEDAD: ELEVACIÓN (Original preservada) ---
+        // --- PROPIEDAD: ELEVACIÓN ---
         html += `
             <div class="prop-row">
                 <label>Elevación Z (m)</label>
@@ -32,15 +32,31 @@ window.PropsPanel = {
             // Lógica de Ingeniería para tuberías
             const caudal = el.props.caudal || 2.5;
             const presion = el.props.presionEntrada || 19;
+            const material = el.props.material || 'acero';
+
             const calc = window.GasEngine.calculateFlow({
                 diamNominal: el.props.diamNominal || '1/2"',
                 longitud: el.props.longitudManual || 1,
                 caudal: caudal,
                 tipoGas: 'NATURAL',
-                presionEntrada: presion
+                presionEntrada: presion,
+                material: material
             });
 
             html += `
+                <div class="prop-row">
+                    <label>Material</label>
+                    <select onchange="window.PropsPanel.actualizarProp(${el.id}, 'material', this.value)">
+                        <option value="acero" ${material === 'acero' ? 'selected' : ''}>Acero Sch40</option>
+                        <option value="cobre" ${material === 'cobre' ? 'selected' : ''}>Cobre Tipo L</option>
+                        <option value="pe" ${material === 'pe' ? 'selected' : ''}>Polietileno</option>
+                    </select>
+                </div>
+                <div class="prop-row">
+                    <label>Presión de Operación (mbar)</label>
+                    <input type="number" step="1" value="${presion}" 
+                        onchange="window.PropsPanel.actualizarProp(${el.id}, 'presionEntrada', parseFloat(this.value))">
+                </div>
                 <div class="prop-row">
                     <label>Diámetro Comercial</label>
                     <select onchange="window.PropsPanel.actualizarProp(${el.id}, 'diamNominal', this.value)">
@@ -116,7 +132,12 @@ window.PropsPanel = {
             el.props[prop] = valor;
             window.AppCore.guardarEstado();
             window.CADRenderer.dibujarEscena();
-            if (prop === 'escala' || prop === 'caudal') this.abrir(el);
+            
+            // Refrescar el panel para ver cambios en cálculos o UI inmediatamente
+            const propsQueRefrescan = ['escala', 'caudal', 'presionEntrada', 'material', 'diamNominal'];
+            if (propsQueRefrescan.includes(prop)) {
+                this.abrir(el);
+            }
         }
     },
 
