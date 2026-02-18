@@ -1,6 +1,50 @@
 /**
- * js/events.js - RESTAURACIÓN TOTAL QUIRÚRGICA CON SNAPS MEJORADOS
+ * js/events.js - RESTAURACIÓN TOTAL QUIRÚRGICA CON SNAPS MEJORADOS + TAG MANAGER
  */
+
+/**
+ * Lógica para arrastrar etiquetas
+ */
+window.TagManager = {
+    draggingTagId: null,
+    startOffset: { x: 0, y: 0 },
+
+    startDrag: function(e, id) {
+        e.stopPropagation();
+        this.draggingTagId = id;
+        const el = window.AppCore.elementos.find(x => x.id === id);
+        this.startOffset = {
+            x: e.clientX - (el.props.tagOffX || 0),
+            y: e.clientY - (el.props.tagOffY || 0)
+        };
+        
+        const moveHandler = (me) => {
+            if (this.draggingTagId) {
+                el.props.tagOffX = me.clientX - this.startOffset.x;
+                el.props.tagOffY = me.clientY - this.startOffset.y;
+                window.CADRenderer.dibujarEscena();
+            }
+        };
+
+        const upHandler = () => {
+            this.draggingTagId = null;
+            window.AppCore.guardarEstado();
+            window.removeEventListener('mousemove', moveHandler);
+            window.removeEventListener('mouseup', upHandler);
+        };
+
+        window.addEventListener('mousemove', moveHandler);
+        window.addEventListener('mouseup', upHandler);
+    },
+
+    toggleVisibilidad: function() {
+        window.CONFIG.showTags = !window.CONFIG.showTags;
+        window.CADRenderer.dibujarEscena();
+        const btn = document.getElementById('btn-toggle-tags');
+        if(btn) btn.classList.toggle('active', window.CONFIG.showTags);
+    }
+};
+
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
 let isMovingMouse = false;
@@ -169,7 +213,7 @@ function manejarDibujoTuberia(punto) {
                 dx: finX - window.estado.inicio.x, dy: finY - window.estado.inicio.y, dz: 0,
                 props: { longitudManual: L, diamNominal: '1/2"' }
             });
-            window.estado.inicio = { x: finX, y: finY, z: window.estado.inicio.z };
+            window.estado.inicio = { x: finX, y: findY, z: window.estado.inicio.z };
             window.CADRenderer.dibujarEscena();
         }
     }
