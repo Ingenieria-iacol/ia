@@ -11,8 +11,12 @@ window.CADRenderer = {
 
     dibujarEscena: function() {
         if (!this.capas.grid || !this.capas.elementos) return;
+        
+        // Limpieza de capas
         this.capas.grid.innerHTML = '';
         this.capas.elementos.innerHTML = '';
+        
+        // Dibujado de componentes
         this.dibujarGrid();
         
         window.AppCore.elementos.forEach(el => {
@@ -20,16 +24,15 @@ window.CADRenderer = {
             else this.dibujarEquipo(el);
         });
         
-        // Llamada a la función de transformación de cámara
+        // Sincronización de la cámara (Traslación y Zoom)
         this.actualizarTransformacion();
     },
 
     dibujarGrid: function() {
-        const grid = this.capas.grid;
         const view = window.estado.view;
         const zoom = view.zoom || 1; 
         
-        // Culling y radio adaptativo
+        // Culling y radio adaptativo para performance
         const radioBase = 20; 
         const radioAdaptativo = Math.ceil(radioBase / zoom); 
         const radio = Math.min(radioAdaptativo, 100);
@@ -37,7 +40,7 @@ window.CADRenderer = {
         let dMetros = "";
         
         for (let i = -radio; i <= radio; i++) {
-            // Las coordenadas ya vienen rotadas por CADMath
+            // Las coordenadas ya vienen rotadas por CADMath.isoToScreen
             let p1 = window.CADMath.isoToScreen(i, -radio, 0);
             let p2 = window.CADMath.isoToScreen(i, radio, 0);
             dMetros += `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} `;
@@ -47,7 +50,7 @@ window.CADRenderer = {
             dMetros += `M ${p3.x} ${p3.y} L ${p4.x} ${p4.y} `;
         }
 
-        this.crearPathGrid(dMetros, "#333", 0.5);
+        this.crearPathGrid(dMetros, "#333", 0.5 / zoom); // Grosor de línea compensado por zoom
     },
 
     crearPathGrid: function(d, color, width) {
@@ -68,7 +71,7 @@ window.CADRenderer = {
         const tileW = window.CONFIG.tileW; 
         const diamStr = el.props.diamNominal || '1/2"';
         
-        // Lógica de cálculo de diámetro (Simplificada para brevedad)
+        // Cálculo de diámetro métrico a píxeles
         let pulg = 0.5;
         try {
             const limpia = diamStr.replace(/"/g, '').trim();
@@ -128,12 +131,13 @@ window.CADRenderer = {
         const tileW = window.CONFIG.tileW; 
         const size = (el.props.longitudReal || 0.1) * tileW * (el.props.escala || 1);
         
-        // Nota: rotación del equipo sigue siendo necesaria para orientar el icono
         const rot = (el.props.rotacionAxial || 0); 
         const isSel = window.AppCore.seleccion.includes(el.id);
         let color = isSel ? '#0071eb' : (el.props.colorRef || '#00d4ff');
 
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        // Nota: Solo rotamos el grupo interno para la orientación del equipo, 
+        // la posición (p.x, p.y) ya está en espacio isométrico.
         group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rot})`);
         
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
@@ -154,28 +158,29 @@ window.CADRenderer = {
     },
 
     /**
-     * ACTUALIZACIÓN DE TRANSFORMACIÓN INTEGRADA
-     * El 'rotate' se quita de aquí porque ya está incluido en la lógica de CADMath
+     * ACTUALIZACIÓN DE TRANSFORMACIÓN DE CÁMARA
+     * Aplica traslación (panning) y escala (zoom) al contenedor principal.
      */
     actualizarTransformacion: function() {
         const contenedor = document.getElementById('capa-transformacion');
         if (contenedor) {
             const v = window.estado.view;
-            const zoom = v.zoom || v.scale || 1;
+            const zoom = v.zoom || 1;
             
-            // IMPORTANTE: Quitamos el rotate() de aquí porque ya está en la matemática
+            // Aplicamos la matriz: Translate (X, Y) y Scale (Zoom)
+            // La rotación isométrica NO se incluye aquí porque CADMath ya la computa 
+            // en las coordenadas de cada elemento.
             contenedor.setAttribute('transform', 
                 `translate(${v.x}, ${v.y}) scale(${zoom})`
             );
         }
 
-        // Actualización de HUD (Heads-Up Display)
+        // Sincronización de UI/HUD
         const hudZ = document.getElementById('hud-z');
         const hudScale = document.getElementById('hud-scale');
         if (hudZ) hudZ.innerText = window.estado.currentZ.toFixed(3);
         if (hudScale) {
-            const zHUD = window.estado.view.zoom || 1;
-            hudScale.innerText = Math.round(zHUD * 100);
+            hudScale.innerText = Math.round((window.estado.view.zoom || 1) * 100);
         }
     }
 };
