@@ -1,5 +1,5 @@
 /**
- * js/events.js - RESTAURACIÓN TOTAL QUIRÚRGICA CON SNAPS MEJORADOS + TAG MANAGER + ROTACIÓN
+ * js/events.js - RESTAURACIÓN TOTAL CON SNAPS, TAG MANAGER Y ROTACIÓN INTEGRADA
  */
 
 /**
@@ -55,7 +55,6 @@ window.addEventListener('contextmenu', e => e.preventDefault());
 
 svgElement.addEventListener('mousedown', (e) => {
     window.estado.lastMouse = { x: e.clientX, y: e.clientY };
-    // Guardamos posición inicial específica para rotación y cálculos diferenciales
     window.estado.lastMousePos = { x: e.clientX, y: e.clientY }; 
     mouseStartTime = Date.now();
     isMovingMouse = false;
@@ -72,52 +71,57 @@ svgElement.addEventListener('mousemove', (e) => {
     isMovingMouse = true;
     
     if (window.estado.isPanning) {
+        // --- PANNING CON REDIBUJADO ---
         const dx = e.clientX - window.estado.lastMouse.x;
         const dy = e.clientY - window.estado.lastMouse.y;
+        
         window.estado.view.x += dx;
         window.estado.view.y += dy;
-        window.CADRenderer.actualizarTransformacion();
-    } 
-    else if (window.estado.isRotating) {
-        // --- INTEGRACIÓN DE ROTACIÓN ---
+        
+        // Actualizamos lastMouse para el siguiente diferencial
+        window.estado.lastMouse = { x: e.clientX, y: e.clientY };
+        
+        // CAMBIO CLAVE: Redibujar en lugar de solo actualizar transformación CSS
+        window.CADRenderer.dibujarEscena(); 
+        
+    } else if (window.estado.isRotating) {
+        // --- ROTACIÓN ---
         const dxRot = e.clientX - window.estado.lastMousePos.x;
         
-        // Sensibilidad de rotación y actualización del ángulo
+        // Actualización del ángulo (Sensibilidad 0.01)
         window.estado.view.angle = (window.estado.view.angle || 0) + (dxRot * 0.01);
         
-        // Mantener el ángulo entre 0 y 2PI (360 grados)
+        // Mantener el ángulo en el rango 0 a 2PI
         window.estado.view.angle %= (Math.PI * 2);
         
         window.estado.lastMousePos = { x: e.clientX, y: e.clientY };
         
-        // Forzamos el redibujado completo para aplicar la transformación matemática
+        // Forzamos el redibujado para aplicar la proyección con el nuevo ángulo
         window.CADRenderer.dibujarEscena(); 
     }
 
-    // El Snap solo se busca si no estamos rotando ni paneando para ahorrar recursos
+    // El Snap solo se busca si no estamos navegando
     if (!window.estado.isPanning && !window.estado.isRotating) {
         puntoSnapActivo = buscarPuntoSnap(e.clientX, e.clientY);
         actualizarGuiaVisual(e);
+        // Actualizamos lastMouse aquí también para que al empezar un Pan el delta sea correcto
+        window.estado.lastMouse = { x: e.clientX, y: e.clientY };
     }
-    
-    window.estado.lastMouse = { x: e.clientX, y: e.clientY };
 });
 
 window.addEventListener('mouseup', (e) => {
     const duration = Date.now() - mouseStartTime;
     
-    // Ejecutar acción solo si fue un click rápido con el botón izquierdo
     if (duration < 250 && !isMovingMouse && e.button === 0) {
         ejecutarAccionPrincipal(puntoSnapActivo);
     }
     
-    // Resetear estados de navegación
     window.estado.isPanning = false;
     window.estado.isRotating = false; 
 });
 
 /**
- * BUSCAR PUNTO SNAP (Mantiene integridad de restricción ortogonal)
+ * BUSCAR PUNTO SNAP
  */
 function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
@@ -178,12 +182,8 @@ function buscarPuntoSnap(mouseX, mouseY) {
     if (window.estado.drawing && window.estado.inicio) {
         let dx = Math.abs(finalX - window.estado.inicio.x);
         let dy = Math.abs(finalY - window.estado.inicio.y);
-
-        if (dx > dy) {
-            finalY = window.estado.inicio.y; 
-        } else {
-            finalX = window.estado.inicio.x; 
-        }
+        if (dx > dy) finalY = window.estado.inicio.y; 
+        else finalX = window.estado.inicio.x; 
     }
 
     return { x: finalX, y: finalY, z: window.estado.currentZ };
@@ -347,5 +347,5 @@ svgElement.addEventListener('wheel', (e) => {
     e.preventDefault();
     const factor = e.deltaY > 0 ? 0.9 : 1.1;
     window.estado.view.scale = Math.min(Math.max(window.estado.view.scale * factor, 0.1), 10);
-    window.CADRenderer.actualizarTransformacion();
+    window.CADRenderer.dibujarEscena(); // También redibujamos en zoom para mayor precisión
 }, { passive: false });
