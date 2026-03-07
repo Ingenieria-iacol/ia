@@ -50,14 +50,17 @@ let puntoSnapActivo = null;
 // Prevenir menú contextual para permitir rotación con click derecho
 window.addEventListener('contextmenu', e => e.preventDefault());
 
-// --- ZOOM ---
+// --- ZOOM (CORREGIDO) ---
 svgElement.addEventListener('wheel', (e) => {
     e.preventDefault();
     const factor = e.deltaY > 0 ? 0.9 : 1.1;
     
-    // Actualizamos zoom y escala para compatibilidad
-    let nuevoZoom = (window.estado.view.zoom || window.estado.view.scale || 1.0) * factor;
-    nuevoZoom = Math.min(Math.max(nuevoZoom, 0.1), 10); // Límites de seguridad
+    // Sincronización de zoom/scale
+    let currentZoom = window.estado.view.zoom || window.estado.view.scale || 1.0;
+    let nuevoZoom = currentZoom * factor;
+    
+    // Límites de seguridad
+    nuevoZoom = Math.min(Math.max(nuevoZoom, 0.1), 10);
 
     window.estado.view.zoom = nuevoZoom;
     window.estado.view.scale = nuevoZoom;
@@ -79,16 +82,17 @@ svgElement.addEventListener('mousedown', (e) => {
     }
 });
 
-// --- MOUSE MOVE ---
+// --- MOUSE MOVE (CORREGIDO E INTEGRADO) ---
 svgElement.addEventListener('mousemove', (e) => {
     isMovingMouse = true;
     const dx = e.clientX - window.estado.lastMouse.x;
     const dy = e.clientY - window.estado.lastMouse.y;
     
     if (window.estado.isPanning) {
+        // Arrastre de cámara
         window.estado.view.x += dx;
         window.estado.view.y += dy;
-        // Si tienes actualizarTransformacion úsala, sino usa dibujarEscena
+        
         if (window.CADRenderer.actualizarTransformacion) {
             window.CADRenderer.actualizarTransformacion();
         } else {
@@ -96,14 +100,16 @@ svgElement.addEventListener('mousemove', (e) => {
         }
     } 
     else if (window.estado.isRotating) {
+        // Rotación de cámara (basada en desplazamiento horizontal del mouse)
         const dxRot = e.clientX - window.estado.lastMousePos.x;
         window.estado.view.angle = (window.estado.view.angle || 0) + (dxRot * 0.01);
         window.estado.view.angle %= (Math.PI * 2);
+        
         window.estado.lastMousePos = { x: e.clientX, y: e.clientY };
         window.CADRenderer.dibujarEscena(); 
     }
 
-    // Lógica de Snaps (Solo si no estamos operando la cámara)
+    // Lógica de Snaps (Solo si la cámara está quieta)
     if (!window.estado.isPanning && !window.estado.isRotating) {
         puntoSnapActivo = buscarPuntoSnap(e.clientX, e.clientY);
         actualizarGuiaVisual(e);
@@ -124,12 +130,13 @@ window.addEventListener('mouseup', (e) => {
 });
 
 /**
- * BUSCAR PUNTO SNAP
+ * BUSCAR PUNTO SNAP (CON SOPORTE PARA ESCALA)
  */
 function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
     let distanciaMinima = 40; 
     const rect = svgElement.getBoundingClientRect();
+    const scale = window.estado.view.zoom || window.estado.view.scale || 1.0;
 
     window.AppCore.elementos.forEach(el => {
         let nodos = [];
@@ -155,10 +162,11 @@ function buscarPuntoSnap(mouseX, mouseY) {
 
         nodos.forEach(n => {
             const screenPos = window.CADMath.isoToScreen(n.x, n.y, n.z);
-            const scale = window.estado.view.zoom || window.estado.view.scale || 1.0;
+            // El snap debe considerar el offset de la cámara y el zoom
             const realX = rect.left + window.estado.view.x + (screenPos.x * scale);
             const realY = rect.top + window.estado.view.y + (screenPos.y * scale);
             const dist = Math.hypot(mouseX - realX, mouseY - realY);
+            
             if (dist < distanciaMinima) {
                 distanciaMinima = dist;
                 mejorPunto = { ...n, screenX: screenPos.x, screenY: screenPos.y };
@@ -168,8 +176,7 @@ function buscarPuntoSnap(mouseX, mouseY) {
 
     if (mejorPunto) return mejorPunto;
     
-    // Si no hay snap a objeto, snap a rejilla (Grid)
-    const scale = window.estado.view.zoom || window.estado.view.scale || 1.0;
+    // Snap a Grid si no hay objeto cerca
     const xRel = (mouseX - rect.left - window.estado.view.x) / scale;
     const yRel = (mouseY - rect.top - window.estado.view.y) / scale;
     let isoPos = window.CADMath.screenToIso(xRel, yRel);
@@ -177,7 +184,6 @@ function buscarPuntoSnap(mouseX, mouseY) {
     let finalX = Math.round(isoPos.x * 2) / 2;
     let finalY = Math.round(isoPos.y * 2) / 2;
 
-    // Restricción ortogonal durante dibujo
     if (window.estado.drawing && window.estado.inicio) {
         let dx = Math.abs(finalX - window.estado.inicio.x);
         let dy = Math.abs(finalY - window.estado.inicio.y);
@@ -320,7 +326,8 @@ window.addEventListener('keydown', (e) => {
         window.estado.tool = 'select';
         window.estado.activeItem = null;
         window.AppCore.seleccion = [];
-        document.getElementById('ui-layer').innerHTML = '';
+        const uiLayer = document.getElementById('ui-layer');
+        if(uiLayer) uiLayer.innerHTML = '';
         window.PropsPanel.cerrar();
         document.querySelectorAll('.tool-item').forEach(el => el.classList.remove('active'));
         document.getElementById('btn-tool-select')?.classList.add('active');
