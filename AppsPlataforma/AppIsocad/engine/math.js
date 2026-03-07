@@ -2,32 +2,35 @@
  * engine/math.js
  */
 window.CADMath = {
+    /**
+     * Proyección Isométrica Estándar (2:1)
+     * Forzamos el ángulo para evitar desviaciones y asegurar consistencia visual.
+     */
     isoToScreen: function(x, y, z) {
-        const angle = window.estado.view.angle;
-        const tileW = window.CONFIG.tileW;
-        const tileH = window.CONFIG.tileH;
+        const tileW = window.CONFIG.tileW; // Base 100px
+        const tileH = window.CONFIG.tileH; // Base 50px
 
-        const nx = x * Math.cos(angle) - y * Math.sin(angle);
-        const ny = x * Math.sin(angle) + y * Math.cos(angle);
+        // x_screen = (x - y) * (tileW / 2)
+        // y_screen = (x + y) * (tileH / 2) - (z * tileH)
+        const screenX = (x - y) * (tileW / 2);
+        const screenY = (x + y) * (tileH / 2) - (z * tileH);
 
-        return {
-            x: nx * tileW,
-            y: (ny * tileH) - (z * tileW * 0.7) 
-        };
+        return { x: screenX, y: screenY };
     },
 
+    /**
+     * Convierte coordenadas de pantalla a isométricas (Inversa de isoToScreen)
+     * Basado en la proyección estándar 2:1.
+     */
     screenToIso: function(sx, sy) {
-        const angle = window.estado.view.angle;
         const tileW = window.CONFIG.tileW;
         const tileH = window.CONFIG.tileH;
 
-        const nx = sx / tileW;
-        const ny = sy / tileH;
+        // Inversión matricial de la proyección estándar
+        const isoX = (sx / (tileW / 2) + sy / (tileH / 2)) / 2;
+        const isoY = (sy / (tileH / 2) - sx / (tileW / 2)) / 2;
 
-        return {
-            x: nx * Math.cos(-angle) - ny * Math.sin(-angle),
-            y: nx * Math.sin(-angle) + ny * Math.cos(-angle)
-        };
+        return { x: isoX, y: isoY };
     },
 
     getDistance3D: function(p1, p2) {
