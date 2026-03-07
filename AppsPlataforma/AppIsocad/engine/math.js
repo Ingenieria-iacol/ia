@@ -6,15 +6,16 @@ window.CADMath = {
      * Proyección Isométrica Estándar (2:1) con soporte de rotación de cámara.
      */
     isoToScreen: function(x, y, z) {
-        const angle = window.estado.view.angle; // Ángulo de rotación de cámara
+        const angle = window.estado.view.angle || 0; // Ángulo de rotación de cámara
         const tileW = window.CONFIG.tileW;
         const tileH = window.CONFIG.tileH;
 
-        // Rotación en el plano XY antes de proyectar a Isométrico
+        // 1. Rotación horizontal (Plano XY)
         const rotX = x * Math.cos(angle) - y * Math.sin(angle);
         const rotY = x * Math.sin(angle) + y * Math.cos(angle);
 
-        // Proyección Isométrica estándar 2:1
+        // 2. Proyección Isométrica 2:1
+        // (rotX - rotY) define la horizontal, (rotX + rotY) define la profundidad visual
         const screenX = (rotX - rotY) * (tileW / 2);
         const screenY = (rotX + rotY) * (tileH / 2) - (z * tileH);
 
@@ -23,17 +24,26 @@ window.CADMath = {
 
     /**
      * Convierte coordenadas de pantalla a isométricas (Inversa de isoToScreen)
-     * Basado en la proyección estándar 2:1.
+     * Ahora incluye la des-rotación de la cámara.
      */
     screenToIso: function(sx, sy) {
+        const angle = window.estado.view.angle || 0;
         const tileW = window.CONFIG.tileW;
         const tileH = window.CONFIG.tileH;
 
-        // Inversión matricial de la proyección estándar
-        const isoX = (sx / (tileW / 2) + sy / (tileH / 2)) / 2;
-        const isoY = (sy / (tileH / 2) - sx / (tileW / 2)) / 2;
+        // 1. Invertir la proyección Isométrica (obtenemos rotX y rotY)
+        const rotX = (sx / (tileW / 2) + sy / (tileH / 2)) / 2;
+        const rotY = (sy / (tileH / 2) - sx / (tileW / 2)) / 2;
 
-        return { x: isoX, y: isoY };
+        // 2. Invertir la rotación (Rotación con ángulo negativo)
+        // La matriz inversa de rotación usa el ángulo negativo
+        const cosA = Math.cos(-angle);
+        const sinA = Math.sin(-angle);
+
+        const x = rotX * cosA - rotY * sinA;
+        const y = rotX * sinA + rotY * cosA;
+
+        return { x: x, y: y };
     },
 
     getDistance3D: function(p1, p2) {
