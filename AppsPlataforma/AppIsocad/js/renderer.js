@@ -161,19 +161,28 @@ window.CADRenderer = {
 
     /**
      * ACTUALIZACIÓN DE TRANSFORMACIÓN DE CÁMARA
-     * Resetea el contenedor principal ya que la matemática de proyección
-     * ahora se encarga de posicionar cada elemento en coordenadas de pantalla.
+     * Sincroniza el estado visual y resetea transformaciones CSS/SVG de los contenedores
+     * para asegurar que los cálculos por punto de ISO-TO-SCREEN sean los dominantes.
      */
     actualizarTransformacion: function() {
+        // En este nuevo modelo, los contenedores NO se desplazan por CSS transform
+        // sino que cada punto ya viene proyectado con zoom y pan aplicado.
+        
         const contenedor = document.getElementById('capa-transformacion');
         if (contenedor) {
-            // Reseteo a identidad (0,0 y escala 1:1)
-            contenedor.setAttribute('transform', 'translate(0,0) scale(1)');
+            // Reseteo a identidad para evitar el "doble zoom"
+            contenedor.style.transform = `translate(0px, 0px) scale(1)`;
         }
+
+        // También aplicamos el reseteo a las capas individuales si fuera necesario
+        const transformIdentidad = `translate(0px, 0px) scale(1)`;
+        if (this.capas.grid) this.capas.grid.style.transform = transformIdentidad;
+        if (this.capas.elementos) this.capas.elementos.style.transform = transformIdentidad;
 
         // Sincronización de UI/HUD
         const hudZ = document.getElementById('hud-z');
         const hudScale = document.getElementById('hud-scale');
+        
         if (hudZ) hudZ.innerText = window.estado.currentZ.toFixed(3);
         if (hudScale) {
             hudScale.innerText = Math.round((window.estado.view.zoom || 1) * 100) + "%";
