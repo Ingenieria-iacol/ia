@@ -3,17 +3,20 @@
  */
 window.CADMath = {
     /**
-     * Proyección Isométrica Estándar (2:1)
-     * Forzamos el ángulo para evitar desviaciones y asegurar consistencia visual.
+     * Proyección Isométrica Estándar (2:1) con soporte de rotación de cámara.
      */
     isoToScreen: function(x, y, z) {
-        const tileW = window.CONFIG.tileW; // Base 100px
-        const tileH = window.CONFIG.tileH; // Base 50px
+        const angle = window.estado.view.angle; // Ángulo de rotación de cámara
+        const tileW = window.CONFIG.tileW;
+        const tileH = window.CONFIG.tileH;
 
-        // x_screen = (x - y) * (tileW / 2)
-        // y_screen = (x + y) * (tileH / 2) - (z * tileH)
-        const screenX = (x - y) * (tileW / 2);
-        const screenY = (x + y) * (tileH / 2) - (z * tileH);
+        // Rotación en el plano XY antes de proyectar a Isométrico
+        const rotX = x * Math.cos(angle) - y * Math.sin(angle);
+        const rotY = x * Math.sin(angle) + y * Math.cos(angle);
+
+        // Proyección Isométrica estándar 2:1
+        const screenX = (rotX - rotY) * (tileW / 2);
+        const screenY = (rotX + rotY) * (tileH / 2) - (z * tileH);
 
         return { x: screenX, y: screenY };
     },
