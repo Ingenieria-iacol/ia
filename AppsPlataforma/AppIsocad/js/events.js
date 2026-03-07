@@ -1,5 +1,5 @@
 /**
- * js/events.js - RESTAURACIÓN TOTAL QUIRÚRGICA CON SNAPS MEJORADOS + TAG MANAGER
+ * js/events.js - RESTAURACIÓN TOTAL QUIRÚRGICA CON SNAPS MEJORADOS + TAG MANAGER + ROTACIÓN
  */
 
 /**
@@ -50,10 +50,13 @@ let mouseStartTime = 0;
 let isMovingMouse = false;
 let puntoSnapActivo = null; 
 
-svgElement.addEventListener('contextmenu', e => e.preventDefault());
+// Prevenir menú contextual globalmente para permitir rotación con click derecho
+window.addEventListener('contextmenu', e => e.preventDefault());
 
 svgElement.addEventListener('mousedown', (e) => {
     window.estado.lastMouse = { x: e.clientX, y: e.clientY };
+    // Guardamos posición inicial específica para rotación
+    window.estado.lastMousePos = { x: e.clientX, y: e.clientY }; 
     mouseStartTime = Date.now();
     isMovingMouse = false;
 
@@ -61,6 +64,7 @@ svgElement.addEventListener('mousedown', (e) => {
         window.estado.isPanning = true;
     } else if (e.button === 2) {
         window.estado.isRotating = true;
+        e.preventDefault();
     }
 });
 
@@ -74,26 +78,36 @@ svgElement.addEventListener('mousemove', (e) => {
         window.estado.view.y += dy;
         window.CADRenderer.actualizarTransformacion();
     } else if (window.estado.isRotating) {
-        window.estado.view.angle += dx * 0.01;
+        // Lógica de rotación integrada
+        const dxRot = e.clientX - window.estado.lastMousePos.x;
+        window.estado.view.angle += dxRot * 0.01;
+        window.estado.lastMousePos = { x: e.clientX, y: e.clientY };
         window.CADRenderer.dibujarEscena();
     }
 
-    puntoSnapActivo = buscarPuntoSnap(e.clientX, e.clientY);
-    actualizarGuiaVisual(e);
+    // El Snap solo se busca si no estamos rotando ni paneando para ahorrar recursos
+    if (!window.estado.isPanning && !window.estado.isRotating) {
+        puntoSnapActivo = buscarPuntoSnap(e.clientX, e.clientY);
+        actualizarGuiaVisual(e);
+    }
+    
     window.estado.lastMouse = { x: e.clientX, y: e.clientY };
 });
 
 window.addEventListener('mouseup', (e) => {
     const duration = Date.now() - mouseStartTime;
+    
+    // Ejecutar acción solo si fue un click rápido con el botón izquierdo
     if (duration < 250 && !isMovingMouse && e.button === 0) {
         ejecutarAccionPrincipal(puntoSnapActivo);
     }
+    
     window.estado.isPanning = false;
     window.estado.isRotating = false;
 });
 
 /**
- * BUSCAR PUNTO SNAP (INTEGRADO CON RESTRICCIÓN ORTOGONAL)
+ * BUSCAR PUNTO SNAP (Mantiene integridad de restricción ortogonal)
  */
 function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
@@ -144,12 +158,10 @@ function buscarPuntoSnap(mouseX, mouseY) {
 
     if (mejorPunto) return mejorPunto;
     
-    // Proyectar sobre plano base
     const xRel = (mouseX - rect.left - window.estado.view.x) / window.estado.view.scale;
     const yRel = (mouseY - rect.top - window.estado.view.y) / window.estado.view.scale;
     let isoPos = window.CADMath.screenToIso(xRel, yRel);
 
-    // --- INTEGRACIÓN DE RESTRICCIÓN ORTOGONAL ---
     let finalX = Math.round(isoPos.x * 2) / 2;
     let finalY = Math.round(isoPos.y * 2) / 2;
 
@@ -158,12 +170,11 @@ function buscarPuntoSnap(mouseX, mouseY) {
         let dy = Math.abs(finalY - window.estado.inicio.y);
 
         if (dx > dy) {
-            finalY = window.estado.inicio.y; // Forzar horizontal
+            finalY = window.estado.inicio.y; 
         } else {
-            finalX = window.estado.inicio.x; // Forzar vertical
+            finalX = window.estado.inicio.x; 
         }
     }
-    // --------------------------------------------
 
     return { x: finalX, y: finalY, z: window.estado.currentZ };
 }
