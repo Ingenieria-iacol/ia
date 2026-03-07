@@ -3,40 +3,52 @@
  */
 window.CADMath = {
     /**
-     * Proyección Isométrica Estándar (2:1) con soporte de rotación de cámara.
+     * Proyección Isométrica con rotación, zoom y desplazamiento de cámara.
      */
     isoToScreen: function(x, y, z) {
-        const angle = window.estado.view.angle || 0; // Ángulo de rotación de cámara
+        const v = window.estado.view;
+        const angle = v.angle || 0;
+        const zoom = v.zoom || 1;
         const tileW = window.CONFIG.tileW;
         const tileH = window.CONFIG.tileH;
 
-        // 1. Rotación horizontal (Plano XY)
-        const rotX = x * Math.cos(angle) - y * Math.sin(angle);
-        const rotY = x * Math.sin(angle) + y * Math.cos(angle);
+        // 1. Rotación horizontal (Eje Z estable)
+        const cosA = Math.cos(angle);
+        const sinA = Math.sin(angle);
+        const rotX = x * cosA - y * sinA;
+        const rotY = x * sinA + y * cosA;
 
-        // 2. Proyección Isométrica 2:1
-        // (rotX - rotY) define la horizontal, (rotX + rotY) define la profundidad visual
-        const screenX = (rotX - rotY) * (tileW / 2);
-        const screenY = (rotX + rotY) * (tileH / 2) - (z * tileH);
+        // 2. Proyección Isométrica con Zoom y Escala de Tile
+        // Usamos (tileW / 2) para mantener la proporción 2:1 estándar
+        const screenX = (rotX - rotY) * (tileW / 2) * zoom;
+        const screenY = ((rotX + rotY) * (tileH / 2) - (z || 0) * tileH) * zoom;
 
-        return { x: screenX, y: screenY };
+        // 3. Aplicamos el desplazamiento de cámara (v.x, v.y)
+        return {
+            x: screenX + v.x,
+            y: screenY + v.y
+        };
     },
 
     /**
      * Convierte coordenadas de pantalla a isométricas (Inversa de isoToScreen)
-     * Ahora incluye la des-rotación de la cámara.
      */
     screenToIso: function(sx, sy) {
-        const angle = window.estado.view.angle || 0;
+        const v = window.estado.view;
+        const angle = v.angle || 0;
+        const zoom = v.zoom || 1;
         const tileW = window.CONFIG.tileW;
         const tileH = window.CONFIG.tileH;
 
-        // 1. Invertir la proyección Isométrica (obtenemos rotX y rotY)
-        const rotX = (sx / (tileW / 2) + sy / (tileH / 2)) / 2;
-        const rotY = (sy / (tileH / 2) - sx / (tileW / 2)) / 2;
+        // 1. Revertir desplazamiento de cámara y zoom
+        const posX = (sx - v.x) / zoom;
+        const posY = (sy - v.y) / zoom;
 
-        // 2. Invertir la rotación (Rotación con ángulo negativo)
-        // La matriz inversa de rotación usa el ángulo negativo
+        // 2. Invertir la proyección Isométrica (obtenemos rotX y rotY)
+        const rotX = (posX / (tileW / 2) + posY / (tileH / 2)) / 2;
+        const rotY = (posY / (tileH / 2) - posX / (tileW / 2)) / 2;
+
+        // 3. Invertir la rotación (usando el ángulo negativo)
         const cosA = Math.cos(-angle);
         const sinA = Math.sin(-angle);
 
