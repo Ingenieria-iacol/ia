@@ -26,40 +26,35 @@ window.CADRenderer = {
         const grid = this.capas.grid;
         grid.innerHTML = '';
         
-        // 1. Obtener el centro de la vista actual y el nivel de zoom
-        // Nota: Asegúrate de que window.estado.view.offset exista, 
-        // de lo contrario usa window.estado.view.x/y
+        // 1. Obtener parámetros de vista
         const view = window.estado.view;
-        const config = window.CONFIG;
+        const zoom = view.zoom || view.scale || 1; // Fallback a scale si zoom no está definido
         
-        const centerX = -(view.x || 0) / (config.tileW * (view.scale || 1));
-        const centerY = -(view.y || 0) / (config.tileH * (view.scale || 1));
+        // 2. Calcular cuántos metros entran en la pantalla según el zoom
+        // A menor zoom (más lejos), mayor debe ser el radio de la cuadrícula
+        const radioBase = 20; 
+        const radioAdaptativo = Math.ceil(radioBase / zoom); 
         
-        // 2. Definir un margen de renderizado (20 metros alrededor de la cámara)
-        const margin = 20; 
-        const minX = Math.floor(centerX - margin);
-        const maxX = Math.ceil(centerX + margin);
-        const minY = Math.floor(centerY - margin);
-        const maxY = Math.ceil(centerY + margin);
+        // Limitar el radio para no sobrecargar el navegador (máx 100m)
+        const radio = Math.min(radioAdaptativo, 100);
 
         let dMetros = "";
         
-        // Dibujar líneas en X (paralelas al eje Y)
-        for (let x = minX; x <= maxX; x++) {
-            let p1 = window.CADMath.isoToScreen(x, minY, 0);
-            let p2 = window.CADMath.isoToScreen(x, maxY, 0);
+        // Dibujamos líneas principales cada 1 metro usando el radio adaptativo
+        for (let i = -radio; i <= radio; i++) {
+            // Líneas paralelas al eje Y
+            let p1 = window.CADMath.isoToScreen(i, -radio, 0);
+            let p2 = window.CADMath.isoToScreen(i, radio, 0);
             dMetros += `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} `;
+
+            // Líneas paralelas al eje X
+            let p3 = window.CADMath.isoToScreen(-radio, i, 0);
+            let p4 = window.CADMath.isoToScreen(radio, i, 0);
+            dMetros += `M ${p3.x} ${p3.y} L ${p4.x} ${p4.y} `;
         }
 
-        // Dibujar líneas en Y (paralelas al eje X)
-        for (let y = minY; y <= maxY; y++) {
-            let p1 = window.CADMath.isoToScreen(minX, y, 0);
-            let p2 = window.CADMath.isoToScreen(maxX, y, 0);
-            dMetros += `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} `;
-        }
-
-        // 3. Crear el path visual usando tu método existente
-        this.crearPathGrid(dMetros, "#444", 0.5);
+        // 3. Crear el path visual usando el método de la clase
+        this.crearPathGrid(dMetros, "#333", 0.5);
     },
 
     crearPathGrid: function(d, color, width) {
@@ -115,7 +110,6 @@ window.CADRenderer = {
         }
     },
 
-    // He extraído la etiqueta a su propio método para limpiar dibujarTuberia
     dibujarEtiqueta: function(el, s, e, color, diamStr) {
         const midX = (s.x + e.x) / 2;
         const midY = (s.y + e.y) / 2;
