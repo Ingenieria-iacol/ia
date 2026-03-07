@@ -55,7 +55,7 @@ window.addEventListener('contextmenu', e => e.preventDefault());
 
 svgElement.addEventListener('mousedown', (e) => {
     window.estado.lastMouse = { x: e.clientX, y: e.clientY };
-    // Guardamos posición inicial específica para rotación
+    // Guardamos posición inicial específica para rotación y cálculos diferenciales
     window.estado.lastMousePos = { x: e.clientX, y: e.clientY }; 
     mouseStartTime = Date.now();
     isMovingMouse = false;
@@ -70,19 +70,28 @@ svgElement.addEventListener('mousedown', (e) => {
 
 svgElement.addEventListener('mousemove', (e) => {
     isMovingMouse = true;
-    const dx = e.clientX - window.estado.lastMouse.x;
-    const dy = e.clientY - window.estado.lastMouse.y;
-
+    
     if (window.estado.isPanning) {
+        const dx = e.clientX - window.estado.lastMouse.x;
+        const dy = e.clientY - window.estado.lastMouse.y;
         window.estado.view.x += dx;
         window.estado.view.y += dy;
         window.CADRenderer.actualizarTransformacion();
-    } else if (window.estado.isRotating) {
-        // Lógica de rotación integrada
+    } 
+    else if (window.estado.isRotating) {
+        // --- INTEGRACIÓN DE ROTACIÓN ---
         const dxRot = e.clientX - window.estado.lastMousePos.x;
-        window.estado.view.angle += dxRot * 0.01;
+        
+        // Sensibilidad de rotación y actualización del ángulo
+        window.estado.view.angle = (window.estado.view.angle || 0) + (dxRot * 0.01);
+        
+        // Mantener el ángulo entre 0 y 2PI (360 grados)
+        window.estado.view.angle %= (Math.PI * 2);
+        
         window.estado.lastMousePos = { x: e.clientX, y: e.clientY };
-        window.CADRenderer.dibujarEscena();
+        
+        // Forzamos el redibujado completo para aplicar la transformación matemática
+        window.CADRenderer.dibujarEscena(); 
     }
 
     // El Snap solo se busca si no estamos rotando ni paneando para ahorrar recursos
@@ -94,7 +103,6 @@ svgElement.addEventListener('mousemove', (e) => {
     window.estado.lastMouse = { x: e.clientX, y: e.clientY };
 });
 
-// EVENTO ACTUALIZADO: Integra el reseteo de estados de navegación
 window.addEventListener('mouseup', (e) => {
     const duration = Date.now() - mouseStartTime;
     
@@ -103,7 +111,7 @@ window.addEventListener('mouseup', (e) => {
         ejecutarAccionPrincipal(puntoSnapActivo);
     }
     
-    // Resetear estados de navegación (Panning y Rotación)
+    // Resetear estados de navegación
     window.estado.isPanning = false;
     window.estado.isRotating = false; 
 });
