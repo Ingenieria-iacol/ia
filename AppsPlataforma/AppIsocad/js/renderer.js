@@ -1,6 +1,6 @@
 /**
  * js/renderer.js - MOTOR DE RENDERIZADO MÉTRICO DE ALTA PRECISIÓN
- * Optimizado con Grid Dinámico (Culling) y etiquetas interactivas.
+ * Optimizado: Las transformaciones se calculan por punto, no por contenedor global.
  */
 window.CADRenderer = {
     capas: {
@@ -24,7 +24,7 @@ window.CADRenderer = {
             else this.dibujarEquipo(el);
         });
         
-        // Sincronización de la cámara (Traslación y Zoom)
+        // Sincronización de la cámara (Ahora resetea el contenedor a identidad)
         this.actualizarTransformacion();
     },
 
@@ -40,7 +40,7 @@ window.CADRenderer = {
         let dMetros = "";
         
         for (let i = -radio; i <= radio; i++) {
-            // Las coordenadas ya vienen rotadas por CADMath.isoToScreen
+            // CADMath.isoToScreen ya debe integrar internamente el zoom y pan del estado
             let p1 = window.CADMath.isoToScreen(i, -radio, 0);
             let p2 = window.CADMath.isoToScreen(i, radio, 0);
             dMetros += `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} `;
@@ -50,7 +50,8 @@ window.CADRenderer = {
             dMetros += `M ${p3.x} ${p3.y} L ${p4.x} ${p4.y} `;
         }
 
-        this.crearPathGrid(dMetros, "#333", 0.5 / zoom); // Grosor de línea compensado por zoom
+        // El grosor se mantiene constante visualmente si isoToScreen maneja el zoom
+        this.crearPathGrid(dMetros, "#333", 0.5); 
     },
 
     crearPathGrid: function(d, color, width) {
@@ -71,7 +72,7 @@ window.CADRenderer = {
         const tileW = window.CONFIG.tileW; 
         const diamStr = el.props.diamNominal || '1/2"';
         
-        // Cálculo de diámetro métrico a píxeles
+        // Cálculo de diámetro métrico
         let pulg = 0.5;
         try {
             const limpia = diamStr.replace(/"/g, '').trim();
@@ -84,7 +85,8 @@ window.CADRenderer = {
         } catch (err) { pulg = 0.5; }
 
         const diamMetros = pulg * 0.0254;
-        const grosorBase = diamMetros * tileW;
+        // Importante: Si isoToScreen ya escala, grosorBase debe considerar el zoom del estado
+        const grosorBase = diamMetros * tileW * (window.estado.view.zoom || 1);
 
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
@@ -128,16 +130,17 @@ window.CADRenderer = {
 
     dibujarEquipo: function(el) {
         const p = window.CADMath.isoToScreen(el.x, el.y, el.z);
+        const zoom = window.estado.view.zoom || 1;
         const tileW = window.CONFIG.tileW; 
-        const size = (el.props.longitudReal || 0.1) * tileW * (el.props.escala || 1);
+        
+        // El tamaño del icono ahora debe escalar proporcionalmente al zoom global
+        const size = (el.props.longitudReal || 0.1) * tileW * (el.props.escala || 1) * zoom;
         
         const rot = (el.props.rotacionAxial || 0); 
         const isSel = window.AppCore.seleccion.includes(el.id);
         let color = isSel ? '#0071eb' : (el.props.colorRef || '#00d4ff');
 
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        // Nota: Solo rotamos el grupo interno para la orientación del equipo, 
-        // la posición (p.x, p.y) ya está en espacio isométrico.
         group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rot})`);
         
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
@@ -159,20 +162,14 @@ window.CADRenderer = {
 
     /**
      * ACTUALIZACIÓN DE TRANSFORMACIÓN DE CÁMARA
-     * Aplica traslación (panning) y escala (zoom) al contenedor principal.
+     * Resetea el contenedor principal ya que CADMath maneja la proyección.
      */
     actualizarTransformacion: function() {
         const contenedor = document.getElementById('capa-transformacion');
         if (contenedor) {
-            const v = window.estado.view;
-            const zoom = v.zoom || 1;
-            
-            // Aplicamos la matriz: Translate (X, Y) y Scale (Zoom)
-            // La rotación isométrica NO se incluye aquí porque CADMath ya la computa 
-            // en las coordenadas de cada elemento.
-            contenedor.setAttribute('transform', 
-                `translate(${v.x}, ${v.y}) scale(${zoom})`
-            );
+            // Ya no aplicamos translate ni scale aquí porque 
+            // isoToScreen ya los incluye en cada punto.
+            contenedor.setAttribute('transform', `translate(0, 0) scale(1)`);
         }
 
         // Sincronización de UI/HUD
