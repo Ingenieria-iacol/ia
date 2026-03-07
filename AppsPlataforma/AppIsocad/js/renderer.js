@@ -28,32 +28,27 @@ window.CADRenderer = {
         
         // 1. Obtener parámetros de vista
         const view = window.estado.view;
-        const zoom = view.zoom || view.scale || 1; // Fallback a scale si zoom no está definido
+        const zoom = view.zoom || view.scale || 1; 
         
         // 2. Calcular cuántos metros entran en la pantalla según el zoom
-        // A menor zoom (más lejos), mayor debe ser el radio de la cuadrícula
         const radioBase = 20; 
         const radioAdaptativo = Math.ceil(radioBase / zoom); 
         
-        // Limitar el radio para no sobrecargar el navegador (máx 100m)
         const radio = Math.min(radioAdaptativo, 100);
 
         let dMetros = "";
         
-        // Dibujamos líneas principales cada 1 metro usando el radio adaptativo
         for (let i = -radio; i <= radio; i++) {
-            // Líneas paralelas al eje Y
             let p1 = window.CADMath.isoToScreen(i, -radio, 0);
             let p2 = window.CADMath.isoToScreen(i, radio, 0);
             dMetros += `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} `;
 
-            // Líneas paralelas al eje X
             let p3 = window.CADMath.isoToScreen(-radio, i, 0);
             let p4 = window.CADMath.isoToScreen(radio, i, 0);
             dMetros += `M ${p3.x} ${p3.y} L ${p4.x} ${p4.y} `;
         }
 
-        // 3. Crear el path visual usando el método de la clase
+        // 3. Crear el path visual
         this.crearPathGrid(dMetros, "#333", 0.5);
     },
 
@@ -75,7 +70,6 @@ window.CADRenderer = {
         const tileW = window.CONFIG.tileW; 
         const diamStr = el.props.diamNominal || '1/2"';
         
-        // Parseo de pulgadas a metros para grosor real
         let pulg = 0.5;
         try {
             const limpia = diamStr.replace(/"/g, '').trim();
@@ -184,15 +178,29 @@ window.CADRenderer = {
         this.capas.elementos.appendChild(txt);
     },
 
+    // Función reemplazada e integrada
     actualizarTransformacion: function() {
-        const world = document.getElementById('world-transform');
-        if (world) {
+        const contenedor = document.getElementById('capa-transformacion') || document.getElementById('world-transform');
+        
+        if (contenedor) {
             const v = window.estado.view;
-            world.setAttribute('transform', `translate(${v.x}, ${v.y}) scale(${v.scale})`);
+            // Se añade 'rotate' usando el ángulo que se modifica con el click derecho
+            // El ángulo se convierte a grados (v.angle * 180 / Math.PI)
+            const angleDeg = (v.angle || 0) * (180 / Math.PI); 
+            const zoomActivo = v.zoom || v.scale || 1;
+            
+            contenedor.setAttribute('transform', 
+                `translate(${v.x}, ${v.y}) scale(${zoomActivo}) rotate(${angleDeg})`
+            );
         }
+
+        // Mantenemos la actualización de la interfaz de usuario (HUD)
         const hudZ = document.getElementById('hud-z');
         const hudScale = document.getElementById('hud-scale');
         if (hudZ) hudZ.innerText = window.estado.currentZ.toFixed(3);
-        if (hudScale) hudScale.innerText = Math.round(window.estado.view.scale * 100);
+        if (hudScale) {
+            const zoomHUD = window.estado.view.zoom || window.estado.view.scale || 1;
+            hudScale.innerText = Math.round(zoomHUD * 100);
+        }
     }
 };
