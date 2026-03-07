@@ -40,7 +40,7 @@ window.CADRenderer = {
         let dMetros = "";
         
         for (let i = -radio; i <= radio; i++) {
-            // CADMath.isoToScreen ya debe integrar internamente el zoom y pan del estado
+            // CADMath.isoToScreen integra internamente el zoom y pan del estado
             let p1 = window.CADMath.isoToScreen(i, -radio, 0);
             let p2 = window.CADMath.isoToScreen(i, radio, 0);
             dMetros += `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} `;
@@ -50,7 +50,6 @@ window.CADRenderer = {
             dMetros += `M ${p3.x} ${p3.y} L ${p4.x} ${p4.y} `;
         }
 
-        // El grosor se mantiene constante visualmente si isoToScreen maneja el zoom
         this.crearPathGrid(dMetros, "#333", 0.5); 
     },
 
@@ -85,7 +84,7 @@ window.CADRenderer = {
         } catch (err) { pulg = 0.5; }
 
         const diamMetros = pulg * 0.0254;
-        // Importante: Si isoToScreen ya escala, grosorBase debe considerar el zoom del estado
+        // Grosor visual corregido por el zoom
         const grosorBase = diamMetros * tileW * (window.estado.view.zoom || 1);
 
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -133,7 +132,7 @@ window.CADRenderer = {
         const zoom = window.estado.view.zoom || 1;
         const tileW = window.CONFIG.tileW; 
         
-        // El tamaño del icono ahora debe escalar proporcionalmente al zoom global
+        // El tamaño del icono escala proporcionalmente al zoom global
         const size = (el.props.longitudReal || 0.1) * tileW * (el.props.escala || 1) * zoom;
         
         const rot = (el.props.rotacionAxial || 0); 
@@ -162,14 +161,14 @@ window.CADRenderer = {
 
     /**
      * ACTUALIZACIÓN DE TRANSFORMACIÓN DE CÁMARA
-     * Resetea el contenedor principal ya que CADMath maneja la proyección.
+     * Resetea el contenedor principal ya que la matemática de proyección
+     * ahora se encarga de posicionar cada elemento en coordenadas de pantalla.
      */
     actualizarTransformacion: function() {
         const contenedor = document.getElementById('capa-transformacion');
         if (contenedor) {
-            // Ya no aplicamos translate ni scale aquí porque 
-            // isoToScreen ya los incluye en cada punto.
-            contenedor.setAttribute('transform', `translate(0, 0) scale(1)`);
+            // Reseteo a identidad (0,0 y escala 1:1)
+            contenedor.setAttribute('transform', 'translate(0,0) scale(1)');
         }
 
         // Sincronización de UI/HUD
@@ -177,7 +176,7 @@ window.CADRenderer = {
         const hudScale = document.getElementById('hud-scale');
         if (hudZ) hudZ.innerText = window.estado.currentZ.toFixed(3);
         if (hudScale) {
-            hudScale.innerText = Math.round((window.estado.view.zoom || 1) * 100);
+            hudScale.innerText = Math.round((window.estado.view.zoom || 1) * 100) + "%";
         }
     }
 };
