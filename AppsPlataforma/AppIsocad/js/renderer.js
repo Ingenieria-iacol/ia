@@ -1,6 +1,6 @@
 /**
  * js/renderer.js - MOTOR DE RENDERIZADO MÉTRICO DE ALTA PRECISIÓN
- * Optimizado para grosores de tubería reales y etiquetas técnicas interactivas.
+ * Optimizado con Grid Dinámico (Culling) y etiquetas interactivas.
  */
 window.CADRenderer = {
     capas: {
@@ -24,35 +24,46 @@ window.CADRenderer = {
 
     dibujarGrid: function() {
         const grid = this.capas.grid;
-        const radio = 10; 
+        grid.innerHTML = '';
+        
+        // 1. Obtener el centro de la vista actual y el nivel de zoom
+        // Nota: Asegúrate de que window.estado.view.offset exista, 
+        // de lo contrario usa window.estado.view.x/y
+        const view = window.estado.view;
+        const config = window.CONFIG;
+        
+        const centerX = -(view.x || 0) / (config.tileW * (view.scale || 1));
+        const centerY = -(view.y || 0) / (config.tileH * (view.scale || 1));
+        
+        // 2. Definir un margen de renderizado (20 metros alrededor de la cámara)
+        const margin = 20; 
+        const minX = Math.floor(centerX - margin);
+        const maxX = Math.ceil(centerX + margin);
+        const minY = Math.floor(centerY - margin);
+        const maxY = Math.ceil(centerY + margin);
+
         let dMetros = "";
-        let dDecimetros = "";
-        let dCentimetros = "";
-
-        for (let i = -radio; i <= radio; i += 0.1) {
-            let pos = Math.round(i * 10) / 10;
-            let p1 = window.CADMath.isoToScreen(-radio, pos, 0);
-            let p2 = window.CADMath.isoToScreen(radio, pos, 0);
-            let p3 = window.CADMath.isoToScreen(pos, -radio, 0);
-            let p4 = window.CADMath.isoToScreen(pos, radio, 0);
-
-            let pathData = `M${p1.x},${p1.y} L${p2.x},${p2.y} M${p3.x},${p3.y} L${p4.x},${p4.y} `;
-
-            if (Math.abs(pos % 1) < 0.01) {
-                dMetros += pathData;
-            } else if (Math.abs((pos * 10) % 5) < 0.1) {
-                dDecimetros += pathData;
-            } else {
-                dCentimetros += pathData;
-            }
+        
+        // Dibujar líneas en X (paralelas al eje Y)
+        for (let x = minX; x <= maxX; x++) {
+            let p1 = window.CADMath.isoToScreen(x, minY, 0);
+            let p2 = window.CADMath.isoToScreen(x, maxY, 0);
+            dMetros += `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} `;
         }
 
-        this.crearPathGrid(dCentimetros, "#1a1a1a", 0.2);
-        this.crearPathGrid(dDecimetros, "#222", 0.4);
-        this.crearPathGrid(dMetros, "#333", 0.8);
+        // Dibujar líneas en Y (paralelas al eje X)
+        for (let y = minY; y <= maxY; y++) {
+            let p1 = window.CADMath.isoToScreen(minX, y, 0);
+            let p2 = window.CADMath.isoToScreen(maxX, y, 0);
+            dMetros += `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} `;
+        }
+
+        // 3. Crear el path visual usando tu método existente
+        this.crearPathGrid(dMetros, "#444", 0.5);
     },
 
     crearPathGrid: function(d, color, width) {
+        if (!d) return;
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("d", d);
         path.setAttribute("stroke", color);
@@ -61,9 +72,6 @@ window.CADRenderer = {
         this.capas.grid.appendChild(path);
     },
 
-    /**
-     * Dibuja tuberías con grosor proporcional al diámetro real e inserta etiquetas técnicas interactivas.
-     */
     dibujarTuberia: function(el) {
         const s = window.CADMath.isoToScreen(el.x, el.y, el.z);
         const e = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
@@ -72,7 +80,7 @@ window.CADRenderer = {
         const tileW = window.CONFIG.tileW; 
         const diamStr = el.props.diamNominal || '1/2"';
         
-        // 1. Parseo avanzado de pulgadas
+        // Parseo de pulgadas a metros para grosor real
         let pulg = 0.5;
         try {
             const limpia = diamStr.replace(/"/g, '').trim();
@@ -86,15 +94,11 @@ window.CADRenderer = {
             } else {
                 pulg = parseFloat(limpia) || 0.5;
             }
-        } catch (err) {
-            pulg = 0.5;
-        }
+        } catch (err) { pulg = 0.5; }
 
-        // 2. Cálculo de grosor real
         const diamMetros = pulg * 0.0254;
         const grosorBase = diamMetros * tileW;
 
-        // Dibujo de la línea
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
         line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
@@ -104,45 +108,42 @@ window.CADRenderer = {
         line.setAttribute("stroke", color);
         line.setAttribute("stroke-width", isSel ? grosorBase + 2 : grosorBase);
         line.setAttribute("stroke-linecap", "round");
-        
         this.capas.elementos.appendChild(line);
 
-        // --- SECCIÓN DE ETIQUETA TÉCNICA INTERACTIVA ---
         if (window.CONFIG.showTags) {
-            // Calcular punto medio base
-            const midX = (s.x + e.x) / 2;
-            const midY = (s.y + e.y) / 2;
-
-            // Aplicar offset personalizado si existe
-            const offX = el.props.tagOffX || 0;
-            const offY = el.props.tagOffY || 0;
-
-            const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-            foreignObj.setAttribute("x", midX + offX);
-            foreignObj.setAttribute("y", midY + offY);
-            foreignObj.setAttribute("width", "130");
-            foreignObj.setAttribute("height", "50");
-            foreignObj.style.cursor = "move";
-            
-            // Datos técnicos para la etiqueta
-            const longReal = Math.sqrt(Math.pow(el.dx||0, 2) + Math.pow(el.dy||0, 2) + Math.pow(el.dz||0, 2));
-            const L = (el.props.longitudManual || longReal).toFixed(2);
-            const Q = el.props.caudal || 2.5;
-            const P = el.props.presionEntrada || 19;
-
-            foreignObj.innerHTML = `
-                <div class="tag-label" 
-                     style="color:#fff; font-family:monospace; font-size:9px; background:rgba(0,0,0,0.8); 
-                            padding:4px; border-radius:3px; border:1px solid #555; pointer-events:auto; border-left: 3px solid ${color};"
-                     onmousedown="window.TagManager.startDrag(event, ${el.id})"
-                     ondblclick="window.PropsPanel.abrir(window.AppCore.elementos.find(x=>x.id===${el.id}))">
-                    <b>${el.props.tag || 'Tramo'}</b><br>
-                    ${diamStr} | ${L}m | ${Q}m³/h<br>
-                    P: ${P} mbar
-                </div>
-            `;
-            this.capas.elementos.appendChild(foreignObj);
+            this.dibujarEtiqueta(el, s, e, color, diamStr);
         }
+    },
+
+    // He extraído la etiqueta a su propio método para limpiar dibujarTuberia
+    dibujarEtiqueta: function(el, s, e, color, diamStr) {
+        const midX = (s.x + e.x) / 2;
+        const midY = (s.y + e.y) / 2;
+        const offX = el.props.tagOffX || 0;
+        const offY = el.props.tagOffY || 0;
+
+        const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+        foreignObj.setAttribute("x", midX + offX);
+        foreignObj.setAttribute("y", midY + offY);
+        foreignObj.setAttribute("width", "130");
+        foreignObj.setAttribute("height", "50");
+        foreignObj.style.cursor = "move";
+        
+        const longReal = Math.sqrt(Math.pow(el.dx||0, 2) + Math.pow(el.dy||0, 2) + Math.pow(el.dz||0, 2));
+        const L = (el.props.longitudManual || longReal).toFixed(2);
+        const Q = el.props.caudal || 2.5;
+        const P = el.props.presionEntrada || 19;
+
+        foreignObj.innerHTML = `
+            <div class="tag-label" 
+                 style="color:#fff; font-family:monospace; font-size:9px; background:rgba(0,0,0,0.8); 
+                        padding:4px; border-radius:3px; border:1px solid #555; pointer-events:auto; border-left: 3px solid ${color};">
+                <b>${el.props.tag || 'Tramo'}</b><br>
+                ${diamStr} | ${L}m | ${Q}m³/h<br>
+                P: ${P} mbar
+            </div>
+        `;
+        this.capas.elementos.appendChild(foreignObj);
     },
 
     dibujarEquipo: function(el) {
@@ -171,7 +172,7 @@ window.CADRenderer = {
         }
 
         foreignObj.innerHTML = `
-            <div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:transparent; border:none; box-sizing:border-box; filter:${isSel ? 'drop-shadow(0 0 5px #0071eb)' : 'drop-shadow(0 0 2px rgba(255,255,255,0.2))'};">
+            <div style="color:${color}; width:100%; height:100%; display:flex; align-items:center; justify-content:center; filter:${isSel ? 'drop-shadow(0 0 5px #0071eb)' : 'drop-shadow(0 0 2px rgba(255,255,255,0.2))'};">
                 ${iconHTML}
             </div>`;
         
