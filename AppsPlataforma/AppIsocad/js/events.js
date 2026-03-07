@@ -93,8 +93,7 @@ window.addEventListener('mouseup', (e) => {
 });
 
 /**
- * BUSCAR PUNTO SNAP (ACTUALIZADA)
- * Localiza nodos de conexión o puntos en el espacio isométrico.
+ * BUSCAR PUNTO SNAP (INTEGRADO CON RESTRICCIÓN ORTOGONAL)
  */
 function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
@@ -107,20 +106,18 @@ function buscarPuntoSnap(mouseX, mouseY) {
             nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id, esInicio: true });
             nodos.push({ x: el.x + el.dx, y: el.y + el.dy, z: el.z + el.dz, padreId: el.id, esInicio: false });
         } else {
-            // LÓGICA ACTUALIZADA PARA EQUIPOS/ACCESORIOS
             const radioReal = (el.props.longitudReal || 0.1) / 2;
-            nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id }); // Centro total
+            nodos.push({ x: el.x, y: el.y, z: el.z, padreId: el.id }); 
 
             const baseRot = ((el.props.rotacionAxial || 0) * Math.PI) / 180;
             const offsets = [
-                { dx: radioReal, dy: 0 },  // Centro Fin
-                { dx: -radioReal, dy: 0 }, // Centro Inicio
-                { dx: 0, dy: radioReal },  // Centro Lateral Derecho
-                { dx: 0, dy: -radioReal }  // Centro Lateral Izquierdo
+                { dx: radioReal, dy: 0 }, 
+                { dx: -radioReal, dy: 0 },
+                { dx: 0, dy: radioReal }, 
+                { dx: 0, dy: -radioReal } 
             ];
 
             offsets.forEach(off => {
-                // Rotación de los puntos según la orientación del objeto
                 const rx = off.dx * Math.cos(baseRot) - off.dy * Math.sin(baseRot);
                 const ry = off.dx * Math.sin(baseRot) + off.dy * Math.cos(baseRot);
                 nodos.push({ 
@@ -147,11 +144,28 @@ function buscarPuntoSnap(mouseX, mouseY) {
 
     if (mejorPunto) return mejorPunto;
     
-    // Si no hay punto de interés, proyectar sobre el plano base
+    // Proyectar sobre plano base
     const xRel = (mouseX - rect.left - window.estado.view.x) / window.estado.view.scale;
     const yRel = (mouseY - rect.top - window.estado.view.y) / window.estado.view.scale;
-    const isoPos = window.CADMath.screenToIso(xRel, yRel);
-    return { x: Math.round(isoPos.x * 2) / 2, y: Math.round(isoPos.y * 2) / 2, z: window.estado.currentZ };
+    let isoPos = window.CADMath.screenToIso(xRel, yRel);
+
+    // --- INTEGRACIÓN DE RESTRICCIÓN ORTOGONAL ---
+    let finalX = Math.round(isoPos.x * 2) / 2;
+    let finalY = Math.round(isoPos.y * 2) / 2;
+
+    if (window.estado.drawing && window.estado.inicio) {
+        let dx = Math.abs(finalX - window.estado.inicio.x);
+        let dy = Math.abs(finalY - window.estado.inicio.y);
+
+        if (dx > dy) {
+            finalY = window.estado.inicio.y; // Forzar horizontal
+        } else {
+            finalX = window.estado.inicio.x; // Forzar vertical
+        }
+    }
+    // --------------------------------------------
+
+    return { x: finalX, y: finalY, z: window.estado.currentZ };
 }
 
 function ejecutarAccionPrincipal(punto) {
@@ -213,7 +227,7 @@ function manejarDibujoTuberia(punto) {
                 dx: finX - window.estado.inicio.x, dy: finY - window.estado.inicio.y, dz: 0,
                 props: { longitudManual: L, diamNominal: '1/2"' }
             });
-            window.estado.inicio = { x: finX, y: findY, z: window.estado.inicio.z };
+            window.estado.inicio = { x: finX, y: finY, z: window.estado.inicio.z };
             window.CADRenderer.dibujarEscena();
         }
     }
@@ -228,12 +242,15 @@ function actualizarGuiaVisual(e) {
     const size = 3.5;
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     const color = p.padreId ? (p.isPort ? "#00ff64" : "#0071eb") : "#666";
+    
     const l1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
     l1.setAttribute("x1", pos.x-size); l1.setAttribute("y1", pos.y); l1.setAttribute("x2", pos.x+size); l1.setAttribute("y2", pos.y);
     l1.setAttribute("stroke", color); l1.setAttribute("stroke-width", "1");
+    
     const l2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
     l2.setAttribute("x1", pos.x); l2.setAttribute("y1", pos.y-size); l2.setAttribute("x2", pos.x); l2.setAttribute("y2", pos.y+size);
     l2.setAttribute("stroke", color); l2.setAttribute("stroke-width", "1");
+    
     g.appendChild(l1); g.appendChild(l2);
     uiLayer.appendChild(g);
 
