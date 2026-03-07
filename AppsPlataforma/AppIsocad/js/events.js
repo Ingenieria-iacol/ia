@@ -1,5 +1,5 @@
 /**
- * js/events.js - INTEGRACIÓN FINAL: SNAPS + TAG MANAGER + ROTACIÓN + ZOOM
+ * js/events.js - INTEGRACIÓN FINAL: SNAPS + TAG MANAGER + ROTACIÓN + ZOOM + PAN REFINADO
  */
 
 window.TagManager = {
@@ -44,22 +44,22 @@ window.TagManager = {
 
 const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
-let isMovingMouse = false;
+let isDragging = false; 
+let startMousePos = { x: 0, y: 0 };
+const dragThreshold = 5; // Píxeles de tolerancia para distinguir clic de arrastre
 let puntoSnapActivo = null; 
 
 // Prevenir menú contextual para permitir rotación con click derecho
 window.addEventListener('contextmenu', e => e.preventDefault());
 
-// --- ZOOM (CORREGIDO) ---
+// --- ZOOM ---
 svgElement.addEventListener('wheel', (e) => {
     e.preventDefault();
     const factor = e.deltaY > 0 ? 0.9 : 1.1;
     
-    // Sincronización de zoom/scale
     let currentZoom = window.estado.view.zoom || window.estado.view.scale || 1.0;
     let nuevoZoom = currentZoom * factor;
     
-    // Límites de seguridad
     nuevoZoom = Math.min(Math.max(nuevoZoom, 0.1), 10);
 
     window.estado.view.zoom = nuevoZoom;
@@ -70,10 +70,13 @@ svgElement.addEventListener('wheel', (e) => {
 
 // --- MOUSE DOWN ---
 svgElement.addEventListener('mousedown', (e) => {
+    mouseStartTime = Date.now();
+    isDragging = false;
+    startMousePos = { x: e.clientX, y: e.clientY };
+    
+    // Guardamos estado inicial para el desplazamiento relativo
     window.estado.lastMouse = { x: e.clientX, y: e.clientY };
     window.estado.lastMousePos = { x: e.clientX, y: e.clientY }; 
-    mouseStartTime = Date.now();
-    isMovingMouse = false;
 
     if (e.button === 0) {
         window.estado.isPanning = true;
@@ -82,16 +85,22 @@ svgElement.addEventListener('mousedown', (e) => {
     }
 });
 
-// --- MOUSE MOVE (CORREGIDO E INTEGRADO) ---
+// --- MOUSE MOVE ---
 svgElement.addEventListener('mousemove', (e) => {
-    isMovingMouse = true;
-    const dx = e.clientX - window.estado.lastMouse.x;
-    const dy = e.clientY - window.estado.lastMouse.y;
+    const dx = e.clientX - startMousePos.x;
+    const dy = e.clientY - startMousePos.y;
+
+    // Verificar si se ha superado el umbral para considerarlo arrastre
+    if (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold) {
+        isDragging = true;
+    }
+
+    const deltaX = e.clientX - window.estado.lastMouse.x;
+    const deltaY = e.clientY - window.estado.lastMouse.y;
     
     if (window.estado.isPanning) {
-        // Arrastre de cámara
-        window.estado.view.x += dx;
-        window.estado.view.y += dy;
+        window.estado.view.x += deltaX;
+        window.estado.view.y += deltaY;
         
         if (window.CADRenderer.actualizarTransformacion) {
             window.CADRenderer.actualizarTransformacion();
@@ -100,7 +109,6 @@ svgElement.addEventListener('mousemove', (e) => {
         }
     } 
     else if (window.estado.isRotating) {
-        // Rotación de cámara (basada en desplazamiento horizontal del mouse)
         const dxRot = e.clientX - window.estado.lastMousePos.x;
         window.estado.view.angle = (window.estado.view.angle || 0) + (dxRot * 0.01);
         window.estado.view.angle %= (Math.PI * 2);
@@ -109,7 +117,7 @@ svgElement.addEventListener('mousemove', (e) => {
         window.CADRenderer.dibujarEscena(); 
     }
 
-    // Lógica de Snaps (Solo si la cámara está quieta)
+    // Lógica de Snaps (Solo si no estamos arrastrando la cámara)
     if (!window.estado.isPanning && !window.estado.isRotating) {
         puntoSnapActivo = buscarPuntoSnap(e.clientX, e.clientY);
         actualizarGuiaVisual(e);
@@ -121,16 +129,19 @@ svgElement.addEventListener('mousemove', (e) => {
 // --- MOUSE UP ---
 window.addEventListener('mouseup', (e) => {
     const duration = Date.now() - mouseStartTime;
-    // Si fue un click rápido (no drag) y botón izquierdo
-    if (duration < 250 && !isMovingMouse && e.button === 0) {
+
+    // SI NO hubo arrastre significativo y fue click izquierdo, es una ACCIÓN (Selección o Dibujo)
+    if (!isDragging && e.button === 0 && duration < 300) {
         ejecutarAccionPrincipal(puntoSnapActivo);
     }
+
     window.estado.isPanning = false;
     window.estado.isRotating = false; 
+    isDragging = false;
 });
 
 /**
- * BUSCAR PUNTO SNAP (CON SOPORTE PARA ESCALA)
+ * BUSCAR PUNTO SNAP (CON SOPORTE PARA ESCALA Y CÁMARA)
  */
 function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
@@ -162,7 +173,7 @@ function buscarPuntoSnap(mouseX, mouseY) {
 
         nodos.forEach(n => {
             const screenPos = window.CADMath.isoToScreen(n.x, n.y, n.z);
-            // El snap debe considerar el offset de la cámara y el zoom
+            // Compensar con la posición actual de la cámara y el zoom
             const realX = rect.left + window.estado.view.x + (screenPos.x * scale);
             const realY = rect.top + window.estado.view.y + (screenPos.y * scale);
             const dist = Math.hypot(mouseX - realX, mouseY - realY);
@@ -228,6 +239,7 @@ function ejecutarAccionPrincipal(punto) {
     } else {
         const rect = svgElement.getBoundingClientRect();
         const scale = window.estado.view.zoom || window.estado.view.scale || 1.0;
+        // Compensamos el click para la selección de objetos
         const xRel = (window.estado.lastMouse.x - rect.left - window.estado.view.x) / scale;
         const yRel = (window.estado.lastMouse.y - rect.top - window.estado.view.y) / scale;
         manejarSeleccion(xRel, yRel);
@@ -266,27 +278,36 @@ function actualizarGuiaVisual(e) {
     uiLayer.innerHTML = ''; 
     const p = puntoSnapActivo;
     const pos = window.CADMath.isoToScreen(p.x, p.y, p.z);
-    const size = 3.5;
+    
+    // Aplicamos transformación visual de cámara a la guía UI
+    const scale = window.estado.view.zoom || window.estado.view.scale || 1.0;
+    const renderX = window.estado.view.x + (pos.x * scale);
+    const renderY = window.estado.view.y + (pos.y * scale);
+
+    const size = 5;
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     const color = p.padreId ? (p.isPort ? "#00ff64" : "#0071eb") : "#666";
     
     const l1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    l1.setAttribute("x1", pos.x-size); l1.setAttribute("y1", pos.y); l1.setAttribute("x2", pos.x+size); l1.setAttribute("y2", pos.y);
-    l1.setAttribute("stroke", color); l1.setAttribute("stroke-width", "1");
+    l1.setAttribute("x1", renderX-size); l1.setAttribute("y1", renderY); l1.setAttribute("x2", renderX+size); l1.setAttribute("y2", renderY);
+    l1.setAttribute("stroke", color); l1.setAttribute("stroke-width", "1.5");
     
     const l2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    l2.setAttribute("x1", pos.x); l2.setAttribute("y1", pos.y-size); l2.setAttribute("x2", pos.x); l2.setAttribute("y2", pos.y+size);
-    l2.setAttribute("stroke", color); l2.setAttribute("stroke-width", "1");
+    l2.setAttribute("x1", renderX); l2.setAttribute("y1", renderY-size); l2.setAttribute("x2", renderX); l2.setAttribute("y2", renderY+size);
+    l2.setAttribute("stroke", color); l2.setAttribute("stroke-width", "1.5");
     
     g.appendChild(l1); g.appendChild(l2);
     uiLayer.appendChild(g);
 
     if (window.estado.drawing && window.estado.inicio) {
         const s = window.CADMath.isoToScreen(window.estado.inicio.x, window.estado.inicio.y, window.estado.inicio.z);
+        const sX = window.estado.view.x + (s.x * scale);
+        const sY = window.estado.view.y + (s.y * scale);
+        
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
-        line.setAttribute("x2", pos.x); line.setAttribute("y2", pos.y);
-        line.setAttribute("stroke", "white");
+        line.setAttribute("x1", sX); line.setAttribute("y1", sY);
+        line.setAttribute("x2", renderX); line.setAttribute("y2", renderY);
+        line.setAttribute("stroke", "rgba(255,255,255,0.5)");
         line.setAttribute("stroke-dasharray", "4,4");
         uiLayer.appendChild(line);
     }
