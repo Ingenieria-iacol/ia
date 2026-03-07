@@ -94,6 +94,7 @@ svgElement.addEventListener('mousemove', (e) => {
     window.estado.lastMouse = { x: e.clientX, y: e.clientY };
 });
 
+// EVENTO ACTUALIZADO: Integra el reseteo de estados de navegación
 window.addEventListener('mouseup', (e) => {
     const duration = Date.now() - mouseStartTime;
     
@@ -102,8 +103,9 @@ window.addEventListener('mouseup', (e) => {
         ejecutarAccionPrincipal(puntoSnapActivo);
     }
     
+    // Resetear estados de navegación (Panning y Rotación)
     window.estado.isPanning = false;
-    window.estado.isRotating = false;
+    window.estado.isRotating = false; 
 });
 
 /**
