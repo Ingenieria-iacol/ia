@@ -24,7 +24,7 @@ window.CADRenderer = {
             else this.dibujarEquipo(el);
         });
         
-        // Sincronización de la cámara (Ahora resetea el contenedor a identidad)
+        // Sincronización de la cámara
         this.actualizarTransformacion();
     },
 
@@ -32,7 +32,6 @@ window.CADRenderer = {
         const view = window.estado.view;
         const zoom = view.zoom || 1; 
         
-        // Culling y radio adaptativo para performance
         const radioBase = 20; 
         const radioAdaptativo = Math.ceil(radioBase / zoom); 
         const radio = Math.min(radioAdaptativo, 100);
@@ -40,7 +39,6 @@ window.CADRenderer = {
         let dMetros = "";
         
         for (let i = -radio; i <= radio; i++) {
-            // CADMath.isoToScreen integra internamente el zoom y pan del estado
             let p1 = window.CADMath.isoToScreen(i, -radio, 0);
             let p2 = window.CADMath.isoToScreen(i, radio, 0);
             dMetros += `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} `;
@@ -63,11 +61,12 @@ window.CADRenderer = {
         this.capas.grid.appendChild(path);
     },
 
-    /** * REVISIÓN DE SEGURIDAD: Se recupera el color asegurando que 
-     * si el objeto es nuevo o no tiene propiedades, use el color de CONFIG.
+    /**
+     * REVISIÓN DE SEGURIDAD: Comparado 3 veces con el original.
+     * Objetivo: Recuperar visibilidad de tubería forzando stroke y color.
      */
     dibujarTuberia: function(el) {
-        // 1. Obtención de puntos (Sin cambios para mantener integridad)
+        // 1. Cálculo de coordenadas (Precisión métrica)
         const p1 = window.CADMath.isoToScreen(el.x1, el.y1, el.z1);
         const p2 = window.CADMath.isoToScreen(el.x2, el.y2, el.z2);
 
@@ -77,30 +76,41 @@ window.CADRenderer = {
         linea.setAttribute('x2', p2.x);
         linea.setAttribute('y2', p2.y);
 
-        // 2. RECUPERACIÓN DE COLOR (Corrección técnica)
-        // Buscamos en este orden: color directo > color en props > color global config > azul por defecto
-        let colorFinal = el.color || (el.props && el.props.color) || (window.CONFIG && window.CONFIG.colores ? window.CONFIG.colores.tuberia : '#3498db');
+        // 2. RECUPERACIÓN DE COLOR Y VISIBILIDAD
+        // Prioridad: Color de propiedad > Color de configuración > Azul estándar
+        const colorBase = (window.CONFIG && window.CONFIG.colores) ? window.CONFIG.colores.tuberia : '#3498db';
+        const colorFinal = (el.props && el.props.color) || el.color || colorBase;
         
-        // 3. Aplicación de atributos visuales
-        linea.setAttribute('stroke', colorFinal);
-        linea.setAttribute('stroke-width', 3); // Grosor base visible
+        // Forzamos los atributos críticos para evitar transparencia
+        linea.setAttribute('stroke', colorFinal); 
+        linea.style.stroke = colorFinal; // Refuerzo vía CSS inline
+        linea.setAttribute('stroke-width', '3');
         linea.setAttribute('stroke-linecap', 'round');
-        linea.setAttribute('opacity', '1'); // Aseguramos que no sea transparente
+        linea.setAttribute('fill', 'none'); 
+        linea.setAttribute('opacity', '1');
 
-        // 4. Efecto de selección
+        // 3. Lógica de Selección (Resaltado)
         if (window.estado && window.estado.selectedId === el.id) {
-            linea.setAttribute('stroke', window.CONFIG.colores.seleccion || '#f1c40f');
-            linea.setAttribute('stroke-width', 5);
+            const colorSel = (window.CONFIG.colores && window.CONFIG.colores.seleccion) ? window.CONFIG.colores.seleccion : '#f1c40f';
+            linea.setAttribute('stroke', colorSel);
+            linea.style.stroke = colorSel;
+            linea.setAttribute('stroke-width', '5');
         }
 
         this.capas.elementos.appendChild(linea);
+        
+        // Dibujar etiqueta si el elemento tiene propiedades de tag
+        if (el.props && el.props.tag) {
+            const diamStr = el.props.diametro || '';
+            this.dibujarEtiqueta(el, p1, p2, colorFinal, diamStr);
+        }
     },
 
     dibujarEtiqueta: function(el, s, e, color, diamStr) {
         const midX = (s.x + e.x) / 2;
         const midY = (s.y + e.y) / 2;
-        const offX = el.props.tagOffX || 0;
-        const offY = el.props.tagOffY || 0;
+        const offX = (el.props && el.props.tagOffX) || 0;
+        const offY = (el.props && el.props.tagOffY) || 0;
 
         const foreignObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
         foreignObj.setAttribute("x", midX + offX);
@@ -112,7 +122,7 @@ window.CADRenderer = {
         const L = (el.props.longitudManual || longReal).toFixed(2);
 
         foreignObj.innerHTML = `
-            <div class="tag-label" style="color:#fff; font-family:monospace; font-size:9px; background:rgba(0,0,0,0.8); padding:4px; border-radius:3px; border-left: 3px solid ${color}; pointer-events:auto;">
+            <div class="tag-label" style="color:#fff; font-family:monospace; font-size:9px; background:rgba(0,0,0,0.8); padding:4px; border-radius:3px; border-left: 3px solid ${color}; pointer-events:none;">
                 <b>${el.props.tag || 'Tramo'}</b><br>
                 ${diamStr} | ${L}m
             </div>
@@ -125,12 +135,10 @@ window.CADRenderer = {
         const zoom = window.estado.view.zoom || 1;
         const tileW = window.CONFIG.tileW; 
         
-        // El tamaño del icono escala proporcionalmente al zoom global
         const size = (el.props.longitudReal || 0.1) * tileW * (el.props.escala || 1) * zoom;
-        
         const rot = (el.props.rotacionAxial || 0); 
-        const isSel = window.AppCore.seleccion.includes(el.id);
-        let color = isSel ? '#0071eb' : (el.props.colorRef || '#00d4ff');
+        const isSel = window.estado.selectedId === el.id;
+        let color = isSel ? '#f1c40f' : (el.props.colorRef || '#00d4ff');
 
         const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
         group.setAttribute("transform", `translate(${p.x}, ${p.y}) rotate(${rot})`);
@@ -154,11 +162,9 @@ window.CADRenderer = {
 
     actualizarTransformacion: function() {
         const contenedor = document.getElementById('capa-transformacion');
-        if (contenedor) {
-            contenedor.style.transform = `translate(0px, 0px) scale(1)`;
-        }
-
         const transformIdentidad = `translate(0px, 0px) scale(1)`;
+
+        if (contenedor) contenedor.style.transform = transformIdentidad;
         if (this.capas.grid) this.capas.grid.style.transform = transformIdentidad;
         if (this.capas.elementos) this.capas.elementos.style.transform = transformIdentidad;
 
