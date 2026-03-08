@@ -64,43 +64,29 @@ window.CADRenderer = {
     },
 
     dibujarTuberia: function(el) {
-        const s = window.CADMath.isoToScreen(el.x, el.y, el.z);
-        const e = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
-        const isSel = window.AppCore.seleccion.includes(el.id);
-        
-        const tileW = window.CONFIG.tileW; 
-        const diamStr = el.props.diamNominal || '1/2"';
-        
-        // Cálculo de diámetro métrico
-        let pulg = 0.5;
-        try {
-            const limpia = diamStr.replace(/"/g, '').trim();
-            if (limpia.includes('/')) {
-                const fraccion = limpia.split('/');
-                pulg = parseFloat(fraccion[0]) / parseFloat(fraccion[1]);
-            } else {
-                pulg = parseFloat(limpia) || 0.5;
-            }
-        } catch (err) { pulg = 0.5; }
+        const p1 = window.CADMath.isoToScreen(el.x1, el.y1, el.z1);
+        const p2 = window.CADMath.isoToScreen(el.x2, el.y2, el.z2);
 
-        const diamMetros = pulg * 0.0254;
-        // Grosor visual corregido por el zoom
-        const grosorBase = diamMetros * tileW * (window.estado.view.zoom || 1);
+        const linea = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        linea.setAttribute('x1', p1.x);
+        linea.setAttribute('y1', p1.y);
+        linea.setAttribute('x2', p2.x);
+        linea.setAttribute('y2', p2.y);
 
-        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        line.setAttribute("x1", s.x); line.setAttribute("y1", s.y);
-        line.setAttribute("x2", e.x); line.setAttribute("y2", e.y);
+        // CORRECCIÓN: Priorizar color de instancia, luego de librería, luego por defecto
+        const colorFinal = el.props.color || el.color || (window.CONFIG.colores ? window.CONFIG.colores.tuberia : '#7f8c8d');
         
-        let color = isSel ? "#0071eb" : (el.dz !== 0 || el.props.isVertical ? "#00ff00" : "#ffd700");
+        linea.setAttribute('stroke', colorFinal);
+        linea.setAttribute('stroke-width', 3 * window.estado.view.zoom); // Grosor escalado
+        linea.setAttribute('stroke-linecap', 'round');
         
-        line.setAttribute("stroke", color);
-        line.setAttribute("stroke-width", isSel ? grosorBase + 2 : grosorBase);
-        line.setAttribute("stroke-linecap", "round");
-        this.capas.elementos.appendChild(line);
-
-        if (window.CONFIG.showTags) {
-            this.dibujarEtiqueta(el, s, e, color, diamStr);
+        // Si está seleccionado, añadir brillo o clase
+        if (window.estado.selectedId === el.id) {
+            linea.setAttribute('stroke-width', 5 * window.estado.view.zoom);
+            linea.setAttribute('filter', 'url(#glow)');
         }
+
+        this.capas.elementos.appendChild(linea);
     },
 
     dibujarEtiqueta: function(el, s, e, color, diamStr) {
@@ -159,27 +145,16 @@ window.CADRenderer = {
         this.capas.elementos.appendChild(group);
     },
 
-    /**
-     * ACTUALIZACIÓN DE TRANSFORMACIÓN DE CÁMARA
-     * Sincroniza el estado visual y resetea transformaciones CSS/SVG de los contenedores
-     * para asegurar que los cálculos por punto de ISO-TO-SCREEN sean los dominantes.
-     */
     actualizarTransformacion: function() {
-        // En este nuevo modelo, los contenedores NO se desplazan por CSS transform
-        // sino que cada punto ya viene proyectado con zoom y pan aplicado.
-        
         const contenedor = document.getElementById('capa-transformacion');
         if (contenedor) {
-            // Reseteo a identidad para evitar el "doble zoom"
             contenedor.style.transform = `translate(0px, 0px) scale(1)`;
         }
 
-        // También aplicamos el reseteo a las capas individuales si fuera necesario
         const transformIdentidad = `translate(0px, 0px) scale(1)`;
         if (this.capas.grid) this.capas.grid.style.transform = transformIdentidad;
         if (this.capas.elementos) this.capas.elementos.style.transform = transformIdentidad;
 
-        // Sincronización de UI/HUD
         const hudZ = document.getElementById('hud-z');
         const hudScale = document.getElementById('hud-scale');
         
