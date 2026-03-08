@@ -63,11 +63,11 @@ window.CADRenderer = {
         this.capas.grid.appendChild(path);
     },
 
-    /**
-     * REVISIÓN DE SEGURIDAD: Comparado con el original.
-     * Se mantiene la estructura y solo se ajusta la lógica de recuperación de color.
+    /** * REVISIÓN DE SEGURIDAD: Se recupera el color asegurando que 
+     * si el objeto es nuevo o no tiene propiedades, use el color de CONFIG.
      */
     dibujarTuberia: function(el) {
+        // 1. Obtención de puntos (Sin cambios para mantener integridad)
         const p1 = window.CADMath.isoToScreen(el.x1, el.y1, el.z1);
         const p2 = window.CADMath.isoToScreen(el.x2, el.y2, el.z2);
 
@@ -77,18 +77,20 @@ window.CADRenderer = {
         linea.setAttribute('x2', p2.x);
         linea.setAttribute('y2', p2.y);
 
-        // CORRECCIÓN: Se asegura el fallback al color definido en CONFIG o uno sólido si falla
-        const colorDefault = (window.CONFIG && window.CONFIG.colores) ? window.CONFIG.colores.tuberia : '#3498db';
-        const colorFinal = el.props?.color || el.color || colorDefault;
+        // 2. RECUPERACIÓN DE COLOR (Corrección técnica)
+        // Buscamos en este orden: color directo > color en props > color global config > azul por defecto
+        let colorFinal = el.color || (el.props && el.props.color) || (window.CONFIG && window.CONFIG.colores ? window.CONFIG.colores.tuberia : '#3498db');
         
+        // 3. Aplicación de atributos visuales
         linea.setAttribute('stroke', colorFinal);
-        linea.setAttribute('stroke-width', 3 * (window.estado.view.zoom || 1)); 
+        linea.setAttribute('stroke-width', 3); // Grosor base visible
         linea.setAttribute('stroke-linecap', 'round');
-        
-        // Si está seleccionado, añadir brillo o clase
-        if (window.estado.selectedId === el.id) {
-            linea.setAttribute('stroke-width', 5 * (window.estado.view.zoom || 1));
-            linea.setAttribute('filter', 'url(#glow)');
+        linea.setAttribute('opacity', '1'); // Aseguramos que no sea transparente
+
+        // 4. Efecto de selección
+        if (window.estado && window.estado.selectedId === el.id) {
+            linea.setAttribute('stroke', window.CONFIG.colores.seleccion || '#f1c40f');
+            linea.setAttribute('stroke-width', 5);
         }
 
         this.capas.elementos.appendChild(linea);
