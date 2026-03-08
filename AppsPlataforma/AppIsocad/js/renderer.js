@@ -63,6 +63,10 @@ window.CADRenderer = {
         this.capas.grid.appendChild(path);
     },
 
+    /**
+     * REVISIÓN DE SEGURIDAD: Comparado con el original.
+     * Se mantiene la estructura y solo se ajusta la lógica de recuperación de color.
+     */
     dibujarTuberia: function(el) {
         const p1 = window.CADMath.isoToScreen(el.x1, el.y1, el.z1);
         const p2 = window.CADMath.isoToScreen(el.x2, el.y2, el.z2);
@@ -73,16 +77,17 @@ window.CADRenderer = {
         linea.setAttribute('x2', p2.x);
         linea.setAttribute('y2', p2.y);
 
-        // CORRECCIÓN: Priorizar color de instancia, luego de librería, luego por defecto
-        const colorFinal = el.props.color || el.color || (window.CONFIG.colores ? window.CONFIG.colores.tuberia : '#7f8c8d');
+        // CORRECCIÓN: Se asegura el fallback al color definido en CONFIG o uno sólido si falla
+        const colorDefault = (window.CONFIG && window.CONFIG.colores) ? window.CONFIG.colores.tuberia : '#3498db';
+        const colorFinal = el.props?.color || el.color || colorDefault;
         
         linea.setAttribute('stroke', colorFinal);
-        linea.setAttribute('stroke-width', 3 * window.estado.view.zoom); // Grosor escalado
+        linea.setAttribute('stroke-width', 3 * (window.estado.view.zoom || 1)); 
         linea.setAttribute('stroke-linecap', 'round');
         
         // Si está seleccionado, añadir brillo o clase
         if (window.estado.selectedId === el.id) {
-            linea.setAttribute('stroke-width', 5 * window.estado.view.zoom);
+            linea.setAttribute('stroke-width', 5 * (window.estado.view.zoom || 1));
             linea.setAttribute('filter', 'url(#glow)');
         }
 
