@@ -1,5 +1,5 @@
 /**
- * js/events.js - INTEGRACIÓN FINAL: SNAPS + TAG MANAGER + ROTACIÓN + ZOOM + PAN REFINADO
+ * js/events.js - INTEGRACIÓN TOTAL: SNAPS + TAG MANAGER + ROTACIÓN + ZOOM + SELECCIÓN REFINADA
  */
 
 window.TagManager = {
@@ -46,7 +46,7 @@ const svgElement = document.getElementById('lienzo-cad');
 let mouseStartTime = 0;
 let isDragging = false; 
 let startMousePos = { x: 0, y: 0 };
-const dragThreshold = 5; // Píxeles de tolerancia para distinguir clic de arrastre
+const dragThreshold = 5; 
 let puntoSnapActivo = null; 
 
 // Prevenir menú contextual para permitir rotación con click derecho
@@ -68,13 +68,12 @@ svgElement.addEventListener('wheel', (e) => {
     window.CADRenderer.dibujarEscena();
 }, { passive: false });
 
-// --- MOUSE DOWN ---
+// --- MOUSE DOWN (CON LÓGICA DE SELECCIÓN REFINADA) ---
 svgElement.addEventListener('mousedown', (e) => {
     mouseStartTime = Date.now();
     isDragging = false;
     startMousePos = { x: e.clientX, y: e.clientY };
     
-    // Guardamos estado inicial para el desplazamiento relativo
     window.estado.lastMouse = { x: e.clientX, y: e.clientY };
     window.estado.lastMousePos = { x: e.clientX, y: e.clientY }; 
 
@@ -83,6 +82,39 @@ svgElement.addEventListener('mousedown', (e) => {
     } else if (e.button === 2) {
         window.estado.isRotating = true;
     }
+
+    // NUEVA LÓGICA DE SELECCIÓN (HIT TESTING)
+    const rect = svgElement.getBoundingClientRect();
+    const scale = window.estado.view.zoom || window.estado.view.scale || 1.0;
+    
+    // Transformación inversa para encontrar coordenadas locales
+    const mouseX = (e.clientX - rect.left - window.estado.view.x) / scale;
+    const mouseY = (e.clientY - rect.top - window.estado.view.y) / scale;
+
+    const encontrado = window.AppCore.elementos.find(el => {
+        if (el.tipo === 'tuberia') {
+            const p1 = window.CADMath.isoToScreen(el.x, el.y, el.z);
+            const p2 = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
+            // Reutiliza la función de distancia que ya tienes al final del archivo
+            return distToSegment({x: mouseX, y: mouseY}, p1, p2) < 10;
+        } else {
+            const pos = window.CADMath.isoToScreen(el.x, el.y, el.z);
+            return Math.hypot(pos.x - mouseX, pos.y - mouseY) < 15;
+        }
+    });
+
+    if (encontrado) {
+        window.estado.selectedId = encontrado.id;
+        window.AppCore.seleccion = [encontrado.id];
+        window.PropsPanel.abrir(encontrado);
+    } else {
+        if (e.button === 0) {
+            window.estado.selectedId = null;
+            window.AppCore.seleccion = [];
+            window.PropsPanel.cerrar();
+        }
+    }
+    window.CADRenderer.dibujarEscena();
 });
 
 // --- MOUSE MOVE ---
@@ -90,7 +122,6 @@ svgElement.addEventListener('mousemove', (e) => {
     const dx = e.clientX - startMousePos.x;
     const dy = e.clientY - startMousePos.y;
 
-    // Verificar si se ha superado el umbral para considerarlo arrastre
     if (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold) {
         isDragging = true;
     }
@@ -117,7 +148,6 @@ svgElement.addEventListener('mousemove', (e) => {
         window.CADRenderer.dibujarEscena(); 
     }
 
-    // Lógica de Snaps (Solo si no estamos arrastrando la cámara)
     if (!window.estado.isPanning && !window.estado.isRotating) {
         puntoSnapActivo = buscarPuntoSnap(e.clientX, e.clientY);
         actualizarGuiaVisual(e);
@@ -130,7 +160,6 @@ svgElement.addEventListener('mousemove', (e) => {
 window.addEventListener('mouseup', (e) => {
     const duration = Date.now() - mouseStartTime;
 
-    // SI NO hubo arrastre significativo y fue click izquierdo, es una ACCIÓN (Selección o Dibujo)
     if (!isDragging && e.button === 0 && duration < 300) {
         ejecutarAccionPrincipal(puntoSnapActivo);
     }
@@ -141,7 +170,7 @@ window.addEventListener('mouseup', (e) => {
 });
 
 /**
- * BUSCAR PUNTO SNAP (CON SOPORTE PARA ESCALA Y CÁMARA)
+ * BUSCAR PUNTO SNAP
  */
 function buscarPuntoSnap(mouseX, mouseY) {
     let mejorPunto = null;
@@ -173,7 +202,6 @@ function buscarPuntoSnap(mouseX, mouseY) {
 
         nodos.forEach(n => {
             const screenPos = window.CADMath.isoToScreen(n.x, n.y, n.z);
-            // Compensar con la posición actual de la cámara y el zoom
             const realX = rect.left + window.estado.view.x + (screenPos.x * scale);
             const realY = rect.top + window.estado.view.y + (screenPos.y * scale);
             const dist = Math.hypot(mouseX - realX, mouseY - realY);
@@ -187,7 +215,6 @@ function buscarPuntoSnap(mouseX, mouseY) {
 
     if (mejorPunto) return mejorPunto;
     
-    // Snap a Grid si no hay objeto cerca
     const xRel = (mouseX - rect.left - window.estado.view.x) / scale;
     const yRel = (mouseY - rect.top - window.estado.view.y) / scale;
     let isoPos = window.CADMath.screenToIso(xRel, yRel);
@@ -237,12 +264,8 @@ function ejecutarAccionPrincipal(punto) {
         });
         window.CADRenderer.dibujarEscena();
     } else {
-        const rect = svgElement.getBoundingClientRect();
-        const scale = window.estado.view.zoom || window.estado.view.scale || 1.0;
-        // Compensamos el click para la selección de objetos
-        const xRel = (window.estado.lastMouse.x - rect.left - window.estado.view.x) / scale;
-        const yRel = (window.estado.lastMouse.y - rect.top - window.estado.view.y) / scale;
-        manejarSeleccion(xRel, yRel);
+        // En click, la selección ya se procesó en mousedown
+        window.CADRenderer.dibujarEscena();
     }
 }
 
@@ -278,8 +301,6 @@ function actualizarGuiaVisual(e) {
     uiLayer.innerHTML = ''; 
     const p = puntoSnapActivo;
     const pos = window.CADMath.isoToScreen(p.x, p.y, p.z);
-    
-    // Aplicamos transformación visual de cámara a la guía UI
     const scale = window.estado.view.zoom || window.estado.view.scale || 1.0;
     const renderX = window.estado.view.x + (pos.x * scale);
     const renderY = window.estado.view.y + (pos.y * scale);
@@ -303,7 +324,6 @@ function actualizarGuiaVisual(e) {
         const s = window.CADMath.isoToScreen(window.estado.inicio.x, window.estado.inicio.y, window.estado.inicio.z);
         const sX = window.estado.view.x + (s.x * scale);
         const sY = window.estado.view.y + (s.y * scale);
-        
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", sX); line.setAttribute("y1", sY);
         line.setAttribute("x2", renderX); line.setAttribute("y2", renderY);
@@ -311,26 +331,6 @@ function actualizarGuiaVisual(e) {
         line.setAttribute("stroke-dasharray", "4,4");
         uiLayer.appendChild(line);
     }
-}
-
-function manejarSeleccion(clickX, clickY) {
-    const encontrado = window.AppCore.elementos.find(el => {
-        const pos = window.CADMath.isoToScreen(el.x, el.y, el.z);
-        if (el.tipo === 'tuberia') {
-            const final = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
-            return distToSegment({x: clickX, y: clickY}, pos, final) < 10;
-        }
-        return Math.hypot(pos.x - clickX, pos.y - clickY) < 20;
-    });
-
-    if (encontrado) {
-        window.AppCore.seleccion = [encontrado.id];
-        window.PropsPanel.abrir(encontrado);
-    } else {
-        window.AppCore.seleccion = [];
-        window.PropsPanel.cerrar();
-    }
-    window.CADRenderer.dibujarEscena();
 }
 
 function distToSegment(p, v, w) {
