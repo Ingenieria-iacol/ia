@@ -1,5 +1,5 @@
 /**
- * iu/props.js - RESTAURACIÓN QUIRÚRGICA FINAL CON INTEGRACIÓN DINÁMICA
+ * iu/props.js - RESTAURACIÓN QUIRÚRGICA FINAL
  */
 window.PropsPanel = {
     abrir: function(el) {
@@ -7,13 +7,9 @@ window.PropsPanel = {
         const content = document.getElementById('prop-content');
         if (!card || !content) return;
 
-        card.style.display = 'block'; // Asegura que se vea
-        
+        card.style.display = 'block';
         let html = `<h3 style="margin:0 0 10px 0; font-size:0.9rem; color:#0071eb; border-bottom:1px solid #333; padding-bottom:5px;">${el.tipo.toUpperCase()}</h3>`;
         
-        // Información básica del ID (del primer segmento)
-        html += `<div class="prop-row"><b>ID:</b> ${el.id}</div>`;
-
         // --- IDENTIFICADOR (TAG) ---
         html += `
             <div class="prop-row">
@@ -66,22 +62,6 @@ window.PropsPanel = {
             `;
         }
 
-        // --- INTEGRACIÓN DE CAMPOS DINÁMICOS (Segmento solicitado) ---
-        // Recorremos todas las propiedades para no dejar ninguna fuera
-        html += `<div style="margin-top:10px; border-top:1px dashed #444; pt:10px;"><b>Propiedades Adicionales:</b></div>`;
-        for (let key in el.props) {
-            // Evitamos duplicar los campos que ya dibujamos arriba manualmente
-            const excluidos = ['tag', 'diamNominal', 'rotacionAxial', 'escala', 'colorRef'];
-            if (!excluidos.includes(key)) {
-                html += `
-                    <div class="prop-row">
-                        <label>${key}</label>
-                        <input type="text" value="${el.props[key]}" 
-                         onchange="window.AppCore.actualizarProp('${el.id}', '${key}', this.value)">
-                    </div>`;
-            }
-        }
-
         // Botón eliminar vinculado a AppCore
         html += `
             <button class="btn" style="width:100%; margin-top:15px; background:#922; color:white; border:none;" 
@@ -110,8 +90,7 @@ window.PropsPanel = {
     },
 
     actualizarProp: function(id, prop, valor) {
-        // Soporta tanto IDs numéricos como strings para compatibilidad
-        const el = window.AppCore.elementos.find(x => x.id.toString() === id.toString());
+        const el = window.AppCore.elementos.find(x => x.id === id);
         if (el) {
             el.props[prop] = valor;
             window.AppCore.guardarEstado();
