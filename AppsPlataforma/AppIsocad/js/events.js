@@ -83,11 +83,10 @@ svgElement.addEventListener('mousedown', (e) => {
         window.estado.isRotating = true;
     }
 
-    // NUEVA LÓGICA DE SELECCIÓN (HIT TESTING)
+    // LÓGICA DE SELECCIÓN (HIT TESTING)
     const rect = svgElement.getBoundingClientRect();
     const scale = window.estado.view.zoom || window.estado.view.scale || 1.0;
     
-    // Transformación inversa para encontrar coordenadas locales
     const mouseX = (e.clientX - rect.left - window.estado.view.x) / scale;
     const mouseY = (e.clientY - rect.top - window.estado.view.y) / scale;
 
@@ -95,7 +94,6 @@ svgElement.addEventListener('mousedown', (e) => {
         if (el.tipo === 'tuberia') {
             const p1 = window.CADMath.isoToScreen(el.x, el.y, el.z);
             const p2 = window.CADMath.isoToScreen(el.x + el.dx, el.y + el.dy, el.z + el.dz);
-            // Reutiliza la función de distancia que ya tienes al final del archivo
             return distToSegment({x: mouseX, y: mouseY}, p1, p2) < 10;
         } else {
             const pos = window.CADMath.isoToScreen(el.x, el.y, el.z);
@@ -264,7 +262,6 @@ function ejecutarAccionPrincipal(punto) {
         });
         window.CADRenderer.dibujarEscena();
     } else {
-        // En click, la selección ya se procesó en mousedown
         window.CADRenderer.dibujarEscena();
     }
 }
