@@ -18,11 +18,15 @@ window.CADRenderer = {
         
         // Dibujado de componentes
         this.dibujarGrid();
-        
-        window.AppCore.elementos.forEach(el => {
-            if (el.tipo === 'tuberia') this.dibujarTuberia(el);
-            else this.dibujarEquipo(el);
-        });
+
+window.AppCore.elementos.forEach(el => {
+    // Si tiene p1 y p2, es una tubería, sin importar el string del tipo
+    if (el.p1 && el.p2) {
+        this.dibujarTuberia(el);
+    } else {
+        this.dibujarEquipo(el);
+    }
+});
         
         // Sincronización de la cámara
         this.actualizarTransformacion();
