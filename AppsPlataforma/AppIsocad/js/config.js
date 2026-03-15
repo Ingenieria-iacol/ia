@@ -11,15 +11,7 @@ window.CONFIG = {
     showGrid: true, 
     enableSnap: true, 
     unit: 'm', 
-    showTags: true,
-    camera: { x: 0, y: 0, zoom: 1 },
-    // Colores base para el renderizador
-   colores: {
-        tuberia: '#CC7722', // Cambio a Amarillo Ocre
-        seleccion: '#f1c40f',
-        grid: '#e0e0e0',
-        texto: '#2c3e50'
-    }
+    showTags: true 
 };
 
 // ==========================================
