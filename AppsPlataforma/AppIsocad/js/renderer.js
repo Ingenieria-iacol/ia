@@ -62,45 +62,53 @@ window.CADRenderer = {
     },
 
     /**
-     * REVISIÓN DE SEGURIDAD: Comparado 3 veces con el original.
-     * Objetivo: Recuperar visibilidad de tubería forzando stroke y color.
+     * Versión Unificada de dibujarTuberia
+     * Combina precisión métrica de diámetro con refuerzo de visibilidad CSS.
      */
     dibujarTuberia: function(el) {
-        // 1. Cálculo de coordenadas (Precisión métrica)
+        // 1. Cálculo de coordenadas desde el espacio isométrico
         const p1 = window.CADMath.isoToScreen(el.x1, el.y1, el.z1);
         const p2 = window.CADMath.isoToScreen(el.x2, el.y2, el.z2);
 
-        const linea = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        linea.setAttribute('x1', p1.x);
-        linea.setAttribute('y1', p1.y);
-        linea.setAttribute('x2', p2.x);
-        linea.setAttribute('y2', p2.y);
-
-        // 2. RECUPERACIÓN DE COLOR Y VISIBILIDAD
-        // Prioridad: Color de propiedad > Color de configuración > Azul estándar
-        const colorBase = (window.CONFIG && window.CONFIG.colores) ? window.CONFIG.colores.tuberia : '#3498db';
-        const colorFinal = (el.props && el.props.color) || el.color || colorBase;
+        // 2. Definición de Estilos y Colores
+        const esSeleccionado = (window.estado && window.estado.selectedId === el.id);
         
-        // Forzamos los atributos críticos para evitar transparencia
-        linea.setAttribute('stroke', colorFinal); 
-        linea.style.stroke = colorFinal; // Refuerzo vía CSS inline
-        linea.setAttribute('stroke-width', '3');
-        linea.setAttribute('stroke-linecap', 'round');
-        linea.setAttribute('fill', 'none'); 
-        linea.setAttribute('opacity', '1');
-
-        // 3. Lógica de Selección (Resaltado)
-        if (window.estado && window.estado.selectedId === el.id) {
-            const colorSel = (window.CONFIG.colores && window.CONFIG.colores.seleccion) ? window.CONFIG.colores.seleccion : '#f1c40f';
-            linea.setAttribute('stroke', colorSel);
-            linea.style.stroke = colorSel;
-            linea.setAttribute('stroke-width', '5');
+        // Prioridad de color: Configuración de Selección > Propiedad del elemento > Config Global > Azul Seguro
+        const colorBase = (window.CONFIG && window.CONFIG.colores) ? window.CONFIG.colores.tuberia : '#3498db';
+        let colorFinal = (el.props && el.props.color) || el.color || colorBase;
+        
+        if (esSeleccionado) {
+            colorFinal = (window.CONFIG.colores && window.CONFIG.colores.seleccion) ? window.CONFIG.colores.seleccion : '#f1c40f';
         }
 
-        this.capas.elementos.appendChild(linea);
+        // Grosor: Si hay diámetro lo usamos, si no, usamos 3px (5px si está seleccionado)
+        let grosor = (el.props && el.props.diametro) ? 
+            Math.max(2, parseFloat(el.props.diametro) / 2) : 3;
         
-        // Dibujar etiqueta si el elemento tiene propiedades de tag
-        if (el.props && el.props.tag) {
+        if (esSeleccionado) grosor += 2; 
+
+        // 3. Creación del elemento SVG
+        const linea = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        linea.setAttribute("x1", p1.x);
+        linea.setAttribute("y1", p1.y);
+        linea.setAttribute("x2", p2.x);
+        linea.setAttribute("y2", p2.y);
+        
+        // 4. Refuerzo de Visibilidad (Crítico para motores CAD en navegador)
+        linea.setAttribute("stroke", colorFinal);
+        linea.style.stroke = colorFinal; // Refuerzo CSS
+        linea.setAttribute("stroke-width", grosor);
+        linea.setAttribute("stroke-linecap", "round");
+        linea.setAttribute("opacity", "1");
+        linea.setAttribute("fill", "none");
+        linea.setAttribute("id", "el-" + el.id);
+
+        // 5. Inserción en el DOM
+        this.capas.elementos.appendChild(linea);
+
+        // 6. Dibujado de Etiquetas (Tags)
+        // Se activa si existe la propiedad 'tag' o si la configuración global lo permite
+        if ((el.props && el.props.tag) || (window.CONFIG && window.CONFIG.showTags)) {
             const diamStr = el.props.diametro || '';
             this.dibujarEtiqueta(el, p1, p2, colorFinal, diamStr);
         }
