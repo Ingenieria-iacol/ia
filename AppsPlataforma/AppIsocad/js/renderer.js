@@ -62,56 +62,47 @@ window.CADRenderer = {
     },
 
     /**
-     * Versión Unificada de dibujarTuberia
-     * Combina precisión métrica de diámetro con refuerzo de visibilidad CSS.
+     * REPARACIÓN: dibujarTuberia integrada v7 -> v13
+     * Se restaura la lógica de proyección y asignación de atributos directos.
      */
     dibujarTuberia: function(el) {
-        // 1. Cálculo de coordenadas desde el espacio isométrico
-        const p1 = window.CADMath.isoToScreen(el.x1, el.y1, el.z1);
-        const p2 = window.CADMath.isoToScreen(el.x2, el.y2, el.z2);
+        if (!el.p1 || !el.p2) return;
 
-        // 2. Definición de Estilos y Colores
-        const esSeleccionado = (window.estado && window.estado.selectedId === el.id);
+        // 1. Proyección de coordenadas usando CADMath
+        const start = window.CADMath.isoToScreen(el.p1.x, el.p1.y, el.p1.z || 0);
+        const end = window.CADMath.isoToScreen(el.p2.x, el.p2.y, el.p2.z || 0);
+
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         
-        // Prioridad de color: Configuración de Selección > Propiedad del elemento > Config Global > Azul Seguro
-        const colorBase = (window.CONFIG && window.CONFIG.colores) ? window.CONFIG.colores.tuberia : '#3498db';
-        let colorFinal = (el.props && el.props.color) || el.color || colorBase;
+        // 2. Definición de Atributos Geométricos
+        line.setAttribute("x1", start.x);
+        line.setAttribute("y1", start.y);
+        line.setAttribute("x2", end.x);
+        line.setAttribute("y2", end.y);
+
+        // 3. Lógica de Color y Estilo (Recuperada de v7 con soporte v13)
+        const isSel = window.AppCore.seleccion.includes(el.id);
+        const grosorBase = el.props.diametro ? parseFloat(el.props.diametro) / 10 : 2;
         
-        if (esSeleccionado) {
-            colorFinal = (window.CONFIG.colores && window.CONFIG.colores.seleccion) ? window.CONFIG.colores.seleccion : '#f1c40f';
-        }
+        // Color según tipo (Vertical vs Horizontal) - Basado en v7
+        const color = isSel ? "#ff0000" : 
+                     (el.p1.z !== el.p2.z || el.props.isVertical ? "#00ff00" : "#ffd700");
 
-        // Grosor: Si hay diámetro lo usamos, si no, usamos 3px (5px si está seleccionado)
-        let grosor = (el.props && el.props.diametro) ? 
-            Math.max(2, parseFloat(el.props.diametro) / 2) : 3;
-        
-        if (esSeleccionado) grosor += 2; 
+        line.setAttribute("stroke", color);
+        line.setAttribute("stroke-width", isSel ? grosorBase + 2 : grosorBase);
+        line.setAttribute("stroke-linecap", "round");
+        line.setAttribute("class", "entidad-tuberia");
+        line.style.cursor = "pointer";
 
-        // 3. Creación del elemento SVG
-        const linea = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        linea.setAttribute("x1", p1.x);
-        linea.setAttribute("y1", p1.y);
-        linea.setAttribute("x2", p2.x);
-        linea.setAttribute("y2", p2.y);
-        
-        // 4. Refuerzo de Visibilidad (Crítico para motores CAD en navegador)
-        linea.setAttribute("stroke", colorFinal);
-        linea.style.stroke = colorFinal; // Refuerzo CSS
-        linea.setAttribute("stroke-width", grosor);
-        linea.setAttribute("stroke-linecap", "round");
-        linea.setAttribute("opacity", "1");
-        linea.setAttribute("fill", "none");
-        linea.setAttribute("id", "el-" + el.id);
+        // 4. Eventos de interacción
+        line.onclick = (e) => {
+            e.stopPropagation();
+            window.AppCore.seleccion = [el.id];
+            this.dibujarEscena();
+            if (window.PropsPanel) window.PropsPanel.abrir(el);
+        };
 
-        // 5. Inserción en el DOM
-        this.capas.elementos.appendChild(linea);
-
-        // 6. Dibujado de Etiquetas (Tags)
-        // Se activa si existe la propiedad 'tag' o si la configuración global lo permite
-        if ((el.props && el.props.tag) || (window.CONFIG && window.CONFIG.showTags)) {
-            const diamStr = el.props.diametro || '';
-            this.dibujarEtiqueta(el, p1, p2, colorFinal, diamStr);
-        }
+        this.capas.elementos.appendChild(line);
     },
 
     dibujarEtiqueta: function(el, s, e, color, diamStr) {
