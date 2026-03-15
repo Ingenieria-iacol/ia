@@ -1,72 +1,46 @@
 /**
  * engine/math.js
- * Sistema de coordenadas isométricas con soporte para rotación de cámara y zoom.
  */
 window.CADMath = {
     /**
-     * Proyección Isométrica: Mundo (x, y, z) -> Pantalla (px, py)
+     * Proyección Isométrica Estándar (2:1) con soporte de rotación de cámara.
      */
-    isoToScreen: function(x, y, z = 0) {
-        const v = window.estado.view;
-        const config = window.CONFIG;
-        const angle = v.angle || 0;
-        const zoom = v.zoom || 1;
+    isoToScreen: function(x, y, z) {
+        const angle = window.estado.view.angle; // Ángulo de rotación de cámara
+        const tileW = window.CONFIG.tileW;
+        const tileH = window.CONFIG.tileH;
 
-        // 1. Rotación horizontal (sobre el eje Z)
-        const cosA = Math.cos(angle);
-        const sinA = Math.sin(angle);
-        const rotX = x * cosA - y * sinA;
-        const rotY = x * sinA + y * cosA;
+        // Rotación en el plano XY antes de proyectar a Isométrico
+        const rotX = x * Math.cos(angle) - y * Math.sin(angle);
+        const rotY = x * Math.sin(angle) + y * Math.cos(angle);
 
-        // 2. Proyección Isométrica con Zoom y Escala de Tile
-        // (rotX - rotY) define el eje horizontal de la pantalla
-        // (rotX + rotY) define el eje vertical, restando Z para la altura
-        const screenX = (rotX - rotY) * (config.tileW / 2) * zoom;
-        const screenY = ((rotX + rotY) * (config.tileH / 2) - (z * config.tileH)) * zoom;
+        // Proyección Isométrica estándar 2:1
+        const screenX = (rotX - rotY) * (tileW / 2);
+        const screenY = (rotX + rotY) * (tileH / 2) - (z * tileH);
 
-        // 3. Retornar posición sumando el desplazamiento de cámara (offset)
-        return {
-            x: screenX + v.x,
-            y: screenY + v.y
-        };
+        return { x: screenX, y: screenY };
     },
 
     /**
-     * Proyección Inversa: Pantalla (px, py) -> Mundo (x, y)
-     * Nota: Asume z = 0 para el cálculo de suelo.
+     * Convierte coordenadas de pantalla a isométricas (Inversa de isoToScreen)
+     * Basado en la proyección estándar 2:1.
      */
     screenToIso: function(sx, sy) {
-        const v = window.estado.view;
-        const config = window.CONFIG;
-        const angle = v.angle || 0;
-        const zoom = v.zoom || 1;
+        const tileW = window.CONFIG.tileW;
+        const tileH = window.CONFIG.tileH;
 
-        // 1. Revertir desplazamiento de cámara y zoom
-        const posX = (sx - v.x) / zoom;
-        const posY = (sy - v.y) / zoom;
+        // Inversión matricial de la proyección estándar
+        const isoX = (sx / (tileW / 2) + sy / (tileH / 2)) / 2;
+        const isoY = (sy / (tileH / 2) - sx / (tileW / 2)) / 2;
 
-        // 2. Invertir la proyección Isométrica para obtener coordenadas rotadas
-        const rotX = (posX / (config.tileW / 2) + posY / (config.tileH / 2)) / 2;
-        const rotY = (posY / (config.tileH / 2) - posX / (config.tileW / 2)) / 2;
-
-        // 3. Invertir la rotación (aplicando el ángulo opuesto)
-        const cosA = Math.cos(-angle);
-        const sinA = Math.sin(-angle);
-
-        return {
-            x: rotX * cosA - rotY * sinA,
-            y: rotX * sinA + rotY * cosA
-        };
+        return { x: isoX, y: isoY };
     },
 
-    /**
-     * Distancia euclidiana en el espacio 3D
-     */
     getDistance3D: function(p1, p2) {
         return Math.sqrt(
-            Math.pow((p2.x || 0) - (p1.x || 0), 2) + 
-            Math.pow((p2.y || 0) - (p1.y || 0), 2) + 
-            Math.pow((p2.z || 0) - (p1.z || 0), 2)
+            Math.pow(p2.x - p1.x, 2) + 
+            Math.pow(p2.y - p1.y, 2) + 
+            Math.pow(p2.z - p1.z, 2)
         );
     }
 };
