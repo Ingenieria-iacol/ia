@@ -37,6 +37,12 @@ Soluciones educativas para empresas y profesionales:
 * Módulos de reentrenamiento para certificación de competencias.
 * Seguimiento de progreso y evaluación automatizada.
 
+### 5. 🏗️ ERP y Gestion de Proyectos
+Soluciones educativas para empresas y profesionales:
+* Cursos de actualización normativa y técnica.
+* Módulos de reentrenamiento para certificación de competencias.
+* Seguimiento de progreso y evaluación automatizada.
+
 ---
 
 ## 💡 ¿Por qué ENTALPIA?
@@ -71,9 +77,29 @@ Soluciones educativas para empresas y profesionales:
 
 ¿Interesado en una demo o en integrar ENTALPIA en tu institución?
 
-* 📧 **Email:** contacto@entalpia-app.com
-* 🌐 **Web:** www.entalpia-app.com
+* 📧 **Email:** ingenieriaiacol@gmail.com
+* 🌐 **Web:** https://ingenieria-iacol.github.io/ia
 * 💬 **Soporte:** Disponible 24/7 para usuarios premium.
 
 ---
+
+## ? Mas...
+
+La expresión "Enthalpy Pioneer" (o Pionero de la Entalpía) no es un término técnico estándar en los libros de texto, pero se interpreta comúnmente en dos contextos principales según el entorno donde la hayas visto:
+
+* 1. Interpretación Científica / Histórica
+    Se refiere a los científicos pioneros que definieron y desarrollaron el concepto de entalpía (la cantidad de energía térmica que un sistema intercambia con su     entorno).
+
+  Josiah Willard Gibbs: Fue el primero en utilizar el concepto, aunque lo llamó "función de calor".
+  Heike Kamerlingh Onnes: Fue quien acuñó oficialmente el término "entalpía" a principios del siglo XX.
+  
+* 2. Interpretación en Ingeniería y Software
+  En el ámbito de la ingeniería química y de procesos, "Pioneer" suele ser el nombre de marcas o softwares específicos de simulación térmica.
+Podría referirse a un usuario experto o a un módulo de cálculo que lidera la implementación de nuevas metodologías para medir cambios de energía en sistemas complejos (como en la captura de carbono o nuevas energías).
+
+* 3. Sentido Figurado
+  A veces se usa de forma metafórica para describir a alguien que es un innovador en termodinámica o en procesos de eficiencia energética; alguien que "abre camino" en la forma en que gestionamos el calor y la energía.
+
+---
+
 © 2025 ENTALPIA. Todos los derechos reservados. *La energía que mueve el conocimiento.*
