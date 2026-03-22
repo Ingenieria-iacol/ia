@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consolidado de Avance RTR Fanalca 2026</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; color: #24292e; background-color: #f6f8fa; padding: 20px; }
+        .dashboard { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        
+        /* Consolidado General */
+        .summary-card { background: #0366d6; color: white; padding: 20px; border-radius: 6px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; }
+        .summary-info h1 { margin: 0; font-size: 22px; }
+        .progress-container-main { width: 40%; background: rgba(255,255,255,0.2); border-radius: 10px; height: 20px; position: relative; }
+        .progress-bar-main { height: 100%; background: #28a745; border-radius: 10px; width: 15%; /* CAMBIAR ESTE % PARA EL AVANCE TOTAL */ text-align: center; font-size: 12px; line-height: 20px; font-weight: bold; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background-color: #f6f8fa; color: #586069; padding: 12px; font-size: 12px; text-transform: uppercase; border: 1px solid #dfe2e5; }
+        td { padding: 12px; border: 1px solid #dfe2e5; font-size: 13px; vertical-align: middle; }
+        
+        /* Estilos de Estado */
+        .status { font-weight: bold; padding: 4px 10px; border-radius: 12px; font-size: 11px; text-align: center; display: inline-block; width: 90px; }
+        .status-pend { background: #ffdce0; color: #d73a49; border: 1px solid #d73a49; } /* Pendiente */
+        .status-proc { background: #fff5b1; color: #735c0f; border: 1px solid #735c0f; } /* En Proceso */
+        .status-done { background: #dcffe4; color: #116329; border: 1px solid #116329; } /* Reparado */
+
+        /* Filas de Vigilancia */
+        .v-row { background: #f1f8ff !important; font-weight: bold; color: #0366d6; text-align: center; }
+        .zona-label { font-weight: 600; color: #005cc5; }
+        .date-text { color: #6a737d; font-family: monospace; font-size: 11px; }
+
+        /* Barra de progreso pequeña */
+        .mini-bar-bg { background: #eee; border-radius: 4px; height: 8px; width: 100%; margin-top: 5px; }
+        .mini-bar-fill { background: #28a745; height: 100%; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div class="summary-card">
+        <div class="summary-info">
+            <h1>Consolidado General de Reparaciones</h1>
+            <span>Informe Técnico Fanalca 2026 - RTR 90902:2013</span>
+        </div>
+        <div class="progress-container-main">
+            <div class="progress-bar-main" style="width: 25%;">25% TOTAL</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">Zona / Área</th>
+                <th style="width: 30%;">Hallazgo Detectado</th>
+                <th style="width: 15%;">Estado Actual</th>
+                <th style="width: 20%;">Cronograma (Inicio - Fin)</th>
+                <th style="width: 20%;">Avance Detallado</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="zona-label">Planta Honda</td>
+                <td>Válvula de corte inicial (falla de cierre).</td>
+                <td><span class="status status-proc">EN PROCESO</span></td>
+                <td class="date-text">06/Mar/26 - 12/Mar/26</td>
+                <td><div class="mini-bar-bg"><div class="mini-bar-fill" style="width: 60%;"></div></div></td>
+            </tr>
+            <tr>
+                <td class="zona-label">Calderín</td>
+                <td>Fugas en corte general y obturador de alivio.</td>
+                <td><span class="status status-pend">PENDIENTE</span></td>
+                <td class="date-col date-text">13/Mar/26 - 18/Mar/26</td>
+                <td><div class="mini-bar-bg"><div class="mini-bar-fill" style="width: 0%;"></div></div></td>
+            </tr>
+            <tr>
+                <td class="zona-label">Casino</td>
+                <td>Fugas en hornos y reubicación de venteos.</td>
+                <td><span class="status status-done">REPARADO</span></td>
+                <td class="date-text">06/Mar/26 - 10/Mar/26</td>
+                <td><div class="mini-bar-bg"><div class="mini-bar-fill" style="width: 100%;"></div></div></td>
+            </tr>
+
+            <tr class="v-row">
+                <td colspan="5">VIGILANCIA TRIMESTRAL Q1 (25 de Marzo): Verificación de hermeticidad y torque</td>
+            </tr>
+
+            <tr>
+                <td class="zona-label">General</td>
+                <td>Refuerzo de soportería (Cargas Dinámicas).</td>
+                <td><span class="status status-pend">PENDIENTE</span></td>
+                <td class="date-text">01/Abr/26 - 30/Abr/26</td>
+                <td><div class="mini-bar-bg"><div class="mini-bar-fill" style="width: 0%;"></div></div></td>
+            </tr>
+            <tr>
+                <td class="zona-label">Varias Zonas</td>
+                <td>Lazos Equipotenciales y SPT.</td>
+                <td><span class="status status-pend">PENDIENTE</span></td>
+                <td class="date-text">01/May/26 - 20/May/26</td>
+                <td><div class="mini-bar-bg"><div class="mini-bar-fill" style="width: 0%;"></div></div></td>
+            </tr>
+
+            <tr class="v-row">
+                <td colspan="5">VIGILANCIA TRIMESTRAL Q2 (25 de Junio): Inspección de SPT e integridad UV</td>
+            </tr>
+
+            <tr>
+                <td class="zona-label">Tuberías GLP</td>
+                <td>Erosión por estrangulamiento de flujo.</td>
+                <td><span class="status status-pend">PENDIENTE</span></td>
+                <td class="date-text">15/Jul/26 - 15/Ago/26</td>
+                <td><div class="mini-bar-bg"><div class="mini-bar-fill" style="width: 0%;"></div></div></td>
+            </tr>
+            <tr>
+                <td class="zona-label">Instrumentos</td>
+                <td>Corrosión y falta de pintura normativa.</td>
+                <td><span class="status status-pend">PENDIENTE</span></td>
+                <td class="date-text">01/Sep/26 - 30/Sep/26</td>
+                <td><div class="mini-bar-bg"><div class="mini-bar-fill" style="width: 0%;"></div></div></td>
+            </tr>
+
+            <tr class="v-row">
+                <td colspan="5">VIGILANCIA TRIMESTRAL Q3 (25 de Septiembre): Control de corrosión y señales</td>
+            </tr>
+
+            <tr>
+                <td class="zona-label">Gestión Doc.</td>
+                <td>Certificados Tanques y Res. 40245-46.</td>
+                <td><span class="status status-pend">PENDIENTE</span></td>
+                <td class="date-text">01/Oct/26 - 15/Nov/26</td>
+                <td><div class="mini-bar-bg"><div class="mini-bar-fill" style="width: 0%;"></div></div></td>
+            </tr>
+
+            <tr class="v-row">
+                <td colspan="5">VIGILANCIA TRIMESTRAL Q4 (15 de Diciembre): Cierre administrativo y pre-auditoría OEC</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>
