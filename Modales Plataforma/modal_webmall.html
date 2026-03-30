@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebMall - Tu Centro Comercial Virtual</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* Personalizaciones y utilidades extra */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #0f0f0f;
@@ -17,7 +14,6 @@
             overflow-x: hidden;
         }
         
-        /* Ocultar scrollbar pero permitir scroll */
         .scrollbar-hide::-webkit-scrollbar {
             display: none;
         }
@@ -26,7 +22,6 @@
             scrollbar-width: none;
         }
 
-        /* Animaciones */
         .fade-in {
             animation: fadeIn 0.3s ease-in-out;
         }
@@ -36,23 +31,24 @@
             to { opacity: 1; }
         }
 
-        .slide-in-right {
-            animation: slideInRight 0.3s ease-out forwards;
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
         }
-
-        @keyframes slideInRight {
-            from { transform: translateX(100%); }
-            to { transform: translateX(0); }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 10px;
         }
     </style>
 </head>
 <body class="bg-[#0f0f0f] text-white selection:bg-blue-600 selection:text-white">
 
-    <!-- NAVBAR -->
     <nav id="navbar" class="fixed w-full z-50 transition-colors duration-300 bg-gradient-to-b from-black/90 to-transparent">
         <div class="px-4 md:px-12 py-4 flex items-center justify-between">
             <div class="flex items-center gap-8">
-                <div class="flex items-center gap-2 cursor-pointer" onclick="window.scrollTo(0,0)">
+                <div class="flex items-center gap-2 cursor-pointer" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
                     <i data-lucide="grid" class="text-blue-600 w-8 h-8"></i>
                     <h1 class="text-xl md:text-2xl font-bold tracking-tighter uppercase">
                         Web<span class="text-blue-600">Mall</span>
@@ -77,7 +73,6 @@
         </div>
     </nav>
 
-    <!-- HERO SECTION -->
     <div class="relative h-[70vh] w-full">
         <div class="absolute inset-0">
             <img src="https://images.unsplash.com/photo-1519567241046-7f570eee3d9f?w=1200&q=80" alt="Event" class="w-full h-full object-cover">
@@ -89,10 +84,10 @@
             <div class="flex items-center gap-2 mb-4">
                 <span class="bg-blue-600/90 backdrop-blur text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Evento Especial</span>
             </div>
-            <h1 class="text-4xl md:text-6xl font-bold mb-4 leading-tight">Gran Apertura: Ala Norte</h1>
+            <h1 class="text-4xl md:text-6xl font-bold mb-4 leading-tight">Gran Apertura</h1>
             <h2 class="text-xl md:text-2xl text-blue-400 font-light mb-4">Nuevas tiendas, nuevas experiencias</h2>
             <p class="text-base text-gray-300 mb-8 max-w-lg leading-relaxed drop-shadow-md">
-                Visita el nuevo sector tecnológico con descuentos de hasta el 50% en todas las tiendas participantes. ¡Solo por este fin de semana!
+                Explora nuestro catálogo actualizado directamente desde la nube. ¡Descuentos exclusivos en tecnología y moda!
             </p>
             
             <div class="flex gap-4">
@@ -106,49 +101,37 @@
         </div>
     </div>
 
-    <!-- MAIN CONTENT (Sectors) -->
     <div id="sectors-container" class="relative z-10 -mt-20 md:-mt-32 pb-20 space-y-6">
-        <!-- Rendered by JS -->
+        <div class="text-center py-20">
+            <p class="text-gray-500 animate-pulse">Conectando con la base de datos...</p>
+        </div>
     </div>
 
-    <!-- FOOTER -->
     <footer class="px-4 md:px-12 py-12 text-gray-500 text-sm bg-[#0a0a0a] border-t border-gray-900">
         <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
             <div>
                 <h3 class="text-white font-bold mb-4 flex items-center gap-2"><i data-lucide="grid" class="w-5 h-5 text-blue-600"></i> WebMall</h3>
                 <p class="text-gray-600 text-xs leading-relaxed">
-                    La experiencia definitiva de compras en línea. Simulamos la comodidad de tu centro comercial favorito desde la comodidad de tu hogar.
+                    La experiencia definitiva de compras sincronizada con Google Sheets.
                 </p>
             </div>
             <div class="space-y-3">
-                <h4 class="text-white font-medium mb-2">Sectores</h4>
-                <p class="hover:text-blue-500 cursor-pointer transition">Tecnología</p>
-                <p class="hover:text-blue-500 cursor-pointer transition">Moda</p>
-                <p class="hover:text-blue-500 cursor-pointer transition">Hogar</p>
-            </div>
-            <div class="space-y-3">
-                <h4 class="text-white font-medium mb-2">Contacto</h4>
-                <div class="flex gap-4">
-                    <div class="w-8 h-8 bg-gray-800 rounded flex items-center justify-center hover:bg-blue-600 hover:text-white transition cursor-pointer"><i data-lucide="message-circle" class="w-4 h-4"></i></div>
-                    <div class="w-8 h-8 bg-gray-800 rounded flex items-center justify-center hover:bg-blue-600 hover:text-white transition cursor-pointer"><i data-lucide="phone" class="w-4 h-4"></i></div>
-                </div>
+                <h4 class="text-white font-medium mb-2">Plataforma</h4>
+                <p class="hover:text-blue-500 cursor-pointer transition">Administrar Inventario</p>
+                <p class="hover:text-blue-500 cursor-pointer transition">Soporte</p>
             </div>
         </div>
         <div class="max-w-6xl mx-auto mt-12 pt-8 border-t border-gray-900 flex justify-between items-center text-xs text-gray-700">
-            <p>© 2025 Entalpia.</p>
-            <p>WebMall</p>
+            <p>© 2026 WebMall Cloud.</p>
         </div>
     </footer>
 
-    <!-- STORE MODAL -->
     <div id="store-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
         <div class="relative bg-[#1a1a1a] w-full max-w-5xl rounded-xl overflow-hidden shadow-2xl border border-gray-800 flex flex-col max-h-[90vh] fade-in">
-            <!-- Modal Content Populated by JS -->
             <div id="modal-content" class="w-full h-full overflow-y-auto custom-scrollbar"></div>
         </div>
     </div>
 
-    <!-- CART SIDEBAR -->
     <div id="cart-sidebar" class="fixed inset-y-0 right-0 z-[70] w-full md:w-96 bg-[#1a1a1a] shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out border-l border-gray-800 flex flex-col">
         <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-[#141414]">
             <h2 class="text-xl font-bold text-white flex items-center gap-2">
@@ -158,177 +141,175 @@
                 <i data-lucide="x" class="w-6 h-6 text-gray-400"></i>
             </button>
         </div>
-        
-        <div id="cart-items" class="flex-1 overflow-y-auto p-6 space-y-4">
-            <!-- Cart Items rendered here -->
-            <div class="text-center text-gray-500 mt-20 flex flex-col items-center">
-                <p>Tu bolsa está vacía.</p>
-            </div>
-        </div>
-
+        <div id="cart-items" class="flex-1 overflow-y-auto p-6 space-y-4"></div>
         <div class="p-6 border-t border-gray-800 bg-[#141414]">
             <div class="flex justify-between items-center mb-4 text-white">
                 <span class="text-gray-400 text-sm">Subtotal</span>
                 <span id="cart-total" class="text-xl font-bold">$0.00</span>
             </div>
-            <button onclick="alert('Funcionalidad de pago en desarrollo')" class="w-full bg-gradient-to-r from-blue-700 to-blue-600 text-white py-4 rounded-lg font-bold hover:shadow-lg transition uppercase text-sm tracking-widest">
-                Ir a Pagar
+            <button onclick="alert('Pedido procesado')" class="w-full bg-blue-600 text-white py-4 rounded-lg font-bold hover:bg-blue-500 transition uppercase text-sm tracking-widest">
+                Confirmar Compra
             </button>
         </div>
     </div>
 
-    <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- DATA ---
-        const MALL_SECTORS = [
-            {
-                id: 'sec_tech', title: 'Distrito Tecnológico', stores: [
-                    { id: 'st_t1', name: 'Micro Automatizacion', image: '../ImagenesPlataformas/Logo_De_Micro_Automatizacion.png', rating: 4.9, description: 'Soluciones en movimiento.', products: [{id:'p1', title:'RTX 4090', price:1599, image:'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=500&q=80'}, {id:'p2', title:'Monitor 49"', price:1200, image:'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=500&q=80'}] },
-                    { id: 'st_t2', name: 'AudioHeaven', image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=500&q=80', rating: 4.7, description: 'Sonido Hi-Fi.', products: [{id:'p3', title:'Headphones', price:350, image:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80'}] },
-                    { id: 'st_t3', name: 'MobileWorld', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&q=80', rating: 4.5, description: 'Smartphones y más.', products: [{id:'p5', title:'Phone 15', price:999, image:'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&q=80'}] },
-                    { id: 'st_t4', name: 'GameStation', image: 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=500&q=80', rating: 4.8, description: 'Para gamers.', products: [{id:'p7', title:'Consola X', price:499, image:'https://images.unsplash.com/photo-1486401899868-0e435ed85128?w=500&q=80'}] }
-                ]
-            },
-            {
-                id: 'sec_fash', title: 'Boulevard de Moda', stores: [
-                    { id: 'st_f1', name: 'ZaraStyle', image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=500&q=80', rating: 4.6, description: 'Moda global.', products: [{id:'p9', title:'Abrigo', price:120, image:'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=500&q=80'}] },
-                    { id: 'st_f2', name: 'SneakerHead', image: 'https://images.unsplash.com/photo-1552346154-21d32810aba3?w=500&q=80', rating: 4.9, description: 'Ediciones limitadas.', products: [{id:'p11', title:'Jordan Retro', price:250, image:'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80'}] },
-                    { id: 'st_f3', name: 'LuxeBags', image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=500&q=80', rating: 4.8, description: 'Bolsos de lujo.', products: [{id:'p13', title:'Bolso Tote', price:180, image:'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=500&q=80'}] }
-                ]
-            },
-            {
-                id: 'sec_home', title: 'Hogar & Deco', stores: [
-                    { id: 'st_h1', name: 'Minimal', image: 'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=500&q=80', rating: 4.5, description: 'Diseño escandinavo.', products: [{id:'p17', title:'Sofá', price:800, image:'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=500&q=80'}] },
-                    { id: 'st_h2', name: 'GreenHouse', image: 'https://images.unsplash.com/photo-1463320726281-696a485928c7?w=500&q=80', rating: 4.8, description: 'Vida verde.', products: [{id:'p19', title:'Monstera', price:40, image:'https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=500&q=80'}] }
-                ]
-            }
-        ];
+        // --- CONFIGURACIÓN ---
+        const URL_TIENDAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQraZMDen_-h3z6p5r0MnHC1RrhB1O2KMtC_QchBFDVUQ1U86fuUcXBTucCzI3anSdRPK8MirmDDar5/pub?gid=0&single=true&output=csv';
+        const URL_PRODUCTOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQraZMDen_-h3z6p5r0MnHC1RrhB1O2KMtC_QchBFDVUQ1U86fuUcXBTucCzI3anSdRPK8MirmDDar5/pub?gid=1951760810&single=true&output=csv';
 
+        let MALL_SECTORS = [];
         let cart = [];
 
-        // --- RENDER APP ---
-        function initApp() {
-            renderSectors();
-            renderCart();
-            lucide.createIcons();
-            
-            // Navbar Scroll Effect
-            window.addEventListener('scroll', () => {
-                const nav = document.getElementById('navbar');
-                if (window.scrollY > 50) {
-                    nav.classList.add('bg-[#141414]', 'shadow-lg');
-                    nav.classList.remove('bg-gradient-to-b');
-                } else {
-                    nav.classList.remove('bg-[#141414]', 'shadow-lg');
-                    nav.classList.add('bg-gradient-to-b');
-                }
-            });
+        // --- CARGA DE DATOS ---
+        async function fetchCSV(url) {
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+                // Manejo de CSV básico considerando comas
+                return text.split('\n').filter(row => row.trim() !== '').map(row => row.split(','));
+            } catch (e) {
+                console.error("Error al obtener CSV:", e);
+                return [];
+            }
         }
 
-        function scrollToSectors() {
-            document.getElementById('sectors-container').scrollIntoView({ behavior: 'smooth' });
+        async function initApp() {
+            try {
+                const [datosTiendas, datosProductos] = await Promise.all([
+                    fetchCSV(URL_TIENDAS),
+                    fetchCSV(URL_PRODUCTOS)
+                ]);
+
+                // 1. Procesar tiendas (Saltamos la primera fila de cabecera)
+                const tiendasProcesadas = datosTiendas.slice(1).map(t => ({
+                    id: t[0]?.trim(),
+                    name: t[1]?.trim(),
+                    sector: t[2]?.trim(),
+                    image: t[3]?.trim(),
+                    description: t[4]?.trim(),
+                    rating: t[5]?.trim() || "4.5",
+                    products: []
+                }));
+
+                // 2. Vincular productos a tiendas
+                datosProductos.slice(1).forEach(p => {
+                    const tiendaId = p[0]?.trim();
+                    const tienda = tiendasProcesadas.find(t => t.id === tiendaId);
+                    if (tienda) {
+                        tienda.products.push({
+                            id: 'prod_' + Math.random().toString(36).substr(2, 9),
+                            title: p[1]?.trim(),
+                            price: parseFloat(p[2]) || 0,
+                            image: p[3]?.trim()
+                        });
+                    }
+                });
+
+                // 3. Agrupar por sectores únicos
+                const sectoresNombres = [...new Set(tiendasProcesadas.map(t => t.sector))];
+                MALL_SECTORS = sectoresNombres.map(name => ({
+                    id: name.toLowerCase().replace(/\s+/g, '-'),
+                    title: name,
+                    stores: tiendasProcesadas.filter(t => t.sector === name)
+                }));
+
+                renderSectors();
+                renderCart();
+                lucide.createIcons();
+                window.addEventListener('scroll', handleNavbarScroll);
+
+            } catch (error) {
+                document.getElementById('sectors-container').innerHTML = `<p class="text-center text-red-500">Error al cargar datos.</p>`;
+            }
         }
 
-        // --- SECTORS & STORES ---
+        // --- UI FUNCTIONS ---
         function renderSectors() {
             const container = document.getElementById('sectors-container');
+            if (MALL_SECTORS.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500">No hay tiendas disponibles.</p>`;
+                return;
+            }
+
             container.innerHTML = MALL_SECTORS.map(sector => `
                 <div class="mb-10 group relative z-10 pl-4 md:pl-12">
                     <h2 class="text-white text-xl font-semibold mb-3 flex items-center gap-2">
                         <span class="w-1 h-6 bg-blue-600 rounded-full block"></span>
                         ${sector.title}
                     </h2>
-                    
                     <div class="group/row relative -ml-4 md:-ml-12">
-                        <button onclick="scrollRow('${sector.id}', 'left')" class="absolute top-0 bottom-0 left-4 z-40 m-auto h-12 w-12 bg-black/50 hover:bg-blue-600/80 rounded-full p-2 text-white hidden md:block opacity-0 group-hover/row:opacity-100 transition flex items-center justify-center">
+                        <button onclick="scrollRow('${sector.id}', 'left')" class="absolute top-0 bottom-0 left-4 z-40 m-auto h-12 w-12 bg-black/50 hover:bg-blue-600 rounded-full text-white hidden md:flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition">
                             <i data-lucide="chevron-left"></i>
                         </button>
-                        
                         <div id="row-${sector.id}" class="flex items-center gap-4 overflow-x-scroll scrollbar-hide px-4 md:px-12 pb-4 scroll-smooth">
                             ${sector.stores.map(store => `
-                                <div onclick="openStoreModal('${store.id}')" class="relative h-48 min-w-[300px] cursor-pointer transition-all duration-300 hover:scale-105 hover:z-20 group/card">
+                                <div onclick="openStoreModal('${store.id}')" class="relative h-48 min-w-[280px] cursor-pointer transition-all duration-300 hover:scale-105 hover:z-20 group/card">
                                     <img src="${store.image}" class="rounded-lg object-cover w-full h-full shadow-lg border border-gray-800 group-hover/card:border-blue-500/50">
                                     <div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent rounded-lg opacity-90"></div>
                                     <div class="absolute bottom-0 left-0 w-full p-4">
-                                        <h3 class="text-white font-bold text-lg drop-shadow-md">${store.name}</h3>
+                                        <h3 class="text-white font-bold text-lg">${store.name}</h3>
                                         <div class="flex items-center gap-1 text-xs text-blue-300">
-                                            <i data-lucide="star" class="w-3 h-3 fill-blue-300 text-blue-300"></i> ${store.rating}
+                                            <i data-lucide="star" class="w-3 h-3 fill-blue-300"></i> ${store.rating}
                                         </div>
                                     </div>
                                 </div>
                             `).join('')}
                         </div>
-
-                        <button onclick="scrollRow('${sector.id}', 'right')" class="absolute top-0 bottom-0 right-4 z-40 m-auto h-12 w-12 bg-black/50 hover:bg-blue-600/80 rounded-full p-2 text-white hidden md:block opacity-0 group-hover/row:opacity-100 transition flex items-center justify-center">
+                        <button onclick="scrollRow('${sector.id}', 'right')" class="absolute top-0 bottom-0 right-4 z-40 m-auto h-12 w-12 bg-black/50 hover:bg-blue-600 rounded-full text-white hidden md:flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition">
                             <i data-lucide="chevron-right"></i>
                         </button>
                     </div>
                 </div>
             `).join('');
+            lucide.createIcons();
         }
 
         function scrollRow(id, direction) {
             const row = document.getElementById(`row-${id}`);
-            const scrollAmount = direction === 'left' ? -row.clientWidth : row.clientWidth;
-            row.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            const amount = direction === 'left' ? -400 : 400;
+            row.scrollBy({ left: amount, behavior: 'smooth' });
         }
 
-        // --- MODAL ---
         function openStoreModal(storeId) {
-            let store = null;
-            // Find store
-            MALL_SECTORS.forEach(sec => {
-                const found = sec.stores.find(s => s.id === storeId);
-                if (found) store = found;
-            });
-
+            const store = MALL_SECTORS.flatMap(s => s.stores).find(st => st.id === storeId);
             if (!store) return;
 
             const modal = document.getElementById('store-modal');
             const content = document.getElementById('modal-content');
             
             content.innerHTML = `
-                <div class="relative h-64 w-full shrink-0">
+                <div class="relative h-64 w-full">
                     <img src="${store.image}" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/40 to-transparent"></div>
-                    <button onclick="closeModal()" class="absolute top-4 right-4 bg-black/50 backdrop-blur rounded-full p-2 hover:bg-red-500/80 text-white transition">
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent"></div>
+                    <button onclick="closeModal()" class="absolute top-4 right-4 bg-black/50 p-2 rounded-full hover:bg-red-600 transition">
                         <i data-lucide="x" class="w-6 h-6"></i>
                     </button>
-                    <div class="absolute bottom-6 left-8 right-8 flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
-                        <div>
-                            <h2 class="text-4xl font-bold text-white mb-2">${store.name}</h2>
-                            <p class="text-gray-300 text-sm">${store.description}</p>
-                        </div>
-                        <div class="flex gap-3">
-                             <button onclick="alert('Abriendo chat...')" class="bg-white text-black px-6 py-2 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-gray-200 transition">
-                                <i data-lucide="message-circle" class="w-4 h-4"></i> Contactar
-                             </button>
-                        </div>
+                    <div class="absolute bottom-6 left-8">
+                        <h2 class="text-4xl font-bold">${store.name}</h2>
+                        <p class="text-gray-300">${store.description}</p>
                     </div>
                 </div>
                 <div class="p-8">
-                    <h3 class="text-xl font-bold text-white mb-6 border-b border-gray-700 pb-2">Productos Destacados</h3>
+                    <h3 class="text-xl font-bold mb-6 border-b border-gray-700 pb-2">Catálogo</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${store.products.map(product => `
-                            <div class="bg-[#252525] rounded-lg overflow-hidden group hover:ring-2 hover:ring-blue-600 transition-all">
-                                <div class="h-40 overflow-hidden relative">
-                                     <img src="${product.image}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
-                                </div>
-                                <div class="p-4">
-                                    <h4 class="text-white font-medium truncate">${product.title}</h4>
-                                    <div class="flex justify-between items-center mt-3">
-                                        <span class="text-blue-400 font-bold">$${product.price}</span>
-                                        <button onclick="addToCart('${product.id}', '${store.name}')" class="bg-blue-600 p-2 rounded-full text-white hover:bg-blue-500 transition shadow-lg">
-                                            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
-                                        </button>
+                        ${store.products.length ? store.products.map(p => `
+                            <div class="bg-[#252525] rounded-lg overflow-hidden border border-gray-800">
+                                <img src="${p.image}" class="w-full h-40 object-cover">
+                                <div class="p-4 flex justify-between items-center">
+                                    <div>
+                                        <h4 class="font-medium text-sm">${p.title}</h4>
+                                        <span class="text-blue-400 font-bold">$${p.price}</span>
                                     </div>
+                                    <button onclick="addToCart('${p.id}', '${store.name}')" class="bg-blue-600 p-2 rounded-full hover:bg-blue-500 transition">
+                                        <i data-lucide="plus" class="w-4 h-4"></i>
+                                    </button>
                                 </div>
                             </div>
-                        `).join('')}
+                        `).join('') : '<p class="text-gray-500">No hay productos en esta tienda.</p>'}
                     </div>
                 </div>
             `;
-            
             modal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
             lucide.createIcons();
@@ -339,85 +320,49 @@
             document.body.style.overflow = 'auto';
         }
 
-        // --- CART ---
-        function toggleCart() {
-            const sidebar = document.getElementById('cart-sidebar');
-            if (sidebar.classList.contains('translate-x-full')) {
-                sidebar.classList.remove('translate-x-full');
-            } else {
-                sidebar.classList.add('translate-x-full');
-            }
-        }
-
         function addToCart(productId, storeName) {
-            // Find product in data (flat search)
             let product = null;
             MALL_SECTORS.forEach(sec => {
                 sec.stores.forEach(st => {
                     const p = st.products.find(pr => pr.id === productId);
-                    if (p) product = p;
+                    if (p) product = { ...p, storeName };
                 });
             });
 
-            if(product) {
-                cart.push({...product, storeName});
+            if (product) {
+                cart.push(product);
                 renderCart();
-                // Simple toast
-                const btn = event.currentTarget;
-                const originalContent = btn.innerHTML;
-                btn.classList.add('bg-green-600');
-                btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i>`;
-                lucide.createIcons();
-                setTimeout(() => {
-                    btn.classList.remove('bg-green-600');
-                    btn.innerHTML = originalContent;
-                    lucide.createIcons();
-                }, 1000);
+                // Efecto visual rápido
+                const count = document.getElementById('cart-count');
+                count.classList.add('scale-125');
+                setTimeout(() => count.classList.remove('scale-125'), 200);
             }
-        }
-
-        function removeFromCart(index) {
-            cart.splice(index, 1);
-            renderCart();
         }
 
         function renderCart() {
-            const cartItemsContainer = document.getElementById('cart-items');
-            const cartCountBadge = document.getElementById('cart-count');
-            const cartTotalEl = document.getElementById('cart-total');
-            
-            // Badge
-            if (cart.length > 0) {
-                cartCountBadge.classList.remove('hidden');
-                cartCountBadge.innerText = cart.length;
-            } else {
-                cartCountBadge.classList.add('hidden');
-            }
+            const container = document.getElementById('cart-items');
+            const badge = document.getElementById('cart-count');
+            const totalEl = document.getElementById('cart-total');
 
-            // Total
-            const total = cart.reduce((sum, item) => sum + item.price, 0);
-            cartTotalEl.innerText = `$${total.toFixed(2)}`;
+            badge.innerText = cart.length;
+            badge.classList.toggle('hidden', cart.length === 0);
 
-            // Items
+            const total = cart.reduce((s, i) => s + i.price, 0);
+            totalEl.innerText = `$${total.toFixed(2)}`;
+
             if (cart.length === 0) {
-                cartItemsContainer.innerHTML = `
-                    <div class="text-center text-gray-500 mt-20 flex flex-col items-center">
-                        <i data-lucide="shopping-cart" class="w-12 h-12 opacity-50 mb-2"></i>
-                        <p>Tu bolsa está vacía.</p>
-                    </div>`;
+                container.innerHTML = `<div class="text-center mt-10 text-gray-500"><p>Bolsa vacía</p></div>`;
             } else {
-                cartItemsContainer.innerHTML = cart.map((item, index) => `
+                container.innerHTML = cart.map((item, idx) => `
                     <div class="flex gap-4 bg-[#252525] p-3 rounded-lg border border-gray-800">
-                        <img src="${item.image}" class="w-16 h-16 object-cover rounded bg-gray-800">
-                        <div class="flex-1 flex flex-col justify-between">
-                            <div>
-                                <h3 class="text-white font-medium text-sm line-clamp-1">${item.title}</h3>
-                                <p class="text-blue-400 text-[10px]">${item.storeName}</p>
-                            </div>
-                            <div class="flex justify-between items-end">
-                                <span class="text-white font-bold text-sm">$${item.price}</span>
-                                <button onclick="removeFromCart(${index})" class="text-gray-500 hover:text-red-500 transition p-1">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <img src="${item.image}" class="w-12 h-12 object-cover rounded">
+                        <div class="flex-1">
+                            <h4 class="text-xs font-bold truncate">${item.title}</h4>
+                            <p class="text-[10px] text-blue-400">${item.storeName}</p>
+                            <div class="flex justify-between items-center mt-1">
+                                <span class="text-sm font-bold">$${item.price}</span>
+                                <button onclick="cart.splice(${idx},1); renderCart();" class="text-gray-500 hover:text-red-500">
+                                    <i data-lucide="trash-2" class="w-3 h-3"></i>
                                 </button>
                             </div>
                         </div>
@@ -427,9 +372,27 @@
             lucide.createIcons();
         }
 
-        // Initialize
-        initApp();
+        function toggleCart() {
+            document.getElementById('cart-sidebar').classList.toggle('translate-x-full');
+        }
 
+        function handleNavbarScroll() {
+            const nav = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                nav.classList.add('bg-[#141414]', 'shadow-lg');
+                nav.classList.remove('bg-gradient-to-b');
+            } else {
+                nav.classList.remove('bg-[#141414]', 'shadow-lg');
+                nav.classList.add('bg-gradient-to-b');
+            }
+        }
+
+        function scrollToSectors() {
+            document.getElementById('sectors-container').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Lanzar la App
+        initApp();
     </script>
 </body>
 </html>
