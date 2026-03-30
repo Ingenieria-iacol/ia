@@ -159,25 +159,16 @@
     </div>
 
     <script>
-        // DATA CENTRALIZADA (Restaurada y Completa)
-        let MALL_SECTORS = [
-            {
-                id: 'sec_tech', title: 'Distrito Tecnológico', stores: [
-                    { id: 'st_t1', name: 'Micro Automatizacion', image: '../ImagenesPlataformas/Logo_De_Micro_Automatizacion.png', rating: 4.9, description: 'Sistemas de control y automatización industrial de alta precisión.', products: [{id:'p1', title:'Controlador Lógico', price:450, image:'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500'}, {id:'p2', title:'Sensor Inductivo', price:85, image:'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?w=500'}] },
-                    { id: 'st_t2', name: 'AudioHeaven', image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=500', rating: 4.7, description: 'Acústica profesional.', products: [{id:'p3', title:'Monitores de Estudio', price:350, image:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500'}] }
-                ]
-            },
-            {
-                id: 'sec_fash', title: 'Boulevard de Moda', stores: [
-                    { id: 'st_f1', name: 'SneakerHead', image: 'https://images.unsplash.com/photo-1552346154-21d32810aba3?w=500', rating: 4.9, description: 'Diseño y estilo urbano.', products: [{id:'p11', title:'Edición Limitada X', price:250, image:'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500'}] }
-                ]
-            }
-        ];
+        // 1. URL DE CONEXIÓN CON GOOGLE SHEETS
+        const SCRIPT_URL = "TU_URL_DE_APPS_SCRIPT_AQUI";
 
+        // DATA CENTRALIZADA (Iniciada vacía para cargar de la DB)
+        let MALL_SECTORS = [];
         let cart = [];
 
-        function initApp() {
-            renderSectors();
+        // 2. MODIFICA LA FUNCIÓN initApp PARA CARGAR DATOS REALES
+        async function initApp() {
+            await loadFromSheets(); // Carga datos de Google Sheets
             renderCart();
             lucide.createIcons();
             
@@ -186,6 +177,25 @@
                 nav.style.backgroundColor = window.scrollY > 50 ? 'rgba(15,15,15,0.95)' : 'transparent';
                 nav.style.backdropFilter = window.scrollY > 50 ? 'blur(10px)' : 'none';
             });
+        }
+
+        // 3. NUEVA FUNCIÓN PARA TRAER DATOS DE GOOGLE SHEETS
+        async function loadFromSheets() {
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const data = await response.json();
+
+                // Sincronizamos la variable global con la base de datos
+                if(data && data.length > 0) {
+                    MALL_SECTORS = data;
+                }
+                
+                console.log("Datos sincronizados con Google Sheets", data);
+                renderSectors();
+            } catch (error) {
+                console.error("Error de conexión con Entalpia DB", error);
+                // Si falla, podrías cargar un fallback o avisar al usuario
+            }
         }
 
         function toggleAdminPanel() {
@@ -197,11 +207,17 @@
         }
 
         function scrollToSectors() {
-            document.getElementById('sectors-container').scrollIntoView({ behavior: 'smooth' });
+            const container = document.getElementById('sectors-container');
+            if(container) container.scrollIntoView({ behavior: 'smooth' });
         }
 
         function renderSectors() {
             const container = document.getElementById('sectors-container');
+            if(!MALL_SECTORS.length) {
+                container.innerHTML = `<div class="text-center py-20 text-gray-500">Conectando con la base de datos de Entalpia...</div>`;
+                return;
+            }
+
             container.innerHTML = MALL_SECTORS.map(sector => `
                 <div class="group relative z-10 pl-4 md:pl-12">
                     <h2 class="text-white text-xl font-bold mb-4 flex items-center gap-2 italic uppercase tracking-wider">
@@ -216,7 +232,7 @@
                                     <div class="absolute bottom-0 left-0 w-full p-5">
                                         <h3 class="text-white font-bold text-xl drop-shadow-lg">${store.name}</h3>
                                         <div class="flex items-center gap-1 text-xs text-blue-400 font-bold mt-1">
-                                            <i data-lucide="star" class="w-3 h-3 fill-blue-500"></i> ${store.rating} • ${store.products.length} Ítems
+                                            <i data-lucide="star" class="w-3 h-3 fill-blue-500"></i> ${store.rating || 5.0} • ${store.products.length} Ítems
                                         </div>
                                     </div>
                                 </div>
@@ -271,7 +287,8 @@
             lucide.createIcons();
         }
 
-        function addNewItem() {
+        // 4. FUNCIÓN PARA ENVIAR A LA HOJA (REEMPLAZADA)
+        async function addNewItem() {
             const sId = document.getElementById('form-sector').value;
             const stName = document.getElementById('form-store').value;
             const pName = document.getElementById('form-product-name').value;
@@ -280,20 +297,39 @@
 
             if(!stName || !pName || !price) return alert("Error: Datos de ingeniería incompletos.");
 
-            const sector = MALL_SECTORS.find(s => s.id === sId);
-            let store = sector.stores.find(s => s.name.toLowerCase() === stName.toLowerCase());
+            const payload = {
+                id: 'p' + Date.now(),
+                sector: sId,
+                store: stName,
+                product: pName,
+                price: parseFloat(price),
+                image: img,
+                timestamp: new Date().toISOString()
+            };
 
-            const newProd = { id: 'p'+Date.now(), title: pName, price: parseFloat(price), image: img };
+            // Enviar a Google Sheets vía POST
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Importante para evitar errores de CORS con Apps Script
+                    cache: 'no-cache',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-            if(store) {
-                store.products.push(newProd);
-            } else {
-                sector.stores.push({ id: 'st'+Date.now(), name: stName, image: img, rating: 5.0, description: "Unidad de suministro nueva.", products: [newProd] });
+                alert("Sincronización Exitosa con la Base de Datos Entalpia");
+                toggleAdminPanel();
+                document.getElementById('product-form').reset();
+                
+                // Recargamos los datos para ver los cambios reales de la DB
+                setTimeout(() => {
+                    location.reload();
+                }, 500);
+
+            } catch (e) {
+                console.error("Error en POST:", e);
+                alert("Error en el despliegue de datos. Verifique la URL de conexión.");
             }
-
-            renderSectors();
-            toggleAdminPanel();
-            document.getElementById('product-form').reset();
         }
 
         function addToCart(pId, stName) {
@@ -338,6 +374,7 @@
             lucide.createIcons();
         }
 
+        // Inicio de la aplicación
         initApp();
     </script>
 </body>
