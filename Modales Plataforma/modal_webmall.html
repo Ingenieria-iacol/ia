@@ -159,16 +159,14 @@
     </div>
 
     <script>
-        // 1. URL DE CONEXIÓN CON GOOGLE SHEETS
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhpaF7LT-13CH5xNUzsLPzkkOuplI2hI4PDDFKEg-v67-JAZetyYJVYxGj4nC8O7Ua7g/exec";
+        // 1. REEMPLAZA POR TU URL REAL DE APPS SCRIPT
+        const SCRIPT_URL = "TU_URL_DE_APPS_SCRIPT_AQUI";
 
-        // DATA CENTRALIZADA (Iniciada vacía para cargar de la DB)
         let MALL_SECTORS = [];
         let cart = [];
 
-        // 2. MODIFICA LA FUNCIÓN initApp PARA CARGAR DATOS REALES
         async function initApp() {
-            await loadFromSheets(); // Carga datos de Google Sheets
+            await loadFromSheets();
             renderCart();
             lucide.createIcons();
             
@@ -179,22 +177,57 @@
             });
         }
 
-        // 3. NUEVA FUNCIÓN PARA TRAER DATOS DE GOOGLE SHEETS
+        // 3. FUNCIÓN DE CARGA COMPLETA Y MAPEADO DINÁMICO
         async function loadFromSheets() {
             try {
                 const response = await fetch(SCRIPT_URL);
-                const data = await response.json();
-
-                // Sincronizamos la variable global con la base de datos
-                if(data && data.length > 0) {
-                    MALL_SECTORS = data;
-                }
+                const data = await response.json(); 
                 
-                console.log("Datos sincronizados con Google Sheets", data);
+                // Mapeo dinámico: reconstruimos MALL_SECTORS desde los datos planos
+                const sectorTitles = {
+                    'sec_tech': 'Distrito Tecnológico',
+                    'sec_fash': 'Boulevard de Moda',
+                    'sec_home': 'Hogar & Deco'
+                };
+
+                const tempSectors = {};
+
+                data.forEach(item => {
+                    const sId = item.sector;
+                    if (!tempSectors[sId]) {
+                        tempSectors[sId] = {
+                            id: sId,
+                            title: sectorTitles[sId] || 'Nuevo Sector',
+                            stores: []
+                        };
+                    }
+
+                    let store = tempSectors[sId].stores.find(s => s.name === item.store);
+                    if (!store) {
+                        store = {
+                            id: 'st_' + Math.random().toString(36).substr(2, 9),
+                            name: item.store,
+                            image: item.image || 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=500',
+                            rating: 5.0,
+                            description: "Unidad de suministro técnico.",
+                            products: []
+                        };
+                        tempSectors[sId].stores.push(store);
+                    }
+
+                    store.products.push({
+                        id: item.id || 'p' + Date.now(),
+                        title: item.product,
+                        price: parseFloat(item.price),
+                        image: item.image
+                    });
+                });
+
+                MALL_SECTORS = Object.values(tempSectors);
                 renderSectors();
             } catch (error) {
                 console.error("Error de conexión con Entalpia DB", error);
-                // Si falla, podrías cargar un fallback o avisar al usuario
+                document.getElementById('sectors-container').innerHTML = `<div class="text-center py-20 text-gray-500 italic">Error al sincronizar con la base de datos de ingeniería.</div>`;
             }
         }
 
@@ -207,17 +240,11 @@
         }
 
         function scrollToSectors() {
-            const container = document.getElementById('sectors-container');
-            if(container) container.scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('sectors-container').scrollIntoView({ behavior: 'smooth' });
         }
 
         function renderSectors() {
             const container = document.getElementById('sectors-container');
-            if(!MALL_SECTORS.length) {
-                container.innerHTML = `<div class="text-center py-20 text-gray-500">Conectando con la base de datos de Entalpia...</div>`;
-                return;
-            }
-
             container.innerHTML = MALL_SECTORS.map(sector => `
                 <div class="group relative z-10 pl-4 md:pl-12">
                     <h2 class="text-white text-xl font-bold mb-4 flex items-center gap-2 italic uppercase tracking-wider">
@@ -232,7 +259,7 @@
                                     <div class="absolute bottom-0 left-0 w-full p-5">
                                         <h3 class="text-white font-bold text-xl drop-shadow-lg">${store.name}</h3>
                                         <div class="flex items-center gap-1 text-xs text-blue-400 font-bold mt-1">
-                                            <i data-lucide="star" class="w-3 h-3 fill-blue-500"></i> ${store.rating || 5.0} • ${store.products.length} Ítems
+                                            <i data-lucide="star" class="w-3 h-3 fill-blue-500"></i> ${store.rating} • ${store.products.length} Ítems
                                         </div>
                                     </div>
                                 </div>
@@ -287,15 +314,15 @@
             lucide.createIcons();
         }
 
-        // 4. FUNCIÓN PARA ENVIAR A LA HOJA (REEMPLAZADA)
+        // 4. ENVÍO DE DATOS A LA HOJA
         async function addNewItem() {
             const sId = document.getElementById('form-sector').value;
             const stName = document.getElementById('form-store').value;
             const pName = document.getElementById('form-product-name').value;
             const price = document.getElementById('form-price').value;
-            const img = document.getElementById('form-image').value || 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=500';
+            const img = document.getElementById('form-image').value;
 
-            if(!stName || !pName || !price) return alert("Error: Datos de ingeniería incompletos.");
+            if(!stName || !pName || !price) return alert("Error: Datos incompletos.");
 
             const payload = {
                 id: 'p' + Date.now(),
@@ -303,32 +330,22 @@
                 store: stName,
                 product: pName,
                 price: parseFloat(price),
-                image: img,
-                timestamp: new Date().toISOString()
+                image: img
             };
 
-            // Enviar a Google Sheets vía POST
             try {
-                const response = await fetch(SCRIPT_URL, {
+                // Sincronización Real con POST
+                await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Importante para evitar errores de CORS con Apps Script
+                    mode: 'no-cors',
                     cache: 'no-cache',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                alert("Sincronización Exitosa con la Base de Datos Entalpia");
-                toggleAdminPanel();
-                document.getElementById('product-form').reset();
-                
-                // Recargamos los datos para ver los cambios reales de la DB
-                setTimeout(() => {
-                    location.reload();
-                }, 500);
-
+                alert("Sincronización Exitosa con la Base de Datos");
+                location.reload(); 
             } catch (e) {
-                console.error("Error en POST:", e);
-                alert("Error en el despliegue de datos. Verifique la URL de conexión.");
+                alert("Error en el despliegue de datos");
             }
         }
 
@@ -374,7 +391,6 @@
             lucide.createIcons();
         }
 
-        // Inicio de la aplicación
         initApp();
     </script>
 </body>
