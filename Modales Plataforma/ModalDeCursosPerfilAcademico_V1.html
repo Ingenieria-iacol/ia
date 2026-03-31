@@ -5,17 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GasEngineering Hub - Panel Principal</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     
-    <!-- Babel para procesar JSX en el navegador -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Lucide Icons (Script global) -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
@@ -67,11 +63,11 @@
         const { useState, useEffect, createElement, useRef, useMemo } = React;
 
         // --- ICON COMPONENT ---
-        const Icon = ({ name, size = 24, className = "" }) => {
+        const Icon = ({ name, size = 24, className = "", fill = "none" }) => {
             const iconData = lucide.icons[name];
             if (!iconData) return null;
             return (
-                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
                     {iconData.map((child, index) => {
                         const [tag, attrs] = child;
                         return createElement(tag, { ...attrs, key: index });
@@ -80,7 +76,7 @@
             );
         };
 
-        // --- DATOS DE CURSOS ---
+        // --- DATOS DE CURSOS (BLOQUE COMPLETO RESTAURADO) ---
         const initialTrainingPlans = [
             { 
                 id: 108, 
@@ -111,7 +107,7 @@
                     { title: "Metodología de Identificación de defectos.", duration: "15m" }
                 ]
             },
-                        { 
+            { 
                 id: 107, 
                 title: "Trabajo Seguro En Alturas Resol. 4272:2021", 
                 category: "Resol. 4272", 
@@ -264,7 +260,7 @@
             }
         ];
 
-        // --- COMPONENTE MODAL ---
+        // --- COMPONENTE MODAL (CON INTEGRACIONES) ---
         const NetflixModal = ({ plan, onClose, onRegister, onPlay }) => {
             const modalRef = useRef(null);
 
@@ -322,11 +318,22 @@
                                         </button>
                                     ) : (
                                         <button 
-                                            onClick={() => plan.enrolled ? onPlay(plan.url) : onRegister(plan.id)}
-                                            className="flex items-center gap-2 bg-white text-black px-6 py-2.5 rounded font-bold text-lg hover:bg-gray-200 transition-all transform active:scale-95 shadow-lg"
+                                            onClick={() => {
+                                                if (plan.enrolled) {
+                                                    onPlay(plan.url);
+                                                } else {
+                                                    // Sinergia: Pasamos ID y URL para redirección inmediata
+                                                    onRegister(plan.id, plan.url);
+                                                }
+                                            }}
+                                            className={`flex items-center gap-2 px-6 py-2.5 rounded font-bold text-lg transition-all transform active:scale-95 shadow-lg ${
+                                                plan.enrolled 
+                                                    ? "bg-green-600 text-white hover:bg-green-700 shadow-green-900/40" 
+                                                    : "bg-white text-black hover:bg-gray-200"
+                                            }`}
                                         >
                                             {plan.enrolled ? (
-                                                <> <Icon name="Play" fill="black" size={24} /> Reanudar </>
+                                                <> <Icon name="CheckCircle" size={24} className="animate-bounce" /> ¡Inscrito con éxito! </>
                                             ) : (
                                                 <> <Icon name="PlusCircle" size={24} /> Inscribirse </>
                                             )}
@@ -401,31 +408,39 @@
             return arr;
         }
 
-        // --- APP PRINCIPAL ---
+        // --- APP PRINCIPAL (RESTURADA Y MEJORADA) ---
         function App() {
             const [plans, setPlans] = useState(initialTrainingPlans);
             const [selectedPlan, setSelectedPlan] = useState(null);
 
-            // FILTROS Y MEZCLA DE CURSOS ACTIVOS (Solo una vez al montar)
+            // FILTROS Y MEZCLA DE CURSOS ACTIVOS
             const activePlans = useMemo(() => {
                 const active = plans.filter(p => p.status === 'active');
-                return shuffleArray(active); // Se mezcla solo al cargar o si 'plans' cambia
+                return shuffleArray(active); 
             }, [plans]);
 
             const upcomingPlans = plans.filter(p => p.status === 'coming_soon');
-            
-            // Duplicamos los próximos para efecto de carrusel infinito
             const carouselPlans = [...upcomingPlans, ...upcomingPlans]; 
 
-            const handleRegister = (planId) => {
+            const handleRegister = (planId, url) => {
+                // 1. Actualizamos el estado global
                 const updatedPlans = plans.map(p => {
                     if (p.id === planId) return { ...p, enrolled: true, progress: 0 };
                     return p;
                 });
                 setPlans(updatedPlans);
+
+                // 2. Sincronizamos el plan seleccionado para feedback visual en el modal
                 if (selectedPlan && selectedPlan.id === planId) {
                     setSelectedPlan({ ...selectedPlan, enrolled: true, progress: 0 });
                 }
+
+                // 3. Pequeña pausa para UX (confirmación visual) antes de navegar
+                setTimeout(() => {
+                    if (url) {
+                        handleNavigation(url);
+                    }
+                }, 850);
             };
 
             const handleNavigation = (url) => {
@@ -470,7 +485,7 @@
                     <main className="flex-1 overflow-y-auto custom-scrollbar p-8">
                         <div className="max-w-7xl mx-auto space-y-12">
                             
-                            {/* SECCIÓN 1: CURSOS DISPONIBLES (ACTIVOS Y MEZCLADOS - SCROLL HORIZONTAL) */}
+                            {/* SECCIÓN 1: CURSOS DISPONIBLES */}
                             <section>
                                 <div className="mb-6 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -484,13 +499,11 @@
                                     </div>
                                 </div>
                                 
-                                {/* Contenedor Scroll Horizontal */}
                                 <div className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory custom-scrollbar">
                                     {activePlans.map(plan => (
                                         <div 
                                             key={plan.id}
                                             onClick={() => setSelectedPlan(plan)}
-                                            // Ajuste de ancho: 85% en móvil, 45% en tablet, 35% en desktop para ver varios
                                             className="relative min-w-[85vw] md:min-w-[45vw] lg:min-w-[35vw] h-[400px] rounded-2xl overflow-hidden cursor-pointer group border border-gray-800 hover:border-orange-500/50 transition-all shadow-2xl snap-center flex-shrink-0"
                                         >
                                             <img 
@@ -518,7 +531,7 @@
                                 </div>
                             </section>
 
-                            {/* SECCIÓN 2: PRÓXIMAMENTE (CARRUSEL ROTATIVO) */}
+                            {/* SECCIÓN 2: PRÓXIMAMENTE (CARRUSEL ROTATIVO RESTAURADO) */}
                             <section className="overflow-hidden">
                                 <div className="mb-6 flex items-center gap-3">
                                     <Icon name="CalendarClock" className="text-gray-500" />
@@ -526,7 +539,6 @@
                                 </div>
 
                                 <div className="carousel-container w-full overflow-hidden relative pb-4">
-                                    {/* Sombra de desvanecimiento a los lados */}
                                     <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-[#0b0b0b] to-transparent z-10 pointer-events-none"></div>
                                     <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-[#0b0b0b] to-transparent z-10 pointer-events-none"></div>
 
@@ -537,7 +549,6 @@
                                                 onClick={() => setSelectedPlan(plan)}
                                                 className="relative flex-shrink-0 w-64 h-80 bg-[#151515] rounded-xl border border-gray-800 overflow-hidden cursor-pointer group hover:scale-105 transition-transform duration-300 opacity-60 hover:opacity-100 grayscale hover:grayscale-0"
                                             >
-                                                {/* Etiqueta Próximamente */}
                                                 <div className="absolute top-3 right-3 z-20">
                                                     <span className="bg-gray-800/80 backdrop-blur text-gray-300 text-[10px] font-bold px-2 py-1 rounded border border-gray-600">
                                                         PRONTO
