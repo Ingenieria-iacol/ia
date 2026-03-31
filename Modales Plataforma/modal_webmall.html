@@ -181,56 +181,57 @@
         }
 
         // --- NÚCLEO: CARGA Y RECONSTRUCCIÓN DE DATOS ---
-        async function loadFromSheets() {
-            try {
-                const response = await fetch(SCRIPT_URL);
-                const rawData = await response.json();
-                
-                const sectorsMap = {};
+async function addNewItem() {
+    const sId = document.getElementById('form-sector').value;
+    const stName = document.getElementById('form-store').value;
+    const pName = document.getElementById('form-product-name').value;
+    const price = document.getElementById('form-price').value;
+    const fileInput = document.getElementById('form-image-file');
+    
+    if(!stName || !pName || !price || fileInput.files.length === 0) {
+        return alert("Error: Faltan parámetros o el archivo de imagen.");
+    }
 
-                rawData.forEach(item => {
-                    if (!sectorsMap[item.sector]) {
-                        sectorsMap[item.sector] = {
-                            id: item.sector,
-                            title: formatTitle(item.sector),
-                            stores: {}
-                        };
-                    }
+    const btn = document.getElementById('btn-sync');
+    btn.innerHTML = '<i data-lucide="loader" class="animate-spin"></i> Procesando Imagen...';
+    lucide.createIcons();
 
-                    if (!sectorsMap[item.sector].stores[item.store]) {
-                        sectorsMap[item.sector].stores[item.store] = {
-                            id: 'st_' + Math.random().toString(36).substr(2, 5),
-                            name: item.store,
-                            image: item.image,
-                            rating: 5.0,
-                            description: "Unidad de suministro técnica.",
-                            products: []
-                        };
-                    }
+    // Lógica para convertir imagen a Base64
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = async function() {
+        const base64Image = reader.result; // Aquí está la imagen convertida
 
-                    sectorsMap[item.sector].stores[item.store].products.push({
-                        id: item.id,
-                        title: item.product,
-                        price: parseFloat(item.price),
-                        image: item.image
-                    });
-                });
+        const payload = {
+            id: 'p' + Date.now(),
+            sector: sId,
+            store: stName,
+            product: pName,
+            price: parseFloat(price),
+            image: base64Image // Enviamos la cadena Base64 en lugar de la URL
+        };
 
-                MALL_SECTORS = Object.values(sectorsMap).map(sector => {
-                    return {
-                        ...sector,
-                        stores: Object.values(sector.stores)
-                    };
-                });
-
-                console.log("Estructura reconstruida:", MALL_SECTORS);
-                renderSectors(); 
-
-            } catch (error) {
-                console.error("Error en el despliegue de datos de ingeniería:", error);
-                document.getElementById('sectors-container').innerHTML = `<div class="text-center py-20 text-red-500">Fallo en el protocolo de conexión.</div>`;
-            }
+        try {
+            await fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                cache: 'no-cache',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            alert("Sincronización Exitosa con Entalpia DB");
+            location.reload(); 
+        } catch (e) {
+            console.error(e);
+            alert("Error en el protocolo de envío.");
+            btn.innerHTML = 'Reintentar';
         }
+    };
+
+    reader.readAsDataURL(file); // Inicia la conversión
+}
 
         function formatTitle(id) {
             const titles = {
