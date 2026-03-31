@@ -130,8 +130,9 @@
                 <input type="number" id="form-price" placeholder="0.00" class="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none">
             </div>
             <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">URL de Imagen Técnica</label>
-                <input type="text" id="form-image" placeholder="https://..." class="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none text-xs">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Cargar Imagen Técnica</label>
+                <input type="file" id="form-image-file" accept="image/*" class="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg p-2 text-white focus:border-blue-500 outline-none text-xs">
+                <p class="text-[10px] text-gray-500 mt-1">* Se convertirá a formato de datos para Entalpia DB.</p>
             </div>
             
             <button type="button" id="btn-sync" onclick="addNewItem()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 metal-blue">
