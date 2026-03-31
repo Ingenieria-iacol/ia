@@ -31,42 +31,36 @@
     </div>
 
     <script>
-      function ejecutarRegistro() {
-        const nombre = document.getElementById('nombre').value;
-        const correo = document.getElementById('correo').value;
-        const btn = document.querySelector('.btn-entalpia');
-        
-        // --- PEGA TU URL AQUÍ ABAJO ---
-        const urlDelScript = "https://script.google.com/macros/s/AKfycbz-EBrQzLQg13TGnV28EjKt7iUAaiSbmL23QLkjtQ7YR7OB_O8Quga-aupLLDatGQKffw/exec";
-        // ------------------------------
+     function ejecutarRegistro() {
+  const nombre = document.getElementById('nombre').value;
+  const correo = document.getElementById('correo').value;
+  const btn = document.querySelector('.btn-entalpia');
+  
+  const urlDelScript = "TU_URL_DE_DESPLIEGUE"; // Asegúrate de actualizarla
 
-        if(!nombre || !correo) return alert("Por favor llena todos los campos");
+  if(!nombre || !correo) return alert("Por favor llena todos los campos");
 
-        btn.disabled = true;
-        btn.innerText = "Procesando...";
+  btn.disabled = true;
+  btn.innerText = "Procesando...";
 
-        // Usamos URLSearchParams para enviar los datos de forma sencilla al script
-        const formData = new FormData();
-        formData.append('nombre', nombre);
-        formData.append('correo', correo);
+  // Construimos la URL con parámetros para evitar problemas de CORS complejos
+  const urlFinal = `${urlDelScript}?nombre=${encodeURIComponent(nombre)}&correo=${encodeURIComponent(correo)}`;
 
-        fetch(urlDelScript, {
-          method: "POST",
-          body: formData,
-          mode: 'no-cors' // Esto evita errores de seguridad al enviar desde GitHub a Google
-        })
-        .then(() => {
-          document.getElementById('mensaje-respuesta').innerHTML = 
-            `<div class="alert alert-success">¡Registro enviado con éxito! Revisa la base de datos.</div>`;
-          btn.innerText = "Registrado";
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          alert("Hubo un error al conectar con el servidor.");
-          btn.disabled = false;
-          btn.innerText = "Registrarme";
-        });
-      }
+  fetch(urlFinal, {
+    method: "POST"
+  })
+  .then(() => {
+    document.getElementById('mensaje-respuesta').innerHTML = 
+      `<div class="alert alert-success">¡Registro enviado con éxito! Revisa la base de datos.</div>`;
+    btn.innerText = "Registrado";
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert("Hubo un error al conectar con el servidor.");
+    btn.disabled = false;
+    btn.innerText = "Registrarme";
+  });
+}
     </script>
   </body>
 </html>
