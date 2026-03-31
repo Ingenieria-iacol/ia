@@ -349,6 +349,7 @@ function renderSectors() {
 
 function openStoreModal(storeId) {
     let store = null;
+    // Buscamos la tienda en la estructura reconstruida
     MALL_SECTORS.forEach(sec => {
         const found = sec.stores.find(s => s.id === storeId);
         if (found) store = found;
@@ -357,35 +358,84 @@ function openStoreModal(storeId) {
     if (!store) return;
 
     const modal = document.getElementById('store-modal');
+    
+    // RENDERIZADO DEL MODAL CON JERARQUÍA: Tienda -> Productos
     document.getElementById('modal-content').innerHTML = `
-        <div class="relative h-64 w-full">
-            <img src="${store.image}" class="w-full h-full object-cover opacity-50">
-            <div class="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] to-transparent"></div>
-            <button onclick="document.getElementById('store-modal').classList.add('hidden')" class="absolute top-6 right-6 bg-black/60 p-3 rounded-full hover:bg-red-600 transition">
+        <div class="relative h-72 w-full">
+            <img src="${store.image}" class="w-full h-full object-cover opacity-40">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/60 to-transparent"></div>
+            
+            <button onclick="document.getElementById('store-modal').classList.add('hidden')" 
+                    class="absolute top-6 right-6 bg-black/60 p-3 rounded-full hover:bg-red-600 transition z-50">
                 <i data-lucide="x"></i>
             </button>
-            <div class="absolute bottom-8 left-8">
-                <h2 class="text-5xl font-black italic uppercase tracking-tighter text-blue-500">${store.name}</h2>
-                <p class="text-gray-300 mt-2 max-w-xl">${store.description}</p>
-            </div>
-        </div>
-        <div class="p-10 bg-[#1a1a1a] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            ${store.products.map(p => `
-                <div class="bg-[#222] rounded-xl overflow-hidden border border-white/5 group hover:border-blue-600/50 transition">
-                    <img src="${p.image}" class="h-40 w-full object-cover">
-                    <div class="p-5">
-                        <h4 class="text-white font-bold truncate">${p.title}</h4>
-                        <div class="flex justify-between items-center mt-4">
-                            <span class="text-blue-400 font-black text-lg">$${p.price}</span>
-                            <button onclick="addToCart('${p.id}', '${store.name}')" class="bg-blue-600 p-2 rounded-lg hover:bg-blue-500 transition shadow-lg">
-                                <i data-lucide="shopping-cart" class="w-5 h-5"></i>
-                            </button>
+
+            <div class="absolute bottom-8 left-8 right-8">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <span class="text-blue-500 text-xs font-black uppercase tracking-widest bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
+                            Unidad de Suministro Activa
+                        </span>
+                        <h2 class="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white mt-2">
+                            ${store.name}
+                        </h2>
+                        <p class="text-gray-400 mt-2 max-w-2xl text-sm leading-relaxed">
+                            ${store.description} | Especialistas en activos de ingeniería para el sector.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-6 bg-black/40 backdrop-blur-md p-4 rounded-xl border border-white/5">
+                        <div class="text-center">
+                            <span class="block text-blue-500 font-bold text-xl">${store.products.length}</span>
+                            <span class="text-[10px] text-gray-500 uppercase font-bold">Activos</span>
+                        </div>
+                        <div class="w-px h-8 bg-gray-800"></div>
+                        <div class="text-center">
+                            <span class="block text-yellow-500 font-bold text-xl">5.0</span>
+                            <span class="text-[10px] text-gray-500 uppercase font-bold">Rating</span>
                         </div>
                     </div>
                 </div>
-            `).join('')}
+            </div>
+        </div>
+
+        <div class="p-8 bg-[#1a1a1a]">
+            <div class="flex items-center gap-4 mb-8">
+                <div class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-800 to-transparent"></div>
+                <h3 class="text-gray-500 text-xs font-bold uppercase tracking-[0.3em]">Catálogo de Ingeniería</h3>
+                <div class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-800 to-transparent"></div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                ${store.products.map(p => `
+                    <div class="group bg-[#222] rounded-xl overflow-hidden border border-white/5 hover:border-blue-600/50 transition-all duration-300 flex flex-col h-full shadow-lg hover:shadow-blue-900/20">
+                        <div class="relative overflow-hidden h-44">
+                            <img src="${p.image}" class="w-full h-full object-cover transition duration-500 group-hover:scale-110">
+                            <div class="absolute top-2 right-2">
+                                <span class="bg-black/80 text-[10px] text-blue-400 font-bold px-2 py-1 rounded border border-blue-500/30">ID: ${p.id.substring(0,6)}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="p-5 flex-1 flex flex-col">
+                            <h4 class="text-white font-bold text-sm mb-1 group-hover:text-blue-400 transition">${p.title}</h4>
+                            <p class="text-[10px] text-gray-500 uppercase mb-4">Especificación Técnica OK</p>
+                            
+                            <div class="mt-auto flex justify-between items-center pt-4 border-t border-white/5">
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] text-gray-500 uppercase font-bold">Costo Unitario</span>
+                                    <span class="text-blue-400 font-black text-xl">$${p.price.toLocaleString()}</span>
+                                </div>
+                                <button onclick="addToCart('${p.id}', '${store.name}')" 
+                                        class="bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-lg transition-all shadow-lg active:scale-95">
+                                    <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
         </div>
     `;
+    
     modal.classList.remove('hidden');
     lucide.createIcons();
 }
