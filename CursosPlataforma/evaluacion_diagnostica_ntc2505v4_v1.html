@@ -35,23 +35,34 @@
   const nombre = document.getElementById('nombre').value;
   const correo = document.getElementById('correo').value;
   const btn = document.querySelector('.btn-entalpia');
+  const mensajeDiv = document.getElementById('mensaje-respuesta');
   
-  const urlDelScript = "TU_URL_DE_DESPLIEGUE"; // Asegúrate de actualizarla
+  // REEMPLAZA ESTA URL por la que obtienes en "Implementar" -> "Nueva implementación"
+  const urlDelScript = "https://script.google.com/macros/s/TU_ID_AQUÍ/exec"; 
 
-  if(!nombre || !correo) return alert("Por favor llena todos los campos");
+  if(!nombre || !correo) {
+    alert("Por favor llena todos los campos");
+    return;
+  }
 
+  // Estética de carga
   btn.disabled = true;
   btn.innerText = "Procesando...";
+  mensajeDiv.innerHTML = "";
 
-  // Construimos la URL con parámetros para evitar problemas de CORS complejos
+  // Construcción de URL con parámetros
   const urlFinal = `${urlDelScript}?nombre=${encodeURIComponent(nombre)}&correo=${encodeURIComponent(correo)}`;
 
   fetch(urlFinal, {
-    method: "POST"
+    method: "POST",
+    mode: 'no-cors' // Mantenemos no-cors para evitar bloqueos de navegador en el envío silencioso
   })
   .then(() => {
-    document.getElementById('mensaje-respuesta').innerHTML = 
-      `<div class="alert alert-success">¡Registro enviado con éxito! Revisa la base de datos.</div>`;
+    // Éxito visual
+    mensajeDiv.innerHTML = `
+      <div class="alert alert-success">
+        ¡Registro enviado con éxito! Revisa la base de datos.
+      </div>`;
     btn.innerText = "Registrado";
   })
   .catch(error => {
