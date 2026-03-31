@@ -36,24 +36,36 @@
         const correo = document.getElementById('correo').value;
         const btn = document.querySelector('.btn-entalpia');
         
+        // --- PEGA TU URL AQUÍ ABAJO ---
+        const urlDelScript = "https://script.google.com/macros/s/AKfycbz-EBrQzLQg13TGnV28EjKt7iUAaiSbmL23QLkjtQ7YR7OB_O8Quga-aupLLDatGQKffw/exec";
+        // ------------------------------
+
         if(!nombre || !correo) return alert("Por favor llena todos los campos");
 
         btn.disabled = true;
         btn.innerText = "Procesando...";
 
-        google.script.run
-          .withSuccessHandler(function(res) {
-            const msgDiv = document.getElementById('mensaje-respuesta');
-            if(res.status === "success") {
-              msgDiv.innerHTML = `<div class="alert alert-success">${res.mensaje}</div>`;
-              // Aquí podríamos redirigir al login o evaluación automáticamente
-            } else {
-              msgDiv.innerHTML = `<div class="alert alert-danger">${res.mensaje}</div>`;
-              btn.disabled = false;
-              btn.innerText = "Registrarme";
-            }
-          })
-          .registrarUsuarioAutomatico(nombre, correo);
+        // Usamos URLSearchParams para enviar los datos de forma sencilla al script
+        const formData = new FormData();
+        formData.append('nombre', nombre);
+        formData.append('correo', correo);
+
+        fetch(urlDelScript, {
+          method: "POST",
+          body: formData,
+          mode: 'no-cors' // Esto evita errores de seguridad al enviar desde GitHub a Google
+        })
+        .then(() => {
+          document.getElementById('mensaje-respuesta').innerHTML = 
+            `<div class="alert alert-success">¡Registro enviado con éxito! Revisa la base de datos.</div>`;
+          btn.innerText = "Registrado";
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert("Hubo un error al conectar con el servidor.");
+          btn.disabled = false;
+          btn.innerText = "Registrarme";
+        });
       }
     </script>
   </body>
