@@ -160,27 +160,84 @@
     </div>
 
     <script>
-        // --- CONFIGURACIÓN CENTRAL ---
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw6eqgPsgfvagw0s5o4vLGqvEV5C4vQCFbUER7N1fvo_Su6AXhYjuDQ7pDI097YmdynfQ/exec";
+       // --- CONFIGURACIÓN CENTRAL ---
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw6eqgPsgfvagw0s5o4vLGqvEV5C4vQCFbUER7N1fvo_Su6AXhYjuDQ7pDI097YmdynfQ/exec";
+
+let MALL_SECTORS = [];
+let cart = [];
+
+// --- INICIALIZACIÓN ---
+async function initApp() {
+    console.log("Iniciando sincronización con Entalpia DB...");
+    await loadFromSheets(); 
+    renderCart();
+    lucide.createIcons();
+    
+    window.addEventListener('scroll', () => {
+        const nav = document.getElementById('navbar');
+        nav.style.backgroundColor = window.scrollY > 50 ? 'rgba(15,15,15,0.95)' : 'transparent';
+        nav.style.backdropFilter = window.scrollY > 50 ? 'blur(10px)' : 'none';
+    });
+}
+
+// --- NÚCLEO: CARGA Y RECONSTRUCCIÓN DE DATOS ---
+async function loadFromSheets() {
+    try {
+        const response = await fetch(SCRIPT_URL);
+        const rawData = await response.json();
         
-        let MALL_SECTORS = [];
-        let cart = [];
+        // RECONSTRUCCIÓN: De lista plana a estructura WebMall
+        const sectorsMap = {};
 
-        // --- INICIALIZACIÓN ---
-        async function initApp() {
-            console.log("Iniciando sincronización con Entalpia DB...");
-            await loadFromSheets(); 
-            renderCart();
-            lucide.createIcons();
-            
-            window.addEventListener('scroll', () => {
-                const nav = document.getElementById('navbar');
-                nav.style.backgroundColor = window.scrollY > 50 ? 'rgba(15,15,15,0.95)' : 'transparent';
-                nav.style.backdropFilter = window.scrollY > 50 ? 'blur(10px)' : 'none';
+        rawData.forEach(item => {
+            // 1. Crear el sector si no existe
+            if (!sectorsMap[item.sector]) {
+                sectorsMap[item.sector] = {
+                    id: item.sector,
+                    title: formatTitle(item.sector),
+                    stores: {}
+                };
+            }
+
+            // 2. Crear la tienda dentro del sector si no existe
+            if (!sectorsMap[item.sector].stores[item.store]) {
+                sectorsMap[item.sector].stores[item.store] = {
+                    id: 'st_' + Math.random().toString(36).substr(2, 5),
+                    name: item.store,
+                    image: item.image, // Base64 o URL
+                    rating: 5.0,
+                    description: "Unidad de suministro técnica.",
+                    products: []
+                };
+            }
+
+            // 3. Agregar el producto a la tienda
+            sectorsMap[item.sector].stores[item.store].products.push({
+                id: item.id,
+                title: item.product,
+                price: parseFloat(item.price),
+                image: item.image
             });
-        }
+        });
 
-        // --- NÚCLEO: CARGA Y RECONSTRUCCIÓN DE DATOS ---
+        // Convertimos el mapa a arrays
+        MALL_SECTORS = Object.values(sectorsMap).map(sector => {
+            return {
+                ...sector,
+                stores: Object.values(sector.stores)
+            };
+        });
+
+        console.log("Estructura reconstruida:", MALL_SECTORS);
+        renderSectors(); 
+
+    } catch (error) {
+        console.error("Error en la carga de datos:", error);
+        document.getElementById('sectors-container').innerHTML = `<div class="text-center py-20 text-red-500">Error al conectar con la base de datos de ingeniería.</div>`;
+    }
+}
+
+// --- ENVÍO DE DATOS (CON CONVERSIÓN BASE64) ---
 async function addNewItem() {
     const sId = document.getElementById('form-sector').value;
     const stName = document.getElementById('form-store').value;
@@ -193,15 +250,15 @@ async function addNewItem() {
     }
 
     const btn = document.getElementById('btn-sync');
+    const originalContent = btn.innerHTML;
     btn.innerHTML = '<i data-lucide="loader" class="animate-spin"></i> Procesando Imagen...';
     lucide.createIcons();
 
-    // Lógica para convertir imagen a Base64
     const file = fileInput.files[0];
     const reader = new FileReader();
     
     reader.onload = async function() {
-        const base64Image = reader.result; // Aquí está la imagen convertida
+        const base64Image = reader.result;
 
         const payload = {
             id: 'p' + Date.now(),
@@ -209,7 +266,7 @@ async function addNewItem() {
             store: stName,
             product: pName,
             price: parseFloat(price),
-            image: base64Image // Enviamos la cadena Base64 en lugar de la URL
+            image: base64Image
         };
 
         try {
@@ -226,199 +283,159 @@ async function addNewItem() {
         } catch (e) {
             console.error(e);
             alert("Error en el protocolo de envío.");
-            btn.innerHTML = 'Reintentar';
+            btn.innerHTML = originalContent;
+            lucide.createIcons();
         }
     };
 
-    reader.readAsDataURL(file); // Inicia la conversión
+    reader.readAsDataURL(file);
 }
 
-        function formatTitle(id) {
-            const titles = {
-                'sec_tech': 'Distrito Tecnológico',
-                'sec_fash': 'Boulevard de Moda',
-                'sec_home': 'Hogar & Deco'
-            };
-            return titles[id] || id;
-        }
+function formatTitle(id) {
+    const titles = {
+        'sec_tech': 'Distrito Tecnológico',
+        'sec_fash': 'Boulevard de Moda',
+        'sec_home': 'Hogar & Deco'
+    };
+    return titles[id] || id;
+}
 
-        // --- INTERFAZ Y RENDERIZADO ---
-        function toggleAdminPanel() {
-            document.getElementById('admin-panel').classList.toggle('-translate-x-full');
-        }
+// --- INTERFAZ Y RENDERIZADO ---
+function toggleAdminPanel() {
+    document.getElementById('admin-panel').classList.toggle('-translate-x-full');
+}
 
-        function toggleCart() {
-            document.getElementById('cart-sidebar').classList.toggle('translate-x-full');
-        }
+function toggleCart() {
+    document.getElementById('cart-sidebar').classList.toggle('translate-x-full');
+}
 
-        function scrollToSectors() {
-            const container = document.getElementById('sectors-container');
-            if(container) container.scrollIntoView({ behavior: 'smooth' });
-        }
+function scrollToSectors() {
+    const container = document.getElementById('sectors-container');
+    if(container) container.scrollIntoView({ behavior: 'smooth' });
+}
 
-        function renderSectors() {
-            const container = document.getElementById('sectors-container');
-            if(!MALL_SECTORS.length) {
-                container.innerHTML = `<div class="text-center py-20 text-gray-500 italic animate-pulse">Sincronizando flujo de datos...</div>`;
-                return;
-            }
+function renderSectors() {
+    const container = document.getElementById('sectors-container');
+    if(!MALL_SECTORS.length) {
+        container.innerHTML = `<div class="text-center py-20 text-gray-500 italic animate-pulse">Sincronizando flujo de datos...</div>`;
+        return;
+    }
 
-            container.innerHTML = MALL_SECTORS.map(sector => `
-                <div class="group relative z-10 pl-4 md:pl-12">
-                    <h2 class="text-white text-xl font-bold mb-4 flex items-center gap-2 italic uppercase tracking-wider">
-                        <span class="w-1.5 h-6 bg-blue-600 block shadow-[0_0_10px_#2563eb]"></span> ${sector.title}
-                    </h2>
-                    <div class="group/row relative">
-                        <div id="row-${sector.id}" class="flex items-center gap-5 overflow-x-scroll scrollbar-hide px-2 pb-6 scroll-smooth">
-                            ${sector.stores.map(store => `
-                                <div onclick="openStoreModal('${store.id}')" class="relative h-56 min-w-[320px] cursor-pointer transition-all duration-500 hover:scale-105 hover:z-20 group/card shadow-2xl border border-white/5 rounded-xl overflow-hidden">
-                                    <img src="${store.image}" class="w-full h-full object-cover opacity-70 group-hover/card:opacity-100 transition duration-700">
-                                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
-                                    <div class="absolute bottom-0 left-0 w-full p-5">
-                                        <h3 class="text-white font-bold text-xl drop-shadow-lg">${store.name}</h3>
-                                        <div class="flex items-center gap-1 text-xs text-blue-400 font-bold mt-1">
-                                            <i data-lucide="star" class="w-3 h-3 fill-blue-500"></i> ${store.rating || 5.0} • ${store.products.length} Ítems
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-            lucide.createIcons();
-        }
-
-        function openStoreModal(storeId) {
-            let store = null;
-            MALL_SECTORS.forEach(sec => {
-                const found = sec.stores.find(s => s.id === storeId);
-                if (found) store = found;
-            });
-
-            if (!store) return;
-
-            const modal = document.getElementById('store-modal');
-            document.getElementById('modal-content').innerHTML = `
-                <div class="relative h-64 w-full">
-                    <img src="${store.image}" class="w-full h-full object-cover opacity-50">
-                    <div class="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] to-transparent"></div>
-                    <button onclick="document.getElementById('store-modal').classList.add('hidden')" class="absolute top-6 right-6 bg-black/60 p-3 rounded-full hover:bg-red-600 transition">
-                        <i data-lucide="x"></i>
-                    </button>
-                    <div class="absolute bottom-8 left-8">
-                        <h2 class="text-5xl font-black italic uppercase tracking-tighter text-blue-500">${store.name}</h2>
-                        <p class="text-gray-300 mt-2 max-w-xl">${store.description}</p>
-                    </div>
-                </div>
-                <div class="p-10 bg-[#1a1a1a] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    ${store.products.map(p => `
-                        <div class="bg-[#222] rounded-xl overflow-hidden border border-white/5 group hover:border-blue-600/50 transition">
-                            <img src="${p.image}" class="h-40 w-full object-cover">
-                            <div class="p-5">
-                                <h4 class="text-white font-bold truncate">${p.title}</h4>
-                                <div class="flex justify-between items-center mt-4">
-                                    <span class="text-blue-400 font-black text-lg">$${p.price}</span>
-                                    <button onclick="addToCart('${p.id}', '${store.name}')" class="bg-blue-600 p-2 rounded-lg hover:bg-blue-500 transition shadow-lg">
-                                        <i data-lucide="shopping-cart" class="w-5 h-5"></i>
-                                    </button>
+    container.innerHTML = MALL_SECTORS.map(sector => `
+        <div class="group relative z-10 pl-4 md:pl-12">
+            <h2 class="text-white text-xl font-bold mb-4 flex items-center gap-2 italic uppercase tracking-wider">
+                <span class="w-1.5 h-6 bg-blue-600 block shadow-[0_0_10px_#2563eb]"></span> ${sector.title}
+            </h2>
+            <div class="group/row relative">
+                <div id="row-${sector.id}" class="flex items-center gap-5 overflow-x-scroll scrollbar-hide px-2 pb-6 scroll-smooth">
+                    ${sector.stores.map(store => `
+                        <div onclick="openStoreModal('${store.id}')" class="relative h-56 min-w-[320px] cursor-pointer transition-all duration-500 hover:scale-105 hover:z-20 group/card shadow-2xl border border-white/5 rounded-xl overflow-hidden">
+                            <img src="${store.image}" class="w-full h-full object-cover opacity-70 group-hover/card:opacity-100 transition duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                            <div class="absolute bottom-0 left-0 w-full p-5">
+                                <h3 class="text-white font-bold text-xl drop-shadow-lg">${store.name}</h3>
+                                <div class="flex items-center gap-1 text-xs text-blue-400 font-bold mt-1">
+                                    <i data-lucide="star" class="w-3 h-3 fill-blue-500"></i> 5.0 • ${store.products.length} Ítems
                                 </div>
                             </div>
                         </div>
                     `).join('')}
                 </div>
-            `;
-            modal.classList.remove('hidden');
-            lucide.createIcons();
-        }
+            </div>
+        </div>
+    `).join('');
+    lucide.createIcons();
+}
 
-        // --- ENVÍO DE DATOS ---
-        async function addNewItem() {
-            const sId = document.getElementById('form-sector').value;
-            const stName = document.getElementById('form-store').value;
-            const pName = document.getElementById('form-product-name').value;
-            const price = document.getElementById('form-price').value;
-            const img = document.getElementById('form-image').value || 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=500';
+function openStoreModal(storeId) {
+    let store = null;
+    MALL_SECTORS.forEach(sec => {
+        const found = sec.stores.find(s => s.id === storeId);
+        if (found) store = found;
+    });
 
-            if(!stName || !pName || !price) return alert("Faltan parámetros de ingeniería.");
+    if (!store) return;
 
-            const payload = {
-                id: 'p' + Date.now(),
-                sector: sId,
-                store: stName,
-                product: pName,
-                price: parseFloat(price),
-                image: img
-            };
-
-            const btn = document.getElementById('btn-sync');
-            const originalContent = btn.innerHTML;
-            btn.innerHTML = '<i data-lucide="loader" class="animate-spin"></i> Sincronizando...';
-            lucide.createIcons();
-
-            try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', 
-                    cache: 'no-cache',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                alert("Sincronización Exitosa con Entalpia DB");
-                location.reload(); 
-            } catch (e) {
-                console.error(e);
-                alert("Error en el protocolo de envío.");
-                btn.innerHTML = originalContent;
-                lucide.createIcons();
-            }
-        }
-
-        // --- GESTIÓN DE CARRITO ---
-        function addToCart(pId, stName) {
-            let product = null;
-            MALL_SECTORS.forEach(sec => sec.stores.forEach(st => {
-                const p = st.products.find(x => x.id === pId);
-                if(p) product = {...p, storeName: stName};
-            }));
-
-            if(product) {
-                cart.push(product);
-                renderCart();
-                toggleCart();
-            }
-        }
-
-        function renderCart() {
-            const list = document.getElementById('cart-items');
-            const count = document.getElementById('cart-count');
-            const totalEl = document.getElementById('cart-total');
-
-            count.innerText = cart.length;
-            count.classList.toggle('hidden', cart.length === 0);
-
-            const total = cart.reduce((s, i) => s + i.price, 0);
-            totalEl.innerText = `$${total.toFixed(2)}`;
-
-            list.innerHTML = cart.length === 0 ? `<p class="text-gray-600 text-center mt-10 italic">Bolsa de ingeniería vacía</p>` :
-                cart.map((item, idx) => `
-                    <div class="flex gap-4 bg-[#1a1a1a] p-3 rounded-lg border border-gray-800 fade-in">
-                        <img src="${item.image}" class="w-16 h-16 object-cover rounded">
-                        <div class="flex-1">
-                            <h4 class="text-sm font-bold">${item.title}</h4>
-                            <p class="text-blue-500 text-[10px] uppercase">${item.storeName}</p>
-                            <div class="flex justify-between items-center mt-1">
-                                <span class="font-bold">$${item.price}</span>
-                                <button onclick="cart.splice(${idx},1);renderCart()" class="text-gray-500 hover:text-red-500 transition">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </div>
+    const modal = document.getElementById('store-modal');
+    document.getElementById('modal-content').innerHTML = `
+        <div class="relative h-64 w-full">
+            <img src="${store.image}" class="w-full h-full object-cover opacity-50">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] to-transparent"></div>
+            <button onclick="document.getElementById('store-modal').classList.add('hidden')" class="absolute top-6 right-6 bg-black/60 p-3 rounded-full hover:bg-red-600 transition">
+                <i data-lucide="x"></i>
+            </button>
+            <div class="absolute bottom-8 left-8">
+                <h2 class="text-5xl font-black italic uppercase tracking-tighter text-blue-500">${store.name}</h2>
+                <p class="text-gray-300 mt-2 max-w-xl">${store.description}</p>
+            </div>
+        </div>
+        <div class="p-10 bg-[#1a1a1a] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            ${store.products.map(p => `
+                <div class="bg-[#222] rounded-xl overflow-hidden border border-white/5 group hover:border-blue-600/50 transition">
+                    <img src="${p.image}" class="h-40 w-full object-cover">
+                    <div class="p-5">
+                        <h4 class="text-white font-bold truncate">${p.title}</h4>
+                        <div class="flex justify-between items-center mt-4">
+                            <span class="text-blue-400 font-black text-lg">$${p.price}</span>
+                            <button onclick="addToCart('${p.id}', '${store.name}')" class="bg-blue-600 p-2 rounded-lg hover:bg-blue-500 transition shadow-lg">
+                                <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                            </button>
                         </div>
                     </div>
-                `).join('');
-            lucide.createIcons();
-        }
+                </div>
+            `).join('')}
+        </div>
+    `;
+    modal.classList.remove('hidden');
+    lucide.createIcons();
+}
+
+function addToCart(pId, stName) {
+    let product = null;
+    MALL_SECTORS.forEach(sec => sec.stores.forEach(st => {
+        const p = st.products.find(x => x.id === pId);
+        if(p) product = {...p, storeName: stName};
+    }));
+
+    if(product) {
+        cart.push(product);
+        renderCart();
+        toggleCart();
+    }
+}
+
+function renderCart() {
+    const list = document.getElementById('cart-items');
+    const count = document.getElementById('cart-count');
+    const totalEl = document.getElementById('cart-total');
+
+    count.innerText = cart.length;
+    count.classList.toggle('hidden', cart.length === 0);
+
+    const total = cart.reduce((s, i) => s + i.price, 0);
+    totalEl.innerText = `$${total.toFixed(2)}`;
+
+    list.innerHTML = cart.length === 0 ? `<p class="text-gray-600 text-center mt-10 italic">Bolsa de ingeniería vacía</p>` :
+        cart.map((item, idx) => `
+            <div class="flex gap-4 bg-[#1a1a1a] p-3 rounded-lg border border-gray-800 fade-in">
+                <img src="${item.image}" class="w-16 h-16 object-cover rounded">
+                <div class="flex-1">
+                    <h4 class="text-sm font-bold">${item.title}</h4>
+                    <p class="text-blue-500 text-[10px] uppercase">${item.storeName}</p>
+                    <div class="flex justify-between items-center mt-1">
+                        <span class="font-bold">$${item.price}</span>
+                        <button onclick="cart.splice(${idx},1);renderCart()" class="text-gray-500 hover:text-red-500 transition">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    lucide.createIcons();
+}
+
+// Inicio de la aplicación
+initApp();
 
         // Ejecución inicial
         initApp();
