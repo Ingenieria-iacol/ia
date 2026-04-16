@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Corporativos Entalpia</title>
+    <title>Corporativos Entalpia - Pionners</title>
     <style>
         /* --- ESTILOS GENERALES --- */
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -21,27 +21,24 @@
             overflow: hidden;
         }
 
-        /* --- FONDO MARCA DE AGUA --- */
+        /* --- FONDO MARCA DE AGUA (Actualizado) --- */
         body::before {
             content: '';
             position: absolute;
-            top: 0; 
-            left: 0;
-            width: 100%; 
-            height: 100%;
-            /* Imagen de fondo centrada */
-            background: url('LogoEntalpia.png') no-repeat center center;
-            background-size: 75%; 
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 75%; /* 75% de la pantalla */
+            height: 75%;
+            background: url('../ImagenesPlataformas/logo_entalpia.png') no-repeat center center;
+            background-size: contain; 
             z-index: -2;
+            opacity: 0.15; /* Ajuste para que sea tenue */
         }
 
-        /* Capa de oscurecimiento (Overlay) */
         body::after {
             content: '';
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            /* HE REDUCIDO ESTE VALOR: Antes 0.85 -> Ahora 0.4 */
-            /* Esto hace que el fondo se vea mucho más claro */
             background: rgba(0, 0, 0, 0.4); 
             z-index: -1;
         }
@@ -64,61 +61,45 @@
 
         /* --- CAJA DE LOGIN --- */
         .login-box {
-            /* HE AUMENTADO LA TRANSPARENCIA: Antes 0.6 -> Ahora 0.3 */
-            background-color: rgba(0, 0, 0, 0.3); 
+            background-color: rgba(0, 0, 0, 0.5); 
             width: 100%;
             max-width: 450px;
-            min-height: 500px;
             padding: 60px 68px 40px;
-            border-radius: 4px;
+            border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.1); 
             box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-            
             position: relative;
             z-index: 5;
-            
-            /* Blur para garantizar que el texto se lea sobre el logo */
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
         }
 
-        h1 {
-            color: #fff;
-            font-size: 32px;
-            font-weight: 500;
-            margin-bottom: 28px;
-        }
+        h1 { font-size: 32px; font-weight: 500; margin-bottom: 28px; }
 
-        /* --- CAMPOS DE TEXTO (Limpios sin etiquetas flotantes) --- */
-        .input-wrapper {
-            margin-bottom: 16px;
-        }
+        .input-wrapper { margin-bottom: 16px; position: relative; }
 
         .input-field {
             width: 100%;
-            background: rgba(51, 51, 51, 0.8); /* Fondo un poco más transparente también */
+            background: rgba(51, 51, 51, 0.8);
             border: 0;
             border-radius: 4px;
             color: #fff;
             height: 50px;
-            line-height: 50px;
-            padding: 0 20px; /* Padding simple */
+            padding: 0 45px 0 20px; /* Espacio para el icono de ojo */
             font-size: 16px;
             outline: none;
-            transition: background 0.2s, border-bottom 0.2s;
         }
 
-        /* Color del placeholder (el texto de sugerencia interno) */
-        .input-field::placeholder {
+        /* Icono ver/ocultar */
+        .toggle-view {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            cursor: pointer;
             color: #b3b3b3;
+            user-select: none;
         }
 
-        .input-field:focus {
-            background: #454545;
-            border-bottom: 2px solid #0071eb; /* Azul corporativo */
-        }
-
-        /* --- BOTÓN --- */
         .btn-login {
             width: 100%;
             padding: 16px;
@@ -130,156 +111,63 @@
             border-radius: 4px;
             cursor: pointer;
             background: linear-gradient(180deg, #0071eb 0%, #004182 100%);
-            box-shadow: 0 1px 0 rgba(0,0,0,0.55);
             transition: all 0.2s ease;
         }
 
-        .btn-login:hover {
-            background: linear-gradient(180deg, #268bf2 0%, #005bb5 100%);
-        }
-        
-        .btn-login:active {
-            transform: scale(0.98);
-        }
-
-        /* --- EXTRAS --- */
-        .form-help {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 13px;
-            color: #b3b3b3;
-            margin-top: 12px;
-        }
-
-        .form-help a {
-            color: #b3b3b3;
-            text-decoration: none;
-        }
-        
-        .form-help a:hover {
-            text-decoration: underline;
-        }
-
-        .signup-text {
-            margin-top: 40px;
-            color: #737373;
-            font-size: 16px;
-            font-weight: 400;
-        }
-
-        .signup-text a {
-            color: #fff;
-            text-decoration: none;
-            margin-left: 5px;
-        }
-        
-        .signup-text a:hover {
-            text-decoration: underline;
-        }
-
-        /* --- ERROR --- */
-        .error-msg {
-            background: #e87c03;
-            padding: 10px 15px;
-            border-radius: 4px;
-            font-size: 14px;
-            color: white;
-            margin-bottom: 16px;
-            display: none;
-        }
+        .signup-text a { color: #fff; text-decoration: none; font-weight: bold; cursor: pointer; }
+        .error-msg { background: #e87c03; padding: 10px; border-radius: 4px; margin-bottom: 16px; display: none; }
 
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
-            20%, 40%, 60%, 80% { transform: translateX(6px); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
         }
-
-        .shake-animation {
-            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
-        }
-
-        /* --- MOBILE --- */
-        @media (max-width: 740px) {
-            body {
-                background: #000;
-            }
-            body::before {
-                opacity: 0.7; /* Más visible en móvil */
-            }
-            .login-box {
-                width: 100%;
-                height: 100vh;
-                max-width: none;
-                /* En móvil también respetamos la transparencia */
-                background-color: rgba(0, 0, 0, 0.4); 
-                border: none;
-                border-radius: 0;
-                padding: 0 5% 0;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-            }
-            .logo {
-                top: 20px;
-                left: 20px;
-                font-size: 1.5rem;
-            }
-        }
+        .shake-animation { animation: shake 0.4s; }
     </style>
 </head>
 <body>
 
-    <div class="logo">CORPORATIVOS ENTALPIA v1</div>
+    <div class="logo">ENTALPHIA v1</div>
 
     <div class="login-box" id="loginBox">
         <h1>Inicia Sesión</h1>
         
         <div id="errorMsg" class="error-msg">
-            <b>Contraseña incorrecta.</b> <a href="#">Restablecer contraseña</a>
+            <b>Credenciales incorrectas.</b> Intente de nuevo.
         </div>
 
         <form id="loginForm">
             <div class="input-wrapper">
-                <!-- Inputs limpios con placeholder tradicional -->
                 <input type="text" id="username" class="input-field" placeholder="Usuario" autocomplete="off" required>
             </div>
             
             <div class="input-wrapper">
                 <input type="password" id="password" class="input-field" placeholder="Contraseña" required>
+                <span class="toggle-view" onclick="togglePassword()">👁️</span>
             </div>
 
             <button type="submit" class="btn-login">Iniciar Sesión</button>
-            
-            <div class="form-help">
-                <label style="cursor: pointer;">
-                    <input type="checkbox" checked style="accent-color: #b3b3b3;"> Recuérdame
-                </label>
-                <a href="#">¿Necesitas ayuda?</a>
-            </div>
         </form>
 
-        <div class="signup-text">
-            ¿Nuevo en Entalpia? <a href="#">Regístrate ahora.</a>
-            <p style="font-size: 11px; margin-top: 15px; color: #8c8c8c; line-height: 1.4;">
-                Esta página está protegida por Google reCAPTCHA para asegurar que no eres un robot.
-            </p>
+        <div class="signup-text" style="margin-top: 30px;">
+            ¿Nuevo en Entalpia? <a onclick="irARegistro()">Regístrate ahora.</a>
         </div>
     </div>
 
     <script>
+        // CORRECCIÓN: Comilla cerrada en juvamo78 y corrección de llaves
         const accessControl = {
             'comserviciosayg@gmail.com': { pass: '2505', url: 'https://www.appsheet.com/start/da1ab19e-5b1c-456f-adab-d979d9a46a5a'},
             'alexander221977@gmail.com': { pass: '2505', url: 'https://www.appsheet.com/start/80829734-e104-4186-aaac-9ee4dd3c72ec'},
-            'juvamo78@gmail.com: { pass: '1511', url: 'https://www.appsheet.com/start/80829734-e104-4186-aaac-9ee4dd3c72ec'},
-            'josetangarife14@gmail.com': { pass: '1211', url: 'https://www.appsheet.com/start/80829734-e104-4186-aaac-9ee4dd3c72ec'},
-            'josetangarife14@gmail.com': { pass: '1204', url: 'https://www.appsheet.com/start/da1ab19e-5b1c-456f-adab-d979d9a46a5a'}
+            'juvamo78@gmail.com': { pass: '1511', url: 'https://www.appsheet.com/start/80829734-e104-4186-aaac-9ee4dd3c72ec'},
+            'josetangarife14@gmail.com': { pass: '1211', url: 'https://www.appsheet.com/start/80829734-e104-4186-aaac-9ee4dd3c72ec'}
         };
 
         const form = document.getElementById('loginForm');
         const loginBox = document.getElementById('loginBox');
         const errorMsg = document.getElementById('errorMsg');
 
+        // Función Redirección Acceso
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             const user = document.getElementById('username').value.trim().toLowerCase();
@@ -291,6 +179,18 @@
                 mostrarError();
             }
         });
+
+        // Función Ver/Ocultar Password
+        function togglePassword() {
+            const input = document.getElementById('password');
+            input.type = input.type === "password" ? "text" : "password";
+        }
+
+        // Función Registro (Placeholder)
+        function irARegistro() {
+            alert("Redirigiendo al formulario de registro de Pionners...");
+            // window.location.href = "TU_URL_AQUI";
+        }
 
         function mostrarError() {
             errorMsg.style.display = 'block';
