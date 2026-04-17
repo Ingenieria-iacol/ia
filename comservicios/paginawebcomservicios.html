@@ -49,12 +49,13 @@
             border-radius: 4px;
         }
 
-        /* --- Hero Carrusel Responsivo --- */
+        /* --- Hero Carrusel Responsivo Mejorado --- */
         .hero-carousel {
             position: relative;
             width: 100%;
-            height: 70vh;
+            height: 50vh; /* Altura más balanceada para móviles */
             overflow: hidden;
+            background-color: #000;
         }
 
         .hero-slide {
@@ -62,36 +63,40 @@
             top: 0; left: 0; width: 100%; height: 100%;
             opacity: 0;
             transition: opacity 1s ease-in-out;
-            background-size: cover;
+            /* background-size: contain asegura que la imagen se vea completa en móviles */
+            background-size: contain;
+            background-repeat: no-repeat;
             background-position: center;
             display: flex;
             align-items: center;
             padding: 0 5%;
         }
 
-        /* Solo los elementos con esta clase serán visibles */
         .hero-slide.active { opacity: 1; }
 
+        /* Capa de gradiente para mejorar legibilidad del texto */
         .hero-slide::after {
             content: '';
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to top, var(--bg-dark) 5%, transparent 50%),
-                        linear-gradient(to right, rgba(0,0,0,0.7) 0%, transparent 100%);
+            background: linear-gradient(to top, var(--bg-dark) 10%, transparent 70%);
+            z-index: 1;
         }
 
         .hero-content {
             position: relative;
             z-index: 2;
             max-width: 90%;
+            /* Sombra de texto para resaltar sobre imágenes claras */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
 
-        .hero-content h1 { font-size: 2.2rem; margin: 0; line-height: 1.1; }
-        .hero-content p { font-size: 1rem; color: var(--light-blue); margin-top: 10px; }
+        .hero-content h1 { font-size: 1.8rem; margin: 0; line-height: 1.1; }
+        .hero-content p { font-size: 0.9rem; color: var(--light-blue); margin-top: 8px; }
 
         /* --- Filas de Contenido --- */
         .main-content {
-            margin-top: -30px;
+            margin-top: 10px;
             position: relative;
             z-index: 5;
         }
@@ -143,19 +148,24 @@
         }
         .close { position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; }
 
-        /* --- MEDIA QUERIES --- */
+        /* --- MEDIA QUERIES PARA RESPONSIVIDAD AJUSTADA --- */
+
+        /* Tablets y Escritorio (768px hacia arriba) */
         @media (min-width: 768px) {
             .logo-nav { height: 50px; }
+            .hero-carousel { height: 75vh; }
+            /* En pantallas grandes volvemos a 'cover' para llenar el espacio */
+            .hero-slide { background-size: cover; }
             .hero-content h1 { font-size: 3.5rem; }
             .hero-content p { font-size: 1.2rem; }
             .poster { min-width: 280px; height: 160px; }
             .row-title { font-size: 1.5rem; }
         }
 
+        /* Pantallas muy grandes */
         @media (min-width: 1024px) {
             .hero-carousel { height: 85vh; }
             .hero-content h1 { font-size: 4.5rem; }
-            .poster:hover { transform: scale(1.15); }
         }
 
         footer { padding: 30px; text-align: center; font-size: 0.8rem; color: var(--text-gray); border-top: 1px solid #111; }
@@ -224,27 +234,21 @@
     </footer>
 
     <script>
-        // Carrusel automático
         let current = 0;
         const slides = document.querySelectorAll('.hero-slide');
         
         setInterval(() => {
-            // Quitamos la visibilidad al slide actual
             slides[current].classList.remove('active');
-            // Calculamos el siguiente índice
             current = (current + 1) % slides.length;
-            // Mostramos el siguiente slide
             slides[current].classList.add('active');
         }, 5000);
 
-        // Navbar scroll
         window.onscroll = () => {
             const nav = document.getElementById('navbar');
             if (window.scrollY > 30) nav.classList.add('scrolled');
             else nav.classList.remove('scrolled');
         };
 
-        // Modal
         function openModal(title, desc) {
             document.getElementById('modalTitle').innerText = title;
             document.getElementById('modalDesc').innerText = desc;
