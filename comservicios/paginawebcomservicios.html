@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comservicios | Engineering Hub & AI</title>
+    <title>Comservicios | Responsive Hub</title>
     <style>
         :root {
             --bg-dark: #050505;
@@ -23,47 +23,43 @@
             overflow-x: hidden;
         }
 
-        /* --- Barra de Navegación Flotante --- */
+        /* --- Navegación Responsiva --- */
         nav {
             position: fixed;
             top: 0;
             width: 100%;
             z-index: 1000;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
             padding: 10px 0;
-            transition: background 0.3s;
+            transition: 0.3s;
         }
-
         nav.scrolled { background: var(--bg-dark); }
 
         .nav-container {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            padding: 0 4%;
+            padding: 0 5%;
         }
 
         .logo-nav {
-            height: 45px;
-            filter: drop-shadow(0px 0px 5px rgba(255,255,255,0.2));
-            background: white; /* Para que el logo JPG resalte si tiene fondo */
+            height: 35px; /* Más pequeño para móviles por defecto */
+            background: white;
             padding: 5px;
             border-radius: 4px;
         }
 
-        /* --- Carrusel del Hero (Banner Superior) --- */
+        /* --- Hero Carrusel Responsivo --- */
         .hero-carousel {
             position: relative;
             width: 100%;
-            height: 80vh; /* Ocupa el 80% de la pantalla */
+            height: 70vh; /* Altura ajustada */
             overflow: hidden;
         }
 
         .hero-slide {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             opacity: 0;
             transition: opacity 1s ease-in-out;
             background-size: cover;
@@ -79,72 +75,92 @@
             content: '';
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to right, rgba(0,0,0,0.8) 0%, transparent 60%),
-                        linear-gradient(to top, var(--bg-dark) 0%, transparent 20%);
+            background: linear-gradient(to top, var(--bg-dark) 5%, transparent 50%),
+                        linear-gradient(to right, rgba(0,0,0,0.7) 0%, transparent 100%);
         }
 
         .hero-content {
             position: relative;
             z-index: 2;
-            max-width: 800px;
+            max-width: 90%;
         }
 
-        .hero-content h1 { font-size: 4rem; margin: 0; color: var(--text-main); }
-        .hero-content p { font-size: 1.4rem; color: var(--light-blue); font-weight: bold; }
+        .hero-content h1 { font-size: 2.2rem; margin: 0; line-height: 1.1; }
+        .hero-content p { font-size: 1rem; color: var(--light-blue); margin-top: 10px; }
 
-        /* --- Secciones de Contenido (Carruseles Inferiores) --- */
+        /* --- Filas de Contenido --- */
         .main-content {
-            margin-top: -50px; /* Sube un poco sobre el banner */
+            margin-top: -30px;
             position: relative;
             z-index: 5;
         }
 
-        .row { padding: 20px 0 20px 4%; }
-        .row-title { font-size: 1.4rem; font-weight: bold; margin-bottom: 10px; }
+        .row { padding: 20px 0 20px 5%; }
+        .row-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; }
 
         .posters-container {
             display: flex;
             overflow-x: auto;
             gap: 10px;
-            padding: 20px 0;
+            padding: 15px 0;
             scrollbar-width: none;
+            scroll-snap-type: x mandatory; /* Mejora el deslizamiento en móviles */
         }
         .posters-container::-webkit-scrollbar { display: none; }
 
         .poster {
-            min-width: 250px;
-            height: 140px;
+            min-width: 200px; /* Tamaño base para móviles */
+            height: 120px;
             background: var(--card-bg);
             border-radius: 4px;
-            cursor: pointer;
-            transition: transform 0.4s;
+            flex-shrink: 0;
+            scroll-snap-align: start;
+            transition: transform 0.3s;
             position: relative;
             border: 1px solid #222;
         }
 
-        .poster:hover {
-            transform: scale(1.1);
-            z-index: 10;
-            border-color: var(--accent-blue);
-        }
+        .poster:hover { transform: scale(1.05); border-color: var(--accent-blue); }
+        .poster img { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; }
+        .poster-text { position: absolute; bottom: 8px; left: 8px; font-size: 0.75rem; font-weight: bold; }
 
-        .poster img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; opacity: 0.6; }
-        .poster-text { position: absolute; bottom: 10px; left: 10px; font-size: 0.85rem; }
-
-        /* --- Modal --- */
+        /* --- Modal Responsivo --- */
         .modal {
             display: none; position: fixed; z-index: 2000;
             left: 0; top: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            background-color: rgba(0,0,0,0.9); backdrop-filter: blur(10px);
         }
         .modal-content {
-            background: var(--card-bg); margin: 10% auto;
-            width: 90%; max-width: 600px; border-radius: 8px;
-            padding: 30px; border: 1px solid var(--accent-blue);
+            background: var(--card-bg); 
+            margin: 15% auto;
+            width: 85%; 
+            max-width: 500px; 
+            border-radius: 12px;
+            padding: 25px; 
+            border: 1px solid var(--accent-blue);
+            position: relative;
         }
-        .close { float: right; font-size: 28px; cursor: pointer; }
+        .close { position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; }
 
-        footer { padding: 40px; text-align: center; border-top: 1px solid #222; color: var(--text-gray); }
+        /* --- MEDIA QUERIES (AQUÍ OCURRE LA MAGIA) --- */
+
+        /* Tablets (768px hacia arriba) */
+        @media (min-width: 768px) {
+            .logo-nav { height: 50px; }
+            .hero-content h1 { font-size: 3.5rem; }
+            .hero-content p { font-size: 1.2rem; }
+            .poster { min-width: 280px; height: 160px; }
+            .row-title { font-size: 1.5rem; }
+        }
+
+        /* Pantallas Grandes (1024px hacia arriba) */
+        @media (min-width: 1024px) {
+            .hero-carousel { height: 85vh; }
+            .hero-content h1 { font-size: 4.5rem; }
+            .poster:hover { transform: scale(1.15); }
+        }
+
+        footer { padding: 30px; text-align: center; font-size: 0.8rem; color: var(--text-gray); border-top: 1px solid #111; }
     </style>
 </head>
 <body>
@@ -156,45 +172,35 @@
     </nav>
 
     <div class="hero-carousel">
-        <div class="hero-slide active" style="background-image: url('https://images.unsplash.com/photo-1581094128527-450c48d61c99?q=80&w=2070');">
+        <div class="hero-slide active" style="background-image: url('https://images.unsplash.com/photo-1581094128527-450c48d61c99?q=80&w=1200');">
             <div class="hero-content">
-                <h1>Ingeniería LP</h1>
-                <p>Sistemas de almacenamiento con gestión de datos en tiempo real.</p>
+                <h1>Ingeniería de Gas</h1>
+                <p>Gestión de datos y tecnología IA.</p>
             </div>
         </div>
-        <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=2070');">
+        <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1200');">
             <div class="hero-content">
-                <h1>Inteligencia Artificial</h1>
-                <p>Optimización de flujos y presiones mediante algoritmos avanzados.</p>
-            </div>
-        </div>
-        <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1535813548-6601f6945379?q=80&w=2070');">
-            <div class="hero-content">
-                <h1>Redes Inteligentes</h1>
-                <p>Construcción de infraestructura para el futuro del gas combustible.</p>
+                <h1>Sistemas Inteligentes</h1>
+                <p>Pioneers Engineering Hub.</p>
             </div>
         </div>
     </div>
 
     <div class="main-content">
         <div class="row">
-            <div class="row-title">Proyectos Destacados</div>
+            <div class="row-title">Proyectos Realizados</div>
             <div class="posters-container">
-                <div class="poster" onclick="openModal('Estación de Regulación', 'Ubicación: Valle del Cauca. Implementación de control digital de presión.')">
-                    <img src="https://images.unsplash.com/photo-1513828583688-c52646db42da?q=80&w=400">
+                <div class="poster" onclick="openModal('Red de Almacenamiento', 'Diseño predictivo de Gas LP para la industria.')">
+                    <img src="https://images.unsplash.com/photo-1513828583688-c52646db42da?q=80&w=500">
+                    <div class="poster-text">Almacenamiento LP</div>
+                </div>
+                <div class="poster" onclick="openModal('Regulación GN', 'Estaciones de alta presión con monitoreo remoto.')">
+                    <img src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=500">
                     <div class="poster-text">Regulación GN</div>
                 </div>
-                <div class="poster" onclick="openModal('Planta de Almacenamiento', 'Diseño de tanques para Hub Pioneers con monitoreo remoto.')">
-                    <img src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=400">
-                    <div class="poster-text">Tanques GLP</div>
-                </div>
-                <div class="poster" onclick="openModal('IA y Gestión de Redes', 'Análisis masivo de datos para prevención de fugas.')">
-                    <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=400">
-                    <div class="poster-text">Gestión IA</div>
-                </div>
-                <div class="poster" onclick="openModal('Construcción de Red Interna', 'Redes industriales certificadas para alta demanda.')">
-                    <img src="https://images.unsplash.com/photo-1541888946425-d81bb19480c5?q=80&w=400">
-                    <div class="poster-text">Redes Internas</div>
+                <div class="poster" onclick="openModal('Construcción IA', 'Redes de distribución mapeadas con IA.')">
+                    <img src="https://images.unsplash.com/photo-1541888946425-d81bb19480c5?q=80&w=500">
+                    <div class="poster-text">Redes de Distribución</div>
                 </div>
             </div>
         </div>
@@ -203,33 +209,30 @@
     <div id="infoModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
-            <h2 id="modalTitle" style="color:var(--light-blue)"></h2>
-            <p id="modalDesc"></p>
-            <div style="margin-top:20px; color:var(--accent-blue)">Tecnología Pioneers Hub</div>
+            <h2 id="modalTitle" style="color:var(--light-blue); font-size: 1.5rem;"></h2>
+            <p id="modalDesc" style="font-size: 0.95rem;"></p>
+            <p style="color:var(--accent-blue); font-size: 0.8rem; margin-top:15px;">Filial de Industrias IA Col</p>
         </div>
     </div>
 
     <footer>
-        <p>&copy; 2024 Comservicios S.A.S. | Pioneers Engineering Hub</p>
-        <p style="font-size: 0.8rem;">Filial de Industrias IA Col</p>
+        <p><strong>Comservicios S.A.S.</strong><br>Pioneers Engineering Hub</p>
     </footer>
 
     <script>
-        // Lógica del Carrusel del Banner
-        let currentSlide = 0;
+        // Carrusel automático
+        let current = 0;
         const slides = document.querySelectorAll('.hero-slide');
+        setInterval(() => {
+            slides[current].classList.remove('active');
+            current = (current + 1) % slides.length;
+            slides[current].classList.add('active');
+        }, 5000);
 
-        function nextSlide() {
-            slides[currentSlide].classList.remove('active');
-            currentSlide = (currentSlide + 1) % slides.length;
-            slides[currentSlide].classList.add('active');
-        }
-        setInterval(nextSlide, 5000); // Cambia cada 5 segundos
-
-        // Efecto Navbar Scroll
-        window.onscroll = function() {
+        // Navbar scroll
+        window.onscroll = () => {
             const nav = document.getElementById('navbar');
-            if (window.scrollY > 50) nav.classList.add('scrolled');
+            if (window.scrollY > 30) nav.classList.add('scrolled');
             else nav.classList.remove('scrolled');
         };
 
