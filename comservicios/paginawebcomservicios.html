@@ -43,7 +43,7 @@
         }
 
         .logo-nav {
-            height: 35px; /* Más pequeño para móviles por defecto */
+            height: 35px;
             background: white;
             padding: 5px;
             border-radius: 4px;
@@ -53,7 +53,7 @@
         .hero-carousel {
             position: relative;
             width: 100%;
-            height: 70vh; /* Altura ajustada */
+            height: 70vh;
             overflow: hidden;
         }
 
@@ -69,6 +69,7 @@
             padding: 0 5%;
         }
 
+        /* Solo los elementos con esta clase serán visibles */
         .hero-slide.active { opacity: 1; }
 
         .hero-slide::after {
@@ -104,12 +105,12 @@
             gap: 10px;
             padding: 15px 0;
             scrollbar-width: none;
-            scroll-snap-type: x mandatory; /* Mejora el deslizamiento en móviles */
+            scroll-snap-type: x mandatory;
         }
         .posters-container::-webkit-scrollbar { display: none; }
 
         .poster {
-            min-width: 200px; /* Tamaño base para móviles */
+            min-width: 200px;
             height: 120px;
             background: var(--card-bg);
             border-radius: 4px;
@@ -142,9 +143,7 @@
         }
         .close { position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; }
 
-        /* --- MEDIA QUERIES (AQUÍ OCURRE LA MAGIA) --- */
-
-        /* Tablets (768px hacia arriba) */
+        /* --- MEDIA QUERIES --- */
         @media (min-width: 768px) {
             .logo-nav { height: 50px; }
             .hero-content h1 { font-size: 3.5rem; }
@@ -153,7 +152,6 @@
             .row-title { font-size: 1.5rem; }
         }
 
-        /* Pantallas Grandes (1024px hacia arriba) */
         @media (min-width: 1024px) {
             .hero-carousel { height: 85vh; }
             .hero-content h1 { font-size: 4.5rem; }
@@ -178,7 +176,7 @@
                 <p>Una empresa legalmente constituida</p>
             </div>
         </div>
-    <div class="hero-slide active" style="background-image: url('https://images.unsplash.com/photo-1581094128527-450c48d61c99?q=80&w=1200');">
+        <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1581094128527-450c48d61c99?q=80&w=1200');">
             <div class="hero-content">
                 <h1>Ingeniería de Gas</h1>
                 <p>Gestión de datos y tecnología IA.</p>
@@ -229,9 +227,13 @@
         // Carrusel automático
         let current = 0;
         const slides = document.querySelectorAll('.hero-slide');
+        
         setInterval(() => {
+            // Quitamos la visibilidad al slide actual
             slides[current].classList.remove('active');
+            // Calculamos el siguiente índice
             current = (current + 1) % slides.length;
+            // Mostramos el siguiente slide
             slides[current].classList.add('active');
         }, 5000);
 
