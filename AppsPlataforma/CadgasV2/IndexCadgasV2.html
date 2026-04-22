@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GasSim Pro - Engineering Suite v6</title>
+    <title>GasSim Pro - Engineering Suite v7</title>
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: white; }
         canvas { display: block; }
@@ -28,12 +28,12 @@
         label { font-size: 10px; color: #888; display: block; margin-top: 8px; text-transform: uppercase; font-weight: bold; }
         select, input { width: 100%; background: #15151a; color: #fff; border: 1px solid #333; padding: 6px; margin-top: 4px; border-radius: 4px; box-sizing: border-box; font-size: 13px; }
 
-        .label-node { pointer-events: none; text-align: center; font-family: monospace; }
+        .label-node { pointer-events: none; text-align: center; font-family: monospace; transition: opacity 0.3s; }
         .label-tag { color: #00d2ff; background: rgba(0,0,0,0.9); padding: 2px 6px; border: 1px solid #00d2ff66; border-radius: 4px; display: block; font-size: 12px; }
         .label-len { color: #f1c40f; font-weight: bold; display: block; margin-top: 2px; font-size: 11px; }
 
         .hidden { display: none !important; }
-        .instr { font-size: 10px; color: #555; margin-top: 10px; }
+        .instr { font-size: 10px; color: #555; margin-top: 10px; line-height: 1.4; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -42,7 +42,7 @@
     <button id="restore-ui" onclick="toggleUI(true)">👁 MOSTRAR INTERFAZ</button>
 
     <div id="ui-panel" class="panel">
-        <h3>Archivo / CAD</h3>
+        <h3>Proyecto / CAD</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
             <button class="save" onclick="exportJSON()">💾 Guardar</button>
             <button class="save" onclick="document.getElementById('importFile').click()">📂 Abrir</button>
@@ -53,12 +53,19 @@
 
         <h3>Insertar</h3>
         <button onclick="addElement('pipe')">➕ Tubería de Gas</button>
-        <button id="btn-insert-valve" onclick="modeInsertValve()">📍 Insertar Válvula en Tubo</button>
+        <button id="btn-insert-valve" onclick="modeInsertValve()">📍 Insertar en Tubo</button>
         <button onclick="addElement('valve')">⧓ Válvula Libre</button>
         
-        <h3>Entorno</h3>
+        <h3>Visibilidad Global</h3>
         <label><input type="checkbox" checked onchange="toggleGrid(this.checked)"> Ver Rejilla</label>
+        <label><input type="checkbox" id="global-labels-toggle" checked onchange="toggleAllLabels(this.checked)"> Ver Todas las Etiquetas</label>
+        
         <button onclick="toggleUI(false)" style="margin-top:10px; opacity:0.6;">Ocultar Todo (H)</button>
+        <div class="instr">
+            <b>Suprimir:</b> Eliminar seleccionados<br>
+            <b>Shift + Click:</b> Selección múltiple<br>
+            <b>Esc:</b> Cancelar inserción
+        </div>
     </div>
 
     <div id="props-panel" class="panel">
@@ -66,7 +73,7 @@
         
         <div style="background: rgba(0,210,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
             <label style="color:#00d2ff; cursor:pointer;">
-                <input type="checkbox" id="prop-show-label" onchange="updateProperties()"> VISIBILIDAD ETIQUETA
+                <input type="checkbox" id="prop-show-label" onchange="updateProperties()"> ETIQUETA INDIVIDUAL
             </label>
         </div>
 
@@ -79,7 +86,7 @@
         <label>TAG / ID:</label>
         <input type="text" id="prop-id" oninput="updateProperties()">
         
-        <label>Longitud (m):</label>
+        <label id="label-len-prop">Longitud (m):</label>
         <input type="number" id="prop-len" step="0.1" oninput="updateProperties()">
         
         <label>Diámetro (pulg):</label>
@@ -97,7 +104,7 @@
             <button onclick="rotateSelected('z')">Z</button>
         </div>
         
-        <button style="background:#a00; border:none; margin-top:15px; font-weight:bold;" onclick="deleteSelected()">ELIMINAR SELECCIÓN</button>
+        <button style="background:#a00; border:none; margin-top:15px; font-weight:bold;" onclick="deleteSelected()">ELIMINAR (Supr)</button>
     </div>
 
     <script type="importmap">
@@ -159,66 +166,47 @@
             controls.enableDamping = true;
 
             window.addEventListener('resize', onWindowResize);
-            window.addEventListener('keydown', (e) => {
-                if (e.key.toLowerCase() === 'h') toggleUI();
-                if (e.key === 'Delete') deleteSelected();
-                if (e.key === 'Escape') cancelInsertion();
-            });
+            window.addEventListener('keydown', onKeyDown);
             renderer.domElement.addEventListener('pointerdown', onPointerDown);
 
             loadFromCache();
             animate();
         }
 
-        // --- MODELADO DE VÁLVULA CON MANERAL MÓVIL ---
+        // --- MODELADO DE VÁLVULA UNIFICADA ---
         function createGasValve(diam, isOpen = true) {
             const group = new THREE.Group();
             const bodyMat = new THREE.MeshPhongMaterial({ color: 0x95a5a6 });
             const handleMat = new THREE.MeshPhongMaterial({ color: 0xf1c40f });
 
             // Cuerpo
-            const sphere = new THREE.Mesh(new THREE.SphereGeometry(diam * 1.6, 32, 32), bodyMat);
-            const coneGeo = new THREE.ConeGeometry(diam * 1.5, 0.8, 32);
+            const sphere = new THREE.Mesh(new THREE.SphereGeometry(diam * 1.6, 16, 16), bodyMat);
+            const coneGeo = new THREE.ConeGeometry(diam * 1.5, 0.8, 16);
             const c1 = new THREE.Mesh(coneGeo, bodyMat);
             const c2 = new THREE.Mesh(coneGeo, bodyMat);
             c1.position.y = 0.4;
             c2.position.y = -0.4;
             c2.rotation.x = Math.PI;
 
-            // Grupo del Maneral para rotación independiente
+            // Maneral
             const handleGroup = new THREE.Group();
             handleGroup.name = "HANDLE_GEOM";
-            
             const stem = new THREE.Mesh(new THREE.CylinderGeometry(diam*0.4, diam*0.4, 0.5), bodyMat);
             stem.rotation.z = Math.PI/2;
             stem.position.set(diam*1.2, 0, 0);
-
             const lever = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.8, 0.3), handleMat);
             lever.position.set(diam*1.5, 0.6, 0);
-
             handleGroup.add(stem, lever);
-            
-            // Ajustar rotación inicial según estado
             handleGroup.rotation.y = isOpen ? 0 : Math.PI / 2;
 
             group.add(c1, c2, sphere, handleGroup);
+            
+            // Importante: Marcar hijos como no seleccionables individualmente por DragControls
+            group.traverse(child => { child.userData.isValvePart = true; });
+            
             return group;
         }
 
-        // --- MODO INSERCIÓN EN TUBERÍA ---
-        window.modeInsertValve = function() {
-            isInsertingValve = true;
-            document.getElementById('btn-insert-valve').classList.add('active');
-            renderer.domElement.style.cursor = 'crosshair';
-        }
-
-        function cancelInsertion() {
-            isInsertingValve = false;
-            document.getElementById('btn-insert-valve').classList.remove('active');
-            renderer.domElement.style.cursor = 'default';
-        }
-
-        // --- GESTIÓN DE ETIQUETAS ---
         function syncLabel(obj) {
             let labelObj = obj.getObjectByName("UID_LABEL");
             if (!labelObj) {
@@ -232,11 +220,16 @@
             labelObj.element.querySelector('.label-tag').textContent = obj.userData.id;
             labelObj.element.querySelector('.label-len').textContent = (obj.userData.type === 'pipe' ? obj.userData.length + "m" : "");
             labelObj.position.set(0, (obj.userData.length || 1) / 2 + 0.6, 0);
-            labelObj.visible = obj.userData.showLabel;
-            labelObj.element.style.display = obj.userData.showLabel ? 'block' : 'none';
+            
+            const globalShow = document.getElementById('global-labels-toggle').checked;
+            labelObj.visible = obj.userData.showLabel && globalShow;
+            labelObj.element.style.opacity = (obj.userData.showLabel && globalShow) ? "1" : "0";
         }
 
-        // --- MANEJO DE OBJETOS ---
+        window.toggleAllLabels = function(show) {
+            elements.forEach(el => syncLabel(el));
+        }
+
         window.addElement = function(type) {
             const data = {
                 type: type,
@@ -269,7 +262,12 @@
             return mesh;
         }
 
-        // --- LÓGICA DE CLICK / INTERSECCIÓN ---
+        function onKeyDown(e) {
+            if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+            if (e.key.toLowerCase() === 'h') toggleUI();
+            if (e.key === 'Escape') cancelInsertion();
+        }
+
         function onPointerDown(e) {
             if (e.button !== 0) return;
             const mouse = new THREE.Vector2((e.clientX/window.innerWidth)*2-1, -(e.clientY/window.innerHeight)*2+1);
@@ -281,17 +279,10 @@
                 if (intersects.length > 0) {
                     const intersect = intersects[0];
                     const pipe = intersect.object;
-                    
                     const data = {
-                        type: 'valve',
-                        id: 'VAL-' + Math.floor(Math.random()*999),
-                        diameter: pipe.userData.diameter,
-                        length: 1,
-                        showLabel: true,
-                        isOpen: true
+                        type: 'valve', id: 'VAL-' + Math.floor(Math.random()*999),
+                        diameter: pipe.userData.diameter, length: 1, showLabel: true, isOpen: true
                     };
-                    
-                    // Colocar válvula en el punto de impacto y copiar rotación del tubo
                     createObject(data, intersect.point, pipe.rotation.clone());
                     saveState();
                     cancelInsertion();
@@ -302,12 +293,24 @@
             const intersects = raycaster.intersectObjects(elements, true);
             if (intersects.length > 0) {
                 let obj = intersects[0].object;
+                // Si golpeamos parte de una válvula, subimos al grupo raíz
                 while(obj.parent && obj.parent.type !== 'Scene') obj = obj.parent;
                 e.shiftKey ? toggleSelection(obj) : selectSingle(obj);
             } else if (!e.shiftKey) clearSelection();
         }
 
-        // --- ACTUALIZACIÓN DE PROPIEDADES ---
+        window.modeInsertValve = function() {
+            isInsertingValve = true;
+            document.getElementById('btn-insert-valve').classList.add('active');
+            renderer.domElement.style.cursor = 'crosshair';
+        }
+
+        function cancelInsertion() {
+            isInsertingValve = false;
+            document.getElementById('btn-insert-valve').classList.remove('active');
+            renderer.domElement.style.cursor = 'default';
+        }
+
         window.updateProperties = function() {
             const newId = document.getElementById('prop-id').value;
             const newLen = parseFloat(document.getElementById('prop-len').value) || 0.1;
@@ -326,11 +329,8 @@
                     obj.geometry.dispose();
                     obj.geometry = new THREE.CylinderGeometry(newDiam, newDiam, newLen, 32);
                 } else {
-                    // Actualizar rotación del maneral
                     const handle = obj.getObjectByName("HANDLE_GEOM");
-                    if (handle) {
-                        handle.rotation.y = isOpen ? 0 : Math.PI / 2;
-                    }
+                    if (handle) handle.rotation.y = isOpen ? 0 : Math.PI / 2;
                 }
                 syncLabel(obj);
             });
@@ -350,7 +350,10 @@
             document.getElementById('prop-diam').value = obj.userData.diameter;
             document.getElementById('prop-show-label').checked = obj.userData.showLabel;
 
-            // Mostrar control de maneral solo si es válvula
+            const isPipe = obj.userData.type === 'pipe';
+            document.getElementById('prop-len').style.display = isPipe ? 'block' : 'none';
+            document.getElementById('label-len-prop').style.display = isPipe ? 'block' : 'none';
+
             const valveBox = document.getElementById('valve-state-box');
             if (obj.userData.type === 'valve') {
                 valveBox.style.display = 'block';
@@ -360,7 +363,60 @@
             }
         }
 
-        // --- LÓGICA DE ESCENA ---
+        function refreshDragControls() {
+            if (dragControls) dragControls.dispose();
+            // Pasamos solo los objetos raíz (pipes y groups de válvulas)
+            dragControls = new DragControls(elements, camera, renderer.domElement);
+            
+            dragControls.addEventListener('dragstart', (e) => {
+                controls.enabled = false;
+                if (!selectedObjects.includes(e.object)) selectSingle(e.object);
+                e.object.userData.oldPos = e.object.position.clone();
+            });
+            dragControls.addEventListener('drag', (e) => {
+                const offset = e.object.position.clone().sub(e.object.userData.oldPos);
+                selectedObjects.forEach(obj => { if (obj !== e.object) obj.position.add(offset); });
+                e.object.userData.oldPos.copy(e.object.position);
+                processJunctions();
+            });
+            dragControls.addEventListener('dragend', () => { controls.enabled = true; saveState(); });
+        }
+
+        function selectSingle(obj) { clearSelection(); addToSelection(obj); }
+        function addToSelection(obj) {
+            if (!selectedObjects.includes(obj)) {
+                selectedObjects.push(obj);
+                obj.traverse(c => { if(c.isMesh) {
+                    c.userData.oldEmissive = c.material.emissive.getHex();
+                    c.material.emissive.setHex(0x333333); 
+                }});
+            }
+            updateUI();
+        }
+        function clearSelection() {
+            selectedObjects.forEach(obj => obj.traverse(c => { if(c.isMesh) c.material.emissive.setHex(c.userData.oldEmissive || 0); }));
+            selectedObjects = [];
+            updateUI();
+        }
+        function toggleSelection(obj) { selectedObjects.includes(obj) ? removeFromSelection(obj) : addToSelection(obj); }
+        function removeFromSelection(obj) {
+            selectedObjects = selectedObjects.filter(o => o !== obj);
+            obj.traverse(c => { if(c.isMesh) c.material.emissive.setHex(0); });
+            updateUI();
+        }
+
+        window.deleteSelected = function() {
+            if (selectedObjects.length === 0) return;
+            selectedObjects.forEach(obj => {
+                scene.remove(obj);
+                // Si tiene etiqueta CSS2D, el CSS2DRenderer la manejará si el objeto es removido del grafo
+                elements = elements.filter(el => el !== obj);
+            });
+            clearSelection();
+            processJunctions();
+            saveState();
+        }
+
         function processJunctions() {
             fittings.forEach(f => scene.remove(f));
             fittings = [];
@@ -383,7 +439,7 @@
             clusters.forEach(c => {
                 if (c.els.length > 1) {
                     const diam = c.els[0].userData.diameter;
-                    const fit = new THREE.Mesh(new THREE.SphereGeometry(diam * 1.1, 16, 16),
+                    const fit = new THREE.Mesh(new THREE.SphereGeometry(diam * 1.1, 12, 12),
                         new THREE.MeshPhongMaterial({ color: c.els.length > 2 ? 0x00d2ff : 0x7f8c8d }));
                     fit.position.copy(c.pos);
                     scene.add(fit);
@@ -392,32 +448,22 @@
             });
         }
 
-        // --- PERSISTENCIA ---
-        function saveState() {
+        window.rotateSelected = function(axis) {
+            const a = Math.PI/2;
+            selectedObjects.forEach(obj => { obj.rotation[axis] += a; });
+            processJunctions(); saveState();
+        }
+
+        window.exportJSON = function() {
             const data = elements.map(el => ({
                 type: el.userData.type, id: el.userData.id, pos: el.position,
                 rot: { x: el.rotation.x, y: el.rotation.y, z: el.rotation.z },
                 diameter: el.userData.diameter, length: el.userData.length, showLabel: el.userData.showLabel, isOpen: el.userData.isOpen
             }));
-            localStorage.setItem('gassim_final_v6', JSON.stringify(data));
-            history.push(JSON.stringify(data));
-            if (history.length > 20) history.shift();
-        }
-
-        function loadFromCache() {
-            const cache = localStorage.getItem('gassim_final_v6');
-            if (cache) {
-                const data = JSON.parse(cache);
-                data.forEach(d => createObject(d, d.pos, new THREE.Euler(d.rot.x, d.rot.y, d.rot.z)));
-            }
-        }
-
-        window.exportJSON = function() {
-            const data = localStorage.getItem('gassim_final_v6');
-            const blob = new Blob([data], { type: 'application/json' });
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `Proyecto_GasSim.json`;
+            link.download = `GasSim_Export.json`;
             link.click();
         }
 
@@ -435,6 +481,25 @@
             reader.readAsText(file);
         }
 
+        function saveState() {
+            const data = elements.map(el => ({
+                type: el.userData.type, id: el.userData.id, pos: el.position,
+                rot: { x: el.rotation.x, y: el.rotation.y, z: el.rotation.z },
+                diameter: el.userData.diameter, length: el.userData.length, showLabel: el.userData.showLabel, isOpen: el.userData.isOpen
+            }));
+            localStorage.setItem('gassim_v7_cache', JSON.stringify(data));
+            history.push(JSON.stringify(data));
+            if (history.length > 20) history.shift();
+        }
+
+        function loadFromCache() {
+            const cache = localStorage.getItem('gassim_v7_cache');
+            if (cache) {
+                const data = JSON.parse(cache);
+                data.forEach(d => createObject(d, d.pos, new THREE.Euler(d.rot.x, d.rot.y, d.rot.z)));
+            }
+        }
+
         window.undo = function() {
             if (history.length < 2) return;
             history.pop();
@@ -444,68 +509,14 @@
             prev.forEach(d => createObject(d, d.pos, new THREE.Euler(d.rot.x, d.rot.y, d.rot.z)));
         }
 
-        // --- DRAG Y SELECCIÓN ---
-        function refreshDragControls() {
-            if (dragControls) dragControls.dispose();
-            dragControls = new DragControls(elements, camera, renderer.domElement);
-            dragControls.addEventListener('dragstart', (e) => {
-                controls.enabled = false;
-                if (!selectedObjects.includes(e.object)) selectSingle(e.object);
-                e.object.userData.oldPos = e.object.position.clone();
-            });
-            dragControls.addEventListener('drag', (e) => {
-                const offset = e.object.position.clone().sub(e.object.userData.oldPos);
-                selectedObjects.forEach(obj => { if (obj !== e.object) obj.position.add(offset); });
-                e.object.userData.oldPos.copy(e.object.position);
-                processJunctions();
-            });
-            dragControls.addEventListener('dragend', () => { controls.enabled = true; saveState(); });
-        }
-
-        function selectSingle(obj) { clearSelection(); addToSelection(obj); }
-        function addToSelection(obj) {
-            if (!selectedObjects.includes(obj)) {
-                selectedObjects.push(obj);
-                obj.traverse(c => { if(c.isMesh) c.material.emissive?.setHex(0x333333); });
-            }
-            updateUI();
-        }
-        function clearSelection() {
-            selectedObjects.forEach(obj => obj.traverse(c => { if(c.isMesh) c.material.emissive?.setHex(0x000000); }));
-            selectedObjects = [];
-            updateUI();
-        }
-        function toggleSelection(obj) { selectedObjects.includes(obj) ? removeFromSelection(obj) : addToSelection(obj); }
-        function removeFromSelection(obj) {
-            selectedObjects = selectedObjects.filter(o => o !== obj);
-            obj.traverse(c => { if(c.isMesh) c.material.emissive?.setHex(0x000000); });
-            updateUI();
-        }
-
-        window.deleteSelected = function() {
-            selectedObjects.forEach(obj => {
-                scene.remove(obj);
-                elements = elements.filter(el => el !== obj);
-            });
-            clearSelection();
-            processJunctions();
-            saveState();
-        }
-
         window.exportPDF = function() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'mm', 'a4');
             renderer.render(scene, camera);
             doc.setFillColor(15, 15, 20); doc.rect(0, 0, 297, 210, 'F');
             doc.addImage(renderer.domElement.toDataURL('image/png'), 'PNG', 10, 10, 277, 150);
-            doc.setTextColor(0, 210, 255); doc.text("GAS-SIM PRO EXPORT", 15, 175);
+            doc.setTextColor(0, 210, 255); doc.text("PLANO GAS-SIM PRO v7", 15, 175);
             doc.save('Plano_GasSim.pdf');
-        }
-
-        window.rotateSelected = function(axis) {
-            const a = Math.PI/2;
-            selectedObjects.forEach(obj => { obj.rotation[axis] += a; });
-            processJunctions(); saveState();
         }
 
         window.toggleUI = (show) => {
