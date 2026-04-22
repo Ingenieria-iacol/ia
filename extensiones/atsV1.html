@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS Profesional - Sistema de Gestión de Seguridad</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    <style>
+        :root { --border-color: #333; }
+        body { font-family: 'Arial', sans-serif; background-color: #f0f2f5; }
+        .page-container { width: 1000px; margin: 20px auto; background: white; padding: 30px; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
+        table { width: 100%; border-collapse: collapse; margin-bottom: -1px; }
+        th, td { border: 1px solid var(--border-color); padding: 4px; font-size: 10px; }
+        .bg-header { background-color: #e5e7eb; font-weight: bold; text-transform: uppercase; }
+        .input-blank { border: none; width: 100%; outline: none; background: transparent; }
+        textarea { width: 100%; border: none; outline: none; resize: none; font-size: 10px; }
+        canvas { background: #fafafa; border: 1px dashed #ccc; width: 100%; height: 80px; touch-action: none; }
+        .signature-controls { display: flex; gap: 5px; margin-top: 2px; }
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body>
+
+    <!-- BOTONES DE ACCIÓN FLOTANTES -->
+    <div class="fixed top-5 right-5 flex flex-col gap-3 no-print z-50">
+        <button onclick="exportarPDF()" class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-lg font-bold shadow-lg flex items-center gap-2 transition-all">
+            <span>📥 Descargar PDF Oficial</span>
+        </button>
+        <button onclick="window.location.reload()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg text-sm shadow-md transition-all">
+            Reiniciar Formato
+        </button>
+    </div>
+
+    <div id="ats-document" class="page-container">
+        
+        <!-- ENCABEZADO PRINCIPAL -->
+        <table>
+            <tr>
+                <td rowspan="3" class="w-32 text-center">
+                    <div class="font-bold text-blue-900 text-xl italic">LOGO</div>
+                </td>
+                <td rowspan="3" class="text-center text-sm font-bold uppercase w-1/2">
+                    Análisis de Trabajo Seguro para Empresas Contratistas (ATS)
+                </td>
+                <td class="bg-header w-24">Versión:</td>
+                <td>1.0</td>
+            </tr>
+            <tr>
+                <td class="bg-header">Código:</td>
+                <td>AX-221</td>
+            </tr>
+            <tr>
+                <td class="bg-header">Fecha:</td>
+                <td>Mayo 26/2025</td>
+            </tr>
+        </table>
+
+        <!-- DATOS GENERALES -->
+        <table>
+            <tr class="bg-header">
+                <td>FECHA</td><td>HORA INICIO</td><td>HORA FIN</td><td>VÁLIDO HASTA</td>
+            </tr>
+            <tr>
+                <td><input type="date" class="input-blank"></td>
+                <td><input type="time" class="input-blank"></td>
+                <td><input type="time" class="input-blank"></td>
+                <td><input type="time" class="input-blank"></td>
+            </tr>
+            <tr>
+                <td class="bg-header">PROYECTO</td>
+                <td colspan="2"><input type="text" class="input-blank" placeholder="Nombre del proyecto"></td>
+                <td class="bg-header">MUNICIPIO: <input type="text" class="w-20 border-b border-gray-400"></td>
+            </tr>
+            <tr>
+                <td class="bg-header">DESCRIPCIÓN DE LA ACTIVIDAD:</td>
+                <td colspan="3"><textarea rows="2" placeholder="Describa brevemente la tarea..."></textarea></td>
+            </tr>
+        </table>
+
+        <!-- SECCIÓN HERRAMIENTAS Y EQUIPOS -->
+        <div class="mt-2 bg-header p-1 text-center border border-black border-b-0">RELACIÓN DE EQUIPOS Y HERRAMIENTAS</div>
+        <table>
+            <tr class="bg-gray-100 font-bold">
+                <td>TIPO</td>
+                <td>DESCRIPCIÓN DE LA HERRAMIENTA</td>
+                <td class="w-24 text-center">ESTADO (B/M)</td>
+                <td class="w-32 text-center">RESPONSABLE</td>
+            </tr>
+            <tbody id="tool-body">
+                <tr>
+                    <td class="w-32"><select class="input-blank"><option>Manual</option><option>Eléctrica</option><option>Neumática</option><option>Mecánica</option></select></td>
+                    <td><input type="text" class="input-blank"></td>
+                    <td class="text-center"><select class="font-bold"><option>B</option><option>M</option></select></td>
+                    <td><input type="text" class="input-blank"></td>
+                </tr>
+            </tbody>
+        </table>
+        <button onclick="addTool()" class="no-print bg-green-600 text-white text-[9px] px-2 py-1 mb-2">+ Añadir Equipo</button>
+
+        <!-- MATRIZ DE RIESGOS (ATS/ARO) -->
+        <div class="mt-2 bg-header p-1 text-center border border-black border-b-0 uppercase">Etapas de la Actividad (ATS)</div>
+        <table>
+            <tr class="bg-gray-100 font-bold text-center">
+                <td class="w-8">#</td>
+                <td class="w-1/4">ETAPA</td>
+                <td class="w-1/4">RIESGO / PELIGRO</td>
+                <td class="w-1/4">CONSECUENCIAS</td>
+                <td>MEDIDAS DE CONTROL</td>
+            </tr>
+            <tbody id="ats-body">
+                <tr>
+                    <td class="text-center font-bold">1</td>
+                    <td><textarea rows="3"></textarea></td>
+                    <td><textarea rows="3"></textarea></td>
+                    <td><textarea rows="3"></textarea></td>
+                    <td><textarea rows="3"></textarea></td>
+                </tr>
+            </tbody>
+        </table>
+        <button onclick="addAtsRow()" class="no-print bg-green-600 text-white text-[9px] px-2 py-1 mb-2">+ Añadir Etapa</button>
+
+        <!-- PERSONAL AUTORIZADO Y FIRMAS -->
+        <div class="mt-2 bg-header p-1 text-center border border-black border-b-0 uppercase">Información del Trabajador Autorizado</div>
+        <table id="worker-table">
+            <tr class="bg-gray-100 font-bold text-center">
+                <td>NOMBRE Y APELLIDO</td>
+                <td class="w-24">CÉDULA</td>
+                <td class="w-32">CARGO</td>
+                <td class="w-48">FIRMA DIGITAL</td>
+            </tr>
+            <tbody id="worker-body">
+                <!-- Se genera dinámicamente -->
+            </tbody>
+        </table>
+        <button onclick="addWorkerRow()" class="no-print bg-green-600 text-white text-[9px] px-2 py-1">+ Añadir Trabajador</button>
+
+        <!-- DECLARACIÓN Y CIERRE -->
+        <div class="mt-2 p-2 border border-black text-[8px] text-justify leading-tight italic">
+            <strong>DECLARACIÓN DE RESPONSABILIDAD:</strong> Declaramos que elaboramos el presente documento de manera conjunta, entendemos las condiciones del trabajo. Hemos sido informados de los peligros y nos comprometemos a aplicar las medidas de control aquí descritas para prevenir accidentes o enfermedades laborales.
+        </div>
+
+        <table class="mt-2">
+            <tr>
+                <td class="w-1/2 p-4 text-center">
+                    <canvas id="pad-hse"></canvas>
+                    <div class="signature-controls no-print">
+                        <button onclick="undoPad('pad-hse')" class="text-[8px] bg-orange-100 px-1 italic">Deshacer</button>
+                        <button onclick="clearPad('pad-hse')" class="text-[8px] bg-red-100 px-1 italic text-red-600">Borrar</button>
+                    </div>
+                    <p class="font-bold border-t border-black mt-1">RESPONSABLE SST / HSE</p>
+                </td>
+                <td class="w-1/2 p-4 text-center">
+                    <canvas id="pad-encargado"></canvas>
+                    <div class="signature-controls no-print">
+                        <button onclick="undoPad('pad-encargado')" class="text-[8px] bg-orange-100 px-1 italic">Deshacer</button>
+                        <button onclick="clearPad('pad-encargado')" class="text-[8px] bg-red-100 px-1 italic text-red-600">Borrar</button>
+                    </div>
+                    <p class="font-bold border-t border-black mt-1">ENCARGADO EN CAMPO</p>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        const pads = {};
+
+        function initPad(id) {
+            const canvas = document.getElementById(id);
+            if (canvas) {
+                const pad = new SignaturePad(canvas, { minWidth: 1, maxWidth: 2 });
+                pads[id] = pad;
+                
+                // Ajuste de resolución
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio;
+                canvas.height = canvas.offsetHeight * ratio;
+                canvas.getContext("2d").scale(ratio, ratio);
+                pad.clear();
+            }
+        }
+
+        function undoPad(id) {
+            const data = pads[id].toData();
+            if (data) {
+                data.pop();
+                pads[id].fromData(data);
+            }
+        }
+
+        function clearPad(id) { pads[id].clear(); }
+
+        function addTool() {
+            const html = `<tr>
+                <td class="w-32"><select class="input-blank"><option>Manual</option><option>Eléctrica</option><option>Neumática</option><option>Mecánica</option></select></td>
+                <td><input type="text" class="input-blank"></td>
+                <td class="text-center"><select class="font-bold"><option>B</option><option>M</option></select></td>
+                <td><input type="text" class="input-blank"></td>
+            </tr>`;
+            document.getElementById('tool-body').insertAdjacentHTML('beforeend', html);
+        }
+
+        function addAtsRow() {
+            const count = document.getElementById('ats-body').rows.length + 1;
+            const html = `<tr>
+                <td class="text-center font-bold">${count}</td>
+                <td><textarea rows="3"></textarea></td>
+                <td><textarea rows="3"></textarea></td>
+                <td><textarea rows="3"></textarea></td>
+                <td><textarea rows="3"></textarea></td>
+            </tr>`;
+            document.getElementById('ats-body').insertAdjacentHTML('beforeend', html);
+        }
+
+        let workerIdx = 0;
+        function addWorkerRow() {
+            workerIdx++;
+            const id = `worker-pad-${workerIdx}`;
+            const html = `<tr>
+                <td><input type="text" class="input-blank"></td>
+                <td><input type="text" class="input-blank text-center"></td>
+                <td><input type="text" class="input-blank text-center"></td>
+                <td class="p-1">
+                    <canvas id="${id}"></canvas>
+                    <div class="signature-controls no-print justify-center">
+                        <button onclick="undoPad('${id}')" class="text-[8px] bg-orange-50 px-1">Undo</button>
+                        <button onclick="clearPad('${id}')" class="text-[8px] bg-red-50 text-red-500 px-1">Clear</button>
+                    </div>
+                </td>
+            </tr>`;
+            document.getElementById('worker-body').insertAdjacentHTML('beforeend', html);
+            initPad(id);
+        }
+
+        function exportarPDF() {
+            const element = document.getElementById('ats-document');
+            const opt = {
+                margin: [10, 0, 10, 0],
+                filename: 'ATS_Industrial_Report.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // Iniciar con un trabajador y las firmas de aprobación
+        window.onload = () => {
+            addWorkerRow();
+            initPad('pad-hse');
+            initPad('pad-encargado');
+        };
+    </script>
+</body>
+</html>
