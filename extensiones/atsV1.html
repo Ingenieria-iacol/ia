@@ -4,85 +4,104 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATS Profesional - Hub de Ingeniería</title>
+    <!-- Dependencias Externas (CDNs) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
         :root { --border-color: #000; }
-        
-        /* Cambio preventivo para que el padding no sume al ancho total */
         * { box-sizing: border-box; }
-
-        body { font-family: 'Arial', sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; }
+        body { font-family: 'Inter', 'Segoe UI', sans-serif; background-color: #e4e4e7; margin: 0; padding: 0; color: #000; }
         
-        /* Ajuste de contenedor: 750px para encajar en A4 con márgenes */
         .page-container { 
-            width: 750px; 
+            width: 820px; 
             margin: 20px auto; 
             background: white; 
-            padding: 40px; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.2); 
+            padding: 30px; 
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); 
+            border: 1px solid #d1d5db;
             min-height: 1120px;
+            position: relative;
         }
 
         table { width: 100%; border-collapse: collapse; margin-bottom: -1px; table-layout: fixed; }
-        th, td { border: 1px solid var(--border-color); padding: 6px; font-size: 10px; word-wrap: break-word; }
-        .bg-header { background-color: #f3f4f6; font-weight: bold; text-transform: uppercase; }
+        th, td { border: 1px solid #000; padding: 4px 6px; font-size: 9px; word-wrap: break-word; vertical-align: middle; line-height: 1.1; }
+        .bg-header { background-color: #f3f4f6; font-weight: 700; text-transform: uppercase; font-size: 8px; }
         
-        .input-blank { border: none; width: 100%; outline: none; background: transparent; font-size: 10px; }
-        textarea { width: 100%; border: none; outline: none; resize: none; font-size: 10px; display: block; }
+        .input-blank { border: none; width: 100%; outline: none; background: transparent; font-size: 9px; padding: 2px; }
+        textarea { width: 100%; border: none; outline: none; resize: none; font-size: 9px; display: block; background: transparent; padding: 2px; }
+        select { border: none; outline: none; background: transparent; font-size: 8px; width: 100%; cursor: pointer; font-weight: 600; appearance: none; }
         
-        canvas { background: #ffffff; border: 1px solid #eee; width: 100%; height: 80px; touch-action: none; }
+        canvas { background-color: #fafafa; border: 1px dashed #9ca3af; width: 100%; height: 60px; touch-action: none; }
         .signature-controls { display: flex; gap: 5px; margin-top: 2px; justify-content: center; }
         
-        .logo-container { height: 60px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .logo-container img { max-height: 100%; max-width: 100%; object-fit: contain; }
+        .btn-action { transition: all 0.2s; display: flex; align-items: center; gap: 6px; border-radius: 4px; font-weight: 600; font-size: 11px; }
+        .btn-action:hover { transform: translateY(-1px); }
+        .btn-action:active { transform: translateY(0); }
+
+        .logo-hub { font-weight: 900; font-style: italic; letter-spacing: -0.05em; font-size: 1.25rem; color: #1e3a8a; }
+        .logo-hub span { color: #2563eb; }
+
+        .epp-container { display: flex; flex-direction: column; gap: 2px; }
+        .epp-other { border-top: 1px solid #e5e7eb; padding-top: 2px; margin-top: 2px; display: none; width: 100%; font-size: 8px; border: 1px solid #ddd; outline: none; }
 
         @media print { 
             .no-print { display: none !important; } 
-            .page-container { box-shadow: none; margin: 0; width: 100%; }
+            .page-container { box-shadow: none; margin: 0; width: 100%; border: none; padding: 10px; }
+            body { background: white; }
+            canvas { border: 1px solid #eee; }
         }
+
+        .worker-sig-cell { padding: 2px !important; }
+        .worker-sig-cell canvas { height: 45px; }
     </style>
 </head>
 <body>
 
-    <div class="fixed top-5 right-5 flex flex-col gap-3 no-print z-50">
-        <button onclick="exportarPDF()" class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-lg font-bold shadow-lg flex items-center gap-2 transition-all">
-            <span>📥 Descargar PDF</span>
+    <!-- Panel de Control Flotante -->
+    <div class="fixed top-6 right-6 flex flex-col gap-3 no-print z-50">
+        <button onclick="exportarPDF()" id="download-btn" class="btn-action bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-xl font-bold shadow-xl">
+            <i data-lucide="download" class="w-5 h-5"></i>
+            <span>Descargar PDF Oficial</span>
         </button>
-        <button onclick="window.location.reload()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg text-sm shadow-md transition-all">
+        <button onclick="window.location.reload()" class="btn-action bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 px-6 py-2 rounded-xl text-sm font-medium shadow-md">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
             Reiniciar Formato
         </button>
     </div>
 
     <div id="ats-document" class="page-container">
         
+        <!-- Encabezado -->
         <table>
             <tr>
                 <td rowspan="3" class="w-32 text-center p-2">
-                    <div class="logo-container">
-                        <img src="../ImagenesPlataformas/Imagenes_Concali/img_logoconcali.jpeg" alt="Logo Empresa" onerror="this.style.display='none'; this.parentNode.innerText='LOGO'">
+                    <div class="logo-hub">
+                        ENGINEERING<span>HUB</span>
                     </div>
                 </td>
                 <td rowspan="3" class="text-center text-sm font-bold uppercase w-1/2">
                     Análisis de Trabajo Seguro (ATS)
                 </td>
                 <td class="bg-header w-24">Versión:</td>
-                <td class="w-20">1.0</td>
+                <td class="w-20 text-center">1.0</td>
             </tr>
             <tr>
                 <td class="bg-header">Código:</td>
-                <td>AX-221</td>
+                <td class="text-center">AX-221</td>
             </tr>
             <tr>
                 <td class="bg-header">Fecha:</td>
-                <td>Mayo 26/2025</td>
+                <td class="text-center">Mayo 26/2025</td>
             </tr>
         </table>
 
+        <!-- Información General -->
         <table>
             <tr class="bg-header text-center">
-                <td>FECHA</td><td>HORA INICIO</td><td>HORA FIN</td><td>VÁLIDO HASTA</td>
+                <td>FECHA (DD/MM/AAAA)</td><td>HORA INICIO</td><td>HORA FIN</td><td>VÁLIDO HASTA</td>
             </tr>
             <tr>
                 <td><input type="date" class="input-blank text-center"></td>
@@ -92,108 +111,155 @@
             </tr>
             <tr>
                 <td class="bg-header">PROYECTO</td>
-                <td colspan="2"><input type="text" class="input-blank" placeholder="Nombre del proyecto"></td>
-                <td class="bg-header">MUNICIPIO: <input type="text" class="w-24 border-b border-gray-400 outline-none"></td>
+                <td colspan="2"><input type="text" class="input-blank uppercase font-medium" placeholder="Escriba el nombre del proyecto o contrato"></td>
+                <td class="bg-header">MUNICIPIO: <input type="text" class="w-24 border-b border-gray-400 outline-none font-normal lowercase"></td>
             </tr>
             <tr>
-                <td class="bg-header">DESCRIPCIÓN DE LA ACTIVIDAD:</td>
-                <td colspan="3"><textarea rows="2" placeholder="Describa detalladamente la tarea a realizar..."></textarea></td>
+                <td class="bg-header">DESCRIPCIÓN DE LA TAREA:</td>
+                <td colspan="3"><textarea rows="2" placeholder="Describa el alcance técnico de la actividad a realizar..."></textarea></td>
             </tr>
         </table>
 
-        <div class="mt-2 bg-header p-1 text-center border border-black border-b-0">RELACIÓN DE EQUIPOS Y HERRAMIENTAS</div>
+        <!-- Equipos y Herramientas -->
+        <div class="mt-4 bg-header p-1 text-center border border-black border-b-0">RELACIÓN DE EQUIPOS Y HERRAMIENTAS</div>
         <table>
-            <tr class="bg-gray-100 font-bold text-center">
+            <tr class="bg-gray-50 font-bold text-center">
                 <td class="w-32">TIPO</td>
-                <td>DESCRIPCIÓN DE LA HERRAMIENTA</td>
+                <td>DESCRIPCIÓN DE LA HERRAMHERRAMIENTA</td>
                 <td class="w-24">ESTADO (B/M)</td>
                 <td class="w-32">RESPONSABLE</td>
             </tr>
             <tbody id="tool-body">
-                <tr>
-                    <td><select class="input-blank"><option>Manual</option><option>Eléctrica</option><option>Neumática</option><option>Mecánica</option></select></td>
-                    <td><input type="text" class="input-blank"></td>
-                    <td class="text-center"><select class="font-bold"><option>B</option><option>M</option></select></td>
-                    <td><input type="text" class="input-blank"></td>
-                </tr>
+                <!-- Se llenará dinámicamente -->
             </tbody>
         </table>
-        <button onclick="addTool()" class="no-print bg-green-700 text-white text-[10px] px-3 py-1 mt-1 rounded">+ Añadir Equipo</button>
+        <button onclick="addTool()" class="no-print bg-green-700 hover:bg-green-800 text-white text-[9px] px-3 py-1 mt-1 rounded flex items-center gap-1 shadow-sm">
+            <i data-lucide="plus" class="w-3 h-3"></i> Añadir Equipo
+        </button>
 
-        <div class="mt-4 bg-header p-1 text-center border border-black border-b-0 uppercase">Etapas de la Actividad (ATS)</div>
+        <!-- Etapas ATS -->
+        <div class="mt-4 bg-header p-1 text-center border border-black border-b-0 uppercase">Análisis de Tareas y Control de Riesgos</div>
         <table>
-            <tr class="bg-gray-100 font-bold text-center">
-                <td class="w-8">#</td>
-                <td class="w-1/4">ETAPA</td>
-                <td class="w-1/4">RIESGO / PELIGRO</td>
-                <td class="w-1/4">CONSECUENCIAS</td>
+            <tr class="bg-gray-50 font-bold text-center text-[8px]">
+                <td class="w-7">#</td>
+                <td class="w-[18%]">ETAPA</td>
+                <td class="w-[18%]">TIPO DE PELIGRO (GTC-45)</td>
+                <td class="w-[18%]">RIESGO / PELIGRO</td>
+                <td class="w-[18%]">CATEGORÍA EPP</td>
+                <td class="w-[18%]">CONSECUENCIAS</td>
                 <td>MEDIDAS DE CONTROL</td>
             </tr>
             <tbody id="ats-body">
-                <tr>
-                    <td class="text-center font-bold">1</td>
-                    <td><textarea rows="4"></textarea></td>
-                    <td><textarea rows="4"></textarea></td>
-                    <td><textarea rows="4"></textarea></td>
-                    <td><textarea rows="4"></textarea></td>
-                </tr>
+                <!-- Se llenará dinámicamente -->
             </tbody>
         </table>
-        <button onclick="addAtsRow()" class="no-print bg-green-700 text-white text-[10px] px-3 py-1 mt-1 rounded">+ Añadir Etapa</button>
+        <button onclick="addAtsRow()" class="no-print bg-green-700 hover:bg-green-800 text-white text-[9px] px-3 py-1 mt-1 rounded flex items-center gap-1 shadow-sm">
+            <i data-lucide="plus" class="w-3 h-3"></i> Añadir Etapa
+        </button>
 
-        <div class="mt-4 bg-header p-1 text-center border border-black border-b-0 uppercase">Información del Trabajador Autorizado</div>
+        <!-- Personal Autorizado -->
+        <div class="mt-4 bg-header p-1 text-center border border-black border-b-0 uppercase">Personal Autorizado para la Actividad</div>
         <table id="worker-table">
-            <tr class="bg-gray-100 font-bold text-center">
+            <tr class="bg-gray-50 font-bold text-center">
                 <td>NOMBRE Y APELLIDO</td>
-                <td class="w-24">CÉDULA</td>
-                <td class="w-32">CARGO</td>
+                <td class="w-24">CÉDULA / ID</td>
+                <td class="w-32">CARGO / ROL</td>
                 <td class="w-48">FIRMA DIGITAL</td>
             </tr>
-            <tbody id="worker-body"></tbody>
+            <tbody id="worker-body">
+                <!-- Se llenará dinámicamente -->
+            </tbody>
         </table>
-        <button onclick="addWorkerRow()" class="no-print bg-green-700 text-white text-[10px] px-3 py-1 mt-1 rounded">+ Añadir Trabajador</button>
+        <button onclick="addWorkerRow()" class="no-print bg-green-700 hover:bg-green-800 text-white text-[9px] px-3 py-1 mt-1 rounded flex items-center gap-1 shadow-sm">
+            <i data-lucide="plus" class="w-3 h-3"></i> Añadir Trabajador
+        </button>
 
-        <div class="mt-4 p-2 border border-black text-[9px] text-justify leading-tight italic">
-            <strong>DECLARACIÓN DE RESPONSABILIDAD:</strong> Declaramos que elaboramos el presente documento de manera conjunta y entendemos los riesgos asociados. Nos comprometemos a cumplir estrictamente con las medidas de seguridad aquí pactadas.
+        <!-- Declaración y Firmas Finales -->
+        <div class="mt-4 p-2 border border-black text-[9px] text-justify leading-tight italic bg-gray-50 border-double">
+            <strong>DECLARACIÓN DE RESPONSABILIDAD:</strong> Los abajo firmantes declaramos que hemos participado en la elaboración de este ATS en el sitio de trabajo. Entendemos los peligros y riesgos identificados, y nos comprometemos a ejecutar la tarea siguiendo estrictamente las medidas de control y el uso de EPP aquí pactados.
         </div>
 
-        <table class="mt-2">
-            <tr>
-                <td class="w-1/2 p-2 text-center">
+        <table class="mt-2 border-none">
+            <tr class="border-none">
+                <td class="w-1/2 p-2 text-center border-none">
                     <canvas id="pad-hse"></canvas>
                     <div class="signature-controls no-print">
-                        <button onclick="undoPad('pad-hse')" class="text-[9px] bg-gray-200 px-2 rounded">Deshacer</button>
-                        <button onclick="clearPad('pad-hse')" class="text-[9px] bg-red-100 px-2 rounded text-red-600">Borrar</button>
+                        <button onclick="undoPad('pad-hse')" class="text-[8px] bg-gray-200 px-2 rounded">Deshacer</button>
+                        <button onclick="clearPad('pad-hse')" class="text-[8px] bg-red-50 text-red-600 px-2 rounded">Borrar</button>
                     </div>
-                    <p class="font-bold border-t border-black mt-2 pt-1">RESPONSABLE SST / HSE</p>
+                    <p class="font-bold border-t border-black mt-2 pt-1 text-[10px]">RESPONSABLE SST / HSE</p>
+                    <p class="text-[8px] text-gray-500">Validación de Seguridad</p>
                 </td>
-                <td class="w-1/2 p-2 text-center">
+                <td class="w-1/2 p-2 text-center border-none">
                     <canvas id="pad-encargado"></canvas>
                     <div class="signature-controls no-print">
-                        <button onclick="undoPad('pad-encargado')" class="text-[9px] bg-gray-200 px-2 rounded">Deshacer</button>
-                        <button onclick="clearPad('pad-encargado')" class="text-[9px] bg-red-100 px-2 rounded text-red-600">Borrar</button>
+                        <button onclick="undoPad('pad-encargado')" class="text-[8px] bg-gray-200 px-2 rounded">Deshacer</button>
+                        <button onclick="clearPad('pad-encargado')" class="text-[8px] bg-red-50 text-red-600 px-2 rounded">Borrar</button>
                     </div>
-                    <p class="font-bold border-t border-black mt-2 pt-1">ENCARGADO EN CAMPO</p>
+                    <p class="font-bold border-t border-black mt-2 pt-1 text-[10px]">ENCARGADO EN CAMPO</p>
+                    <p class="text-[8px] text-gray-500">Supervisor de Actividad</p>
                 </td>
             </tr>
         </table>
+
+        <!-- Footer -->
+        <div class="mt-8 text-center text-[7px] text-gray-400 uppercase tracking-widest no-print">
+            SISTEMA PROFESIONAL DE GESTIÓN DE RIESGOS - HUB DE INGENIERÍA V1.0
+        </div>
     </div>
 
     <script>
         const pads = {};
+        const riskOptions = [
+            "Biológico", 
+            "Físico", 
+            "Químico", 
+            "Psicosocial", 
+            "Biomecánica", 
+            "Condiciones de seguridad", 
+            "Fenómenos naturales"
+        ];
+        const eppOptions = [
+            "Escoger elemento...",
+            "Gafas De Seguridad",
+            "Proteccion Respiratoria",
+            "Casco con barbuquejo",
+            "Tapabocas",
+            "Tapaoido",
+            "Guantes Antideslizantes",
+            "Careta Acrilica",
+            "Otros"
+        ];
+
+        function handleEppChange(select) {
+            const container = select.parentElement;
+            const otherInput = container.querySelector('.epp-other');
+            if (select.value === "Otros") {
+                otherInput.style.display = "block";
+                otherInput.focus();
+            } else {
+                otherInput.style.display = "none";
+            }
+        }
 
         function initPad(id) {
             const canvas = document.getElementById(id);
             if (canvas) {
-                const pad = new SignaturePad(canvas, { minWidth: 1, maxWidth: 2.5 });
+                const pad = new SignaturePad(canvas, { 
+                    minWidth: 0.8, 
+                    maxWidth: 2.2,
+                    backgroundColor: 'rgba(255, 255, 255, 0)'
+                });
                 pads[id] = pad;
                 
                 const resizeCanvas = () => {
                     const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                    const oldData = pad.toData();
                     canvas.width = canvas.offsetWidth * ratio;
                     canvas.height = canvas.offsetHeight * ratio;
                     canvas.getContext("2d").scale(ratio, ratio);
                     pad.clear();
+                    pad.fromData(oldData);
                 };
                 
                 window.addEventListener("resize", resizeCanvas);
@@ -203,29 +269,45 @@
 
         function undoPad(id) {
             const data = pads[id].toData();
-            if (data) { data.pop(); pads[id].fromData(data); }
+            if (data && data.length > 0) { data.pop(); pads[id].fromData(data); }
         }
 
         function clearPad(id) { pads[id].clear(); }
 
         function addTool() {
             const html = `<tr>
-                <td><select class="input-blank"><option>Manual</option><option>Eléctrica</option><option>Neumática</option><option>Mecánica</option></select></td>
-                <td><input type="text" class="input-blank"></td>
-                <td class="text-center"><select class="font-bold"><option>B</option><option>M</option></select></td>
-                <td><input type="text" class="input-blank"></td>
+                <td class="text-center font-medium"><select class="text-center font-bold"><option>Manual</option><option>Eléctrica</option><option>Neumática</option><option>Mecánica</option></select></td>
+                <td><input type="text" class="input-blank" placeholder="Describa herramienta..."></td>
+                <td class="text-center"><select class="font-bold text-center"><option>B</option><option>M</option></select></td>
+                <td><input type="text" class="input-blank" placeholder="Encargado..."></td>
             </tr>`;
             document.getElementById('tool-body').insertAdjacentHTML('beforeend', html);
         }
 
         function addAtsRow() {
             const count = document.getElementById('ats-body').rows.length + 1;
+            const riskHtml = riskOptions.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+            const eppHtml = eppOptions.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+            
             const html = `<tr>
-                <td class="text-center font-bold">${count}</td>
-                <td><textarea rows="4"></textarea></td>
-                <td><textarea rows="4"></textarea></td>
-                <td><textarea rows="4"></textarea></td>
-                <td><textarea rows="4"></textarea></td>
+                <td class="text-center font-bold bg-gray-50">${count}</td>
+                <td><textarea rows="4" placeholder="Acción paso a paso..."></textarea></td>
+                <td class="p-1">
+                    <select class="h-full font-bold whitespace-normal leading-tight text-blue-800">
+                        ${riskHtml}
+                    </select>
+                </td>
+                <td><textarea rows="4" placeholder="Especifique peligro..."></textarea></td>
+                <td class="p-1">
+                    <div class="epp-container">
+                        <select onchange="handleEppChange(this)" class="font-bold text-green-800">
+                            ${eppHtml}
+                        </select>
+                        <input type="text" class="epp-other" placeholder="Especifique otro EPP...">
+                    </div>
+                </td>
+                <td><textarea rows="4" placeholder="Daños potenciales..."></textarea></td>
+                <td><textarea rows="4" placeholder="Acciones preventivas..."></textarea></td>
             </tr>`;
             document.getElementById('ats-body').insertAdjacentHTML('beforeend', html);
         }
@@ -235,14 +317,14 @@
             workerIdx++;
             const id = `worker-pad-${workerIdx}`;
             const html = `<tr>
-                <td><input type="text" class="input-blank"></td>
+                <td><input type="text" class="input-blank font-medium" placeholder="Nombre Completo"></td>
                 <td><input type="text" class="input-blank text-center"></td>
                 <td><input type="text" class="input-blank text-center"></td>
-                <td class="p-1">
+                <td class="worker-sig-cell">
                     <canvas id="${id}"></canvas>
                     <div class="signature-controls no-print">
-                        <button onclick="undoPad('${id}')" class="text-[8px] bg-gray-100 px-1 rounded">Undo</button>
-                        <button onclick="clearPad('${id}')" class="text-[8px] bg-red-50 text-red-500 px-1 rounded">Clear</button>
+                        <button onclick="undoPad('${id}')" class="text-[7px] bg-gray-100 px-1 rounded">Deshacer</button>
+                        <button onclick="clearPad('${id}')" class="text-[7px] bg-red-50 text-red-500 px-1 rounded ml-1">Borrar</button>
                     </div>
                 </td>
             </tr>`;
@@ -252,14 +334,16 @@
 
         function exportarPDF() {
             const element = document.getElementById('ats-document');
-            const btn = event.currentTarget;
-            btn.innerHTML = "Generando...";
+            const btn = document.getElementById('download-btn');
+            const originalContent = btn.innerHTML;
+            
+            btn.innerHTML = "<span>Generando PDF...</span>";
             btn.disabled = true;
 
             const opt = {
                 margin: [5, 5, 5, 5],
-                filename: 'ATS_REPORTE_OFICIAL.pdf',
-                image: { type: 'jpeg', quality: 1.0 },
+                filename: `ATS_HubIngenieria_${new Date().toISOString().slice(0,10)}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { 
                     scale: 3, 
                     useCORS: true, 
@@ -270,16 +354,30 @@
             };
 
             html2pdf().set(opt).from(element).save().then(() => {
-                btn.innerHTML = "<span>📥 Descargar PDF Oficial</span>";
+                btn.innerHTML = originalContent;
                 btn.disabled = false;
+            }).catch(err => {
+                console.error(err);
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+                alert("Error al generar el PDF. Revise la consola.");
             });
         }
 
         window.onload = () => {
+            // Inicialización Lucide Icons
+            lucide.createIcons();
+            
+            // Filas iniciales
+            addTool();
+            addAtsRow();
             addWorkerRow();
+            
+            // Pads de firmas directas
             initPad('pad-hse');
             initPad('pad-encargado');
         };
     </script>
 </body>
 </html>
+
