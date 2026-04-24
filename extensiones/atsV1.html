@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATS Profesional - Hub de Ingeniería</title>
-    <!-- Dependencias Externas (CDNs) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
@@ -15,7 +14,6 @@
         * { box-sizing: border-box; }
         body { font-family: 'Inter', 'Segoe UI', sans-serif; background-color: #e4e4e7; margin: 0; padding: 0; color: #000; }
         
-        /* Contenedor optimizado para A4 Horizontal */
         .page-container { 
             width: 1060px; 
             margin: 20px auto; 
@@ -42,11 +40,10 @@
             overflow: hidden; 
             display: block;
             font-family: inherit;
-			white-space: pre-wrap;
-			word-wrap: break-word;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
 
-        /* Estilo para el reemplazo de texto en PDF */
         .pdf-replacement {
             display: none;
             white-space: pre-wrap;
@@ -62,6 +59,27 @@
         
         .btn-action { transition: all 0.2s; display: flex; align-items: center; gap: 6px; border-radius: 4px; font-weight: 600; font-size: 11px; }
 
+        /* Estilos para las casillas de EPP */
+        .epp-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            padding: 8px;
+            border: 1px solid #000;
+        }
+        .epp-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 8px;
+            font-weight: 600;
+        }
+        .epp-item input {
+            width: 12px;
+            height: 12px;
+            cursor: pointer;
+        }
+
         @media print { 
             .no-print { display: none !important; } 
             textarea { display: none !important; }
@@ -71,7 +89,6 @@
 </head>
 <body>
 
-    <!-- Panel de Control Flotante -->
     <div class="fixed top-6 right-6 flex flex-col gap-3 no-print z-50">
         <button onclick="exportarPDF()" id="download-btn" class="btn-action bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-xl font-bold shadow-xl">
             <i data-lucide="download" class="w-5 h-5"></i>
@@ -85,12 +102,11 @@
 
     <div id="ats-document" class="page-container">
         
-        <!-- Encabezado Restaurado -->
         <table>
             <tr>
                 <td rowspan="3" class="w-32 text-center p-2">
-   			        <img src="../ImagenesPlataformas/Imagenes_Concali/img_logoconcali.jpeg" alt="Logo" class="w-full h-auto">
-		        </td>
+                    <img src="../ImagenesPlataformas/Imagenes_Concali/img_logoconcali.jpeg" alt="Logo" class="w-full h-auto">
+                </td>
                 <td rowspan="3" class="text-center text-sm font-bold uppercase w-1/2">
                     Análisis de Trabajo Seguro (ATS)
                 </td>
@@ -107,7 +123,6 @@
             </tr>
         </table>
 
-        <!-- Información General -->
         <table>
             <tr class="bg-header text-center">
                 <td>FECHA (DD/MM/AAAA)</td><td>HORA INICIO</td><td>HORA FIN</td><td>VÁLIDO HASTA</td>
@@ -135,7 +150,6 @@
             </tr>
         </table>
 
-        <!-- Equipos y Herramientas Restaurado -->
         <div class="mt-4 bg-header p-1 text-center border border-black border-b-0">RELACIÓN DE EQUIPOS Y HERRAMIENTAS</div>
         <table>
             <tr class="bg-gray-50 font-bold text-center">
@@ -150,16 +164,18 @@
             <i data-lucide="plus" class="w-3 h-3"></i> Añadir Equipo
         </button>
 
-        <!-- Etapas ATS -->
+        <div class="mt-4 bg-header p-1 text-center border border-black border-b-0 uppercase">Equipos de Protección Personal (EPP) - Selección Múltiple</div>
+        <div id="epp-checkbox-container" class="epp-grid">
+            </div>
+
         <div class="mt-4 bg-header p-1 text-center border border-black border-b-0 uppercase">Análisis de Tareas y Control de Riesgos</div>
         <table>
             <tr class="bg-gray-50 font-bold text-center text-[8px]">
                 <td class="w-7">#</td>
-                <td class="w-[15%]">ETAPA</td>
-                <td class="w-[15%]">TIPO DE PELIGRO</td>
-                <td class="w-[15%]">RIESGO / PELIGRO</td>
-                <td class="w-[15%]">CATEGORÍA EPP</td>
-                <td class="w-[15%]">CONSECUENCIAS</td>
+                <td class="w-[18%]">ETAPA</td>
+                <td class="w-[18%]">TIPO DE PELIGRO</td>
+                <td class="w-[18%]">RIESGO / PELIGRO</td>
+                <td class="w-[18%]">CONSECUENCIAS</td>
                 <td>MEDIDAS DE CONTROL</td>
             </tr>
             <tbody id="ats-body"></tbody>
@@ -168,7 +184,6 @@
             <i data-lucide="plus" class="w-3 h-3"></i> Añadir Etapa
         </button>
 
-        <!-- Personal Autorizado -->
         <div class="mt-4 bg-header p-1 text-center border border-black border-b-0 uppercase">Personal Autorizado para la Actividad</div>
         <table id="worker-table">
             <tr class="bg-gray-50 font-bold text-center">
@@ -183,7 +198,6 @@
             <i data-lucide="plus" class="w-3 h-3"></i> Añadir Trabajador
         </button>
 
-        <!-- Firmas Finales -->
         <table class="mt-4 border-none">
             <tr class="border-none">
                 <td class="w-1/2 p-2 text-center border-none">
@@ -201,21 +215,28 @@
     <script>
         const pads = {};
         const riskOptions = ["Biológico", "Físico", "Químico", "Psicosocial", "Biomecánica", "Condiciones de seguridad", "Fenómenos naturales"];
-        const eppOptions = ["Escoger elemento...", "Gafas De Seguridad", "Proteccion Respiratoria", "Casco con barbuquejo", "Tapabocas", "Tapaoido", "Guantes Antideslizantes", "Careta Acrilica", "Otros"];
+        // Lista de EPP para las casillas
+        const eppOptions = ["Gafas De Seguridad", "Proteccion Respiratoria", "Casco con barbuquejo", "Tapabocas", "Tapaoido", "Guantes Antideslizantes", "Careta Acrilica", "Botas de Seguridad", "Arnés de Seguridad", "Protección Auditiva"];
 
         function autoExpand(textarea) {
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
         }
 
-        function handleEppChange(select) {
-            const container = select.parentElement;
-            const otherInput = container.querySelector('.epp-other');
-            if (select.value === "Otros") {
-                otherInput.style.display = "block";
-            } else {
-                otherInput.style.display = "none";
-            }
+        // Generar las casillas de EPP
+        function renderEppCheckboxes() {
+            const container = document.getElementById('epp-checkbox-container');
+            container.innerHTML = eppOptions.map(opt => `
+                <div class="epp-item">
+                    <input type="checkbox" id="epp-${opt.replace(/\s+/g, '')}">
+                    <label for="epp-${opt.replace(/\s+/g, '')}">${opt}</label>
+                </div>
+            `).join('') + `
+                <div class="epp-item" style="grid-column: span 2;">
+                    <span class="mr-1">OTRO:</span>
+                    <input type="text" class="border-b border-black outline-none w-full text-[8px]">
+                </div>
+            `;
         }
 
         function initPad(id) {
@@ -241,13 +262,11 @@
         function addAtsRow() {
             const count = document.getElementById('ats-body').rows.length + 1;
             const riskHtml = riskOptions.map(opt => `<option value="${opt}">${opt}</option>`).join('');
-            const eppHtml = eppOptions.map(opt => `<option value="${opt}">${opt}</option>`).join('');
             const html = `<tr>
                 <td class="text-center font-bold bg-gray-50">${count}</td>
                 <td><textarea rows="3" oninput="autoExpand(this)"></textarea></td>
                 <td><select class="font-bold text-blue-800">${riskHtml}</select></td>
                 <td><textarea rows="3" oninput="autoExpand(this)"></textarea></td>
-                <td><div class="epp-container"><select onchange="handleEppChange(this)" class="font-bold text-green-800">${eppHtml}</select><input type="text" class="epp-other hidden border mt-1 w-full" placeholder="Especifique..."></div></td>
                 <td><textarea rows="3" oninput="autoExpand(this)"></textarea></td>
                 <td><textarea rows="3" oninput="autoExpand(this)"></textarea></td>
             </tr>`;
@@ -270,7 +289,6 @@
             const element = document.getElementById('ats-document');
             const textareas = element.querySelectorAll('textarea');
             
-            // 1. Crear reemplazos para que el texto se vea como párrafo
             textareas.forEach(ta => {
                 const replacement = document.createElement('div');
                 replacement.className = 'pdf-replacement';
@@ -289,7 +307,6 @@
             };
 
             html2pdf().set(opt).from(element).save().then(() => {
-                // 2. Restaurar visibilidad original
                 textareas.forEach(ta => {
                     ta.style.display = 'block';
                     const replacement = ta.parentNode.querySelector('.pdf-replacement');
@@ -300,6 +317,7 @@
 
         window.onload = () => {
             lucide.createIcons();
+            renderEppCheckboxes();
             addTool();
             addAtsRow();
             addWorkerRow();
