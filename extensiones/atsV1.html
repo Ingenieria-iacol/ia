@@ -41,12 +41,13 @@
             font-size: 9px; 
             padding: 2px; 
             resize: none; 
-            overflow: hidden; /* Oculta scrollbars en el PDF */
+            overflow: hidden; 
             display: block;
             font-family: inherit;
         }
 
-        select { border: none; outline: none; background: transparent; font-size: 8px; width: 100%; cursor: pointer; font-weight: 600; appearance: none; }
+        /* Restaurado: Selectores visibles y funcionales */
+        select { border: none; outline: none; background: transparent; font-size: 8px; width: 100%; cursor: pointer; font-weight: 600; appearance: auto; }
         
         canvas { background-color: #fafafa; border: 1px dashed #9ca3af; width: 100%; height: 60px; touch-action: none; }
         .signature-controls { display: flex; gap: 5px; margin-top: 2px; justify-content: center; }
@@ -61,11 +62,11 @@
         .epp-other { border-top: 1px solid #e5e7eb; padding-top: 2px; margin-top: 2px; display: none; width: 100%; font-size: 8px; border: 1px solid #ddd; outline: none; }
 
         @media print { 
-            @page { size: landscape; margin: 0; }
+            @page { size: landscape; margin: 0.5cm; }
             .no-print { display: none !important; } 
-            .page-container { box-shadow: none; margin: 0; width: 100%; border: none; padding: 15px; }
+            .page-container { box-shadow: none; margin: 0; width: 100%; border: none; padding: 0; }
             body { background: white; }
-            textarea { height: auto !important; } /* Fuerza a mostrar todo el contenido al imprimir */
+            textarea { height: auto !important; }
         }
 
         .worker-sig-cell { padding: 2px !important; }
@@ -78,7 +79,7 @@
     <div class="fixed top-6 right-6 flex flex-col gap-3 no-print z-50">
         <button onclick="exportarPDF()" id="download-btn" class="btn-action bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-xl font-bold shadow-xl">
             <i data-lucide="download" class="w-5 h-5"></i>
-            <span>Descargar PDF (Una Página)</span>
+            <span>Descargar PDF (Márgenes 0.5cm)</span>
         </button>
         <button onclick="window.location.reload()" class="btn-action bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 px-6 py-2 rounded-xl text-sm font-medium shadow-md">
             <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
@@ -88,12 +89,12 @@
 
     <div id="ats-document" class="page-container">
         
-        <!-- Encabezado -->
+        <!-- Encabezado - Logo Original Restaurado -->
         <table>
             <tr>
                 <td rowspan="3" class="w-32 text-center p-2">
-   			<img src="../ImagenesPlataformas/Imagenes_Concali/img_logoconcali.jpeg" alt="Logo" class="w-full h-auto">
-		</td>
+   			        <img src="../ImagenesPlataformas/Imagenes_Concali/img_logoconcali.jpeg" alt="Logo" class="w-full h-auto">
+		        </td>
                 <td rowspan="3" class="text-center text-sm font-bold uppercase w-1/2">
                     Análisis de Trabajo Seguro (ATS)
                 </td>
@@ -213,11 +214,6 @@
                 </td>
             </tr>
         </table>
-
-        <!-- Footer -->
-        <div class="mt-8 text-center text-[7px] text-gray-400 uppercase tracking-widest no-print">
-            SISTEMA PROFESIONAL DE GESTIÓN DE RIESGOS - HUB DE INGENIERÍA V1.0
-        </div>
     </div>
 
     <script>
@@ -225,7 +221,6 @@
         const riskOptions = ["Biológico", "Físico", "Químico", "Psicosocial", "Biomecánica", "Condiciones de seguridad", "Fenómenos naturales"];
         const eppOptions = ["Escoger elemento...", "Gafas De Seguridad", "Proteccion Respiratoria", "Casco con barbuquejo", "Tapabocas", "Tapaoido", "Guantes Antideslizantes", "Careta Acrilica", "Otros"];
 
-        // Función para que los textareas crezcan según el texto
         function autoExpand(textarea) {
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
@@ -319,22 +314,28 @@
         function exportarPDF() {
             const element = document.getElementById('ats-document');
             const btn = document.getElementById('download-btn');
-            const originalContent = btn.innerHTML;
             
-            btn.innerHTML = "<span>Generando PDF...</span>";
+            btn.innerHTML = "Generando...";
             btn.disabled = true;
 
             const opt = {
-                margin: [5, 5, 5, 5],
-                filename: `ATS_HubIngenieria_${new Date().toISOString().slice(0,10)}.pdf`,
+                margin: [5, 5, 5, 5], // 0.5 cm en todos los bordes
+                filename: `ATS_CONCALI_${new Date().toISOString().slice(0,10)}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true, 
+                    letterRendering: true,
+                    scrollX: 0,
+                    scrollY: 0
+                },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape', compress: true },
-                pagebreak: { mode: 'avoid' } // Evita saltos de página a mitad del documento
+                pagebreak: { mode: 'avoid' }
             };
 
             html2pdf().set(opt).from(element).save().then(() => {
-                btn.innerHTML = originalContent;
+                btn.innerHTML = '<i data-lucide="download" class="w-5 h-5"></i><span>Descargar PDF (Márgenes 0.5cm)</span>';
+                lucide.createIcons();
                 btn.disabled = false;
             });
         }
