@@ -66,9 +66,10 @@
             .no-print { display: none !important; } 
             .page-container { box-shadow: none; margin: 0; width: 100%; border: none; padding: 0; }
             body { background: white; }
-            textarea { height: auto !important; }
-        }
-
+            textarea { 
+        height: auto !important; 
+        overflow: visible !important; /* Esto asegura que el texto oculto se muestre */
+    }
         .worker-sig-cell { padding: 2px !important; }
         .worker-sig-cell canvas { height: 45px; }
     </style>
