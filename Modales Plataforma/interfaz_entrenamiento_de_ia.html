@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pioneer's Hub - IA Tricks</title>
+    <style>
+        /* Definición de variables para colores Azul Metalizado */
+        :root {
+            --azul-oscuro: #0a0e14;
+            --azul-metal: #1e3a8a;
+            --azul-brillante: #3b82f6;
+            --azul-plata: #94a3b8;
+            --blanco: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--azul-oscuro);
+            color: var(--blanco);
+            overflow-x: hidden;
+        }
+
+        /* Navegación */
+        header {
+            padding: 20px 4%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+            position: fixed;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .logo {
+            color: var(--azul-brillante);
+            font-weight: bold;
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Banner Principal */
+        .hero {
+            height: 80vh;
+            background: linear-gradient(to right, var(--azul-oscuro) 10%, transparent 60%),
+                        url('https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=1600'); /* Imagen de IA */
+            background-size: cover;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 4%;
+        }
+
+        .hero-content h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: var(--azul-plata);
+        }
+
+        .hero-content p {
+            max-width: 600px;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        .btn-play {
+            background-color: var(--azul-brillante);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: 0.3s;
+        }
+
+        .btn-play:hover {
+            background-color: var(--azul-metal);
+        }
+
+        /* Contenedor de Trucos */
+        .row {
+            padding: 20px 4%;
+        }
+
+        .row-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: var(--azul-plata);
+        }
+
+        .cards-container {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px 0;
+        }
+
+        /* Ocultar barra de scroll en Chrome/Safari */
+        .cards-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .card {
+            min-width: 200px;
+            height: 120px;
+            background-color: #1a222d;
+            border-radius: 4px;
+            transition: transform 0.3s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--azul-metal);
+            text-align: center;
+            padding: 10px;
+        }
+
+        .card:hover {
+            transform: scale(1.1);
+            z-index: 10;
+            border-color: var(--azul-brillante);
+        }
+
+        .card-text {
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">PIONEER'S HUB</div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <h1>Prompt Engineering Pro</h1>
+                <p>Domina el arte de hablar con las máquinas. Aprende trucos avanzados para optimizar respuestas en modelos LLM para ingeniería.</p>
+                <button class="btn-play">Ver Truco Ahora</button>
+            </div>
+        </section>
+
+        <section class="row">
+            <h2 class="row-title">Trucos de Programación con IA</h2>
+            <div class="cards-container">
+                <div class="card"><span class="card-text">Refactorización Veloz</span></div>
+                <div class="card"><span class="card-text">Unit Testing Automático</span></div>
+                <div class="card"><span class="card-text">Explicación de Código</span></div>
+                <div class="card"><span class="card-text">Regex en Segundos</span></div>
+                <div class="card"><span class="card-text">Documentación con IA</span></div>
+                <div class="card"><span class="card-text">Optimización de SQL</span></div>
+            </div>
+        </section>
+
+        <section class="row">
+            <h2 class="row-title">IA para Ingeniería</h2>
+            <div class="cards-container">
+                <div class="card"><span class="card-text">Análisis de Datos</span></div>
+                <div class="card"><span class="card-text">Generación de CAD</span></div>
+                <div class="card"><span class="card-text">Simulación de Fluidos</span></div>
+                <div class="card"><span class="card-text">Optimización de Estructuras</span></div>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>
