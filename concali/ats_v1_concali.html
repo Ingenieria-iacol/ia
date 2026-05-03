@@ -82,7 +82,7 @@
     <div class="fixed top-6 right-6 flex flex-col gap-3 no-print z-50">
         <button onclick="exportarPDF()" id="download-btn" class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-xl font-bold shadow-xl flex items-center gap-2">
             <i data-lucide="download" class="w-5 h-5"></i>
-            <span>Descargar PDF Vertical</span>
+            <span>Descargar PDF</span>
         </button>
         <button onclick="window.location.reload()" class="bg-white border border-gray-200 text-gray-600 px-6 py-2 rounded-xl text-sm font-medium shadow-md flex items-center gap-2">
             <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
@@ -194,14 +194,14 @@
     <script>
         const pads = {};
         const riskData = {
-            "LOCATIVO": ["Superficies de trabajo: Irregulares, Deslizantes, Diferencia del nivel", "Condiciones de orden y aseo", "Almacenamiento", "Otros"],
-            "MECÁNICO": ["Uso de herramientas manuales", "Uso de equipos mecánicos", "Uso de equipos eléctricos", "Otros"],
-            "QUÍMICO": ["Polvos orgánicos e inorgánicos", "Fibras", "Líquidos (nieblas y rocíos)", "Gases y vapores", "Humos metálicos, no metálicos", "Material particulado", "Manipulación de agentes Químicos", "Otros"],
-            "BIOMECÁNICO": ["Postura (prolongada mantenida, forzada, de pie o sentado)", "Esfuerzo", "Movimiento repetitivo", "Manipulación manual de cargas", "Otros"],
-            "FÍSICO": ["Ruido", "Iluminación", "Vibración", "Temperaturas extremas", "Presión atmosférica", "Radiaciones ionizantes", "Radiaciones no ionizantes", "Otros"],
-            "BIOLÓGICO": ["Virus", "Hongos", "Bacterias", "Excrementos o fluidos", "Parásitos", "Insectos", "Otros"],
-            "CONDICIONES DE SEGURIDAD": ["Trabajo en alturas", "Espacios confinados", "Trabajos en caliente", "Públicos", "Accidentes de tránsito", "Tecnológico", "Eléctrico", "Contacto con objetos calientes", "Otros"],
-            "ELÉCTRICO": ["Equipos y partes eléctricas energizadas", "Líneas energizadas", "Extensiones en mal estado", "Otros"]
+            "LOCATIVO": ["Superficies de trabajo Irregular", "Superficies de trabajo Deslizantes", "Superficies de trabajo Diferente nivel", "Condiciones de orden y aseo", "Almacenamiento"],
+            "MECÁNICO": ["Uso de herramientas manuales", "Uso de equipos mecánicos", "Uso de equipos eléctricos"],
+            "QUÍMICO": ["Polvos orgánicos","Polvos inorgánicos", "Fibras", "Líquidos", "Nieblas" , "Rocíos" , "Gases y vapores", "Humos metálicos","Humos no metálicos", "Material particulado", "Manipulación de Químicos"],
+            "BIOMECÁNICO": ["Postura (prolongada mantenida, forzada, de pie o sentado)", "Esfuerzo", "Movimiento repetitivo", "Manipulación manual de cargas"],
+            "FÍSICO": ["Ruido", "Iluminación", "Vibración", "Temperaturas extremas", "Presión atmosférica", "Radiaciones ionizantes", "Radiaciones no ionizantes"],
+            "BIOLÓGICO": ["Virus", "Hongos", "Bacterias", "Excrementos o fluidos", "Parásitos", "Insectos"],
+            "CONDICIONES DE SEGURIDAD": ["Trabajo en alturas", "Espacios confinados", "Trabajos en caliente", "Públicos", "Accidentes de tránsito", "Tecnológico", "Eléctrico", "Contacto con objetos calientes"],
+            "ELÉCTRICO": ["Equipos/partes energizadas", "Líneas energizadas", "Extensiones en mal estado"]
         };
 
         const eppOptions = ["Gafas De Seguridad", "Proteccion Respiratoria", "Casco con barbuquejo", "Tapabocas", "Tapaoido", "Guantes Antideslizantes", "Careta Acrilica", "Botas de Seguridad", "Arnés de Seguridad", "Protección Auditiva"];
