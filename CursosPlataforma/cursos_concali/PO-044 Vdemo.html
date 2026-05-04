@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curso PO-044: Soldadura Termofusión a Socket | GdO</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        body { background-color: #0f0f0f; color: #e5e5e5; font-family: 'Segoe UI', sans-serif; }
+        .app-background { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background-image: url('https://www.gdo.com.co/PublishingImages/Logo-GdO.png'); background-repeat: no-repeat; background-position: center; background-size: 30%; opacity: 0.03; pointer-events: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1a1a1a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        .slide-enter { animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .tech-table th { background-color: #1e3a8a; color: #f8fafc; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; border-bottom: 2px solid #1d4ed8; }
+        .tech-table td { border-bottom: 1px solid #334155; color: #cbd5e1; padding: 12px; }
+    </style>
+</head>
+<body>
+    <div class="app-background"></div>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const { jsPDF } = window.jspdf;
+
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const iconData = lucide.icons[name];
+            if (!iconData) return null;
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}
+                    dangerouslySetInnerHTML={{ __html: iconData.map(i => `<${i[0]} ${Object.entries(i[1]).map(([k,v]) => `${k}="${v}"`).join(' ')} />`).join('') }}
+                />
+            );
+        };
+
+        const VoiceWaveform = ({ isPlaying, height = 100 }) => {
+            const canvasRef = useRef(null);
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                let animationFrameId, phase = 0;
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+                ctx.scale(dpr, dpr);
+                const draw = () => {
+                    ctx.clearRect(0, 0, rect.width, rect.height);
+                    const centerY = rect.height / 2;
+                    const colors = ["#3b82f6", "#10b981", "#60a5fa", "#34d399"];
+                    for (let i = 0; i < 4; i++) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = colors[i];
+                        ctx.globalAlpha = 0.5;
+                        ctx.lineWidth = 2;
+                        for (let x = 0; x < rect.width; x++) {
+                            const amp = isPlaying ? 25 : 2;
+                            const y = centerY + Math.sin(x * 0.02 + phase + i) * amp;
+                            if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                        }
+                        ctx.stroke();
+                    }
+                    phase += isPlaying ? 0.1 : 0.02;
+                    animationFrameId = requestAnimationFrame(draw);
+                };
+                draw();
+                return () => cancelAnimationFrame(animationFrameId);
+            }, [isPlaying]);
+            return <canvas ref={canvasRef} style={{ width: '100%', height: `${height}px` }} />;
+        };
+
+        const PipeFusionDiagram = () => (
+            <div className="bg-slate-900 p-6 rounded-xl border border-blue-900/30 my-6 shadow-inner">
+                <p className="text-blue-400 text-xs font-bold text-center mb-4 uppercase tracking-widest">Esquema de Unión Socket</p>
+                <svg viewBox="0 0 400 150" className="w-full h-auto">
+                    {/* Tubería */}
+                    <rect x="20" y="50" width="150" height="40" fill="#1e293b" stroke="#3b82f6" strokeWidth="2" />
+                    <text x="50" y="45" fill="#94a3b8" fontSize="10">Tubería PE (Macho)</text>
+                    {/* Accesorio Socket */}
+                    <path d="M 230 40 L 350 40 L 350 100 L 230 100 L 230 90 L 190 90 L 190 50 L 230 50 Z" fill="#334155" stroke="#10b981" strokeWidth="2" />
+                    <text x="250" y="35" fill="#94a3b8" fontSize="10">Accesorio (Hembra)</text>
+                    {/* Plancha Calefactora central */}
+                    <rect x="175" y="20" width="10" height="110" fill="#ef4444" rx="2" />
+                    <text x="160" y="145" fill="#ef4444" fontSize="10" fontWeight="bold">Plancha Termofusión</text>
+                    {/* Flechas de unión */}
+                    <path d="M 160 70 L 180 70" stroke="white" strokeWidth="2" markerEnd="url(#arrow)"/>
+                    <path d="M 200 70 L 180 70" stroke="white" strokeWidth="2" markerEnd="url(#arrow)"/>
+                </svg>
+            </div>
+        );
+
+        const courseModules = [
+            {
+                id: 1,
+                title: "Introducción y Objetivo PO-044",
+                speech: "Bienvenidos al curso del procedimiento operativo PO-044. Este documento establece la metodología técnica para realizar soldaduras por termofusión a socket en tuberías de polietileno P80 y P100. Nuestro objetivo es garantizar la hermeticidad y seguridad en las redes de distribución de gas de GdO.",
+                content: (
+                    <div className="space-y-6">
+                        <div className="border-l-4 border-blue-500 pl-4 bg-blue-900/10 p-4 rounded-r">
+                            <h2 className="text-xl font-bold text-white mb-2">Alcance del Procedimiento</h2>
+                            <p className="text-gray-300 text-sm">Aplica a la construcción, reparación y mantenimiento de redes de polietileno en todos sus diámetros, bajo temperaturas ambiente de -5°C a 40°C.</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                                <h3 className="font-bold text-blue-400 flex items-center gap-2"><Icon name="Target" size={18}/> Objetivo Principal</h3>
+                                <p className="text-xs text-gray-400 mt-2">Garantizar resistencia mecánica y hermeticidad absoluta siguiendo la norma NTC 3728.</p>
+                            </div>
+                            <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                                <h3 className="font-bold text-green-400 flex items-center gap-2"><Icon name="Thermometer" size={18}/> Condición Climática</h3>
+                                <p className="text-xs text-gray-400 mt-2">No se permite soldar bajo lluvia sin protección adecuada. El sitio debe estar seco y limpio.</p>
+                            </div>
+                        </div>
+                    </div>
+                ),
+                quiz: { q: "¿Cuál es el rango de temperatura ambiente recomendado para la aplicación de este procedimiento?", options: ["0°C a 50°C", "-5°C a 40°C", "Solo mayores a 20°C"], correct: 1 }
+            },
+            {
+                id: 2,
+                title: "Roles y Responsabilidades",
+                speech: "El éxito de la soldadura depende del cumplimiento de roles. El Profesional Senior lidera la aplicación y analiza no conformidades. El Supervisor verifica equipos y competencias en campo. El Técnico es el ejecutor directo de la limpieza, calentamiento y unión.",
+                content: (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm tech-table rounded-lg overflow-hidden">
+                            <thead>
+                                <tr><th className="p-3">Rol / Cargo</th><th className="p-3">Responsabilidad Crítica</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td className="font-bold text-blue-400">Profesional Sr.</td><td>Asegurar cumplimiento normativo y liderar mejora continua.</td></tr>
+                                <tr><td className="font-bold text-green-400">Supervisor</td><td>Validar calibración de equipos e inspeccionar condiciones ambientales.</td></tr>
+                                <tr><td className="font-bold text-slate-300">Técnico Operación</td><td>Ejecutar soldadura, registrar parámetros y mantener equipos limpios.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                ),
+                quiz: { q: "¿Quién es responsable de verificar que los equipos estén calibrados antes de la labor?", options: ["El Técnico de contratista", "El Supervisor de zona", "El área administrativa"], correct: 1 }
+            },
+            {
+                id: 3,
+                title: "Seguridad y EPP Obligatorio",
+                speech: "La seguridad es primero. Para termofusión socket, es obligatorio el uso de guantes con resistencia al calor que cubran el antebrazo. También requerimos protección visual con protección UV, casco con barbuquejo y, si la excavación supera un metro con veinte centímetros, certificados para espacios confinados.",
+                content: (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {[
+                            {n: "Guantes Térmicos", d: "Resistencia al calor (antebrazo)", i: "Flame"},
+                            {n: "Protección UV", d: "Gafas de seguridad", i: "Eye"},
+                            {n: "Detector Multigas", d: "Obligatorio en zanja", i: "Radio"},
+                            {n: "Botas Seguridad", d: "Punta de acero/Dieléctricas", i: "Footprints"}
+                        ].map(item => (
+                            <div key={item.n} className="bg-slate-800 p-4 rounded-xl text-center border border-slate-700">
+                                <Icon name={item.i} className="mx-auto text-blue-500 mb-2" size={32} />
+                                <h4 className="text-white font-bold text-xs">{item.n}</h4>
+                                <p className="text-[10px] text-gray-400 mt-1">{item.d}</p>
+                            </div>
+                        ))}
+                    </div>
+                ),
+                quiz: { q: "¿Qué EPP es específico para protegerse de la plancha de termofusión?", options: ["Guantes de nitrilo", "Guantes de resistencia al calor que cubran el antebrazo", "Gafas oscuras"], correct: 1 }
+            },
+            {
+                id: 4,
+                title: "Verificación de Equipos (RC-1222)",
+                speech: "Antes de iniciar, el técnico debe verificar el estado operativo de sus herramientas. Esto incluye la plancha, los sockets del diámetro correcto, el anillo frío, el biselador y el cronómetro. Todo debe registrarse en el formato preoperacional RC-1222.",
+                content: (
+                    <div className="bg-slate-900 border border-blue-900/30 p-4 rounded-lg">
+                        <h3 className="text-white font-bold mb-3 flex items-center gap-2"><Icon name="ListChecks" /> Lista de Chequeo Crítica:</h3>
+                        <ul className="text-sm text-gray-400 grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <li className="flex gap-2">✔ Plancha calefactora con temp. estable</li>
+                            <li className="flex gap-2">✔ Sockets limpios y sin teflón dañado</li>
+                            <li className="flex gap-2">✔ Guillotina o corta tubos afilado</li>
+                            <li className="flex gap-2">✔ Alcohol isopropílico y paños Whypall</li>
+                            <li className="flex gap-2">✔ Anillo frío y alineadores</li>
+                        </ul>
+                    </div>
+                ),
+                quiz: { q: "¿Cuál es el formato para el registro preoperacional de equipos e insumos?", options: ["AX-221", "RC-1222", "NTC 1746"], correct: 1 }
+            },
+            {
+                id: 5,
+                title: "Control de Flujo y Preparación",
+                speech: "En redes en servicio, debemos usar prensas de corte de flujo. La prensa debe ubicarse mínimo a cinco diámetros del punto de soldadura. Es vital instalar la varilla de descarga a tierra en prensas hidráulicas para evitar accidentes por estática.",
+                content: (
+                    <div className="space-y-4">
+                        <div className="bg-red-900/20 border border-red-800 p-3 rounded text-xs text-red-200">
+                            <strong>Peligro:</strong> La energía estática en tuberías PE puede causar ignición de gas residual. ¡Use siempre descarga a tierra!
+                        </div>
+                        <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-500/30">
+                            <p className="text-sm text-white">Distancia mínima de prensa de estrangulamiento:</p>
+                            <p className="text-2xl font-mono font-bold text-blue-400 text-center mt-2">5 x Diámetro Nominal</p>
+                        </div>
+                    </div>
+                ),
+                quiz: { q: "¿A qué distancia mínima debe estar la prensa de estrangulamiento del punto de soldadura?", options: ["2 diámetros", "5 diámetros", "10 diámetros"], correct: 1 }
+            },
+            {
+                id: 6,
+                title: "Corte y Biselado",
+                speech: "El tubo debe cortarse en ángulo recto usando guillotina o corta tubos rotatorio. Nunca use segueta. Luego, se debe realizar un biselado homogéneo en el borde externo del tubo para facilitar la entrada al socket y evitar que el borde arrastre material fundido.",
+                content: (
+                    <div className="space-y-4">
+                        <div className="bg-slate-800 p-4 rounded-lg">
+                            <h4 className="text-blue-400 font-bold text-sm mb-2">Pasos Técnicos:</h4>
+                            <p className="text-xs text-gray-300">1. Corte recto (90°).<br/>2. Limpieza inicial de rebabas.<br/>3. Biselado a 15-20 grados aprox. para facilitar inserción.</p>
+                        </div>
+                        <PipeFusionDiagram />
+                    </div>
+                ),
+                quiz: { q: "¿Por qué es importante realizar el biselado en el extremo del tubo?", options: ["Por estética", "Para evitar que el borde del tubo arrastre la resina fundida", "Para que el tubo pese menos"], correct: 1 }
+            },
+            {
+                id: 7,
+                title: "Limpieza Química Crítica",
+                speech: "La limpieza es el paso más importante. Use alcohol isopropílico y paños limpios. Limpie la superficie externa del tubo y la interna del accesorio. Si la contaminación persiste, corte la sección del tubo. ¡Nunca use jabón o alcohol perfumado!",
+                content: (
+                    <div className="flex flex-col items-center gap-4 py-4">
+                        <div className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30">
+                            <Icon name="Droplets" size={40} className="text-white" />
+                        </div>
+                        <div className="text-center">
+                            <h3 className="font-bold text-xl">Alcohol Isopropílico</h3>
+                            <p className="text-sm text-gray-400 mt-1">Debe evaporarse completamente antes de calentar.</p>
+                        </div>
+                        <div className="bg-yellow-900/20 p-3 rounded border border-yellow-700 text-xs text-yellow-200">
+                            <strong>OJO:</strong> No toque las superficies limpias con las manos desnudas después de aplicar el alcohol.
+                        </div>
+                    </div>
+                ),
+                quiz: { q: "¿Qué elemento está prohibido para limpiar las superficies a fundir?", options: ["Paños Whypall", "Jabón", "Alcohol Isopropílico"], correct: 1 }
+            },
+            {
+                id: 8,
+                title: "Calentamiento Simultáneo",
+                speech: "Una vez la plancha alcance la temperatura recomendada, inserte simultáneamente el tubo en el socket hembra y el accesorio en el socket macho. Aplique presión moderada sin girar. Mantenga el tiempo según la tabla del fabricante para el diámetro específico.",
+                content: (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-slate-900 p-4 rounded border border-slate-700">
+                            <h4 className="text-red-400 font-bold text-xs mb-2 uppercase">Lado Tubo</h4>
+                            <p className="text-xs text-gray-400 italic">Entra en socket HEMBRA de la plancha.</p>
+                        </div>
+                        <div className="bg-slate-900 p-4 rounded border border-slate-700">
+                            <h4 className="text-red-400 font-bold text-xs mb-2 uppercase">Lado Accesorio</h4>
+                            <p className="text-xs text-gray-400 italic">Entra en socket MACHO de la plancha.</p>
+                        </div>
+                        <div className="col-span-2 bg-blue-900/10 p-3 rounded text-center">
+                            <p className="text-xs font-bold text-blue-300">¡RECUERDE: NO GIRAR LOS ELEMENTOS DURANTE EL CALENTAMIENTO!</p>
+                        </div>
+                    </div>
+                ),
+                quiz: { q: "¿Cómo debe realizarse la inserción en la plancha calefactora?", options: ["Garantizando un giro de 90 grados", "De forma simultánea y sin girar", "Primero el tubo y luego el accesorio"], correct: 1 }
+            },
+            {
+                id: 9,
+                title: "Fase de Unión (Fusión)",
+                speech: "Al completar el tiempo de calentamiento, retire los elementos de la plancha e insértelos uno dentro del otro inmediatamente. Mantenga la presión fija durante el tiempo de enfriamiento inicial. La unión debe ser recta y uniforme.",
+                content: (
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center bg-slate-800 p-4 rounded-lg border border-blue-500/20">
+                            <div>
+                                <h3 className="font-bold">Tiempo de Transición</h3>
+                                <p className="text-xs text-gray-400">Debe ser el mínimo posible (pocos segundos).</p>
+                            </div>
+                            <Icon name="Timer" className="text-blue-500" size={32} />
+                        </div>
+                        <div className="bg-green-900/20 p-4 rounded border border-green-800 text-xs">
+                            <h4 className="font-bold text-green-400 mb-1">Acción Correcta:</h4>
+                            <p>Insertar el tubo en el accesorio hasta que el anillo frío toque el borde del accesorio. Mantener presión sin movimiento.</p>
+                        </div>
+                    </div>
+                ),
+                quiz: { q: "¿Qué debe hacerse durante el enfriamiento inicial de la unión?", options: ["Girar la unión para nivelarla", "Mantener presión fija y no mover la unión", "Aplicar agua fría para acelerar"], correct: 1 }
+            },
+            {
+                id: 10,
+                title: "Criterios de Aceptación",
+                speech: "Una soldadura correcta debe presentar un cordón perimetral uniforme, sin quemaduras, sin deformación oval y sin material expulsado en exceso. Si detecta fisuras o falta de alineación, la unión debe marcarse, cortarse y reemplazarse.",
+                content: (
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 bg-green-900/30 rounded border border-green-700 text-[10px]">
+                            <span className="font-bold block text-green-400">ACEPTABLE:</span>
+                            - Cordón uniforme.<br/>- Alineación recta.<br/>- Sin contaminación externa.
+                        </div>
+                        <div className="p-3 bg-red-900/30 rounded border border-red-700 text-[10px]">
+                            <span className="font-bold block text-red-400">RECHAZABLE:</span>
+                            - Cordón interrumpido.<br/>- Presencia de vacíos.<br/>- Deformación ovalada.
+                        </div>
+                    </div>
+                ),
+                quiz: { q: "¿Qué acción se debe tomar si se detecta una falla visible en la soldadura?", options: ["Cubrir con cinta", "Suspender, marcar, cortar y reemplazar", "Continuar si no hay fuga"], correct: 1 }
+            },
+            {
+                id: 11,
+                title: "Tiempos de Enfriamiento",
+                speech: "La tubería debe permanecer inmóvil durante el tiempo recomendado por el fabricante, que generalmente oscila entre 5 y 20 minutos según el diámetro. No acelere el enfriamiento con agua o aire comprimido, ya que esto debilita la estructura molecular del polietileno.",
+                content: (
+                    <div className="bg-slate-900 p-6 rounded-xl text-center border border-slate-700">
+                        <h3 className="text-3xl font-mono font-bold text-blue-400">5 a 20 Minutos</h3>
+                        <p className="text-sm text-gray-400 mt-2">Tiempo mínimo sin manipulación según diámetro.</p>
+                        <div className="mt-4 flex justify-center gap-4">
+                            <div className="flex items-center gap-1 text-xs text-red-400"><Icon name="XCircle" size={14}/> No Agua</div>
+                            <div className="flex items-center gap-1 text-xs text-red-400"><Icon name="XCircle" size={14}/> No Viento fuerte</div>
+                        </div>
+                    </div>
+                ),
+                quiz: { q: "¿Es permitido acelerar el enfriamiento de la soldadura con agua?", options: ["Sí, para ganar tiempo", "No, debe enfriarse naturalmente", "Solo en diámetros pequeños"], correct: 1 }
+            },
+            {
+                id: 12,
+                title: "Pruebas Finales y Registro",
+                speech: "¡Felicidades! Ha completado el entrenamiento técnico. Recuerde realizar la prueba de hermeticidad con detector de metano CH4 antes de poner en servicio. La lectura debe ser cero partes por millón. Registre siempre la fecha, firma y nombre del soldador en la planilla de pegas.",
+                content: (
+                    <div className="text-center py-8">
+                        <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl">
+                            <Icon name="Check" size={40} className="text-white" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white mb-2">Evaluación Final Exitosa</h2>
+                        <p className="text-gray-400 text-sm max-w-xs mx-auto">Ha validado el conocimiento técnico del procedimiento operativo PO-044 de Gases de Occidente.</p>
+                    </div>
+                ),
+                quiz: null
+            }
+        ];
+
+        function App() {
+            const [currentStep, setCurrentStep] = useState(0); 
+            const [completedSteps, setCompletedSteps] = useState([0]); 
+            const [userName, setUserName] = useState("");
+            const [userCedula, setUserCedula] = useState("");
+            const [courseStarted, setCourseStarted] = useState(false);
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [showQuiz, setShowQuiz] = useState(false);
+            
+            const speak = (text) => {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'es-ES'; 
+                    utterance.onstart = () => setIsPlaying(true);
+                    utterance.onend = () => setIsPlaying(false);
+                    window.speechSynthesis.speak(utterance);
+                }
+            };
+
+            const stopSpeech = () => { window.speechSynthesis.cancel(); setIsPlaying(false); };
+
+            useEffect(() => {
+                if (courseStarted && courseModules[currentStep]) {
+                    setShowQuiz(false); 
+                    setTimeout(() => speak(courseModules[currentStep].speech), 500);
+                }
+                return () => stopSpeech();
+            }, [currentStep, courseStarted]);
+
+            const handleQuizSubmit = (isCorrect) => {
+                if (isCorrect) {
+                    const nextStep = currentStep + 1;
+                    if (!completedSteps.includes(nextStep)) setCompletedSteps([...completedSteps, nextStep]);
+                    if (nextStep < courseModules.length) setCurrentStep(nextStep);
+                } else {
+                    alert("Respuesta incorrecta. En redes de gas, la precisión es vital. Inténtelo de nuevo.");
+                    setShowQuiz(false); 
+                }
+            };
+
+            const generatePDF = () => {
+                const doc = new jsPDF({ orientation: "landscape" });
+                doc.setFillColor(15, 23, 42); doc.rect(0, 0, 297, 210, 'F');
+                doc.setDrawColor(59, 130, 246); doc.setLineWidth(1); doc.rect(10, 10, 277, 190);
+                doc.setTextColor(255, 255, 255); doc.setFontSize(30); doc.text("CERTIFICADO DE CAPACITACIÓN", 148, 50, {align: "center"});
+                doc.setFontSize(16); doc.setTextColor(148, 163, 184); doc.text("Se otorga a:", 148, 70, {align: "center"});
+                doc.setFontSize(24); doc.setTextColor(59, 130, 246); doc.text(userName.toUpperCase(), 148, 90, {align: "center"});
+                doc.setFontSize(14); doc.setTextColor(255, 255, 255); doc.text(`CC: ${userCedula}`, 148, 105, {align: "center"});
+                doc.setFontSize(16); doc.text("Por aprobar el entrenamiento técnico en el procedimiento:", 148, 130, {align: "center"});
+                doc.setFontSize(20); doc.setTextColor(16, 185, 129); doc.text("PO-044: Soldadura Termofusión a Socket (NTC 3696)", 148, 150, {align: "center"});
+                doc.setFontSize(12); doc.setTextColor(148, 163, 184); doc.text(`Fecha: ${new Date().toLocaleDateString()} | GdO - Gases de Occidente`, 148, 180, {align: "center"});
+                doc.save(`Certificado_PO044_${userName}.pdf`);
+            };
+
+            if (!courseStarted) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-4">
+                         <div className="bg-slate-900/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-md w-full border border-slate-800">
+                            <div className="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-2xl">
+                                <Icon name="Flame" size={40} className="text-white" />
+                            </div>
+                            <h1 className="text-2xl font-bold text-center text-white">PROCEDIMIENTO PO-044</h1>
+                            <p className="text-center text-blue-400 text-xs font-semibold tracking-widest mb-8 uppercase">Soldadura Termofusión Socket</p>
+                            <div className="space-y-4">
+                                <input type="text" placeholder="Nombre Completo" className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white outline-none focus:border-blue-500" value={userName} onChange={e => setUserName(e.target.value)} />
+                                <input type="number" placeholder="Cédula" className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white outline-none focus:border-blue-500" value={userCedula} onChange={e => setUserCedula(e.target.value)} />
+                                <button onClick={() => (userName && userCedula) ? setCourseStarted(true) : alert("Llene los datos")} className="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-lg font-bold text-white shadow-lg transition-all">Iniciar Formación Técnica</button>
+                            </div>
+                         </div>
+                    </div>
+                );
+            }
+
+            const activeModule = courseModules[currentStep];
+
+            return (
+                <div className="flex h-screen">
+                    <aside className="w-72 bg-slate-950 border-r border-slate-900 hidden md:flex flex-col">
+                        <div className="p-6 border-b border-slate-900 font-bold text-blue-500">GdO Academy</div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
+                            {courseModules.map((mod, idx) => (
+                                <button key={mod.id} onClick={() => completedSteps.includes(idx) && setCurrentStep(idx)} className={`w-full p-3 rounded-lg text-xs flex items-center gap-3 transition-all ${idx === currentStep ? 'bg-blue-900/20 text-blue-400' : 'text-slate-500'} ${!completedSteps.includes(idx) ? 'opacity-30 cursor-not-allowed' : ''}`}>
+                                    <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${completedSteps.includes(idx+1) ? 'bg-green-500 text-white' : idx === currentStep ? 'bg-blue-500 text-white' : 'bg-slate-800'}`}>{completedSteps.includes(idx+1) ? <Icon name="Check" size={10}/> : idx + 1}</div>
+                                    <span className="truncate">{mod.title}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </aside>
+
+                    <main className="flex-1 flex flex-col bg-slate-950">
+                        <header className="px-8 py-4 border-b border-slate-900 flex justify-between items-center bg-slate-950/50 backdrop-blur-md">
+                            <div>
+                                <p className="text-[10px] text-blue-500 font-bold uppercase">Módulo Técnico</p>
+                                <h2 className="font-bold text-lg text-white">{activeModule.title}</h2>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="w-24 h-8"><VoiceWaveform isPlaying={isPlaying} height={32}/></div>
+                                <button onClick={() => isPlaying ? stopSpeech() : speak(activeModule.speech)} className="p-2 rounded-full bg-slate-800 text-blue-400">
+                                    <Icon name={isPlaying ? "Pause" : "Volume2"} size={18}/>
+                                </button>
+                            </div>
+                        </header>
+
+                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                            <div className="max-w-3xl mx-auto slide-enter">
+                                {activeModule.content}
+                                <div className="mt-12 flex justify-end border-t border-slate-900 pt-8">
+                                    {activeModule.quiz ? (
+                                        <button onClick={() => { stopSpeech(); setShowQuiz(true); }} className="bg-blue-600 px-6 py-3 rounded-lg font-bold text-white flex items-center gap-2">Validar Módulo <Icon name="ArrowRight" size={18}/></button>
+                                    ) : (
+                                        <button onClick={generatePDF} className="bg-green-600 px-6 py-3 rounded-lg font-bold text-white flex items-center gap-2">Generar Certificado PO-044 <Icon name="Download" size={18}/></button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {showQuiz && activeModule.quiz && (
+                            <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                                <div className="bg-slate-900 p-8 rounded-2xl border border-slate-800 max-w-lg w-full">
+                                    <h3 className="text-blue-400 font-bold text-xs uppercase mb-2">Control de Calidad</h3>
+                                    <h4 className="text-white text-lg mb-6">{activeModule.quiz.q}</h4>
+                                    <div className="space-y-2">
+                                        {activeModule.quiz.options.map((opt, idx) => (
+                                            <button key={idx} onClick={() => handleQuizSubmit(idx === activeModule.quiz.correct)} className="w-full text-left p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-blue-500 text-slate-300 text-sm transition-all">{opt}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
