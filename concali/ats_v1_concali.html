@@ -283,45 +283,6 @@
         }
 
         async function exportarPDF() {
-
-           
-            
-            
-            
-            
-            
-            
-            
-            const urlScript = "https://script.google.com/macros/s/AKfycbyoFA2dlkhXb01Ee_qDWPLacyaZnKuHbNcCWcGIHlYyuNA_i8GrTDJB4l4nUb2x2vnimw/exec";
-
-  const datos = {
-    cuenta: cuentaGenerada
-  };
-
-  fetch(urlScript, {
-    method: 'POST',
-    mode: 'no-cors', // Importante para evitar problemas de CORS
-    cache: 'no-cache',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(datos)
-  })
-  .then(() => {
-    console.log("Datos enviados a la hoja de cálculo");
-    alert("Cuenta registrada con éxito");
-  })
-  .catch(error => console.error('Error:', error));
-
-
-
-
-
-
-
-
-            
-            
             const element = document.getElementById('ats-document');
             const inputs = element.querySelectorAll('textarea, select, input[type="text"], input[type="date"], input[type="time"]');
             const originalStates = [];
@@ -341,7 +302,7 @@
 
             const opt = {
                 margin: 5,
-                filename: 'ATS_CONCALI_PERFECTO.pdf',
+                filename: 'ATS_CONCALI.pdf',
                 image: { type: 'jpeg', quality: 1 },
                 html2canvas: { scale: 2, useCORS: true, letterRendering: true },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
