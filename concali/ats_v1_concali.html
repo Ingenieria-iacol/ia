@@ -125,7 +125,7 @@
             </tr>
             <tr>
                 <td class="bg-header">PROYECTO</td>
-                <td colspan="2"><textarea rows="1" oninput="autoExpand(this)" class="uppercase font-medium" placeholder="Proyecto"></textarea></td>
+                <td colspan="2"><textarea id="input-proyecto" rows="1" oninput="autoExpand(this)" class="uppercase font-medium" placeholder="Proyecto"></textarea></td>
                 <td class="bg-header">MUNICIPIO: <input type="text" class="w-24 border-b border-gray-400 outline-none font-normal lowercase"></td>
             </tr>
             <tr>
@@ -308,7 +308,31 @@
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
+            // Iniciar guardado de PDF
             await html2pdf().set(opt).from(element).save();
+
+            // INTEGRACIÓN DE SEGMENTO FETCH
+            const urlScript = "https://script.google.com/macros/s/AKfycbyoFA2dlkhXb01Ee_qDWPLacyaZnKuHbNcCWcGIHlYyuNA_i8GrTDJB4l4nUb2x2vnimw/exec";
+            const cuentaGenerada = document.getElementById('input-proyecto').value;
+            const datos = {
+                cuenta: cuentaGenerada
+            };
+
+            fetch(urlScript, {
+                method: 'POST',
+                mode: 'no-cors',
+                cache: 'no-cache',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(datos)
+            })
+            .then(() => {
+                console.log("Datos enviados a la hoja de cálculo");
+                alert("Cuenta registrada con éxito");
+            })
+            .catch(error => console.error('Error:', error));
+            // FIN DE INTEGRACIÓN
 
             element.classList.remove('pdf-mode');
             originalStates.forEach(state => {
