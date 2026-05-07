@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructivo NTC 3632</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a252f;
+            --accent: #d35400;
+            --border: #bdc3c7;
+            --modal-bg: rgba(0,0,0,0.7);
+        }
+
+        body { font-family: 'Helvetica', sans-serif; background: #525659; margin: 0; padding: 20px; }
+        
+        /* Contenedor PDF */
+        .page-container { 
+            width: 210mm; 
+            min-height: 297mm;
+            margin: auto; 
+            background: white; 
+            padding: 10mm; 
+            box-sizing: border-box;
+        }
+
+        header { border: 2px solid var(--primary); padding: 8px; margin-bottom: 10px; display: flex; align-items: center; }
+        .logo-text { flex: 1; font-weight: bold; font-size: 1.2em; color: var(--primary); }
+        .header-info { flex: 2; text-align: right; font-size: 0.75em; }
+
+        h1 { font-size: 1.1em; text-align: center; margin: 5px 0; text-transform: uppercase; border-bottom: 1px solid #ddd; }
+        h2 { background: #f2f2f2; font-size: 0.85em; padding: 4px; margin: 8px 0; border-left: 4px solid var(--accent); }
+
+        /* Trazabilidad */
+        .traceability { 
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; 
+            font-size: 0.7em; margin-bottom: 10px; border: 1px solid var(--border); padding: 5px;
+        }
+        .traceability div span { font-weight: bold; color: #444; }
+        input { width: 90%; border: none; border-bottom: 1px solid #ccc; font-size: 0.9em; }
+
+        /* Tabla */
+        .check-table { width: 100%; border-collapse: collapse; font-size: 0.68em; }
+        .check-table th, .check-table td { border: 1px solid var(--border); padding: 3px; }
+        .prohibition { background: #fff1f0; color: #c0392b; font-weight: bold; }
+
+        /* Footer y Foto */
+        .footer-section { display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px; margin-top: 10px; }
+        .photo-box { border: 1px dashed #999; height: 160px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fafafa; }
+        #preview-img { max-height: 100%; max-width: 100%; }
+
+        /* Panel de Botones Lateral */
+        .btn-panel { position: fixed; right: 20px; top: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 100; }
+        button { padding: 12px; border-radius: 5px; cursor: pointer; border: none; font-weight: bold; color: white; transition: 0.3s; }
+        .btn-pdf { background: #27ae60; }
+        .btn-info { background: #f39c12; }
+        .btn-photo { background: #3498db; }
+        button:hover { opacity: 0.8; transform: scale(1.05); }
+
+        /* MODAL */
+        .modal { display: none; position: fixed; z-index: 200; left: 0; top: 0; width: 100%; height: 100%; background: var(--modal-bg); }
+        .modal-content { background: white; margin: 5% auto; padding: 25px; width: 70%; max-height: 80vh; overflow-y: auto; border-radius: 10px; }
+        .close { float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .modal h3 { color: var(--accent); border-bottom: 2px solid var(--primary); }
+        .protocol-step { margin-bottom: 15px; font-size: 0.9em; border-left: 3px solid #3498db; padding-left: 10px; }
+
+        @media print { .btn-panel { display: none; } }
+    </style>
+</head>
+<body>
+
+<div class="btn-panel">
+    <button class="btn-info" onclick="openModal()">📖 Ver Instructivo</button>
+    <button class="btn-photo" onclick="document.getElementById('upload-photo').click()">📸 Cargar Foto</button>
+    <button class="btn-pdf" onclick="descargarPDF()">📥 Generar PDF</button>
+    <input type="file" id="upload-photo" accept="image/*" style="display: none;">
+</div>
+
+<div id="instModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h3>Protocolo Técnico Puesta en Servicio Artefacto NTC 3632</h3>
+        
+        <div class="protocol-step">
+            <strong>1. Fase de Pre-Instalación (Sección 4):</strong>
+            <p>Verifique que el gas suministrado coincida con el reglaje del artefacto. Asegure que no existan tracciones en mangueras y que la ventilación del recinto cumpla con la NTC 3631 (espacio mínimo y rejillas).</p>
+        </div>
+
+        <div class="protocol-step">
+            <strong>2. Purga y Hermeticidad (Sección 6.1 - 6.2):</strong>
+            <p>Antes de encender, purgue el aire del sistema. Aplique agua jabonosa en TODAS las uniones. <strong>PROHIBICIÓN:</strong> Nunca use encendedores o velas para buscar fugas.</p>
+        </div>
+
+        <div class="protocol-step">
+            <strong>3. Puesta en Servicio y CO (Sección 6.3):</strong>
+            <p>Encienda el equipo a potencia nominal. Espere 5 minutos con puertas y ventanas cerradas. Realice 3 mediciones de CO a una altura de 1.5m - 1.7m y a 1m de distancia. El valor no debe superar 50 ppm.</p>
+        </div>
+
+        <div class="protocol-step">
+            <strong>4. Verificación de Llama:</strong>
+            <p>La llama debe ser azul y estable. Si hay puntas amarillas, ajuste el aire primario según manual del fabricante.</p>
+        </div>
+        <button class="btn-pdf" onclick="closeModal()">Entendido</button>
+    </div>
+</div>
+
+<div class="page-container" id="pdf-content">
+    <header>
+        <div class="logo-text">REPORTE TÉCNICO DE GAS</div>
+        <div class="header-info">
+            <strong>NORMA REFERENCIA: NTC 3632</strong><br>
+            CUMPLIMIENTO OBLIGATORIO - GASODOMÉSTICOS COCICÓN
+        </div>
+    </header>
+
+    <div class="traceability">
+        <div><span>CLIENTE:</span><input type="text"></div>
+        <div><span>DIRECCIÓN:</span><input type="text"></div>
+        <div><span>CONTRATO/NIAC:</span><input type="text"></div>
+        <div><span>TÉCNICO:</span><input type="text"></div>
+        <div><span>FECHA:</span><input type="date" id="fecha"></div>
+        <div><span>MODELO EQUIPO:</span><input type="text"></div>
+    </div>
+
+    <table class="check-table">
+        <thead>
+            <tr style="background:#eee">
+                <th style="width:10%">Item</th>
+                <th>Descripción del Requisito Normativo</th>
+                <th style="width:8%">Cumple</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>4.1.1</td><td>Reglaje de gas correcto según suministro.</td><td><input type="checkbox"></td></tr>
+            <tr><td>4.1.2/3</td><td>Conectores sin contacto con calor ni estrangulamientos.</td><td><input type="checkbox"></td></tr>
+            <tr><td>4.1.5/6</td><td>Conector sin tracción, abrasión ni daños por muebles.</td><td><input type="checkbox"></td></tr>
+            <tr><td>4.2</td><td>Ventilación y volumen del recinto según NTC 3631.</td><td><input type="checkbox"></td></tr>
+            <tr class="prohibition"><td>4.3.3</td><td>PROHIBIDO: Instalación en baños o dormitorios.</td><td><input type="checkbox"></td></tr>
+            <tr class="prohibition"><td>4.3.4</td><td>PROHIBIDO: GLP (3ra Fam) en sótanos o bajo nivel.</td><td><input type="checkbox"></td></tr>
+            <tr><td>4.3.5</td><td>Distancia horizontal mín. 40cm a otros equipos.</td><td><input type="checkbox"></td></tr>
+            <tr><td>6.1</td><td>Purga completa del aire en el sistema y conectores.</td><td><input type="checkbox"></td></tr>
+            <tr><td>6.2.1</td><td>Hermeticidad comprobada con agua jabonosa/detector.</td><td><input type="checkbox"></td></tr>
+            <tr class="prohibition"><td>6.2.2</td><td>PROHIBIDO: Uso de llamas para detección de fugas.</td><td><input type="checkbox"></td></tr>
+            <tr><td>6.3.1</td><td>Válvula de corte operativa en el punto de salida.</td><td><input type="checkbox"></td></tr>
+            <tr><td>6.3.3</td><td>Monóxido de Carbono (CO) diluido ≤ 50 ppm.</td><td><input type="checkbox"></td></tr>
+            <tr><td>6.3.4</td><td>Llama estable, sin puntas amarillas ni desprendimiento.</td><td><input type="checkbox"></td></tr>
+            <tr><td>6.3.6</td><td>Presión de entrada verificada en conexión del artefacto.</td><td><input type="checkbox"></td></tr>
+        </tbody>
+    </table>
+
+    <div class="footer-section">
+        <div>
+            <h2>Resultados de Medición</h2>
+            <table class="check-table">
+                <tr><td>CO P1 (ppm)</td><td><input type="number"></td><td>CO P3 (ppm)</td><td><input type="number"></td></tr>
+                <tr><td>CO P2 (ppm)</td><td><input type="number"></td><td>Presión (mbar)</td><td><input type="text"></td></tr>
+            </table>
+            <p style="font-size:0.7em"><strong>Obs:</strong> <textarea style="width:95%; height:40px; border:1px solid #ccc"></textarea></p>
+        </div>
+        <div>
+            <h2>Registro Fotográfico</h2>
+            <div class="photo-box">
+                <img id="preview-img" src="" alt="">
+                <span id="txt-foto" style="font-size:0.7em; color:#999">Subir foto del equipo</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('fecha').valueAsDate = new Date();
+
+    // Lógica Modal
+    const modal = document.getElementById("instModal");
+    function openModal() { modal.style.display = "block"; }
+    function closeModal() { modal.style.display = "none"; }
+    window.onclick = function(e) { if(e.target == modal) closeModal(); }
+
+    // Carga de Foto
+    document.getElementById('upload-photo').addEventListener('change', function(e) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            document.getElementById('preview-img').src = event.target.result;
+            document.getElementById('txt-foto').style.display = 'none';
+        }
+        reader.readAsDataURL(e.target.files[0]);
+    });
+
+    // Descarga PDF
+    function descargarPDF() {
+        const element = document.getElementById('pdf-content');
+        const opt = {
+            margin: 0,
+            filename: 'Inspeccion_NTC3632_Completa.pdf',
+            image: { type: 'jpeg', quality: 1 },
+            html2canvas: { scale: 3, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+</script>
+
+</body>
+</html>
