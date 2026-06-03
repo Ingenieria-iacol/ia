@@ -203,7 +203,7 @@
                     </button>
 
                     <!-- Área de Texto para el Mensaje -->
-                    <div class="flex-1 bg-slate-50 rounded-2xl border border-slate-200 px-4 py-2.5 max-h-32 overflow-y-auto flex items-center">
+                    <div class="flex-1 bg-slate-50 rounded-2xl border border-slate-200 px-4 py-2.5 max-h-48 overflow-y-auto flex items-center">
                         <textarea id="message-text" placeholder="Escribe un hallazgo o descripción de seguridad..." rows="1" class="w-full bg-transparent resize-none border-none outline-none focus:ring-0 text-slate-700 text-sm placeholder-slate-400 no-scrollbar" oninput="adjustTextareaHeight(this); toggleIAEnhanceBtn();"></textarea>
                     </div>
 
@@ -589,7 +589,7 @@
                 if (msg.image) {
                     bubbleInner += `
                         <div class="p-1.5 bg-slate-100 relative">
-                            <img src="${msg.image}" alt="Evidencia INSE" class="rounded-xl w-full max-h-72 object-cover cursor-pointer hover:opacity-95 transition" onclick="previewImage('${msg.image}')">
+                            <img src="${msg.image}" alt="Evidencia INSE" class="rounded-xl w-full max-h-48 object-cover cursor-pointer hover:opacity-95 transition" onclick="previewImage('${msg.image}')">
                             <button onclick="analyzeImageWithAI('${msg.image}', '${index}')" class="absolute bottom-4 right-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 px-2.5 rounded-lg text-[10px] shadow-lg flex items-center space-x-1 transition active:scale-95" title="Analizar peligro con IA de Gemini">
                                 <span>🔍 Analizar con IA ✨</span>
                             </button>
