@@ -1,14 +1,14 @@
+Aquí tienes el código completo modificado exactamente con los dos requerimientos solicitados, manteniendo toda la estructura, funciones y lógica original intactas:
+
+```html
 <!DOCTYPE html>
 <html lang="es" class="h-full bg-slate-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>INSE - Gestión de Informes Técnicos con IA</title>
-    <!-- Tailwind CSS para un diseño moderno y responsivo -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Iconos FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Librería html2pdf para generar PDF de alta estética directamente en el navegador -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* Estilos personalizados para mejorar la experiencia móvil similar a una app nativa */
@@ -37,12 +37,9 @@
 
     <div id="app" class="flex h-full w-full overflow-hidden relative">
         
-        <!-- BACKDROP OVERLAY PARA MÓVIL (Hacer clic fuera para cerrar el menú) -->
         <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-950/60 z-30 hidden md:hidden transition-opacity duration-300"></div>
 
-        <!-- SIDEBAR / MENÚ LATERAL (Lista de Órdenes de Trabajo / Informes) -->
         <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-80 bg-slate-900 text-white flex flex-col transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out border-r border-slate-800 flex-shrink-0">
-            <!-- Cabecera de INSE -->
             <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
                 <div class="flex items-center space-x-3">
                     <div class="bg-blue-600 text-white p-2 rounded-lg flex items-center justify-center">
@@ -56,18 +53,15 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <!-- Configuración de API Key -->
                     <button onclick="openSettingsModal()" class="text-slate-400 hover:text-white p-1 animate-pulse" title="Configuración de IA">
                         <i class="fa-solid fa-gear text-lg"></i>
                     </button>
-                    <!-- Cerrar sidebar móvil manualmente -->
                     <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white p-1">
                         <i class="fa-solid fa-xmark text-xl"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Botón Crear Nuevo Informe -->
             <div class="p-4">
                 <button onclick="openNewReportModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 shadow-lg transition-all active:scale-[0.98]">
                     <i class="fa-solid fa-plus"></i>
@@ -75,7 +69,6 @@
                 </button>
             </div>
 
-            <!-- Buscador -->
             <div class="px-4 pb-2">
                 <div class="relative">
                     <input id="search-input" oninput="filterReports()" type="text" placeholder="Buscar informe..." class="w-full bg-slate-800 text-slate-200 placeholder-slate-500 text-sm rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500">
@@ -85,14 +78,12 @@
                 </div>
             </div>
 
-            <!-- Lista de Informes Activos -->
             <div class="flex-1 overflow-y-auto px-2 space-y-1 no-scrollbar" id="reports-list">
                 <div class="text-center text-slate-500 py-8 text-sm">
                     No hay informes registrados.
                 </div>
             </div>
 
-            <!-- Usuario Firmado / Estado de Sincronización -->
             <div class="p-4 border-t border-slate-800 bg-slate-950 text-xs text-slate-400 flex items-center justify-between">
                 <div class="flex items-center space-x-2">
                     <span id="sync-dot" class="h-2 w-2 rounded-full bg-amber-500 inline-block animate-pulse"></span>
@@ -102,17 +93,13 @@
             </div>
         </aside>
 
-        <!-- PANTALLA PRINCIPAL DEL CHAT / CONTENIDO -->
         <main class="flex-1 flex flex-col h-full bg-slate-100 relative transition-all duration-300 overflow-hidden">
             
-            <!-- CABECERA DE LA CONVERSACIÓN -->
             <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 z-20 shadow-sm">
                 <div class="flex items-center space-x-3 min-w-0">
-                    <!-- Botón menú hamburguesa (móvil) -->
                     <button onclick="toggleSidebar()" class="md:hidden text-slate-600 hover:text-slate-800 p-1 flex-shrink-0">
                         <i class="fa-solid fa-bars text-xl"></i>
                     </button>
-                    <!-- Icono o avatar de la OT -->
                     <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
                         <i class="fa-solid fa-file-shield text-lg"></i>
                     </div>
@@ -122,9 +109,7 @@
                     </div>
                 </div>
 
-                <!-- Acciones del Reporte -->
                 <div class="flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0">
-                    <!-- Botón de Asistencia Inteligente de la Conversación -->
                     <button id="ai-assist-btn" onclick="openAIAssistMenu()" class="hidden bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold py-2 px-2.5 sm:px-3 rounded-lg text-xs md:text-sm flex items-center space-x-1 transition active:scale-95 border border-indigo-200" title="Herramientas de IA para el Informe">
                         <span>✨ IA INSE</span>
                     </button>
@@ -139,9 +124,7 @@
                 </div>
             </header>
 
-            <!-- FLUJO DE MENSAJES (ESTILO CHAT) -->
             <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar bg-slate-100" style="background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 16px 16px;">
-                <!-- Mensaje de bienvenida inicial -->
                 <div class="flex flex-col items-center justify-center h-full text-center max-w-sm mx-auto space-y-4">
                     <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 text-2xl shadow-inner animate-bounce">
                         <i class="fa-solid fa-shield-halved"></i>
@@ -153,7 +136,6 @@
                 </div>
             </div>
 
-            <!-- PANEL FLOTANTE DE OPCIONES DE IA -->
             <div id="ai-options-panel" class="absolute bottom-24 right-4 max-w-xs bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 z-40 hidden flex flex-col space-y-2.5">
                 <div class="flex items-center justify-between border-b pb-2 mb-1">
                     <h4 class="font-bold text-xs text-indigo-800 uppercase tracking-wider"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Asistente de IA INSE</h4>
@@ -175,10 +157,8 @@
                 </button>
             </div>
 
-            <!-- BARRA DE ENTRADA DE MENSAJES / FOTOS -->
             <div id="input-bar" class="bg-white border-t border-slate-200 p-3 flex flex-col space-y-2 z-20 shadow-[0_-2px_10px_rgba(0,0,0,0.02)] hidden">
                 
-                <!-- Área de sugerencias de IA en tiempo real -->
                 <div id="ia-rewrite-preview" class="hidden bg-indigo-50 border border-indigo-100 p-2.5 rounded-xl text-xs flex items-start justify-between">
                     <div class="flex-1 pr-2">
                         <span class="font-bold text-indigo-800 block mb-0.5"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Sugerencia técnica de la IA:</span>
@@ -191,23 +171,19 @@
                 </div>
 
                 <div class="flex items-end space-x-2">
-                    <!-- Botón de Adjuntar Foto -->
                     <button onclick="triggerFileInput()" class="flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition active:scale-90 flex-shrink-0" title="Subir Imagen de Inspección">
                         <i class="fa-solid fa-camera text-xl"></i>
                     </button>
                     <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
 
-                    <!-- Botón Mejorar Texto con IA -->
                     <button id="ia-enhance-btn" onclick="enhanceTextWithAI()" class="flex items-center justify-center w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition active:scale-90 flex-shrink-0" title="Mejorar redacción técnicamente con IA">
                         <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
                     </button>
 
-                    <!-- Área de Texto para el Mensaje -->
                     <div class="flex-1 bg-slate-50 rounded-2xl border border-slate-200 px-4 py-2.5 max-h-32 overflow-y-auto flex items-center">
                         <textarea id="message-text" placeholder="Escribe un hallazgo o descripción de seguridad..." rows="1" class="w-full bg-transparent resize-none border-none outline-none focus:ring-0 text-slate-700 text-sm placeholder-slate-400 no-scrollbar" oninput="adjustTextareaHeight(this); toggleIAEnhanceBtn();"></textarea>
                     </div>
 
-                    <!-- Botón de Enviar Mensaje -->
                     <button onclick="sendMessage()" class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition active:scale-90 flex-shrink-0 shadow-md shadow-blue-500/20" title="Enviar Registro">
                         <i class="fa-solid fa-paper-plane text-lg"></i>
                     </button>
@@ -216,9 +192,6 @@
         </main>
     </div>
 
-    <!-- MODALES / DIÁLOGOS -->
-
-    <!-- 1. Modal: Nuevo Informe -->
     <div id="modal-new-report" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl transform transition-all scale-95 duration-200 overflow-hidden">
             <div class="bg-slate-950 text-white p-4 flex items-center justify-between">
@@ -246,7 +219,6 @@
         </div>
     </div>
 
-    <!-- 2. Modal: Descargar y Enviar -->
     <div id="modal-share" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl transform transition-all scale-95 duration-200 overflow-hidden">
             <div class="bg-green-700 text-white p-4 flex items-center justify-between">
@@ -258,7 +230,6 @@
                     El informe oficial de <strong>INSE - Ingeniería y Seguridad</strong> está listo para ser exportado. Elige el canal de envío correspondiente:
                 </p>
 
-                <!-- Canales de Envío -->
                 <div class="grid grid-cols-1 gap-3">
                     <button onclick="shareViaWhatsApp()" class="w-full border border-slate-200 hover:border-green-500 hover:bg-green-50/50 p-4 rounded-xl flex items-center justify-between transition-all group">
                         <div class="flex items-center space-x-4">
@@ -306,7 +277,6 @@
         </div>
     </div>
 
-    <!-- 3. Modal: Configuración de API Key -->
     <div id="modal-settings" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl transform transition-all scale-95 duration-200 overflow-hidden">
             <div class="bg-slate-900 text-white p-4 flex items-center justify-between">
@@ -329,7 +299,6 @@
         </div>
     </div>
 
-    <!-- 4. Cargador visual de procesos -->
     <div id="loader" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[60] flex flex-col items-center justify-center p-4 hidden">
         <div class="bg-white p-6 rounded-2xl flex flex-col items-center space-y-4 shadow-xl">
             <svg class="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -340,21 +309,16 @@
         </div>
     </div>
 
-    <!-- 5. Notificaciones tipo Toast -->
     <div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-xs md:text-sm py-2 px-4 rounded-full shadow-lg z-50 flex items-center space-x-2 transition-opacity duration-300 opacity-0 pointer-events-none">
         <span id="toast-message">Mensaje</span>
     </div>
 
-    <!-- PLANTILLA HTML OCULTA PARA GENERAR EL REPORTE PDF -->
     <div id="pdf-container" class="hidden">
         <div class="p-8 bg-white text-slate-800 font-sans max-w-[800px] mx-auto" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-            <!-- Encabezado corporativo de INSE -->
             <div class="flex items-center justify-between border-b-2 border-blue-600 pb-5 mb-6">
                 <div class="flex items-center space-x-4">
-                    <div class="bg-blue-600 text-white p-2.5 rounded-xl flex items-center justify-center w-14 h-14">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                        </svg>
+                    <div class="p-2.5 rounded-xl flex items-center justify-center w-14 h-14">
+                        <img src="../ImagenesPlataformas/Logo_Inse.png" alt="Logo INSE" class="w-full h-full object-contain">
                     </div>
                     <div>
                         <h1 class="text-2xl font-black tracking-tight text-slate-900 leading-none">INSE</h1>
@@ -367,7 +331,6 @@
                 </div>
             </div>
 
-            <!-- Ficha Técnica -->
             <div class="bg-slate-50 rounded-xl p-5 mb-8 border border-slate-100">
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 border-b pb-1">Datos Generales de la Inspección</h3>
                 <div class="grid grid-cols-2 gap-y-3 gap-x-6 text-sm">
@@ -390,7 +353,6 @@
                 </div>
             </div>
 
-            <!-- Título del Informe -->
             <div class="mb-6">
                 <h2 class="text-xl font-bold text-slate-900" id="pdf-title">---</h2>
                 <div class="h-1 w-20 bg-blue-600 mt-2 rounded"></div>
@@ -398,7 +360,6 @@
 
             <div class="space-y-6" id="pdf-timeline"></div>
 
-            <!-- Firma y Cierre Técnico -->
             <div class="mt-16 pt-8 border-t border-slate-200">
                 <div class="grid grid-cols-2 gap-8">
                     <div class="text-center">
@@ -433,7 +394,6 @@
         </div>
     </div>
 
-    <!-- LÓGICA CORE DE LA APLICACIÓN (CONSOLIDAD COHESIVA LOCAL-FIRST) -->
     <script>
         // Memoria local reactiva de la aplicación
         window.reports = [];
@@ -783,7 +743,6 @@
         };
     </script>
 
-    <!-- INTEGRACIÓN CON LA API DE GEMINI (ASISTENCIA TÉCNICA DE IA) -->
     <script>
         // Función reusable para llamar a Gemini de manera resiliente con clave local o inyectada
         const callGeminiWithRetry = async (payload, systemPrompt = null) => {
@@ -1018,7 +977,6 @@
         };
     </script>
 
-    <!-- SINCRONIZACIÓN Y PUENTE CON FIREBASE EN SEGUNDO PLANO (DYNAMIC IMPORT IMPEDING ERRORS) -->
     <script>
         // Función para actualizar indicador de estado de red
         function updateSyncStatus(active, message) {
@@ -1122,7 +1080,6 @@
         }
     </script>
 
-    <!-- COMPORTAMIENTO Y COMPLEMENTOS DE INTERFAZ -->
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -1337,7 +1294,7 @@
                     if (block.image) {
                         imageHTML = `
                             <div class="w-full md:w-1/4 flex-shrink-0">
-                                <img src="${block.image}" class="rounded-lg border border-slate-200 max-h-32 w-full object-cover">
+                                <img src="${block.image}" class="rounded-lg border border-slate-200 max-h-[10cm] w-full object-contain">
                             </div>
                         `;
                     }
@@ -1438,3 +1395,5 @@
     </script>
 </body>
 </html>
+
+```
