@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planes de Suscripción - Ingeniería</title>
-    <!-- Tailwind CSS (Framework de estilos) -->
+    <title>Planes de Suscripción - Hub de Ingeniería</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Iconos FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Fuente Inter -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         
@@ -55,163 +52,198 @@
         }
     </style>
 </head>
-<body class="text-white min-h-screen flex flex-col items-center justify-center p-4 relative">
+<body class="text-white min-h-screen flex flex-col items-center py-12 px-4 relative justify-start">
 
-    <!-- Botón Salir -->
     <a href="../Modales Plataforma/interfazDeOpcionInicio.html" class="absolute top-4 right-4 md:top-8 md:right-8 px-6 py-2 border border-red-600 text-red-500 rounded hover:bg-red-600 hover:text-white transition-all duration-300 font-bold text-sm uppercase tracking-wider z-50 flex items-center gap-2">
         <i class="fa-solid fa-right-from-bracket"></i> Salir
     </a>
 
-    <!-- Cabecera estilo Streaming -->
-    <header class="w-full max-w-7xl mx-auto py-8 text-center">
+    <header class="w-full max-w-[90rem] mx-auto pt-12 pb-8 text-center">
         <div class="mb-4">
              <i class="fa-solid fa-layer-group text-5xl text-blue-500 drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]"></i>
         </div>
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">Selecciona el plan ideal para tu ingeniería</h1>
-        <p class="text-lg text-gray-400 max-w-2xl mx-auto">
-            Accede a herramientas de simulación, CAD y cálculo avanzado. Cancela o cambia de plan cuando quieras.
+        <h1 class="text-3xl md:text-5xl font-bold mb-4 px-2">Selecciona el plan ideal para tu ingeniería</h1>
+        <p class="text-base md:text-lg text-gray-400 max-w-2xl mx-auto px-4">
+            Accede a herramientas avanzadas de cálculo, redes de gas, simuladores y automatizaciones. Cancela o cambia tu plan cuando lo requieras.
         </p>
     </header>
 
-    <!-- Contenedor Principal de Planes -->
-    <div class="w-full max-w-7xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+    <div class="w-full max-w-[90rem] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-12 px-2 md:px-6">
 
-        <!-- PLAN FREE -->
-        <div class="netflix-card rounded-xl p-8 flex flex-col relative">
-            <div class="mb-6">
-                <h3 class="text-2xl font-bold mb-2">Free</h3>
-                <p class="text-sm text-gray-400 font-medium">Calidad estándar</p>
-                <div class="mt-4 flex items-baseline">
-                    <span class="text-4xl font-bold">$0</span>
+        <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between">
+            <div>
+                <div class="mb-4">
+                    <h3 class="text-xl font-bold mb-1">Libre</h3>
+                    <p class="text-xs text-gray-400 font-medium">Acceso esencial inicial</p>
+                    <div class="mt-3 flex items-baseline">
+                        <span class="text-3xl font-bold">$0</span>
+                    </div>
                 </div>
+                <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Portal Acceso I.A. (App Móvil)
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Calculadora de Ventilación
+                    </li>
+                    <li class="flex items-start text-gray-600 line-through">
+                        <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Gmail Chat: Centro Mandos
+                    </li>
+                    <li class="flex items-start text-gray-600 line-through">
+                        <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Asistencia Técnica e Investigación
+                    </li>
+                    <li class="flex items-start text-gray-600 line-through">
+                        <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Modelador de Flujo & Simuladores
+                    </li>
+                </ul>
             </div>
-            <ul class="space-y-4 mb-8 flex-1 border-t border-gray-700 pt-6">
-                <li class="flex items-start text-sm text-gray-300">
-                    <i class="fa-solid fa-check check-icon mt-1 mr-3"></i>
-                    Calculadora básica
-                </li>
-                <li class="flex items-start text-sm text-gray-300">
-                    <i class="fa-solid fa-check check-icon mt-1 mr-3"></i>
-                    Visor CAD 2D
-                </li>
-                <li class="flex items-start text-sm text-gray-300">
-                    <i class="fa-solid fa-check check-icon mt-1 mr-3"></i>
-                    Comunidad (Foros)
-                </li>
-            </ul>
-            <button class="w-full py-3 border border-gray-500 rounded text-white hover:bg-white hover:text-black font-semibold transition-colors uppercase tracking-wide text-sm">
-                Continuar con Free
+            <button class="w-full py-2.5 border border-gray-500 rounded text-white hover:bg-white hover:text-black font-semibold transition-colors uppercase tracking-wide text-xs">
+                Continuar con Libre
             </button>
         </div>
 
-        <!-- PLAN PRO -->
-        <div class="netflix-card rounded-xl p-8 flex flex-col relative">
-            <div class="mb-6">
-                <h3 class="text-2xl font-bold mb-2">Pro</h3>
-                <p class="text-sm text-gray-400 font-medium">Mejor resolución</p>
-                <div class="mt-4 flex items-baseline">
-                    <span class="text-4xl font-bold">$9.000</span>
-                    <span class="ml-1 text-gray-500 text-sm">/mes</span>
+        <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between">
+            <div>
+                <div class="mb-4">
+                    <h3 class="text-xl font-bold mb-1">Técnico</h3>
+                    <p class="text-xs text-gray-400 font-medium">Asistencia y bases operativas</p>
+                    <div class="mt-3 flex items-baseline">
+                        <span class="text-3xl font-bold">$15.500</span>
+                        <span class="ml-1 text-gray-500 text-xs">/mes</span>
+                    </div>
                 </div>
+                <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Portal Acceso I.A. (App)
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Gmail Chat & Comunidad Hub
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Calculadora de Ventilación
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Asistencia Técnica y Asesoría
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Generador de Cuentas de Cobro
+                    </li>
+                    <li class="flex items-start text-gray-600 line-through">
+                        <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Investigaciones Especializadas
+                    </li>
+                </ul>
             </div>
-            <ul class="space-y-4 mb-8 flex-1 border-t border-gray-700 pt-6">
-                <li class="flex items-start text-sm text-gray-300">
-                    <i class="fa-solid fa-check check-icon mt-1 mr-3"></i>
-                    Todo en Free
-                </li>
-                <li class="flex items-start text-sm text-gray-300">
-                    <i class="fa-solid fa-check check-icon mt-1 mr-3"></i>
-                    Exportar PDF/Excel
-                </li>
-                <li class="flex items-start text-sm text-gray-300">
-                    <i class="fa-solid fa-check check-icon mt-1 mr-3"></i>
-                    500+ Componentes
-                </li>
-                <li class="flex items-start text-sm text-gray-300">
-                    <i class="fa-solid fa-check check-icon mt-1 mr-3"></i>
-                    Sin Anuncios
-                </li>
-            </ul>
-            <button class="w-full py-3 metallic-btn rounded text-white font-bold uppercase tracking-wide text-sm">
-                Seleccionar Pro
+            <button class="w-full py-2.5 metallic-btn rounded text-white font-bold uppercase tracking-wide text-xs">
+                Seleccionar Técnico
             </button>
         </div>
 
-        <!-- PLAN PLUS (Recomendado) -->
-        <div class="netflix-card rounded-xl p-8 flex flex-col relative transform lg:-translate-y-4 border-t-4 border-blue-500 bg-[#252525]">
-            <!-- Etiqueta de Recomendado -->
-            <div class="absolute -top-10 left-0 w-full text-center">
-                 <span class="bg-blue-600 text-white text-xs font-bold px-4 py-1 rounded shadow-lg tracking-widest uppercase">Más Popular</span>
+        <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between border-t-4 border-blue-500 bg-[#1e1e1e] sm:transform lg:-translate-y-2">
+            <div class="absolute -top-3.5 left-0 w-full text-center">
+                 <span class="bg-blue-600 text-white text-[10px] font-bold px-3 py-0.5 rounded shadow-lg tracking-widest uppercase">Recomendado</span>
             </div>
-
-            <div class="mb-6">
-                <h3 class="text-2xl font-bold mb-2 metallic-blue-text">Plus</h3>
-                <p class="text-sm text-gray-400 font-medium">Simulación Full 3D</p>
-                <div class="mt-4 flex items-baseline">
-                    <span class="text-5xl font-bold text-white">$18.000</span>
-                    <span class="ml-1 text-gray-500 text-sm">/mes</span>
+            <div>
+                <div class="mb-4 mt-1">
+                    <h3 class="text-xl font-bold mb-1 metallic-blue-text">Profesional</h3>
+                    <p class="text-xs text-gray-400 font-medium">Potencia en Gas Residencial/Comercial</p>
+                    <div class="mt-3 flex items-baseline">
+                        <span class="text-3xl font-bold text-white">$77.500</span>
+                        <span class="ml-1 text-gray-500 text-xs">/mes</span>
+                    </div>
                 </div>
+                <ul class="space-y-3 mb-6 border-t border-gray-600 pt-4 text-xs">
+                    <li class="flex items-start text-white font-medium">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Sistemas de Combustión/Gas Res/Com
+                    </li>
+                    <li class="flex items-start text-white font-medium">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Perfil Investigador Reconocido
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Modelador de Flujo Mueller
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Cuenta Pioneer's & Google Workspace
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Módulos Pedagógicos / Competencias
+                    </li>
+                </ul>
             </div>
-            <ul class="space-y-4 mb-8 flex-1 border-t border-gray-600 pt-6">
-                <li class="flex items-start text-sm text-white font-medium">
-                    <i class="fa-solid fa-check check-icon mt-1 mr-3"></i>
-                    Todo en Pro
-                </li>
-                <li class="flex items-start text-sm text-white font-medium">
-                    <i class="fa-solid fa-bolt text-yellow-400 mt-1 mr-3 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]"></i>
-                    Simulaciones 3D Real-time
-                </li>
-                <li class="flex items-start text-sm text-gray-300">
-                    <i class="fa-solid fa-check check-icon mt-1 mr-3"></i>
-                    Colaboración (3 usuarios)
-                </li>
-                <li class="flex items-start text-sm text-gray-300">
-                    <i class="fa-solid fa-check check-icon mt-1 mr-3"></i>
-                    Soporte Prioritario
-                </li>
-            </ul>
-            <button class="w-full py-4 metallic-btn rounded text-white font-bold uppercase tracking-wide text-sm shadow-[0_0_20px_rgba(37,99,235,0.4)]">
-                Seleccionar Plus
+            <button class="w-full py-3 metallic-btn rounded text-white font-bold uppercase tracking-wide text-xs shadow-[0_0_15px_rgba(37,99,235,0.3)]">
+                Seleccionar Profesional
             </button>
         </div>
 
-        <!-- PLAN PREMIUM -->
-        <div class="netflix-card rounded-xl p-8 flex flex-col relative">
-            <div class="mb-6">
-                <h3 class="text-2xl font-bold mb-2 text-gray-200">Premium</h3>
-                <p class="text-sm text-gray-400 font-medium">Ultra Potencia & API</p>
-                <div class="mt-4 flex items-baseline">
-                    <span class="text-4xl font-bold">$28.000</span>
-                    <span class="ml-1 text-gray-500 text-sm">/mes</span>
+        <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between">
+            <div>
+                <div class="mb-4">
+                    <h3 class="text-xl font-bold mb-1 text-gray-200">Empresarial</h3>
+                    <p class="text-xs text-gray-400 font-medium">Automatización y Flujos Web</p>
+                    <div class="mt-3 flex items-baseline">
+                        <span class="text-3xl font-bold">$248.000</span>
+                        <span class="ml-1 text-gray-500 text-xs">/mes</span>
+                    </div>
                 </div>
+                <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Sistemas de Combustión Industrial
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Extensiones y Apps Móviles
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Conexiones Sistemas Físicos y Control
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Creación de Flujos de Trabajo Web
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Acceso a ERP y CRM de Negocios
+                    </li>
+                </ul>
             </div>
-            <ul class="space-y-4 mb-8 flex-1 border-t border-gray-700 pt-6">
-                <li class="flex items-start text-sm text-gray-300">
-                    <i class="fa-solid fa-check check-icon mt-1 mr-3"></i>
-                    Todo en Plus
-                </li>
-                <li class="flex items-start text-sm text-gray-300">
-                    <i class="fa-solid fa-check check-icon mt-1 mr-3"></i>
-                    Acceso Total API
-                </li>
-                <li class="flex items-start text-sm text-gray-300">
-                    <i class="fa-solid fa-check check-icon mt-1 mr-3"></i>
-                    Nube Ilimitada
-                </li>
-                <li class="flex items-start text-sm text-gray-300">
-                    <i class="fa-solid fa-check check-icon mt-1 mr-3"></i>
-                    Soporte Ingeniería 24/7
-                </li>
-            </ul>
-            <button class="w-full py-3 border border-gray-500 rounded text-white hover:bg-gray-800 font-semibold transition-colors uppercase tracking-wide text-sm">
+            <button class="w-full py-2.5 border border-gray-600 rounded text-gray-200 hover:bg-gray-800 font-semibold transition-colors uppercase tracking-wide text-xs">
+                Seleccionar Empresa
+            </button>
+        </div>
+
+        <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between">
+            <div>
+                <div class="mb-4">
+                    <h3 class="text-xl font-bold mb-1 text-blue-400">Interventoría / OEC</h3>
+                    <p class="text-xs text-gray-400 font-medium">Acceso Total & Simulación Avanzada</p>
+                    <div class="mt-3 flex items-baseline">
+                        <span class="text-3xl font-bold">$310.000</span>
+                        <span class="ml-1 text-gray-500 text-xs">/mes</span>
+                    </div>
+                </div>
+                <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Todo lo Comercial, Res. e Industrial
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Acceso Simulador Vaporización Gas LP
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Modelador de Flujo Mueller Completo
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Suite Google Workspace & Pioneer's
+                    </li>
+                    <li class="flex items-start text-gray-300">
+                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Auditoría, Módulos ERP, CRM y API
+                    </li>
+                </ul>
+            </div>
+            <button class="w-full py-2.5 border border-blue-600 rounded text-blue-400 hover:bg-blue-600 hover:text-white font-bold transition-all uppercase tracking-wide text-xs">
                 Contactar Ventas
             </button>
         </div>
 
     </div>
     
-    <footer class="text-gray-500 text-sm mt-8 pb-8 text-center">
-        <p>Los precios están en moneda local. Se aplican términos y condiciones.</p>
+    <footer class="text-gray-500 text-xs mt-8 pb-8 text-center">
+        <p>Precios expresados en moneda local de acuerdo a los beneficios estipulados. Aplican Términos, Regulaciones y Condiciones del Hub de Ingeniería.</p>
     </footer>
 
 </body>
