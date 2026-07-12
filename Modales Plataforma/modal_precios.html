@@ -12,6 +12,7 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: #141414; /* Fondo oscuro estilo Netflix */
+            overflow-x: hidden;
         }
 
         /* Efecto Metálico Azul */
@@ -37,18 +38,68 @@
         .netflix-card {
             background: linear-gradient(180deg, #1f1f1f 0%, #181818 100%);
             border: 1px solid #333;
-            transition: transform 0.3s ease, border-color 0.3s ease;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
         }
 
         .netflix-card:hover {
             border-color: #3b82f6;
-            transform: translateY(-5px);
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.2);
         }
 
         /* Checkmark azul brillante */
         .check-icon {
             color: #60a5fa;
             text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        /* CONFIGURACIÓN Y CONTENEDORES PARA EL CARRUSEL 3D */
+        .carousel-perspective {
+            perspective: 1200px;
+            perspective-origin: center -10%;
+        }
+
+        .carousel-container {
+            position: relative;
+            width: 290px;
+            height: 480px;
+            transform-style: preserve-3d;
+            transition: transform 0.1s cubic-bezier(0.25, 1, 0.5, 1);
+            cursor: grab;
+        }
+
+        .carousel-container:active {
+            cursor: grabbing;
+        }
+
+        .carousel-item {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            left: 0;
+            top: 0;
+        }
+
+        /* Distribución geométrica precisa en 3D para 5 elementos (360 / 5 = 72 grados) */
+        /* translateZ se calcula basado en el ancho de la tarjeta para un espaciado óptimo */
+        .carousel-item:nth-child(1) { transform: rotateY(0deg) translateZ(260px); }
+        .carousel-item:nth-child(2) { transform: rotateY(72deg) translateZ(260px); }
+        .carousel-item:nth-child(3) { transform: rotateY(144deg) translateZ(260px); }
+        .carousel-item:nth-child(4) { transform: rotateY(216deg) translateZ(260px); }
+        .carousel-item:nth-child(5) { transform: rotateY(288deg) translateZ(260px); }
+
+        /* Botones de navegación */
+        .nav-btn {
+            background: rgba(31, 31, 31, 0.8);
+            border: 1px solid #444;
+            transition: all 0.3s ease;
+        }
+        .nav-btn:hover {
+            background: #2563eb;
+            border-color: #60a5fa;
+            color: white;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
         }
     </style>
 </head>
@@ -58,193 +109,294 @@
         <i class="fa-solid fa-right-from-bracket"></i> Salir
     </a>
 
-    <header class="w-full max-w-[90rem] mx-auto pt-12 pb-8 text-center">
+    <header class="w-full max-w-[90rem] mx-auto pt-12 pb-4 text-center">
         <div class="mb-4">
              <i class="fa-solid fa-layer-group text-5xl text-blue-500 drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]"></i>
         </div>
         <h1 class="text-3xl md:text-5xl font-bold mb-4 px-2">Selecciona el plan ideal para tu ingeniería</h1>
         <p class="text-base md:text-lg text-gray-400 max-w-2xl mx-auto px-4">
-            Accede a herramientas avanzadas de cálculo, redes de gas, simuladores y automatizaciones. Cancela o cambia tu plan cuando lo requieras.
+            Accede a herramientas avanzadas de cálculo, redes de gas, simuladores y automatizaciones. Arrastra o usa las flechas para girar el carrusel.
         </p>
     </header>
 
-    <div class="w-full max-w-[90rem] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-12 px-2 md:px-6">
+    <div class="w-full max-w-[90rem] flex flex-col items-center justify-center my-8 relative h-[560px] carousel-perspective select-none">
+        
+        <div id="carousel" class="carousel-container">
 
-        <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between">
-            <div>
-                <div class="mb-4">
-                    <h3 class="text-xl font-bold mb-1">Libre</h3>
-                    <p class="text-xs text-gray-400 font-medium">Acceso esencial inicial</p>
-                    <div class="mt-3 flex items-baseline">
-                        <span class="text-3xl font-bold">$0</span>
+            <div class="carousel-item">
+                <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between h-full w-full">
+                    <div>
+                        <div class="mb-4">
+                            <h3 class="text-xl font-bold mb-1">Libre</h3>
+                            <p class="text-xs text-gray-400 font-medium">Acceso esencial inicial</p>
+                            <div class="mt-3 flex items-baseline">
+                                <span class="text-3xl font-bold">$0</span>
+                            </div>
+                        </div>
+                        <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Portal Acceso I.A. (App Móvil)
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Calculadora de Ventilación
+                            </li>
+                            <li class="flex items-start text-gray-600 line-through">
+                                <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Gmail Chat: Centro Mandos
+                            </li>
+                            <li class="flex items-start text-gray-600 line-through">
+                                <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Asistencia Técnica e Investigación
+                            </li>
+                            <li class="flex items-start text-gray-600 line-through">
+                                <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Modelador de Flujo & Simuladores
+                            </li>
+                        </ul>
                     </div>
+                    <button class="w-full py-2.5 border border-gray-500 rounded text-white hover:bg-white hover:text-black font-semibold transition-colors uppercase tracking-wide text-xs">
+                        Continuar con Libre
+                    </button>
                 </div>
-                <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Portal Acceso I.A. (App Móvil)
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Calculadora de Ventilación
-                    </li>
-                    <li class="flex items-start text-gray-600 line-through">
-                        <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Gmail Chat: Centro Mandos
-                    </li>
-                    <li class="flex items-start text-gray-600 line-through">
-                        <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Asistencia Técnica e Investigación
-                    </li>
-                    <li class="flex items-start text-gray-600 line-through">
-                        <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Modelador de Flujo & Simuladores
-                    </li>
-                </ul>
             </div>
-            <button class="w-full py-2.5 border border-gray-500 rounded text-white hover:bg-white hover:text-black font-semibold transition-colors uppercase tracking-wide text-xs">
-                Continuar con Libre
-            </button>
+
+            <div class="carousel-item">
+                <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between h-full w-full">
+                    <div>
+                        <div class="mb-4">
+                            <h3 class="text-xl font-bold mb-1">Técnico</h3>
+                            <p class="text-xs text-gray-400 font-medium">Asistencia y bases operativas</p>
+                            <div class="mt-3 flex items-baseline">
+                                <span class="text-3xl font-bold">$15.500</span>
+                                <span class="ml-1 text-gray-500 text-xs">/mes</span>
+                            </div>
+                        </div>
+                        <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Portal Acceso I.A. (App)
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Gmail Chat & Comunidad Hub
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Calculadora de Ventilación
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Asistencia Técnica y Asesoría
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Generador de Cuentas de Cobro
+                            </li>
+                            <li class="flex items-start text-gray-600 line-through">
+                                <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Investigaciones Especializadas
+                            </li>
+                        </ul>
+                    </div>
+                    <button class="w-full py-2.5 metallic-btn rounded text-white font-bold uppercase tracking-wide text-xs">
+                        Seleccionar Técnico
+                    </button>
+                </div>
+            </div>
+
+            <div class="carousel-item">
+                <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between h-full w-full border-t-4 border-blue-500 bg-[#1e1e1e]">
+                    <div class="absolute -top-3.5 left-0 w-full text-center">
+                         <span class="bg-blue-600 text-white text-[10px] font-bold px-3 py-0.5 rounded shadow-lg tracking-widest uppercase">Recomendado</span>
+                    </div>
+                    <div>
+                        <div class="mb-4 mt-1">
+                            <h3 class="text-xl font-bold mb-1 metallic-blue-text">Profesional</h3>
+                            <p class="text-xs text-gray-400 font-medium">Potencia en Gas Residencial/Comercial</p>
+                            <div class="mt-3 flex items-baseline">
+                                <span class="text-3xl font-bold text-white">$77.500</span>
+                                <span class="ml-1 text-gray-500 text-xs">/mes</span>
+                            </div>
+                        </div>
+                        <ul class="space-y-3 mb-6 border-t border-gray-600 pt-4 text-xs">
+                            <li class="flex items-start text-white font-medium">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Sistemas de Combustión/Gas Res/Com
+                            </li>
+                            <li class="flex items-start text-white font-medium">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Perfil Investigador Reconocido
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Modelador de Flujo Mueller
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Cuenta Pioneer's & Google Workspace
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Módulos Pedagógicos / Competencias
+                            </li>
+                        </ul>
+                    </div>
+                    <button class="w-full py-3 metallic-btn rounded text-white font-bold uppercase tracking-wide text-xs shadow-[0_0_15px_rgba(37,99,235,0.3)]">
+                        Seleccionar Profesional
+                    </button>
+                </div>
+            </div>
+
+            <div class="carousel-item">
+                <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between h-full w-full">
+                    <div>
+                        <div class="mb-4">
+                            <h3 class="text-xl font-bold mb-1 text-gray-200">Empresarial</h3>
+                            <p class="text-xs text-gray-400 font-medium">Automatización y Flujos Web</p>
+                            <div class="mt-3 flex items-baseline">
+                                <span class="text-3xl font-bold">$248.000</span>
+                                <span class="ml-1 text-gray-500 text-xs">/mes</span>
+                            </div>
+                        </div>
+                        <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Sistemas de Combustión Industrial
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Extensiones y Apps Móviles
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Conexiones Sistemas Físicos y Control
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Creación de Flujos de Trabajo Web
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Acceso a ERP y CRM de Negocios
+                            </li>
+                        </ul>
+                    </div>
+                    <button class="w-full py-2.5 border border-gray-600 rounded text-gray-200 hover:bg-gray-800 font-semibold transition-colors uppercase tracking-wide text-xs">
+                        Seleccionar Empresa
+                    </button>
+                </div>
+            </div>
+
+            <div class="carousel-item">
+                <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between h-full w-full">
+                    <div>
+                        <div class="mb-4">
+                            <h3 class="text-xl font-bold mb-1 text-blue-400">Interventoría / OEC</h3>
+                            <p class="text-xs text-gray-400 font-medium">Acceso Total & Simulación Avanzada</p>
+                            <div class="mt-3 flex items-baseline">
+                                <span class="text-3xl font-bold">$310.000</span>
+                                <span class="ml-1 text-gray-500 text-xs">/mes</span>
+                            </div>
+                        </div>
+                        <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Todo lo Comercial, Res. e Industrial
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Acceso Simulador Vaporización Gas LP
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Modelador de Flujo Mueller Completo
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Suite Google Workspace & Pioneer's
+                            </li>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Auditoría, Módulos ERP, CRM y API
+                            </li>
+                        </ul>
+                    </div>
+                    <button class="w-full py-2.5 border border-blue-600 rounded text-blue-400 hover:bg-blue-600 hover:text-white font-bold transition-all uppercase tracking-wide text-xs">
+                        Contactar Ventas
+                    </button>
+                </div>
+            </div>
+
         </div>
 
-        <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between">
-            <div>
-                <div class="mb-4">
-                    <h3 class="text-xl font-bold mb-1">Técnico</h3>
-                    <p class="text-xs text-gray-400 font-medium">Asistencia y bases operativas</p>
-                    <div class="mt-3 flex items-baseline">
-                        <span class="text-3xl font-bold">$15.500</span>
-                        <span class="ml-1 text-gray-500 text-xs">/mes</span>
-                    </div>
-                </div>
-                <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Portal Acceso I.A. (App)
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Gmail Chat & Comunidad Hub
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Calculadora de Ventilación
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Asistencia Técnica y Asesoría
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Generador de Cuentas de Cobro
-                    </li>
-                    <li class="flex items-start text-gray-600 line-through">
-                        <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Investigaciones Especializadas
-                    </li>
-                </ul>
-            </div>
-            <button class="w-full py-2.5 metallic-btn rounded text-white font-bold uppercase tracking-wide text-xs">
-                Seleccionar Técnico
+        <div class="flex gap-4 mt-6 z-40">
+            <button id="prevBtn" class="nav-btn w-10 h-10 rounded-full flex items-center justify-center text-gray-400 font-bold">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button id="nextBtn" class="nav-btn w-10 h-10 rounded-full flex items-center justify-center text-gray-400 font-bold">
+                <i class="fa-solid fa-chevron-right"></i>
             </button>
         </div>
-
-        <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between border-t-4 border-blue-500 bg-[#1e1e1e] sm:transform lg:-translate-y-2">
-            <div class="absolute -top-3.5 left-0 w-full text-center">
-                 <span class="bg-blue-600 text-white text-[10px] font-bold px-3 py-0.5 rounded shadow-lg tracking-widest uppercase">Recomendado</span>
-            </div>
-            <div>
-                <div class="mb-4 mt-1">
-                    <h3 class="text-xl font-bold mb-1 metallic-blue-text">Profesional</h3>
-                    <p class="text-xs text-gray-400 font-medium">Potencia en Gas Residencial/Comercial</p>
-                    <div class="mt-3 flex items-baseline">
-                        <span class="text-3xl font-bold text-white">$77.500</span>
-                        <span class="ml-1 text-gray-500 text-xs">/mes</span>
-                    </div>
-                </div>
-                <ul class="space-y-3 mb-6 border-t border-gray-600 pt-4 text-xs">
-                    <li class="flex items-start text-white font-medium">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Sistemas de Combustión/Gas Res/Com
-                    </li>
-                    <li class="flex items-start text-white font-medium">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Perfil Investigador Reconocido
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Modelador de Flujo Mueller
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Cuenta Pioneer's & Google Workspace
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Módulos Pedagógicos / Competencias
-                    </li>
-                </ul>
-            </div>
-            <button class="w-full py-3 metallic-btn rounded text-white font-bold uppercase tracking-wide text-xs shadow-[0_0_15px_rgba(37,99,235,0.3)]">
-                Seleccionar Profesional
-            </button>
-        </div>
-
-        <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between">
-            <div>
-                <div class="mb-4">
-                    <h3 class="text-xl font-bold mb-1 text-gray-200">Empresarial</h3>
-                    <p class="text-xs text-gray-400 font-medium">Automatización y Flujos Web</p>
-                    <div class="mt-3 flex items-baseline">
-                        <span class="text-3xl font-bold">$248.000</span>
-                        <span class="ml-1 text-gray-500 text-xs">/mes</span>
-                    </div>
-                </div>
-                <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Sistemas de Combustión Industrial
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Extensiones y Apps Móviles
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Conexiones Sistemas Físicos y Control
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Creación de Flujos de Trabajo Web
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Acceso a ERP y CRM de Negocios
-                    </li>
-                </ul>
-            </div>
-            <button class="w-full py-2.5 border border-gray-600 rounded text-gray-200 hover:bg-gray-800 font-semibold transition-colors uppercase tracking-wide text-xs">
-                Seleccionar Empresa
-            </button>
-        </div>
-
-        <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between">
-            <div>
-                <div class="mb-4">
-                    <h3 class="text-xl font-bold mb-1 text-blue-400">Interventoría / OEC</h3>
-                    <p class="text-xs text-gray-400 font-medium">Acceso Total & Simulación Avanzada</p>
-                    <div class="mt-3 flex items-baseline">
-                        <span class="text-3xl font-bold">$310.000</span>
-                        <span class="ml-1 text-gray-500 text-xs">/mes</span>
-                    </div>
-                </div>
-                <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Todo lo Comercial, Res. e Industrial
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Acceso Simulador Vaporización Gas LP
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Modelador de Flujo Mueller Completo
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Suite Google Workspace & Pioneer's
-                    </li>
-                    <li class="flex items-start text-gray-300">
-                        <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Auditoría, Módulos ERP, CRM y API
-                    </li>
-                </ul>
-            </div>
-            <button class="w-full py-2.5 border border-blue-600 rounded text-blue-400 hover:bg-blue-600 hover:text-white font-bold transition-all uppercase tracking-wide text-xs">
-                Contactar Ventas
-            </button>
-        </div>
-
     </div>
     
-    <footer class="text-gray-500 text-xs mt-8 pb-8 text-center">
+    <footer class="text-gray-500 text-xs mt-4 pb-8 text-center">
         <p>Precios expresados en moneda local de acuerdo a los beneficios estipulados. Aplican Términos, Regulaciones y Condiciones del Hub de Ingeniería.</p>
     </footer>
 
+    <script>
+        const carousel = document.getElementById('carousel');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        
+        let currentRotation = 0;
+        let isDragging = false;
+        let startX = 0;
+        let initialRotation = 0;
+
+        // Función para actualizar la rotación del contenedor central en el eje Y
+        function updateCarousel() {
+            carousel.style.transform = `rotateY(${currentRotation}deg)`;
+        }
+
+        // --- Eventos para Escritorio (Mouse) ---
+        carousel.addEventListener('mousedown', (e) => {
+            // Evitar gatillar arrastre si se hace clic directamente en botones de los planes
+            if (e.target.closest('button')) return;
+            isDragging = true;
+            startX = e.clientX;
+            initialRotation = currentRotation;
+            carousel.style.transition = 'none'; // Elimina transición para respuesta instantánea al dedo/mouse
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - startX;
+            // Sensibilidad de rotación (0.5 grados por píxel movido)
+            currentRotation = initialRotation + (deltaX * 0.5);
+            updateCarousel();
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            carousel.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+            // Ajustar al plan más cercano automáticamente al soltar
+            currentRotation = Math.round(currentRotation / 72) * 72;
+            updateCarousel();
+        });
+
+        // --- Eventos para Dispositivos Móviles (Touch) ---
+        carousel.addEventListener('touchstart', (e) => {
+            if (e.target.closest('button')) return;
+            isDragging = true;
+            startX = e.touches[0].clientX;
+            initialRotation = currentRotation;
+            carousel.style.transition = 'none';
+        });
+
+        carousel.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.touches[0].clientX - startX;
+            currentRotation = initialRotation + (deltaX * 0.6);
+            updateCarousel();
+        });
+
+        carousel.addEventListener('touchend', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            carousel.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+            currentRotation = Math.round(currentRotation / 72) * 72;
+            updateCarousel();
+        });
+
+        // --- Eventos de los Botones de Navegación Alternativa ---
+        prevBtn.addEventListener('click', () => {
+            carousel.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+            currentRotation += 72; // Rota un segmento exacto a la izquierda
+            updateCarousel();
+        });
+
+        nextBtn.addEventListener('click', () => {
+            carousel.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+            currentRotation -= 72; // Rota un segmento exacto a la derecha
+            updateCarousel();
+        });
+    </script>
 </body>
 </html>
