@@ -1,1029 +1,583 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Entalpia | Hub de Ingeniería</title>
-    
-    <!-- MANEJO DE ERRORES ROBUSTO -->
-    <script>
-        // Función para silenciar errores de scripts externos (Cross-Origin)
-        window.onerror = function(message, source, lineno, colno, error) {
-            // Si el mensaje es "Script error." o similar, lo ignoramos (return true)
-            if (message === 'Script error.' || message === 'Script error') {
-                return true; 
-            }
-            return false; // Dejar pasar otros errores
-        };
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Entalpia | Hub de Ingeniería</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#0071eb;--blue-d:#005bb5;--bg:#141414;--text:#fff;--gray:#b3b3b3;--green:#46d369;--gold:#ffd700;--ease:cubic-bezier(.2,.8,.2,1)}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Roboto','Helvetica Neue',Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);overflow-x:hidden;display:flex;flex-direction:column;min-height:100vh}
+body::before{content:"";position:fixed;inset:0;background:url('logo_entalpia.png') center/80% no-repeat;opacity:.05;z-index:-1;pointer-events:none}
+.hidden{display:none!important}
+a{text-decoration:none;color:inherit;cursor:pointer}
+button{font:inherit}
+:focus-visible{outline:2px solid #6db3ff;outline-offset:2px}
+.btn{cursor:pointer;border:none;font-weight:500;border-radius:6px;transition:transform .2s,filter .2s}
+.btn:hover{transform:scale(1.02);filter:brightness(1.1)}
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    
-    <style>
-        /* --- ESTILOS GENERALES --- */
-        :root {
-            --primary-blue: #0071eb; 
-            --bg-black: #141414; 
-            --card-bg: #2f2f2f;
-            --text-white: #ffffff;
-            --text-gray: #b3b3b3;
-            --secondary-green: #46d369;
-            --corp-blue: #3b82f6; 
-            --edu-yellow: #f59e0b; 
-            --star-gold: #ffd700;
-        }
+/* NAVBAR */
+.navbar{position:fixed;top:0;width:100%;padding:15px 4%;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(to bottom,rgba(0,0,0,.9),transparent);z-index:1000;transition:background-color .3s,backdrop-filter .3s}
+.navbar.scrolled{background:rgba(20,20,20,.88);backdrop-filter:blur(12px);box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.nav-logo{color:var(--blue);font-size:1.8rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;cursor:pointer;text-shadow:0 0 12px rgba(0,113,235,.45)}
+.nav-links{display:flex;gap:25px;font-size:.95rem;font-weight:500;color:var(--gray);align-items:center}
+.nav-item{cursor:pointer;transition:color .3s;background:none;border:0;color:inherit;font-size:inherit}
+.nav-item:hover,.nav-item.active{color:#fff}
+.nav-item.active{font-weight:700}
+.nav-item i{display:none}
+.nav-btn-planes{background:var(--blue);color:#fff!important;padding:5px 15px;border-radius:6px;font-weight:600;transition:.3s}
+.nav-btn-planes:hover{background:var(--blue-d);box-shadow:0 0 14px rgba(0,113,235,.6);transform:scale(1.05)}
+.user-menu{display:flex;align-items:center;gap:20px;font-size:1.1rem}
+.icon-btn{background:none;border:0;color:#ccc;font-size:1.1rem;cursor:pointer;transition:color .2s}
+.icon-btn:hover{color:#fff}
+.profile-badge{border:1px solid rgba(255,255,255,.3);padding:4px 10px;border-radius:4px;font-size:.7rem;font-weight:700;letter-spacing:1px}
+.search-box{display:flex;align-items:center;border:1px solid transparent;padding:5px;transition:all .3s var(--ease);overflow:hidden;width:32px;border-radius:6px}
+.search-box.active{background:rgba(20,20,20,.92);border-color:var(--blue);width:280px;box-shadow:0 0 12px rgba(0,113,235,.25)}
+.search-input{background:transparent;border:0;color:#fff;outline:none;width:0;opacity:0;padding-left:10px;font-size:.9rem;transition:width .3s}
+.search-box.active .search-input{width:100%;opacity:1}
+.nav-avatar{width:35px;height:35px;border-radius:6px;background:linear-gradient(135deg,#1f1f1f,#333);display:flex;justify-content:center;align-items:center}
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+/* HERO */
+.hero{height:80vh;min-height:460px;width:100%;position:relative;background:#0d0d0d center top/cover;display:flex;align-items:center;padding-left:4%;transition:background-image .8s;z-index:10}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(to right,#141414 10%,rgba(20,20,20,.4) 60%,transparent);z-index:1}
+.hero-overlay-btm{position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(to top,#141414,transparent);z-index:1}
+.hero-content{position:relative;z-index:10;max-width:650px;padding-top:60px;transition:opacity .5s,transform .5s}
+.hero-content.fade-out{opacity:0;transform:translateY(8px)}
+.hero-meta{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);padding:3px 10px;border-radius:999px;font-size:.78rem;font-weight:500;backdrop-filter:blur(4px)}
+.chip.stars{color:var(--gold);border-color:rgba(255,215,0,.3)}
+.hero-title{font-size:clamp(2.2rem,5vw,4rem);font-weight:900;margin-bottom:1rem;text-transform:uppercase;line-height:1.1;text-shadow:0 4px 8px rgba(0,0,0,.6)}
+.hero-desc{font-size:1.2rem;margin-bottom:2rem;color:#e5e5e5;text-shadow:0 2px 4px rgba(0,0,0,.8);max-width:550px;line-height:1.5;font-weight:300;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.hero-buttons{display:flex;gap:1rem}
+.btn-play{background:#fff;color:#000;padding:.9rem 2.2rem;font-size:1.15rem;display:flex;align-items:center;gap:12px}
+.btn-info{background:rgba(109,109,110,.7);color:#fff;padding:.9rem 2.2rem;font-size:1.15rem;display:flex;align-items:center;gap:12px;backdrop-filter:blur(5px)}
+.hero-dots{position:absolute;bottom:110px;left:4%;display:flex;gap:8px;z-index:10}
+.hero-dot{width:28px;height:4px;border:0;border-radius:2px;background:rgba(255,255,255,.3);cursor:pointer;overflow:hidden;position:relative;padding:0}
+.hero-dot.active::after{content:"";position:absolute;inset:0;background:var(--blue);transform-origin:left;animation:prog 8s linear forwards}
+@keyframes prog{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 
-        body {
-            background-color: var(--bg-black);
-            color: var(--text-white);
-            overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            position: relative;
-        }
+/* FILAS */
+.content-container{position:relative;z-index:20;margin-top:-100px;padding-bottom:50px;min-height:400px}
+.row{margin-bottom:3rem}
+.row-title{font-size:1.5rem;font-weight:700;color:#e5e5e5;margin-bottom:.5rem;padding-left:4%}
+.row-scroller{display:flex;gap:14px;overflow-x:auto;padding:20px 4%;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+.row-scroller::-webkit-scrollbar{height:8px}
+.row-scroller::-webkit-scrollbar-track{background:rgba(255,255,255,.05);border-radius:4px;margin:0 4%}
+.row-scroller::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:4px}
+.search-results-grid{display:flex;flex-wrap:wrap;gap:20px;padding:0 4%}
+.tool-card{min-width:280px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.tile{width:100%;height:160px;border-radius:8px;position:relative;overflow:hidden;cursor:pointer;background:linear-gradient(110deg,#222 30%,#2c2c2c 50%,#222 70%) 0 0/200% 100%;animation:shimmer 1.4s infinite linear;transition:transform .3s var(--ease),box-shadow .3s}
+@keyframes shimmer{to{background-position:-200% 0}}
+.tile.loaded{animation:none;background:#252525}
+.tile:hover,.tile:focus-visible{transform:scale(1.05);z-index:100;box-shadow:0 10px 30px rgba(0,0,0,.8),0 0 0 1px rgba(0,113,235,.6),0 0 22px rgba(0,113,235,.25)}
+.tile-img{width:100%;height:100%;object-fit:cover;opacity:.92;transition:opacity .3s;position:relative;z-index:1}
+.tile:hover .tile-img{opacity:.45}
+.tile-content{position:absolute;inset:0;opacity:0;background:linear-gradient(to top,#141414 10%,rgba(20,20,20,.4));display:flex;justify-content:center;align-items:center;transition:opacity .3s;z-index:2}
+.tile:hover .tile-content,.tile:focus-within .tile-content{opacity:1}
+.tile-actions{display:flex;gap:15px}
+.tile-icon{width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;background:rgba(30,30,30,.6);color:#fff;cursor:pointer;transition:.2s}
+.tile-icon:hover{background:#fff;color:#000;border-color:#fff;transform:scale(1.1)}
+.tile-icon.play{background:#fff;color:#000;border-color:#fff}
+.valia-badge{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.7);padding:4px 8px;border-radius:12px;font-size:.72rem;color:var(--gold);display:flex;gap:2px;z-index:5;backdrop-filter:blur(4px);border:1px solid rgba(255,215,0,.2)}
+.sub-chip{position:absolute;left:10px;bottom:10px;z-index:5;background:rgba(0,113,235,.85);font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:4px}
+.tool-name-external{font-size:.95rem;font-weight:500;color:#d1d1d1;line-height:1.2;padding:0 2px}
+.tool-card:hover .tool-name-external{color:#fff}
 
-        /* --- FONDO MARCA DE AGUA (GIGANTE Y CENTRADA - ADHERIDA) --- */
-        body::before {
-            content: "";
-            position: absolute;
-            inset: 0; 
-            background-image: url('logo_entalpia.png');
-            background-repeat: no-repeat;
-            background-position: center center;
-            background-size: 80%;
-            opacity: 0.05;
-            z-index: -1;
-            pointer-events: none;
-        }
+/* CHATBOT */
+.chatbot-fab{position:fixed;bottom:30px;right:30px;width:70px;height:70px;border-radius:50%;cursor:pointer;z-index:900;box-shadow:0 4px 15px rgba(0,0,0,.7);transition:transform .3s;padding:0;overflow:hidden;border:2px solid var(--blue);background:#000}
+.chatbot-fab:hover{transform:scale(1.1)}
+.chatbot-fab video{width:100%;height:100%;max-width:none;border-radius:0;box-shadow:none;object-fit:cover}
 
-        .hidden { display: none !important; }
-        .btn { cursor: pointer; border: none; outline: none; font-weight: 500; border-radius: 4px; transition: all 0.2s ease; font-family: 'Roboto', sans-serif; }
-        .btn:hover { transform: scale(1.02); filter: brightness(1.1); }
-        a { text-decoration: none; color: inherit; cursor: pointer; } 
+/* MODALES */
+.modal-base{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);backdrop-filter:blur(8px);z-index:6000;justify-content:center;align-items:center;animation:fadeIn .3s;overflow-y:auto;padding:20px}
+@keyframes fadeIn{from{opacity:0;transform:scale(1.02)}to{opacity:1;transform:scale(1)}}
+.all-tools-box{background:#0b0b0b;width:95%;max-width:1200px;height:90vh;border-radius:12px;position:relative;display:flex;flex-direction:column;box-shadow:0 0 60px rgba(0,113,235,.15);border:1px solid #333;overflow:hidden}
+.all-tools-box::before{content:"";position:absolute;inset:0;background:url('logo_entalpia.png') center/60% no-repeat;opacity:.15;pointer-events:none}
+.all-tools-header-area{padding:25px 40px;background:linear-gradient(#111,rgba(17,17,17,.8));display:flex;justify-content:space-between;align-items:center;z-index:2;border-bottom:1px solid rgba(255,255,255,.08)}
+.all-tools-search-container{flex:1;max-width:600px;margin:0 30px;position:relative}
+.all-tools-search{width:100%;padding:14px 20px 14px 50px;background:rgba(255,255,255,.07);border:1px solid transparent;border-radius:6px;color:#fff;font-size:1.05rem;transition:.3s}
+.all-tools-search:focus{border-color:var(--blue);background:#000;box-shadow:0 0 20px rgba(0,113,235,.4);outline:none}
+.search-icon-modal{position:absolute;left:20px;top:50%;transform:translateY(-50%);color:#888}
+.all-tools-scroll-area{overflow-y:auto;flex:1;padding:30px 40px;z-index:1}
+.all-tools-scroll-area::-webkit-scrollbar{width:8px}
+.all-tools-scroll-area::-webkit-scrollbar-thumb{background:#444;border-radius:4px}
+.all-tools-category-header{color:var(--blue);font-size:1.4rem;font-weight:800;margin:35px 0 15px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid rgba(0,113,235,.3);padding-bottom:10px}
+.all-tools-category-header:first-child{margin-top:0}
+.tool-list-item{display:flex;align-items:center;background:rgba(30,30,30,.7);margin-bottom:12px;padding:15px;border-radius:8px;transition:all .3s var(--ease);cursor:pointer;border:1px solid transparent;backdrop-filter:blur(5px)}
+.tool-list-item:hover,.tool-list-item:focus-visible{background:rgba(50,50,50,.9);border-color:var(--blue);transform:translateX(5px);box-shadow:0 5px 20px rgba(0,0,0,.5)}
+.tool-list-thumb{width:80px;height:60px;border-radius:6px;object-fit:cover;margin-right:20px;background:#111;border:1px solid #444;flex-shrink:0}
+.tool-list-details{flex:1;min-width:0}
+.tool-list-name{font-weight:700;font-size:1.1rem;display:flex;align-items:center;gap:12px;margin-bottom:5px;flex-wrap:wrap}
+.tool-list-sub{font-size:.9rem;color:#bbb}
+.tool-list-valia{font-size:.8rem;color:var(--gold);display:inline-flex;gap:2px}
+.close-modal-btn{background:none;border:0;color:#888;font-size:2.5rem;cursor:pointer;line-height:1;transition:color .2s}
+.close-modal-btn:hover{color:#fff}
+#video-modal{background:#000;z-index:5000;flex-direction:column}
+#details-modal{background:rgba(0,0,0,.8);z-index:4200}
+#viewer{background:#000;z-index:5500;flex-direction:column;padding:0;overflow:hidden}
+#app-frame{width:100%;height:100%;border:0;background:#fff}
+video{width:90%;max-width:1000px;outline:none;border-radius:8px;box-shadow:0 0 50px rgba(0,0,0,.8)}
+.details-box{background:#181818;width:100%;max-width:850px;border-radius:12px;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.8)}
+#modal-banner{height:250px;background:#202020 center/cover;position:relative}
+.viewer-bar{width:100%;padding:10px 15px;background:#141414;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #333;height:50px}
 
-        /* --- NAVBAR --- */
-        .navbar {
-            position: fixed; top: 0; width: 100%; padding: 15px 4%;
-            display: flex; justify-content: space-between; align-items: center;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
-            z-index: 1000; transition: background-color 0.3s;
-        }
-        .navbar.scrolled { background-color: var(--bg-black); box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-        
-        .nav-logo { color: var(--primary-blue); font-size: 1.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; text-shadow: 0 0 10px rgba(0, 113, 235, 0.4); }
-        
-        .nav-links { display: flex; gap: 25px; font-size: 0.95rem; font-weight: 500; color: var(--text-gray); align-items: center; }
-        .nav-item { cursor: pointer; transition: color 0.3s; } 
-        .nav-item:hover, .nav-item.active { color: white; font-weight: 700; }
-        
-        .nav-btn-planes {
-            background-color: var(--primary-blue);
-            color: white !important;
-            padding: 5px 15px;
-            border-radius: 4px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        .nav-btn-planes:hover {
-            background-color: #005bb5;
-            box-shadow: 0 0 12px rgba(0, 113, 235, 0.6);
-            transform: scale(1.05);
-        }
+/* INSTALAR */
+#install-modal{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);width:90%;max-width:400px;background:#252525;z-index:7000;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.8);border:1px solid #444;overflow:hidden;animation:slideUp .5s ease;flex-direction:column}
+.install-header{background:linear-gradient(90deg,var(--blue),var(--blue-d));padding:15px;display:flex;align-items:center;gap:15px}
+.install-body{padding:20px;color:#ddd;font-size:.95rem;line-height:1.5;text-align:center}
+.install-footer{padding:0 20px 20px;display:flex;gap:10px}
+.btn-install{flex:1;padding:12px;font-weight:700;background:#fff;color:var(--blue)}
+.btn-cancel{flex:1;padding:12px;font-weight:700;background:transparent;border:1px solid #555;color:#aaa}
+@keyframes slideUp{from{transform:translate(-50%,100%);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+footer{margin-top:80px;padding:40px;text-align:center;color:#666;font-size:.9rem;border-top:1px solid #222}
 
-        .user-menu { display: flex; align-items: center; gap: 20px; font-size: 1.1rem; }
-        .profile-badge { border: 1px solid rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; transition: all 0.3s; letter-spacing: 1px; }
-        
-        .search-box { display: flex; align-items: center; background: transparent; border: 1px solid transparent; padding: 5px; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); overflow: hidden; width: 30px; border-radius: 4px; }
-        .search-box.active { background: rgba(20, 20, 20, 0.9); border: 1px solid var(--primary-blue); width: 280px; box-shadow: 0 0 10px rgba(0, 113, 235, 0.2); }
-        .search-input { background: transparent; border: none; color: white; outline: none; width: 0; transition: width 0.3s; padding-left: 10px; opacity: 0; font-size: 0.9rem; }
-        .search-box.active .search-input { width: 100%; opacity: 1; }
-
-        .nav-avatar { width: 35px; height: 35px; border-radius: 6px; background-color: #333; display: flex; justify-content: center; align-items: center; font-size: 1.1rem; overflow: hidden; background-size: cover; background-position: center; border: 2px solid transparent; transition: border-color 0.2s; }
-        .av-gen { background: linear-gradient(135deg, #1f1f1f, #333); }
-
-        /* --- HERO --- */
-        .hero {
-            height: 80vh; width: 100%; position: relative;
-            background-color: #0d0d0d;
-            background-position: center top; background-size: cover;
-            display: flex; align-items: center; padding-left: 4%;
-            transition: background-image 0.8s ease-in-out;
-            z-index: 10;
-        }
-        .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to right, #141414 10%, rgba(20,20,20,0.4) 60%, transparent 100%); z-index: 1; }
-        .hero-overlay-btm { position: absolute; bottom: 0; left: 0; right: 0; height: 200px; background: linear-gradient(to top, #141414, transparent); z-index: 1; }
-        .hero-content { position: relative; z-index: 10; max-width: 650px; padding-top: 60px; transition: opacity 0.5s; }
-        .hero-content.fade-out { opacity: 0; }
-        .hero-title { font-size: 4rem; font-weight: 900; margin-bottom: 1rem; text-transform: uppercase; line-height: 1.1; text-shadow: 0 4px 8px rgba(0,0,0,0.6); }
-        .hero-desc { font-size: 1.3rem; margin-bottom: 2.5rem; color: #e5e5e5; text-shadow: 0 2px 4px rgba(0,0,0,0.8); max-width: 550px; line-height: 1.5; font-weight: 300; }
-        .hero-buttons { display: flex; gap: 1rem; }
-        .btn-play { background-color: white; color: black; padding: 0.9rem 2.2rem; font-size: 1.2rem; display: flex; align-items: center; gap: 12px; border-radius: 6px; }
-        .btn-info { background-color: rgba(109, 109, 110, 0.7); color: white; padding: 0.9rem 2.2rem; font-size: 1.2rem; display: flex; align-items: center; gap: 12px; border-radius: 6px; backdrop-filter: blur(5px); }
-
-        /* --- CONTENIDO --- */
-        .content-container { position: relative; z-index: 20; margin-top: -100px; padding-bottom: 50px; min-height: 400px; }
-        .row { margin-bottom: 3.5rem; }
-        .row-title { font-size: 1.5rem; font-weight: 700; color: #e5e5e5; margin-bottom: 1rem; padding-left: 4%; }
-        
-        .row-scroller { 
-            display: flex; gap: 12px; overflow-x: auto; padding: 20px 4%; flex-wrap: nowrap; scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
-        }
-        .row-scroller::-webkit-scrollbar { height: 8px; }
-        .row-scroller::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 4px; margin: 0 4%; }
-        .row-scroller::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 4px; }
-        
-        .search-results-grid { display: flex; flex-wrap: wrap; gap: 20px; padding-left: 4%; padding-right: 4%; }
-        
-        /* Contenedor Wrapper para Tarjeta + Nombre externo */
-        .tool-card {
-            min-width: 280px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            flex-shrink: 0;
-            margin-bottom: 10px;
-        }
-        
-        .tile {
-            width: 100%; 
-            height: 160px;
-            background-color: #252525; 
-            border-radius: 6px;
-            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s;
-            cursor: pointer; 
-            position: relative; 
-            overflow: hidden;
-        }
-        
-        .tile:hover { transform: scale(1.05); z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); }
-        
-        /* Mensaje de Carga en la tarjeta */
-        .tile-loading-msg {
-            position: absolute;
-            inset: 0; 
-            display: flex; justify-content: center; align-items: center;
-            font-size: 0.8rem; color: #666; z-index: 0; font-style: italic; text-align: center; padding: 10px;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-
-        .tile-img { 
-            width: 100%; height: 100%; object-fit: cover; opacity: 0.9; background: transparent; 
-            transition: opacity 0.3s; position: relative; z-index: 1; 
-        }
-        .tile:hover .tile-img { opacity: 0.5; }
-        
-        .tile-content { position: absolute; inset: 0; opacity: 0; background: linear-gradient(to top, #141414 10%, rgba(20,20,20,0.4)); display: flex; justify-content: center; align-items: center; transition: opacity 0.3s; z-index: 2; }
-        .tile:hover .tile-content { opacity: 1; }
-        
-        .tile-actions { display: flex; gap: 15px; }
-        .tile-icon { width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.5); display: flex; align-items: center; justify-content: center; font-size: 1rem; background: rgba(30,30,30,0.6); color: white; transition: 0.2s; }
-        .tile-icon:hover { background: white; color: black; border-color: white; transform: scale(1.1); }
-        .icon-play { background: white; color: black; border-color: white; }
-
-        .tool-name-external {
-            font-size: 0.95rem; font-weight: 500; color: #d1d1d1;
-            white-space: normal; line-height: 1.2; padding: 0 2px; text-shadow: 0 1px 2px black;
-        }
-        .tool-card:hover .tool-name-external { color: white; }
-
-        .valia-badge {
-            position: absolute; top: 10px; right: 10px;
-            background: rgba(0, 0, 0, 0.7); padding: 4px 8px; border-radius: 12px;
-            font-size: 0.75rem; color: var(--star-gold);
-            display: flex; gap: 2px; z-index: 5;
-            backdrop-filter: blur(4px);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255, 215, 0, 0.2);
-        }
-
-        /* --- BOTÓN FLOTANTE CHATBOT --- */
-        .chatbot-fab {
-            position: fixed; bottom: 30px; right: 30px; width: 70px; height: 70px;
-            border-radius: 50%; background: transparent; cursor: pointer; z-index: 9000;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.7); transition: transform 0.3s; border: none; padding: 0;
-            overflow: hidden; /* Importante para el recorte circular del video */
-            border: 2px solid var(--primary-blue);
-        }
-        .chatbot-fab:hover { transform: scale(1.1); }
-        .chatbot-fab video { width: 100%; height: 100%; object-fit: cover; }
-
-        /* --- MODALES --- */
-        .modal-base { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); z-index: 6000; justify-content: center; align-items: center; animation: fadeIn 0.3s; overflow-y: auto; padding: 20px; }
-        
-        /* ESTILOS DEL CATÁLOGO "NETFLIX BLUE LIST" */
-        .all-tools-box {
-            background: #0b0b0b; /* Fondo muy oscuro */
-            width: 95%; max-width: 1200px; height: 90vh;
-            border-radius: 12px; padding: 0;
-            position: relative; display: flex; flex-direction: column;
-            box-shadow: 0 0 60px rgba(0, 113, 235, 0.15); /* Resplandor azul */
-            border: 1px solid #333;
-            overflow: hidden;
-        }
-        
-        /* Marca de agua interna del catálogo (Más resaltada) */
-        .all-tools-box::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background-image: url('logo_entalpia.png');
-            background-repeat: no-repeat;
-            background-position: center;
-            background-size: 60%;
-            opacity: 0.15; /* Aumentado para resaltar más */
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .all-tools-header-area {
-            padding: 25px 40px;
-            background: linear-gradient(to bottom, #111 0%, rgba(17,17,17,0.8) 100%);
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 2;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-
-        .all-tools-search-container {
-            flex: 1; max-width: 600px; margin: 0 30px;
-            position: relative;
-        }
-        .all-tools-search {
-            width: 100%; padding: 14px 20px 14px 50px;
-            background: rgba(255,255,255,0.07);
-            border: 1px solid transparent;
-            border-radius: 4px; color: white; font-size: 1.1rem;
-            transition: all 0.3s;
-        }
-        .all-tools-search:focus {
-            border-color: var(--primary-blue);
-            background: black;
-            box-shadow: 0 0 20px rgba(0, 113, 235, 0.4);
-            outline: none;
-        }
-        .search-icon-modal {
-            position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #888; font-size: 1.2rem;
-        }
-
-        .all-tools-scroll-area { 
-            overflow-y: auto; flex: 1; padding: 30px 40px; z-index: 1; 
-        }
-        .all-tools-scroll-area::-webkit-scrollbar { width: 8px; }
-        .all-tools-scroll-area::-webkit-scrollbar-track { background: #0b0b0b; }
-        .all-tools-scroll-area::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-        
-        /* Títulos de Categoría en Azul Primario */
-        .all-tools-category-header {
-            color: var(--primary-blue); /* Color Azul */
-            font-size: 1.5rem; font-weight: 800;
-            margin: 35px 0 15px 0;
-            text-transform: uppercase; letter-spacing: 1px;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
-            display: flex; align-items: center; gap: 15px; border-bottom: 2px solid rgba(0, 113, 235, 0.3);
-            padding-bottom: 10px;
-        }
-        .all-tools-category-header:first-child { margin-top: 0; }
-
-        /* Lista de herramientas estilo "Fila" */
-        .tool-list-item {
-            display: flex; align-items: center; background: rgba(30, 30, 30, 0.7);
-            margin-bottom: 12px; padding: 15px; border-radius: 8px;
-            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); cursor: pointer; border: 1px solid transparent;
-            backdrop-filter: blur(5px);
-        }
-        .tool-list-item:hover { 
-            background: rgba(50, 50, 50, 0.9); 
-            border-color: var(--primary-blue); 
-            transform: scale(1.01) translateX(5px);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-        }
-        
-        .tool-list-thumb { 
-            width: 80px; height: 60px; border-radius: 6px; object-fit: cover; margin-right: 20px; 
-            background: #111; border: 1px solid #444; 
-        }
-        .tool-list-details { flex: 1; }
-        .tool-list-name { 
-            font-weight: 700; color: white; font-size: 1.1rem; 
-            display: flex; align-items: center; gap: 15px; margin-bottom: 5px; 
-        }
-        .tool-list-sub { font-size: 0.9rem; color: #bbb; max-width: 80%; }
-        .tool-list-valia { font-size: 0.8rem; color: var(--star-gold); display: inline-flex; gap: 2px; }
-        
-        .close-modal-btn {
-            background: none; border: none; color: #888;
-            font-size: 2.5rem; cursor: pointer; transition: color 0.2s;
-            line-height: 1;
-        }
-        .close-modal-btn:hover { color: white; text-shadow: 0 0 10px white; }
-
-        #video-modal { display: none; position: fixed; inset: 0; background: black; z-index: 5000; justify-content: center; align-items: center; flex-direction: column; }
-        #viewer { display: none; position: fixed; inset: 0; background: black; z-index: 5500; flex-direction: column; }
-        #details-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 4200; justify-content: center; align-items: center; padding: 20px; }
-
-        /* --- MODAL INSTALACIÓN APP --- */
-        #install-modal { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: #252525; z-index: 7000; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); border: 1px solid #444; overflow: hidden; animation: slideUp 0.5s ease; flex-direction: column; }
-        .install-header { background: linear-gradient(90deg, var(--primary-blue), #005bb5); padding: 15px; display: flex; align-items: center; gap: 15px; }
-        .install-icon { font-size: 2rem; color: white; }
-        .install-body { padding: 20px; color: #ddd; font-size: 0.95rem; line-height: 1.5; text-align: center; }
-        .install-footer { padding: 0 20px 20px 20px; display: flex; gap: 10px; }
-        .btn-install { flex: 1; padding: 12px; border-radius: 6px; font-weight: bold; background: white; color: var(--primary-blue); }
-        .btn-cancel { flex: 1; padding: 12px; border-radius: 6px; font-weight: bold; background: transparent; border: 1px solid #555; color: #aaa; }
-        
-        @keyframes slideUp { from { transform: translate(-50%, 100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-
-        /* ESPECÍFICO PARA EL VISOR DE APPS DE ENTALPIA */
-        #app-frame { width: 100%; height: 100%; border: none; background: white; }
-        
-        video { width: 90%; max-width: 1000px; outline: none; border-radius: 8px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
-        footer { margin-top: 80px; padding: 40px; text-align: center; color: #555; font-size: 0.9rem; border-top: 1px solid #222; }
-
-        /* --- MEDIA QUERIES (RESPONSIVE) --- */
-        @media (max-width: 900px) {
-            .hero-title { font-size: 3rem; }
-            .hero-desc { font-size: 1.1rem; max-width: 90%; }
-        }
-
-        @media (max-width: 768px) {
-            /* Navbar Móvil */
-            .navbar { padding: 10px 5%; }
-            .nav-logo { font-size: 1.4rem; }
-            .nav-links { position: fixed; bottom: 0; left: 0; width: 100%; background: #1a1a1a; border-top: 1px solid #333; padding: 10px; justify-content: space-around; gap: 0; z-index: 1001; }
-            .nav-item { font-size: 0.75rem; display: flex; flex-direction: column; align-items: center; gap: 4px; color: #888; }
-            .nav-item i { font-size: 1.2rem; margin-bottom: 2px; display: block; } 
-            .nav-btn-planes { background: transparent; color: #888 !important; padding: 0; border-radius: 0; box-shadow: none; font-weight: 500; }
-            .nav-btn-planes:hover { transform: none; background: transparent; color: white !important; }
-            
-            /* User Menu Móvil */
-            .user-menu { gap: 15px; }
-            .profile-badge { display: none; } 
-            .search-box.active { width: 180px; position: absolute; right: 60px; top: 10px; background: #141414; z-index: 1002; }
-            
-            /* Hero Móvil */
-            .hero { padding-left: 5%; justify-content: center; text-align: center; }
-            .hero-content { padding-top: 0; max-width: 100%; display: flex; flex-direction: column; align-items: center; }
-            .hero-title { font-size: 2.5rem; margin-top: 20px; }
-            .hero-desc { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 1rem; }
-            .hero-buttons { flex-direction: row; width: 100%; justify-content: center; }
-            .btn-play, .btn-info { padding: 0.8rem 1.5rem; font-size: 1rem; }
-
-            /* Carrusel Móvil */
-            .row-title { font-size: 1.2rem; margin-left: 0; }
-            .tool-card { min-width: 160px; } /* Ajuste de ancho de tarjeta móvil */
-            .tile { height: 220px; } /* Imagen más alta en móvil tipo póster */
-            
-            /* Detalles Modal */
-            #modal-banner { height: 250px; }
-            .btn-play { width: 100%; justify-content: center; }
-            
-            /* Modal Todos - Móvil */
-            .all-tools-box { width: 100%; height: 100vh; border-radius: 0; border: none; padding: 0; }
-            .all-tools-header-area { padding: 15px; flex-wrap: wrap; gap: 10px; }
-            .all-tools-search-container { margin: 0; width: 100%; max-width: none; order: 3; }
-            .all-tools-scroll-area { padding: 10px 15px 100px 15px; }
-            .tool-list-thumb { width: 60px; height: 60px; }
-
-            /* Chatbot Móvil */
-            .chatbot-fab { bottom: 80px; right: 20px; width: 55px; height: 55px; }
-
-            /* Espacio para navbar inferior */
-            .content-container { padding-bottom: 80px; }
-            footer { margin-bottom: 60px; }
-        }
-    </style>
+@media(max-width:768px){
+.navbar{padding:10px 5%}.nav-logo{font-size:1.4rem}
+.nav-links{position:fixed;bottom:0;left:0;width:100%;background:rgba(26,26,26,.95);backdrop-filter:blur(10px);border-top:1px solid #333;padding:10px 10px calc(10px + env(safe-area-inset-bottom));justify-content:space-around;gap:0;z-index:1001}
+.nav-item{font-size:.75rem;display:flex;flex-direction:column;align-items:center;gap:4px;color:#888}
+.nav-item i{display:block;font-size:1.2rem}
+.nav-btn-planes{background:transparent;color:#888!important;padding:0;box-shadow:none;font-weight:500}
+.nav-btn-planes:hover{transform:none;background:transparent;box-shadow:none}
+.user-menu{gap:15px}.profile-badge{display:none}
+.search-box.active{width:180px;position:absolute;right:60px;top:10px;background:#141414;z-index:1002}
+.hero{padding:0 5%;justify-content:center;text-align:center}
+.hero-content{padding-top:0;max-width:100%;display:flex;flex-direction:column;align-items:center}
+.hero-desc{-webkit-line-clamp:3;font-size:1rem}
+.hero-dots{left:50%;transform:translateX(-50%)}
+.btn-play,.btn-info{padding:.8rem 1.5rem;font-size:1rem}
+.row-title{font-size:1.2rem}
+.tool-card{min-width:160px}.tile{height:220px}
+#modal-banner{height:200px}
+.all-tools-box{width:100%;height:100vh;border-radius:0;border:0}
+.all-tools-header-area{padding:15px;flex-wrap:wrap;gap:10px}
+.all-tools-search-container{margin:0;width:100%;max-width:none;order:3}
+.all-tools-scroll-area{padding:10px 15px 100px}
+.tool-list-thumb{width:60px;height:60px}
+.chatbot-fab{bottom:80px;right:20px;width:55px;height:55px}
+.content-container{padding-bottom:80px}footer{margin-bottom:60px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
 </head>
 <body>
+<audio id="bg-music" loop></audio>
 
-    <audio id="bg-music" loop><source src="" type="audio/mpeg"></audio>
-
-    <!-- INTERFAZ PRINCIPAL -->
-    <div id="main-interface">
-        <nav id="navbar" class="navbar">
-            <div style="display:flex; align-items:center; gap:20px;">
-                <div class="nav-logo" onclick="location.reload()">Entalpia</div>
-            </div>
-            
-            <div class="nav-links">
-                <a href="../Modales Plataforma/interfazDeOpcionInicio.html" class="nav-item"><i class="fas fa-home hidden-desktop" style="display:none;"></i> Inicio</a>
-                <a href="#" class="nav-item active" onclick="location.reload()"><i class="fas fa-th-large hidden-desktop" style="display:none;"></i> Aplicaciones</a>
-                <span class="nav-item" onclick="mostrarRecientesScroll()"><i class="fas fa-history hidden-desktop" style="display:none;"></i> Recientes</span>
-                
-                <!-- BOTÓN VER TODAS -->
-                <span class="nav-item" onclick="mostrarTodasLasHerramientas()"><i class="fas fa-th hidden-desktop" style="display:none;"></i> Ver todas</span>
-                
-                <a href="../Modales Plataforma/modal_precios.html" class="nav-item nav-btn-planes"><i class="fas fa-crown hidden-desktop" style="display:none;"></i> Planes</a>
-            </div>
-            
-            <div class="user-menu">
-                <i id="audio-toggle" class="fas fa-volume-up" style="cursor:pointer; color:#ccc;" onclick="toggleAudio()"></i>
-
-                <div class="search-box" id="search-box">
-                    <i class="fas fa-search" onclick="toggleBuscador()" style="cursor:pointer; font-size:1.1rem; color:#ccc;"></i>
-                    <input type="text" id="search-input" class="search-input" placeholder="Buscar..." oninput="filtrarContenido(this.value)">
-                </div>
-
-                <span id="profile-indicator" class="profile-badge">GENERAL</span>
-                <!-- Se eliminó el botón de Gate -->
-                <div id="nav-avatar-icon" class="nav-avatar av-gen">
-                    <i class="fas fa-user"></i>
-                </div>
-                <!-- Botón Cerrar Sesión -->
-                <a href="../index.html" onclick="limpiarSesion()" title="Cerrar Sesión" style="color:#ccc; text-decoration:none;">
-                    <i class="fas fa-sign-out-alt"></i>
-                </a>
-            </div>
-        </nav>
-
-        <div class="hero" id="hero-section">
-            <div class="hero-overlay"></div>
-            <div class="hero-overlay-btm"></div>
-            <div class="hero-content" id="hero-content">
-                <h1 class="hero-title" id="hero-title">Cargando...</h1>
-                <p class="hero-desc" id="hero-desc">...</p>
-                <div class="hero-buttons">
-                    <button class="btn btn-play" id="hero-btn-play"><i class="fas fa-play"></i> Abrir</button>
-                    <button class="btn btn-info" id="hero-btn-details"><i class="fas fa-info-circle"></i> Info</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="content-container" id="content-rows"></div>
-
-        <footer>
-            <div style="margin-bottom:20px; font-size:1.2rem;"><i class="fab fa-facebook-f" style="margin:0 15px;"></i> <i class="fab fa-instagram" style="margin:0 15px;"></i></div>
-            <p>&copy; Software de Inteligencia Artificial - SofI.A. 2025 - Engineering Git.</p>
-        </footer>
+<div id="main-interface">
+  <nav id="navbar" class="navbar">
+    <div class="nav-logo" onclick="location.reload()">Entalpia</div>
+    <div class="nav-links">
+      <a href="../Modales Plataforma/interfazDeOpcionInicio.html" class="nav-item"><i class="fas fa-home"></i>Inicio</a>
+      <button class="nav-item active" onclick="window.scrollTo({top:0,behavior:'smooth'})"><i class="fas fa-th-large"></i>Aplicaciones</button>
+      <button class="nav-item" onclick="mostrarRecientesScroll()"><i class="fas fa-history"></i>Recientes</button>
+      <button class="nav-item" onclick="mostrarTodasLasHerramientas()"><i class="fas fa-th"></i>Ver todas</button>
+      <a href="../Modales Plataforma/modal_precios.html" class="nav-item nav-btn-planes"><i class="fas fa-crown"></i>Planes</a>
     </div>
-
-    <!-- BOTÓN FLOTANTE CHATBOT (CON VIDEO) -->
-    <button class="chatbot-fab" onclick="abrirChatbot()">
-        <video autoplay loop muted playsinline>
-            <source src="../Videos Plataforma/Video_de_Bienvenida_IA_Sofia.mp4" type="video/mp4">
-        </video>
-    </button>
-
-    <!-- MODAL INSTALACIÓN APP -->
-    <div id="install-modal">
-        <div class="install-header">
-            <div style="background:white; border-radius:8px; padding:5px;"><i class="fas fa-bolt" style="color:var(--primary-blue); font-size:1.5rem;"></i></div>
-            <div style="color:white; font-weight:bold;">Instalar Entalpia</div>
-        </div>
-        <div class="install-body" id="install-body-text">
-            Instala nuestra aplicación en tu pantalla de inicio para un acceso rápido y una experiencia a pantalla completa.
-        </div>
-        <div class="install-footer">
-            <button class="btn btn-cancel" onclick="cerrarInstallModal()">Ahora no</button>
-            <button class="btn btn-install" id="btn-install-trigger" onclick="instalarApp()">Instalar</button>
-        </div>
+    <div class="user-menu">
+      <button id="audio-toggle" class="icon-btn" onclick="toggleAudio()" aria-label="Sonido"><i class="fas fa-volume-up"></i></button>
+      <div class="search-box" id="search-box">
+        <button class="icon-btn" onclick="toggleBuscador()" aria-label="Buscar"><i class="fas fa-search"></i></button>
+        <input type="text" id="search-input" class="search-input" placeholder="Buscar..." oninput="filtrarContenido(this.value)">
+      </div>
+      <span id="profile-indicator" class="profile-badge">GENERAL</span>
+      <div id="nav-avatar-icon" class="nav-avatar"><i class="fas fa-user"></i></div>
+      <a href="../index.html" onclick="limpiarSesion()" title="Cerrar Sesión" class="icon-btn"><i class="fas fa-sign-out-alt"></i></a>
     </div>
+  </nav>
 
-    <!-- MODAL "VER TODAS" / CATÁLOGO -->
-    <div id="all-tools-modal" class="modal-base">
-        <div class="all-tools-box">
-            <!-- Header con Título y Buscador -->
-            <div class="all-tools-header-area">
-                <h2 style="color:white; margin:0; font-weight:800; font-size:2rem; text-transform:uppercase; text-shadow:0 0 10px rgba(0,0,0,0.5);">Catálogo</h2>
-                <div class="all-tools-search-container">
-                    <i class="fas fa-search search-icon-modal"></i>
-                    <input type="text" class="all-tools-search" placeholder="Buscar título, descripción..." oninput="filtrarCatalogo(this.value)">
-                </div>
-                <button class="close-modal-btn" onclick="cerrarTodasLasHerramientas()">&times;</button>
-            </div>
-            
-            <!-- Área de Scroll de Contenido -->
-            <div id="all-tools-container" class="all-tools-scroll-area">
-                <!-- Contenido inyectado por JS -->
-            </div>
-        </div>
+  <div class="hero" id="hero-section">
+    <div class="hero-overlay"></div><div class="hero-overlay-btm"></div>
+    <div class="hero-content" id="hero-content">
+      <div class="hero-meta" id="hero-meta"></div>
+      <h1 class="hero-title" id="hero-title">Cargando...</h1>
+      <p class="hero-desc" id="hero-desc">...</p>
+      <div class="hero-buttons">
+        <button class="btn btn-play" id="hero-btn-play"><i class="fas fa-play"></i> Abrir</button>
+        <button class="btn btn-info" id="hero-btn-details"><i class="fas fa-info-circle"></i> Info</button>
+      </div>
     </div>
+    <div class="hero-dots" id="hero-dots"></div>
+  </div>
 
-    <div id="video-modal" class="modal-base" onclick="this.style.display='none'; document.getElementById('promo-video').pause();">
-        <button style="position:absolute; top:20px; right:20px; background:none; border:none; color:white; font-size:2.5rem; cursor:pointer;">&times;</button>
-        <video id="promo-video" controls src="VideoSaberMas.mp4"></video>
+  <div class="content-container" id="content-rows"></div>
+
+  <footer>
+    <div style="margin-bottom:20px;font-size:1.2rem"><i class="fab fa-facebook-f" style="margin:0 15px"></i><i class="fab fa-instagram" style="margin:0 15px"></i></div>
+    <p>&copy; Software de Inteligencia Artificial - SofI.A. 2025 - Engineering Git.</p>
+  </footer>
+</div>
+
+<button class="chatbot-fab" onclick="abrirChatbot()" aria-label="Abrir asistente">
+  <video autoplay loop muted playsinline><source src="../Videos Plataforma/Video_de_Bienvenida_IA_Sofia.mp4" type="video/mp4"></video>
+</button>
+
+<div id="install-modal">
+  <div class="install-header">
+    <div style="background:#fff;border-radius:8px;padding:5px"><i class="fas fa-bolt" style="color:var(--blue);font-size:1.5rem"></i></div>
+    <div style="font-weight:700">Instalar Entalpia</div>
+  </div>
+  <div class="install-body" id="install-body-text">Instala nuestra aplicación en tu pantalla de inicio para un acceso rápido y una experiencia a pantalla completa.</div>
+  <div class="install-footer">
+    <button class="btn btn-cancel" onclick="cerrarInstallModal()">Ahora no</button>
+    <button class="btn btn-install" id="btn-install-trigger" onclick="instalarApp()">Instalar</button>
+  </div>
+</div>
+
+<div id="all-tools-modal" class="modal-base">
+  <div class="all-tools-box">
+    <div class="all-tools-header-area">
+      <h2 style="font-weight:800;font-size:2rem;text-transform:uppercase">Catálogo</h2>
+      <div class="all-tools-search-container">
+        <i class="fas fa-search search-icon-modal"></i>
+        <input type="text" class="all-tools-search" placeholder="Buscar título, descripción..." oninput="filtrarCatalogo(this.value)">
+      </div>
+      <button class="close-modal-btn" onclick="cerrarTodasLasHerramientas()" aria-label="Cerrar">&times;</button>
     </div>
-    
-    <div id="details-modal" class="modal-base" onclick="cerrarDetalles(event)">
-        <div style="background:#181818; width:100%; max-width:850px; border-radius:12px; overflow:hidden; box-shadow:0 30px 60px rgba(0,0,0,0.8);" onclick="event.stopPropagation()">
-            <div id="modal-banner" style="height:250px; background-size:cover; background-position:center; position:relative; background-color:#202020;">
-                <div style="position:absolute; inset:0; background:linear-gradient(to top, #181818 5%, transparent 60%);"></div>
-                <button onclick="cerrarDetalles(null)" style="position:absolute; top:15px; right:15px; width:35px; height:35px; border-radius:50%; border:none; background:rgba(0,0,0,0.5); color:white; font-size:1.2rem; cursor:pointer;">&times;</button>
-            </div>
-            <div style="padding:25px;">
-                <h1 id="modal-title" style="margin-bottom:10px; font-size:2rem; font-weight:800; line-height:1.1;">Titulo</h1>
-                <div style="display:flex; gap:15px; margin-bottom:20px; font-size:0.9rem; align-items:center;">
-                    <span style="color:var(--secondary-green); font-weight:700;">Conoce Mas...</span>
-                    <span id="modal-cat" style="background:#333; padding:2px 8px; border-radius:4px; font-size:0.75rem;">Cat</span>
-                </div>
-                <p id="modal-desc" style="color:#ccc; line-height:1.5; margin-bottom:30px; font-size:1rem;">Desc</p>
-                <button class="btn btn-play" id="modal-btn-open" style="font-size:1.1rem; padding:12px; width:100%;"><i class="fas fa-play"></i> Abrir Herramienta</button>
-            </div>
-        </div>
+    <div id="all-tools-container" class="all-tools-scroll-area"></div>
+  </div>
+</div>
+
+<div id="video-modal" class="modal-base" onclick="cerrarVideo()">
+  <button class="close-modal-btn" style="position:absolute;top:20px;right:20px;color:#fff" aria-label="Cerrar">&times;</button>
+  <video id="promo-video" controls src="VideoSaberMas.mp4" onclick="event.stopPropagation()"></video>
+</div>
+
+<div id="details-modal" class="modal-base" onclick="cerrarDetalles(event)">
+  <div class="details-box" onclick="event.stopPropagation()">
+    <div id="modal-banner">
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,#181818 5%,transparent 60%)"></div>
+      <button onclick="cerrarDetalles(null)" aria-label="Cerrar" style="position:absolute;top:15px;right:15px;width:35px;height:35px;border-radius:50%;border:0;background:rgba(0,0,0,.5);color:#fff;font-size:1.2rem;cursor:pointer">&times;</button>
     </div>
-    
-    <div id="viewer" class="modal-base" style="background:black; z-index:5500; display:none; flex-direction:column; padding:0;">
-        <div style="width:100%; padding:10px 15px; background:#141414; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; height:50px;">
-            <span id="viewer-title" style="font-weight:bold; font-size:1rem; color:var(--primary-blue); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:70%;">App</span>
-            <button class="btn" style="background:transparent; border:1px solid #555; color:white; padding:5px 15px; font-size:0.8rem;" onclick="document.getElementById('viewer').style.display='none'; document.getElementById('app-frame').src=''; renderizarFilas();">CERRAR</button>
-        </div>
-        <div style="flex:1; width:100%; position:relative;">
-             <iframe id="app-frame" style="width:100%; height:100%;"></iframe>
-        </div>
+    <div style="padding:25px">
+      <h1 id="modal-title" style="margin-bottom:10px;font-size:2rem;font-weight:800;line-height:1.1">Titulo</h1>
+      <div style="display:flex;gap:10px;margin-bottom:20px;font-size:.9rem;align-items:center;flex-wrap:wrap">
+        <span style="color:var(--green);font-weight:700">Conoce Mas...</span>
+        <span id="modal-cat" class="chip">Cat</span>
+        <span id="modal-sub" class="chip" style="background:rgba(0,113,235,.4)"></span>
+        <span id="modal-stars" class="chip stars"></span>
+      </div>
+      <p id="modal-desc" style="color:#ccc;line-height:1.6;margin-bottom:30px"></p>
+      <button class="btn btn-play" id="modal-btn-open" style="width:100%;justify-content:center;padding:12px"><i class="fas fa-play"></i> Abrir Herramienta</button>
     </div>
+  </div>
+</div>
 
-    <script>
-        // --- DATA ---
-        // Datos dummy para funcionamiento básico sin login
-        const DATOS_INICIALES = [
-            { u: "guest", p: "", n: "Invitado", apellido: "Entalpia", f: "29/11/2025", img: "", profesion: "", area: "", telefono: "", ubicacion: "" }
-        ];
-        
-        // SAFE LOCALSTORAGE
-        function safeGetItem(key) {
-            try { return localStorage.getItem(key); } catch (e) { console.warn('LS no disponible'); return null; }
-        }
-        function safeSetItem(key, val) {
-            try { localStorage.setItem(key, val); } catch (e) { console.warn('LS no disponible'); }
-        }
-        
-        let dbUsuarios = [];
-        try { dbUsuarios = JSON.parse(safeGetItem('sofia_users')); } catch (e) { dbUsuarios = null; }
-        if (!dbUsuarios || !Array.isArray(dbUsuarios) || dbUsuarios.length === 0) dbUsuarios = DATOS_INICIALES;
+<div id="viewer" class="modal-base">
+  <div class="viewer-bar">
+    <span id="viewer-title" style="font-weight:700;color:var(--blue);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:70%">App</span>
+    <button class="btn" style="background:transparent;border:1px solid #555;color:#fff;padding:5px 15px;font-size:.8rem" onclick="cerrarVisor()">CERRAR</button>
+  </div>
+  <div style="flex:1;width:100%;position:relative"><iframe id="app-frame" title="Aplicación"></iframe></div>
+</div>
 
-        // --- BASE DE DATOS HERRAMIENTAS (ACTUALIZADA CON 'VALIA') ---
-        const HERRAMIENTAS = [
-            { id: 1, nombre: "Modelador de instalaciones ramificadas", url: "../AppsPlataforma/CadgasV2/Isoflux_V15.2___Entalpia_Lab.html", imagen: "../ImagenesPlataformas/Icono_ModeladorMuellerPremiumV1_Entalpia.png", descripcion: "Isodespiece es una aplicación web monolítica que permite modelar redes de gas en proyección isométrica ajustable, calcular caudales, velocidades y caídas de presión en redes ramificadas (no mallas), generar el despiece y presupuesto, definir la soportería, programar el mantenimiento y emitir informes técnicos. La versión incorpora bloques (agrupaciones persistentes de tuberías, componentes y anotaciones que pueden moverse, girarse, desacoplarse y volver a acoplarse indefinidamente), un conjunto de controles de vista (zoom, ejes X-Y-Z permanentes y una coordenada polar de cámara que puede fijarse) e informes con análisis gráfico", categoria: "App's En Desarrollo", subtitulo: "GN/GLP", valia: "Premium" },
-            { id: 2, nombre: "Simulador de vaproizacion GLPS", url: "../AppsPlataforma/CadgasV2/Vaporizador.html", imagen: "../ImagenesPlataformas/imgcalculadoradevaporizacionglp_v1.png", descripcion: "Herramienta industrial para el cálculo de vaporización natural en tanques de Gas LP, con equivalencias de unidades (m³/h, kW, BTU/h), curvas dinámicas de rendimiento y reportes de ingeniería exportables en PDF.", categoria: "App's En Desarrollo", subtitulo: "GLP", valia: "Pro" }
-        ];
+<script>
+const $ = id => document.getElementById(id);
+const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-        let perfilActual = "General";
-        // Usuario activo por defecto
-        let usuarioActivo = DATOS_INICIALES[0];
-        let recientes = [];
-        try { recientes = JSON.parse(safeGetItem('sofia_recents')) || []; } catch(e) { recientes = []; }
-        
-        // Imagen por defecto si falla la local (URL válida de Unsplash)
-        const fallbackImg = "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070&auto=format&fit=crop";
+// --- STORAGE SEGURO ---
+const safeGetItem = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const safeSetItem = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+const safeParse = (k, def) => { try { const v = JSON.parse(safeGetItem(k)); return v ?? def; } catch (e) { return def; } };
 
-        // --- AUDIO ---
-        const NATURE_TRACKS = [
-            "https://actions.google.com/sounds/v1/water/waves_crashing.ogg", 
-            "https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg", 
-            "https://actions.google.com/sounds/v1/weather/strong_wind_whistling.ogg", 
-            "https://actions.google.com/sounds/v1/ambiences/night_crickets_water_lapping.ogg"
-        ];
-        const audioPlayer = document.getElementById('bg-music');
-        let isMuted = false;
-        let rotacionIntervalo;
+// --- DATA ---
+const DATOS_INICIALES = [{ u: "guest", p: "", n: "Invitado", apellido: "Entalpia", f: "29/11/2025", img: "", profesion: "", area: "", telefono: "", ubicacion: "" }];
+let dbUsuarios = safeParse('sofia_users', null);
+if (!Array.isArray(dbUsuarios) || !dbUsuarios.length) dbUsuarios = DATOS_INICIALES;
 
-        function gestionarMusica() {
-            const savedTime = safeGetItem('audio_time');
-            const savedTrack = safeGetItem('audio_track');
-            if (savedTrack && NATURE_TRACKS.includes(savedTrack)) {
-                audioPlayer.src = savedTrack;
-                if(savedTime) audioPlayer.currentTime = parseFloat(savedTime);
-            } else { cambiarPistaAleatoria(); }
-            
-            const playPromise = audioPlayer.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(error => { 
-                    console.log("Autoplay prevenido por el navegador. Iniciar manualmente.");
-                    isMuted = true; 
-                    actualizarIconoAudio(); 
-                });
-            }
-            if(rotacionIntervalo) clearInterval(rotacionIntervalo);
-            rotacionIntervalo = setInterval(() => { if(!audioPlayer.paused && !isMuted) cambiarPistaAleatoria(); }, 720000); 
-        }
+const HERRAMIENTAS = [
+  { id: 1, nombre: "Isoflux", url: "../AppsPlataforma/CadgasV2/Isoflux_V15.1___Entalpia_Lab.html", imagen: "../ImagenesPlataformas/Icono_ModeladorMuellerPremiumV1_Entalpia.png", descripcion: "Isodespiece es una aplicación web monolítica que permite modelar redes de gas en proyección isométrica ajustable, calcular caudales, velocidades y caídas de presión en redes ramificadas (no mallas), generar el despiece y presupuesto, definir la soportería, programar el mantenimiento y emitir informes técnicos. La versión incorpora bloques (agrupaciones persistentes de tuberías, componentes y anotaciones que pueden moverse, girarse, desacoplarse y volver a acoplarse indefinidamente), un conjunto de controles de vista (zoom, ejes X-Y-Z permanentes y una coordenada polar de cámara que puede fijarse) e informes con análisis gráfico", categoria: "App's En Desarrollo", subtitulo: "GN/GLP", valia: "Premium" },
+  { id: 2, nombre: "Selector de Reguladores V2.0", url: "https://selector-de-reguladores-de-gas-770607217265.us-west2.run.app", imagen: "../ImagenesPlataformas/Icono_selectorreguladoresV02_entalpia.png", descripcion: "Aplicación interactiva para ingenieros de Entalpía para el dimensionamiento, cálculo de caudal, conversión de unidades y selección de reguladores de gas Humcar según catálogo.", categoria: "App's En Desarrollo", subtitulo: "GN/GLP", valia: "Premium" },
+  { id: 3, nombre: "Academia de ingenieros", url: "https://classroom.google.com/c/NjQzNjczMzc1NjYx?cjc=qalt57x", imagen: "../ImagenesPlataformas/Imagenes_Catalogo_Apps/LogoIMG_bannerSSchoolar.jfif", descripcion: "La plataforma definitiva para ingenieros que impulsan el futuro. Aprende a integrar Inteligencia Artificial en tus proyectos cotidianos y domina el Sistema de Gestión Asistido por I.A. de Ind. I.A. Col.", categoria: "Recursos Del Sistema", subtitulo: "GN/GLP", valia: "Premium" },
+  { id: 4, nombre: "Cuaderno Inteligente", url: "https://notebook.google.com/", imagen: "../ImagenesPlataformas/Imagenes_Catalogo_Apps/LogoIMG_bannerNotebookcLM.jfif", descripcion: "Cuaderno con inteligencia artificial para organizar tus fuentes, normas y notas técnicas, resumir documentos y consultar tu propio material de trabajo.", categoria: "Recursos Del Sistema", subtitulo: "GN/GLP", valia: "Premium" },
+  { id: 5, nombre: "Calculadora De Vaporizacion GLP V1.0", url: "../AppsPlataforma/CadgasV2/Vaporizador.html", imagen: "../ImagenesPlataformas/imgcalculadoradevaporizacionglp_v1.png", descripcion: "Herramienta industrial para el cálculo de vaporización natural en tanques de Gas LP, con equivalencias de unidades (m³/h, kW, BTU/h), curvas dinámicas de rendimiento y reportes de ingeniería exportables en PDF.", categoria: "App's En Desarrollo", subtitulo: "GLP", valia: "Pro" }
+];
+const STAR_COUNT = { Libre: 1, Plus: 2, Pro: 3, Premium: 4 };
+const fallbackImg = "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070&auto=format&fit=crop";
+const imgOf = t => t.imagen.includes('.') ? t.imagen : t.imagen + '.jpg';
+const starsHTML = v => '<i class="fas fa-star"></i>'.repeat(STAR_COUNT[v] || 0);
 
-        function cambiarPistaAleatoria() {
-            const randomTrack = NATURE_TRACKS[Math.floor(Math.random() * NATURE_TRACKS.length)];
-            audioPlayer.src = randomTrack;
-            safeSetItem('audio_track', randomTrack);
-            audioPlayer.play().catch(e => {}); 
-        }
+let usuarioActivo = DATOS_INICIALES[0];
+let recientes = safeParse('sofia_recents', []);
+if (!Array.isArray(recientes)) recientes = [];
+let ordenCategorias = null;
 
-        function toggleAudio() {
-            if (audioPlayer.paused || isMuted) { 
-                audioPlayer.play().then(() => {
-                    isMuted = false; 
-                    actualizarIconoAudio();
-                }).catch(e => console.error(e));
-            } else { 
-                audioPlayer.pause(); 
-                isMuted = true; 
-                actualizarIconoAudio(); 
-            }
-        }
+// --- AUDIO ---
+const NATURE_TRACKS = [
+  "https://actions.google.com/sounds/v1/water/waves_crashing.ogg",
+  "https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg",
+  "https://actions.google.com/sounds/v1/weather/strong_wind_whistling.ogg",
+  "https://actions.google.com/sounds/v1/ambiences/night_crickets_water_lapping.ogg"
+];
+const audioPlayer = $('bg-music');
+let isMuted = false, rotacionIntervalo, lastSave = 0;
 
-        function actualizarIconoAudio() {
-            const icon = document.getElementById('audio-toggle');
-            if(isMuted) { icon.classList.remove('fa-volume-up'); icon.classList.add('fa-volume-mute'); icon.style.color = "#777"; } 
-            else { icon.classList.remove('fa-volume-mute'); icon.classList.add('fa-volume-up'); icon.style.color = "#ccc"; }
-        }
-        audioPlayer.addEventListener('timeupdate', () => { safeSetItem('audio_time', audioPlayer.currentTime); });
+function gestionarMusica() {
+  const savedTrack = safeGetItem('audio_track');
+  if (savedTrack && NATURE_TRACKS.includes(savedTrack)) {
+    audioPlayer.src = savedTrack;
+    const t = parseFloat(safeGetItem('audio_time'));
+    if (!isNaN(t)) audioPlayer.addEventListener('loadedmetadata', () => { audioPlayer.currentTime = t; }, { once: true });
+  } else cambiarPistaAleatoria();
+  const p = audioPlayer.play();
+  if (p) p.catch(() => { isMuted = true; actualizarIconoAudio(); });
+  clearInterval(rotacionIntervalo);
+  rotacionIntervalo = setInterval(() => { if (!audioPlayer.paused && !isMuted) cambiarPistaAleatoria(); }, 720000);
+}
+function cambiarPistaAleatoria() {
+  const t = NATURE_TRACKS[Math.floor(Math.random() * NATURE_TRACKS.length)];
+  audioPlayer.src = t; safeSetItem('audio_track', t);
+  audioPlayer.play().catch(() => {});
+}
+function toggleAudio() {
+  if (audioPlayer.paused || isMuted) {
+    audioPlayer.play().then(() => { isMuted = false; actualizarIconoAudio(); }).catch(console.error);
+  } else { audioPlayer.pause(); isMuted = true; actualizarIconoAudio(); }
+}
+function actualizarIconoAudio() {
+  const i = $('audio-toggle').firstElementChild;
+  i.className = isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+  $('audio-toggle').style.color = isMuted ? '#777' : '#ccc';
+}
+audioPlayer.addEventListener('timeupdate', () => {
+  const now = Date.now();
+  if (now - lastSave > 3000) { lastSave = now; safeSetItem('audio_time', audioPlayer.currentTime); }
+});
 
-        // --- LÓGICA DE INSTALACIÓN (PWA / APP) ---
-        let deferredPrompt;
-        const installModal = document.getElementById('install-modal');
+// --- INSTALACIÓN PWA ---
+let deferredPrompt;
+const installModal = $('install-modal');
+const isIos = () => /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; mostrarModalInstalacion(); });
+function mostrarModalInstalacion() {
+  if (safeGetItem('app_install_dismissed') || isStandalone()) return;
+  if (isIos()) {
+    $('install-body-text').innerHTML = "Para instalar en iOS:<br>1. Pulsa el botón <strong>Compartir</strong> <i class='fas fa-share-square'></i><br>2. Selecciona <strong>'Agregar a Inicio'</strong> <i class='fas fa-plus-square'></i>";
+    $('btn-install-trigger').style.display = 'none';
+    installModal.style.display = 'flex';
+  } else if (deferredPrompt) installModal.style.display = 'flex';
+}
+function instalarApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => { deferredPrompt = null; cerrarInstallModal(); });
+  } else { alert("Busca la opción 'Instalar aplicación' en el menú de tu navegador."); cerrarInstallModal(); }
+}
+function cerrarInstallModal() { installModal.style.display = 'none'; safeSetItem('app_install_dismissed', 'true'); }
 
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            mostrarModalInstalacion();
-        });
+function limpiarSesion() { try { localStorage.removeItem('sofia_session'); } catch (e) {} }
+function mostrarRecientesScroll() {
+  const r = $('row-recientes');
+  if (r) r.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  else $('content-rows').scrollIntoView({ behavior: 'smooth' });
+}
+function registrarUso(id) {
+  recientes = [id, ...recientes.filter(x => x !== id)].slice(0, 10);
+  safeSetItem('sofia_recents', JSON.stringify(recientes));
+}
 
-        const isIos = () => {
-            const userAgent = window.navigator.userAgent.toLowerCase();
-            return /iphone|ipad|ipod/.test(userAgent);
-        }
+// --- CATÁLOGO ---
+function mostrarTodasLasHerramientas() { renderizarCatalogoCompleto(HERRAMIENTAS); $('all-tools-modal').style.display = 'flex'; }
+function cerrarTodasLasHerramientas() { $('all-tools-modal').style.display = 'none'; }
+const coincide = (h, t) => norm(h.nombre).includes(t) || norm(h.descripcion).includes(t) || norm(h.categoria).includes(t) || norm(h.subtitulo).includes(t);
+function filtrarCatalogo(texto) {
+  const t = norm(texto.trim());
+  renderizarCatalogoCompleto(t ? HERRAMIENTAS.filter(h => coincide(h, t)) : HERRAMIENTAS);
+}
+function renderizarCatalogoCompleto(items) {
+  const c = $('all-tools-container');
+  c.innerHTML = '';
+  if (!items.length) { c.innerHTML = '<div style="text-align:center;padding:40px;color:#666">Sin resultados</div>'; return; }
+  [...new Set(items.map(h => h.categoria))].sort().forEach(cat => {
+    const tools = items.filter(h => h.categoria === cat);
+    const header = document.createElement('div');
+    header.className = 'all-tools-category-header';
+    header.innerHTML = `<span>${cat}</span><span style="font-size:.8rem;color:#666;font-weight:400;margin-left:10px">(${tools.length})</span>`;
+    c.appendChild(header);
+    tools.forEach(tool => {
+      const item = document.createElement('div');
+      item.className = 'tool-list-item'; item.tabIndex = 0; item.setAttribute('role', 'button');
+      item.innerHTML = `
+        <img src="${imgOf(tool)}" class="tool-list-thumb" alt="">
+        <div class="tool-list-details">
+          <div class="tool-list-name"><span class="tn"></span><span class="tool-list-valia">${starsHTML(tool.valia)}</span></div>
+          <div class="tool-list-sub">${tool.subtitulo || ''}</div>
+        </div>
+        <button class="btn" style="background:var(--blue);color:#fff;padding:8px 15px;font-size:.9rem" aria-label="Abrir"><i class="fas fa-play"></i></button>`;
+      item.querySelector('.tn').textContent = tool.nombre;
+      item.querySelector('img').onerror = function () { this.onerror = null; this.src = fallbackImg; };
+      const ver = () => { cerrarTodasLasHerramientas(); verDetalles(tool.id); };
+      item.onclick = ver;
+      item.onkeydown = e => { if (e.key === 'Enter') ver(); };
+      item.querySelector('button').onclick = e => { e.stopPropagation(); cerrarTodasLasHerramientas(); abrirApp(tool.id, tool.nombre, tool.url); };
+      c.appendChild(item);
+    });
+  });
+}
 
-        function mostrarModalInstalacion() {
-            if(safeGetItem('app_install_dismissed')) return;
+// --- CHATBOT ---
+function abrirChatbot() {
+  const w = 700, h = 500;
+  window.open('https://gemini.google.com/gem/1JQ_urpDOJs8DOQBtFYMCoF2gwakXwGD8?usp=sharing', '_blank',
+    `noopener,scrollbars=yes,toolbar=no,width=${w},height=${h},top=${Math.round(window.outerHeight / 2 - h / 2)},left=${Math.round(window.outerWidth / 2 - w / 2)}`);
+}
 
-            if (isIos()) {
-                document.getElementById('install-body-text').innerHTML = "Para instalar en iOS:<br>1. Pulsa el botón <strong>Compartir</strong> <i class='fas fa-share-square'></i><br>2. Selecciona <strong>'Agregar a Inicio'</strong> <i class='fas fa-plus-square'></i>";
-                document.getElementById('btn-install-trigger').style.display = 'none'; 
-                installModal.style.display = 'flex';
-            } else if (deferredPrompt) {
-                installModal.style.display = 'flex';
-            }
-        }
+// --- INIT ---
+window.addEventListener('load', () => {
+  gestionarMusica();
+  const sessionUser = safeParse('sofia_session', null);
+  if (sessionUser) usuarioActivo = dbUsuarios.find(u => u.u === sessionUser.u) || sessionUser;
+  else safeSetItem('sofia_session', JSON.stringify(usuarioActivo));
+  renderizarFilas();
+  iniciarCarrusel();
+  setTimeout(mostrarModalInstalacion, 3000);
+});
 
-        function instalarApp() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('Usuario aceptó instalar');
-                    }
-                    deferredPrompt = null;
-                    cerrarInstallModal();
-                });
-            } else {
-                alert("Busca la opción 'Instalar aplicación' en el menú de tu navegador.");
-                cerrarInstallModal();
-            }
-        }
+// --- BÚSQUEDA ---
+function toggleBuscador() {
+  const box = $('search-box');
+  box.classList.toggle('active');
+  if (box.classList.contains('active')) $('search-input').focus();
+  else { $('search-input').value = ''; renderizarFilas(); }
+}
+function filtrarContenido(texto) {
+  const t = norm(texto.trim());
+  if (!t) { renderizarFilas(); return; }
+  const c = $('content-rows');
+  const res = HERRAMIENTAS.filter(h => coincide(h, t));
+  c.innerHTML = '';
+  if (!res.length) {
+    const d = document.createElement('div');
+    d.style.cssText = 'padding:40px;color:#888;text-align:center';
+    d.innerHTML = '<i class="fas fa-search" style="font-size:2rem;margin-bottom:10px"></i><br>';
+    d.appendChild(document.createTextNode(`Sin resultados para "${texto}"`));
+    c.appendChild(d); return;
+  }
+  const title = document.createElement('h3'); title.className = 'row-title'; title.textContent = `Resultados (${res.length})`;
+  const grid = document.createElement('div'); grid.className = 'search-results-grid';
+  res.forEach(tool => grid.appendChild(crearElementoTile(tool)));
+  c.append(title, grid);
+}
 
-        function cerrarInstallModal() {
-            installModal.style.display = 'none';
-            safeSetItem('app_install_dismissed', 'true'); 
-        }
+// --- TILES / FILAS ---
+function crearElementoTile(tool) {
+  const card = document.createElement('div'); card.className = 'tool-card';
+  const tile = document.createElement('div'); tile.className = 'tile';
+  tile.tabIndex = 0; tile.setAttribute('role', 'button'); tile.setAttribute('aria-label', 'Ver detalles de ' + tool.nombre);
+  tile.innerHTML = `
+    <img src="${imgOf(tool)}" class="tile-img" alt="">
+    ${tool.valia ? `<div class="valia-badge" title="${tool.valia}">${starsHTML(tool.valia)}</div>` : ''}
+    ${tool.subtitulo ? `<div class="sub-chip">${tool.subtitulo}</div>` : ''}
+    <div class="tile-content"><div class="tile-actions">
+      <div class="tile-icon play" role="button" tabindex="0" aria-label="Abrir"><i class="fas fa-play"></i></div>
+      <div class="tile-icon info" role="button" tabindex="0" aria-label="Detalles"><i class="fas fa-chevron-down"></i></div>
+    </div></div>`;
+  const img = tile.querySelector('img');
+  img.onload = () => tile.classList.add('loaded');
+  img.onerror = function () { this.onerror = null; this.src = fallbackImg; };
+  const abrir = e => { e.stopPropagation(); abrirApp(tool.id, tool.nombre, tool.url); };
+  const info = e => { e.stopPropagation(); verDetalles(tool.id); };
+  const key = fn => e => { if (e.key === 'Enter') fn(e); };
+  const p = tile.querySelector('.play'), i = tile.querySelector('.info');
+  p.onclick = abrir; p.onkeydown = key(abrir);
+  i.onclick = info; i.onkeydown = key(info);
+  tile.onclick = info;
+  tile.onkeydown = e => { if (e.key === 'Enter' && e.target === tile) info(e); };
+  const name = document.createElement('div'); name.className = 'tool-name-external'; name.textContent = tool.nombre;
+  card.append(tile, name);
+  return card;
+}
+function crearFila(cont, tit, items, id) {
+  const row = document.createElement('div'); row.className = 'row'; if (id) row.id = id;
+  const t = document.createElement('h3'); t.className = 'row-title'; t.textContent = tit;
+  const s = document.createElement('div'); s.className = 'row-scroller';
+  items.forEach(tool => s.appendChild(crearElementoTile(tool)));
+  row.append(t, s); cont.appendChild(row);
+}
+function renderizarFilas() {
+  const c = $('content-rows'); if (!c) return;
+  c.innerHTML = '';
+  const rec = recientes.map(id => HERRAMIENTAS.find(h => h.id === id)).filter(Boolean);
+  if (rec.length) crearFila(c, 'Recientes', rec, 'row-recientes');
+  // El orden se sortea una sola vez por sesión: no se reordena al cerrar una app
+  if (!ordenCategorias) ordenCategorias = [...new Set(HERRAMIENTAS.map(h => h.categoria))].sort(() => Math.random() - .5);
+  ordenCategorias.forEach(cat => crearFila(c, cat, HERRAMIENTAS.filter(h => h.categoria === cat)));
+}
 
-        // --- FUNCION CERRAR SESION ---
-        function limpiarSesion() {
-            try { localStorage.removeItem('sofia_session'); } catch(e) {}
-            // No es necesario forzar la navegación aquí, el <a> lo hace.
-        }
+// --- HERO ---
+let hIdx = 0, hInt;
+function iniciarCarrusel() {
+  if (hInt) return;
+  const dots = $('hero-dots');
+  HERRAMIENTAS.forEach((t, i) => {
+    const b = document.createElement('button'); b.className = 'hero-dot'; b.setAttribute('aria-label', 'Ir a ' + t.nombre);
+    b.onclick = () => { hIdx = i; actHero(); reiniciarTimer(); };
+    dots.appendChild(b);
+  });
+  actHero(); reiniciarTimer();
+  document.addEventListener('visibilitychange', () => document.hidden ? clearInterval(hInt) : reiniciarTimer());
+}
+function reiniciarTimer() {
+  clearInterval(hInt);
+  hInt = setInterval(() => { hIdx = (hIdx + 1) % HERRAMIENTAS.length; actHero(); }, 8000);
+}
+function actHero() {
+  const t = HERRAMIENTAS[hIdx], c = $('hero-content'), s = $('hero-section');
+  c.classList.add('fade-out');
+  document.querySelectorAll('.hero-dot').forEach((d, i) => { d.classList.remove('active'); if (i === hIdx) { void d.offsetWidth; d.classList.add('active'); } });
+  setTimeout(() => {
+    $('hero-title').textContent = t.nombre;
+    $('hero-desc').textContent = t.descripcion;
+    $('hero-meta').innerHTML = `${t.subtitulo ? `<span class="chip">${t.subtitulo}</span>` : ''}<span class="chip stars">${starsHTML(t.valia)}</span><span class="chip">${t.categoria}</span>`;
+    $('hero-btn-play').onclick = () => abrirApp(t.id, t.nombre, t.url);
+    $('hero-btn-details').onclick = () => verDetalles(t.id);
+    const l = new Image();
+    l.onload = () => { s.style.backgroundImage = `url('${imgOf(t)}')`; };
+    l.onerror = () => { s.style.backgroundImage = `url('${fallbackImg}')`; };
+    l.src = imgOf(t);
+    c.classList.remove('fade-out');
+  }, 400);
+}
 
-        function mostrarRecientesScroll() {
-             const row = document.getElementById('row-recientes');
-             if(row) row.scrollIntoView({behavior: "smooth"});
-        }
-
-        // --- GESTIÓN DE RECIENTES ---
-        function registrarUso(id) {
-            // Eliminar si ya existe para ponerlo al principio
-            const index = recientes.indexOf(id);
-            if (index > -1) {
-                recientes.splice(index, 1);
-            }
-            // Agregar al inicio
-            recientes.unshift(id);
-            // Mantener solo los últimos 10
-            if (recientes.length > 10) {
-                recientes.pop();
-            }
-            safeSetItem('sofia_recents', JSON.stringify(recientes));
-        }
-
-        // --- FUNCIONES MODAL TODAS LAS HERRAMIENTAS ---
-        function mostrarTodasLasHerramientas() {
-            renderizarCatalogoCompleto(HERRAMIENTAS);
-            document.getElementById('all-tools-modal').style.display = 'flex';
-        }
-
-        function cerrarTodasLasHerramientas() {
-            document.getElementById('all-tools-modal').style.display = 'none';
-        }
-
-        function filtrarCatalogo(texto) {
-            if (!texto) {
-                renderizarCatalogoCompleto(HERRAMIENTAS);
-                return;
-            }
-            const termino = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            const filtradas = HERRAMIENTAS.filter(h => {
-                const nombre = h.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                const desc = h.descripcion.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                const cat = h.categoria.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                return nombre.includes(termino) || desc.includes(termino) || cat.includes(termino);
-            });
-            renderizarCatalogoCompleto(filtradas);
-        }
-
-        function renderizarCatalogoCompleto(items) {
-            const container = document.getElementById('all-tools-container');
-            container.innerHTML = '';
-            
-            if (items.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding:40px; color:#666;">Sin resultados</div>`;
-                return;
-            }
-
-            // Obtener categorías únicas de los items filtrados
-            const cats = [...new Set(items.map(h => h.categoria))].sort();
-            
-            cats.forEach(cat => {
-                const tools = items.filter(h => h.categoria === cat);
-                if (tools.length === 0) return;
-
-                // Header de categoría (Azul Primario)
-                const header = document.createElement('div');
-                header.className = 'all-tools-category-header';
-                header.innerHTML = `<span>${cat}</span><span style="font-size:0.8rem; color:#666; font-weight:400; margin-left:10px;">(${tools.length})</span>`;
-                container.appendChild(header);
-
-                // LISTA DE HERRAMIENTAS
-                tools.forEach(tool => {
-                    const item = document.createElement('div');
-                    item.className = 'tool-list-item';
-                    item.onclick = () => { cerrarTodasLasHerramientas(); verDetalles(tool.id); };
-                    
-                    const imgUrl = tool.imagen.includes('.') ? tool.imagen : tool.imagen + '.jpg';
-                    
-                    // Estrellas de Valía
-                    let stars = '';
-                    if(tool.valia === 'Libre') stars = '<i class="fas fa-star"></i>';
-                    else if(tool.valia === 'Plus') stars = '<i class="fas fa-star"></i><i class="fas fa-star"></i>';
-                    else if(tool.valia === 'Premium') stars = '<i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>';
-                    
-                    item.innerHTML = `
-                        <img src="${imgUrl}" class="tool-list-thumb" onerror="this.src='${fallbackImg}'">
-                        <div class="tool-list-details">
-                            <div class="tool-list-name">${tool.nombre} <span class="tool-list-valia">${stars}</span></div>
-                            <div class="tool-list-sub">${tool.subtitulo || tool.descripcion}</div>
-                        </div>
-                        <div style="margin-left:10px;">
-                            <button class="btn" style="background:var(--primary-blue); color:white; padding:8px 15px; border-radius:6px; font-size:0.9rem;" onclick="abrirApp(${tool.id}, '${tool.nombre}', '${tool.url}'); event.stopPropagation(); cerrarTodasLasHerramientas();">
-                                <i class="fas fa-play"></i>
-                            </button>
-                        </div>
-                    `;
-                    container.appendChild(item);
-                });
-            });
-        }
-
-        // --- BOTON DE CHATBOT (POPUP) ---
-        function abrirChatbot() {
-            let currentUrl = window.location.href; 
-            try { currentUrl = window.top.location.href; } catch(e) {}
-            
-            window.open(
-              'https://gemini.google.com/gem/1JQ_urpDOJs8DOQBtFYMCoF2gwakXwGD8?usp=sharing'+encodeURIComponent(currentUrl),
-              'blank',
-              'scrollbars=yes,toolbar=no,width=700,height=500,top='+(window.outerHeight / 2 - 250)+',left='+(window.outerWidth / 2 - 350)+''
-            );
-        }
-
-        // --- INICIALIZACIÓN ---
-        window.addEventListener('load', () => {
-            gestionarMusica();
-            let sessionUser = null;
-            try { sessionUser = JSON.parse(safeGetItem('sofia_session')); } catch(e) {}
-            
-            if (window.innerWidth <= 768) {
-                document.querySelectorAll('.hidden-desktop').forEach(el => el.style.display = 'inline-block');
-            }
-
-            if (sessionUser) {
-                const updatedUser = dbUsuarios.find(u => u.u === sessionUser.u);
-                usuarioActivo = updatedUser || sessionUser; 
-            } else {
-                safeSetItem('sofia_session', JSON.stringify(usuarioActivo));
-            }
-            
-            renderizarFilas();
-            iniciarCarrusel();
-            
-            setTimeout(mostrarModalInstalacion, 3000);
-        });
-
-        // --- FUNCIONES INTERFAZ ---
-
-        function toggleBuscador() {
-            const box = document.getElementById('search-box');
-            box.classList.toggle('active');
-            if (box.classList.contains('active')) document.getElementById('search-input').focus();
-            else { document.getElementById('search-input').value = ""; renderizarFilas(); }
-        }
-
-        function filtrarContenido(texto) {
-            const container = document.getElementById('content-rows');
-            
-            // Si el texto está vacío, restaurar la vista normal
-            if (!texto) { renderizarFilas(); return; }
-            
-            // Normalizar texto de búsqueda (quitar acentos y minúsculas)
-            const termino = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            
-            const resultados = HERRAMIENTAS.filter(h => {
-                // Normalizar campos de datos para la comparación
-                const nombre = h.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                const desc = h.descripcion.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                const cat = h.categoria.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                
-                return nombre.includes(termino) || desc.includes(termino) || cat.includes(termino);
-            });
-
-            container.innerHTML = "";
-            if (resultados.length > 0) {
-                const title = document.createElement('h3'); title.className = 'row-title'; title.textContent = `Resultados (${resultados.length})`;
-                const grid = document.createElement('div'); grid.className = 'search-results-grid';
-                // Para resultados de búsqueda, usamos la misma lógica visual simplificada
-                resultados.forEach(tool => {
-                    const img = tool.imagen.includes('.') ? tool.imagen : tool.imagen + '.jpg';
-                    const tile = crearElementoTile(tool, img);
-                    grid.appendChild(tile);
-                });
-                container.appendChild(title); container.appendChild(grid);
-            } else { 
-                container.innerHTML = `<div style="padding:40px; color:#666; text-align:center;">
-                    <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 10px;"></i><br>
-                    Sin resultados para "${texto}"
-                </div>`; 
-            }
-        }
-
-        // Función Helper para crear el Tile con la nueva estructura
-        function crearElementoTile(tool, img) {
-            const card = document.createElement('div');
-            card.className = 'tool-card';
-            
-            const tile = document.createElement('div');
-            tile.className = 'tile';
-            tile.onclick = () => verDetalles(tool.id);
-
-            // Badge de Valia
-            let valiaBadge = "";
-            if (tool.valia === "Libre") valiaBadge = `<div class="valia-badge"><i class="fas fa-star"></i></div>`;
-            else if (tool.valia === "Plus") valiaBadge = `<div class="valia-badge"><i class="fas fa-star"></i><i class="fas fa-star"></i></div>`;
-            else if (tool.valia === "Premium") valiaBadge = `<div class="valia-badge"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>`;
-
-            tile.innerHTML = `
-                <div class="tile-loading-msg"><i class="fas fa-circle-notch fa-spin"></i><br>Cargando Librerías...</div>
-                <img src="${img}" class="tile-img" onerror="this.src='${fallbackImg}'">
-                ${valiaBadge}
-                <div class="tile-content">
-                    <div class="tile-actions">
-                        <div class="tile-icon icon-play" onclick="abrirApp(${tool.id}, '${tool.nombre}','${tool.url}');event.stopPropagation()">
-                            <i class="fas fa-play"></i>
-                        </div>
-                        <div class="tile-icon" onclick="verDetalles(${tool.id});event.stopPropagation()">
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            const nameEl = document.createElement('div');
-            nameEl.className = 'tool-name-external';
-            nameEl.textContent = tool.nombre;
-            
-            card.appendChild(tile);
-            card.appendChild(nameEl);
-            
-            return card;
-        }
-
-        function crearFila(cont, tit, items) {
-            const row = document.createElement('div'); row.className = 'row';
-            const tEl = document.createElement('h3'); tEl.className = 'row-title'; tEl.textContent = tit;
-            const scr = document.createElement('div'); scr.className = 'row-scroller';
-            
-            items.forEach(tool => {
-                const img = tool.imagen.includes('.') ? tool.imagen : tool.imagen + '.jpg';
-                const tile = crearElementoTile(tool, img);
-                scr.appendChild(tile);
-            });
-            row.appendChild(tEl); row.appendChild(scr); cont.appendChild(row);
-        }
-
-        function renderizarFilas() {
-            const c = document.getElementById('content-rows');
-            if(!c) return;
-            c.innerHTML = "";
-            
-            // Lógica de Fila de RECIENTES (cronológico inverso)
-            if (recientes.length > 0) {
-                // Mapear IDs guardados a objetos completos de herramientas
-                const herramientasRecientes = recientes.map(id => HERRAMIENTAS.find(h => h.id === id)).filter(h => h !== undefined);
-                
-                if(herramientasRecientes.length > 0) {
-                    const row = document.createElement('div'); row.className = 'row'; row.id = "row-recientes";
-                    const tEl = document.createElement('h3'); tEl.className = 'row-title'; tEl.textContent = "Recientes";
-                    const scr = document.createElement('div'); scr.className = 'row-scroller';
-                    
-                    herramientasRecientes.forEach(tool => {
-                        const img = tool.imagen.includes('.') ? tool.imagen : tool.imagen + '.jpg';
-                        const tile = crearElementoTile(tool, img);
-                        scr.appendChild(tile);
-                    });
-                    
-                    row.appendChild(tEl); row.appendChild(scr); c.appendChild(row);
-                }
-            }
-            
-            // Obtener categorías únicas
-            let cats = [...new Set(HERRAMIENTAS.map(h => h.categoria))];
-            
-            // ROTAR/MEZCLAR CATEGORÍAS PARA VISIBILIDAD (Nueva funcionalidad)
-            cats = cats.sort(() => Math.random() - 0.5);
-
-            cats.forEach(cat => {
-                let its = HERRAMIENTAS.filter(h => h.categoria === cat);
-                // MEZCLAR ALEATORIAMENTE TARJETAS (Funcionalidad existente)
-                its = its.sort(() => Math.random() - 0.5);
-                crearFila(c, cat, its);
-            });
-        }
-
-        let hIdx = 0; let hInt;
-        function iniciarCarrusel() { if(hInt) return; actHero(); hInt = setInterval(() => { hIdx=(hIdx+1)%HERRAMIENTAS.length; actHero(); }, 8000); }
-        
-        function actHero() {
-            const t = HERRAMIENTAS[hIdx];
-            const c = document.getElementById('hero-content');
-            const s = document.getElementById('hero-section');
-            if(!c || !s) return;
-            c.classList.add('fade-out');
-            setTimeout(() => {
-                document.getElementById('hero-title').textContent = t.nombre;
-                document.getElementById('hero-desc').textContent = t.descripcion;
-                const bp = document.getElementById('hero-btn-play').cloneNode(true);
-                const bi = document.getElementById('hero-btn-details').cloneNode(true);
-                document.getElementById('hero-btn-play').replaceWith(bp);
-                document.getElementById('hero-btn-details').replaceWith(bi);
-                bp.onclick = () => abrirApp(t.id, t.nombre, t.url);
-                bi.onclick = () => verDetalles(t.id);
-                
-                const localImg = t.imagen.includes('.') ? t.imagen : t.imagen + '.jpg';
-                const imgLoader = new Image();
-                imgLoader.onload = function() { s.style.backgroundImage = `url('${localImg}')`; };
-                imgLoader.onerror = function() { s.style.backgroundImage = `url('${fallbackImg}')`; };
-                imgLoader.src = localImg;
-
-                c.classList.remove('fade-out');
-            }, 500);
-        }
-
-        function mostrarVideoPresentacion() { document.getElementById('video-modal').style.display='flex'; document.getElementById('promo-video').play().catch(e=>{}); }
-        function verDetalles(id) {
-            const t = HERRAMIENTAS.find(h => h.id === id); if(!t) return;
-            const m = document.getElementById('details-modal');
-            document.getElementById('modal-title').textContent = t.nombre;
-            document.getElementById('modal-cat').textContent = t.categoria;
-            document.getElementById('modal-desc').textContent = t.descripcion;
-            document.getElementById('modal-btn-open').onclick = () => abrirApp(t.id, t.nombre, t.url);
-            
-            const localImg = t.imagen.includes('.') ? t.imagen : t.imagen + '.jpg';
-            const banner = document.getElementById('modal-banner');
-            banner.style.backgroundImage = `url('${fallbackImg}')`; 
-            
-            const imgLoader = new Image();
-            imgLoader.onload = () => { banner.style.backgroundImage = `url('${localImg}')`; };
-            imgLoader.src = localImg;
-
-            m.style.display = 'flex';
-        }
-        function cerrarDetalles(e) { if(!e || e.target.id === 'details-modal') document.getElementById('details-modal').style.display='none'; }
-        
-        function abrirApp(id, t, u) {
-            // Registrar uso en recientes
-            registrarUso(id);
-            
-            document.getElementById('details-modal').style.display='none';
-            document.getElementById('viewer').style.display='flex';
-            document.getElementById('viewer-title').textContent = t;
-            
-            if(!u || u === "#" || u.trim() === "") {
-                console.warn("URL de App vacía");
-            }
-            document.getElementById('app-frame').src = u;
-        }
-        window.addEventListener('scroll', () => {
-            const n = document.getElementById('navbar');
-            if (window.scrollY > 50) n.classList.add('scrolled'); else n.classList.remove('scrolled');
-        });
-    </script>
+// --- MODALES ---
+function cerrarVideo() { $('video-modal').style.display = 'none'; $('promo-video').pause(); }
+function verDetalles(id) {
+  const t = HERRAMIENTAS.find(h => h.id === id); if (!t) return;
+  $('modal-title').textContent = t.nombre;
+  $('modal-cat').textContent = t.categoria;
+  $('modal-sub').textContent = t.subtitulo || ''; $('modal-sub').classList.toggle('hidden', !t.subtitulo);
+  $('modal-stars').innerHTML = starsHTML(t.valia);
+  $('modal-desc').textContent = t.descripcion;
+  $('modal-btn-open').onclick = () => abrirApp(t.id, t.nombre, t.url);
+  const banner = $('modal-banner');
+  banner.style.backgroundImage = `url('${fallbackImg}')`;
+  const l = new Image(); l.onload = () => { banner.style.backgroundImage = `url('${imgOf(t)}')`; }; l.src = imgOf(t);
+  $('details-modal').style.display = 'flex';
+}
+function cerrarDetalles(e) { if (!e || e.target.id === 'details-modal') $('details-modal').style.display = 'none'; }
+function abrirApp(id, titulo, url) {
+  registrarUso(id);
+  $('details-modal').style.display = 'none';
+  $('viewer-title').textContent = titulo;
+  if (!url || url === '#' || !url.trim()) console.warn('URL de App vacía');
+  $('app-frame').src = url;
+  $('viewer').style.display = 'flex';
+}
+function cerrarVisor() {
+  $('viewer').style.display = 'none';
+  $('app-frame').src = 'about:blank';
+  if (!$('search-input').value) renderizarFilas();
+}
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if ($('viewer').style.display === 'flex') cerrarVisor();
+  else if ($('details-modal').style.display === 'flex') cerrarDetalles(null);
+  else if ($('all-tools-modal').style.display === 'flex') cerrarTodasLasHerramientas();
+  else if ($('video-modal').style.display === 'flex') cerrarVideo();
+});
+window.addEventListener('scroll', () => $('navbar').classList.toggle('scrolled', window.scrollY > 50), { passive: true });
+</script>
 </body>
 </html>
+
