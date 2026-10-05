@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VaporGLP Simulator v4</title>
+<style>
+:root{color-scheme:dark;--bg:#070b16;--card:#0d1424;--bd:#1e2a44;--tx:#e2e8f0;--mu:#8b9ab5;--bl:#3b82f6;--em:#10b981;--am:#f59e0b;--rd:#ef4444;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--tx);font:13px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.mono,code{font-family:ui-monospace,Menlo,Consolas,monospace}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--bd);flex-wrap:wrap}
+h1{font-size:17px;margin:0}h1 span{color:var(--bl)}small{color:var(--mu)}
+button{font:inherit;cursor:pointer;border:1px solid var(--bd);background:#111b31;color:var(--tx);border-radius:8px;padding:6px 12px}
+button.p{background:var(--bl);border-color:var(--bl);font-weight:600}
+nav{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap}nav button.on{border-color:var(--bl);color:#9cc2ff}
+main{display:grid;grid-template-columns:290px 1fr;gap:14px;padding:0 18px 24px;max-width:1280px;margin:auto}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#9cc2ff;margin:0 0 10px}
+label{display:block;color:var(--mu);font-size:11px;margin:8px 0 3px}
+input,select{width:100%;background:#0a1120;border:1px solid var(--bd);color:var(--tx);border-radius:7px;padding:6px 8px;font:inherit}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.kpi{background:#0a1120;border:1px solid var(--bd);border-radius:10px;padding:10px}.kpi b{display:block;font-size:22px}.kpi small{font-size:10px;text-transform:uppercase}
+.status{border-radius:12px;padding:12px 14px;margin-bottom:14px;border:1px solid;font-weight:700}
+.ok{background:#052e22;border-color:var(--em);color:#6ee7b7}.warn{background:#2b1d05;border-color:var(--am);color:#fcd34d}.bad{background:#2e0b0b;border-color:var(--rd);color:#fca5a5}
+.status small{display:block;font-weight:400;color:inherit;opacity:.85;margin-top:2px}
+.bar{height:22px;border-radius:6px;background:#0a1120;margin:6px 0;position:relative;overflow:hidden}.bar i{display:block;height:100%;border-radius:6px}.bar span{position:absolute;left:8px;top:2px;font-size:12px}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.cap{color:var(--tx);font-size:13px;margin:6px 0 0;padding:8px 10px;background:#0a1120;border-radius:8px}
+svg text{fill:var(--mu);font-size:10px}
+.step{border-left:3px solid var(--bl);background:#0a1120;border-radius:0 8px 8px 0;padding:8px 12px;margin:8px 0}
+.step b{color:#9cc2ff}.step .f{color:var(--mu)}.step .r{color:#6ee7b7}
+details{margin-top:8px}summary{cursor:pointer;color:#9cc2ff}
+table{border-collapse:collapse;width:100%;font-size:12px}td,th{border-bottom:1px solid var(--bd);padding:5px 8px;text-align:left;vertical-align:top}
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:16px;z-index:9}.modal.on{display:flex}
+.modal>div{background:var(--card);border:1px solid var(--bd);border-radius:14px;max-width:640px;max-height:85vh;overflow:auto;padding:20px}
+.tab{display:none}.tab.on{display:block}
+#cvw{position:relative;height:380px;border-radius:10px;overflow:hidden;background:radial-gradient(circle at 50% 30%,#12203d,#070b16);touch-action:none;cursor:grab}
+.mk{position:absolute;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;background:#fff;color:#000;font-size:11px;font-weight:700;text-align:center;line-height:20px;pointer-events:none;box-shadow:0 0 0 2px var(--bl)}
+.lg{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--bd)}.lg b.n{background:#fff;color:#000;border-radius:50%;min-width:20px;height:20px;text-align:center;font-size:11px;line-height:20px}
+.tag{font-size:10px;padding:1px 6px;border-radius:5px;border:1px solid var(--bd);color:var(--mu);white-space:nowrap}.tag.r{color:#fca5a5;border-color:#7f1d1d}.tag.o{color:#fcd34d;border-color:#78350f}
+.gt{position:relative;height:16px;background:#0a1120;border-radius:4px;min-width:140px}.gt i{position:absolute;top:0;height:100%;background:var(--bl);border-radius:4px}
+@media print{header button,nav,.modal,#side,#cvw{display:none!important}main{display:block}.tab{display:block!important}}
+</style></head><body>
+<header><div><h1><span>Vapor</span>GLP Simulator <small class="mono">v4.0 · 3D · normativa</small></h1><small>Vaporización natural, componentes del tanque y ruta de certificación</small></div>
+<div><button onclick="window.print()">Imprimir</button> <button class="p" onclick="H.classList.add('on')">? Ayuda</button></div></header>
+<nav><button id="n1" class="on" onclick="tab(1)">1 · Simulador</button><button id="n2" onclick="tab(2)">2 · Tanque 3D y componentes</button><button id="n3" onclick="tab(3)">3 · Normativa y cronograma</button><button id="n4" onclick="tab(4)">4 · Memoria de cálculo</button></nav>
+<main>
+<aside id="side"><div class="card"><h2>Tanque</h2>
+<label>Orientación</label><select id="or"><option value="h">Horizontal</option><option value="v">Vertical</option></select>
+<div class="g2"><div><label>Diámetro D (m)</label><input id="D" type="number" step=".05" value="1.2"></div><div><label id="Ll">Longitud total L (m)</label><input id="L" type="number" step=".1" value="4"></div></div>
+<label>Nivel de líquido (% volumen): <b id="fv">30</b>%</label><input id="f" type="range" min="5" max="85" value="30">
+<div class="g2"><div><label>N.º de tanques</label><input id="N" type="number" min="1" value="1"></div><div><label>% Propano (masa)</label><input id="wp" type="number" min="0" max="100" value="70"></div></div>
+<label>Instalación</label><select id="ug"><option value="a">Sobre el nivel del piso</option><option value="u">Enterrado / semienterrado</option></select>
+<h2 style="margin-top:14px">Operación y clima</h2>
+<div class="g2"><div><label>T ambiente (°C)</label><input id="Ta" type="number" value="20"></div><div><label>Demanda (kg/h)</label><input id="m" type="number" value="12"></div></div>
+<label>Convección U (W/m²·K) <small>= <span id="Uk"></span> kJ/h·m²·°C</small></label><input id="U" type="number" step=".5" value="7">
+<div class="g2" style="margin-top:6px"><button onclick="U.value=5;go()">Aire quieto</button><button onclick="U.value=12;go()">Con viento</button></div>
+<div class="g2"><div><label>P. atmosférica (bar)</label><input id="Pa" type="number" step=".01" value="1.013"></div><div><label>P. mín. entrega (bar man.)</label><input id="Pm" type="number" step=".1" value="0.7"></div></div>
+</div></aside>
+<section>
+<div class="tab on" id="t1">
+<div id="st" class="status"></div>
+<div class="card"><h2>¿Alcanza el tanque?</h2><div class="kpis" id="kp"></div><div id="bars" style="margin-top:10px"></div>
+<details><summary>Más resultados</summary><div class="kpis" id="kp2" style="margin-top:8px"></div></details></div>
+<div class="charts"><div class="card"><h2>Si baja el nivel de gas…</h2><svg id="c1" viewBox="0 0 340 210" width="100%"></svg><div class="cap" id="k1"></div></div>
+<div class="card"><h2>Si cambia el clima…</h2><svg id="c2" viewBox="0 0 340 210" width="100%"></svg><div class="cap" id="k2"></div></div></div>
+<p><small>Cómo leer las gráficas: la línea azul es lo que el tanque puede entregar. Zona <b style="color:#6ee7b7">verde</b>: la línea azul está sobre tu demanda (alcanza). Zona <b style="color:#fca5a5">roja</b>: no alcanza. El punto blanco es tu condición actual.</small></p>
+</div>
+<div class="tab" id="t2">
+<div class="card"><h2>Tanque en 3D <small>(arrastra para rotar · rueda/pellizco para acercar)</small></h2>
+<div id="cvw"></div><div style="margin-top:8px"><button onclick="rst3()">Reiniciar vista</button> <button onclick="T3&&(T3.auto=!T3.auto)">Giro automático</button> <small id="cls"></small></div></div>
+<div class="card"><h2>Componentes requeridos según volumen <small>(NTC 3853 Tabla 2.3.3.2.a y num. 2.3.3.2)</small></h2><div id="lg"></div></div>
+<div class="card"><h2>Distancias mínimas de ubicación <small>(NTC 3853-1 Tabla 2.2.2)</small></h2><div id="ds"></div></div>
+</div>
+<div class="tab" id="t3">
+<div class="card"><h2>Estado de las resoluciones <small>(consulta del 04-oct-2026)</small></h2>
+<table><tr><th>Norma</th><th>Qué regula</th><th>Estado según las fuentes consultadas</th></tr>
+<tr><td>Res. MME 40245/2016</td><td>Reglamento técnico de cilindros y tanques estacionarios de GLP (servicio público domiciliario) y su mantenimiento</td><td><b style="color:#fca5a5">Derogada</b>: reemplazada por la Res. 40490/2022 (emergencia).</td></tr>
+<tr><td>Res. MME 40490/2022</td><td>Reglamento de emergencia con los mismos requisitos de fondo (ASME VIII Div.1 para tanques &gt;191 kg; NTC 3853 para accesorios)</td><td>Prorrogada hasta el 21-may-2024. Un comunicado de ICONTEC (nov-2025) indica que <b>ya no está vigente</b> y que se espera un reglamento nuevo. No encontré el nuevo texto: <b>verifícalo antes de contratar</b>.</td></tr>
+<tr><td>Res. MME 40246/2016 (mod. 40867/2016)</td><td>Reglamento técnico de recibo, almacenamiento y distribución de GLP (instalaciones con tanques estacionarios, tuberías, válvulas)</td><td>Aparece como vigente en un boletín jurídico de 2025. Confirma en el Gestor Normativo de la CREG y revisa su ámbito frente a tu instalación industrial.</td></tr>
+<tr><td>NTC 3853 · 3853-1 · 4282</td><td>Equipos y accesorios · instalación de sistemas GLP · gas en edificaciones industriales</td><td>Normas técnicas que subes; son la base de los componentes, distancias, pruebas y purga de esta herramienta.</td></tr></table>
+<p><small>Ojo: el texto de 40245/40490 se refiere al servicio público domiciliario de GLP. Si tu tanque es de uso industrial privado, confirma con el distribuidor o un organismo de inspección qué parte te aplica. Esto no es asesoría legal.</small></p></div>
+<div class="card"><h2>Ruta de certificación y cronograma <small>(duraciones indicativas, ajústalas a tu proyecto)</small></h2>
+<div class="g2" style="max-width:360px"><div><label>Fecha de inicio</label><input id="d0" type="date"></div></div>
+<div style="overflow-x:auto;margin-top:10px"><table id="gt"></table></div></div>
+</div>
+<div class="tab" id="t4"><div class="card"><h2>Memoria de cálculo (paso a paso, con tus valores)</h2><div id="au"></div>
+<details><summary>Constantes y tabla de la curva de nivel</summary><div id="tb" style="overflow-x:auto"></div></details>
+<button style="margin-top:10px" onclick="csv()">Descargar curva CSV</button></div>
+<div class="card"><h2>Modelo y límites</h2><ul><li>Energía: Q = ṁ·Lv (Watson). Calor disponible: Q = U·A·N·(T_amb − T_líq).</li><li>Área húmeda horizontal con nivel→altura real (θ = 2·arccos(1−2h/D)); vertical con A = πr² + 2πrHf.</li><li>Presión de vapor: Antoine + Raoult; T mínima admisible = T donde P = presión mínima de entrega.</li><li>El cálculo térmico usa tapas planas; el 3D dibuja cabezales semiesféricos (volumen y clasificación sí los usan). Composición del líquido constante, régimen estacionario.</li><li>U es empírico: valídalo en campo. Herramienta de estimación; no sustituye al ingeniero responsable.</li></ul></div></div>
+</section></main>
+<div class="modal" id="H" onclick="if(event.target==this)this.classList.remove('on')"><div>
+<h2 style="margin-top:0">Ayuda rápida</h2>
+<ol><li><b>Simulador:</b> llena los datos a la izquierda. El banner dice si el tanque alcanza (verde), queda justo (ámbar) o no alcanza (rojo).</li><li><b>Tanque 3D:</b> arrastra para girar. Los números del tanque corresponden a la lista de componentes que la NTC 3853 exige para su volumen.</li><li><b>Normativa y cronograma:</b> estado de las resoluciones 40245 y 40246 y una ruta de certificación con fechas a partir de tu fecha de inicio.</li><li><b>Memoria de cálculo:</b> cada ecuación con tus números, para auditar.</li></ol>
+<p><small>Verifica siempre la norma vigente con un organismo de inspección acreditado antes de construir u operar.</small></p>
+<button class="p" onclick="H.classList.remove('on')">Entendido</button></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=i=>document.getElementById(i),H=$('H'),n=(v,d=2)=>(+v).toFixed(d);
+const C={p:{M:44.1,Lv:426,rho:500,Tc:369.8,A:6.82973,B:813.2,C:248.0},b:{M:58.1,Lv:362,rho:580,Tc:425.1,A:6.82485,B:943.453,C:239.711}};
+const ps=(c,T)=>Math.pow(10,c.A-c.B/(c.C+T))*0.00133322;
+const lv=(c,T)=>c.Lv*Math.pow((1-(T+273.15)/c.Tc)/(1-288.15/c.Tc),.38);
+const IDS=['or','D','L','f','N','wp','Ta','m','U','Pa','Pm','ug'];
+const rd=()=>{const o={};IDS.forEach(i=>o[i]=(i=='or'||i=='ug')?$(i).value:+$(i).value);return o};
+function tab(k){[1,2,3,4].forEach(i=>{$('t'+i).classList.toggle('on',i==k);$('n'+i).classList.toggle('on',i==k)});if(k==2){init3();resize3();go()}}
+function theta(f){let a=0,b=2*Math.PI;for(let i=0;i<60;i++){const t=(a+b)/2;((t-Math.sin(t))/(2*Math.PI)<f)?a=t:b=t}return(a+b)/2}
+function calc(s){
+ const w=s.wp/100,nP=w/C.p.M,nB=(1-w)/C.b.M,xp=nP/(nP+nB),xb=1-xp,r=s.D/2,f=s.f/100,Uk=s.U*3.6;
+ const Pb=T=>xp*ps(C.p,T)+xb*ps(C.b,T),Lm=T=>w*lv(C.p,T)+(1-w)*lv(C.b,T);
+ let th=null,hD=null,Aw;
+ if(s.or=='h'){th=theta(f);hD=(1-Math.cos(th/2))/2;Aw=s.L*r*th+r*r*(th-Math.sin(th))}else Aw=Math.PI*r*r+2*Math.PI*r*s.L*f;
+ const At=Aw*s.N,Pmin=s.Pm+s.Pa;
+ let a=-80,b=40;for(let i=0;i<60;i++){const t=(a+b)/2;Pb(t)<Pmin?a=t:b=t}const Tmin=(a+b)/2;
+ const LvM=Lm(Tmin),Qmax=Uk*At*(s.Ta-Tmin),mmax=Math.max(0,Qmax/LvM);
+ let Tl=s.Ta;for(let i=0;i<80;i++)Tl=s.Ta-s.m*Lm(Tl)/(Uk*At);
+ const Plq=Pb(Tl),ratio=mmax/s.m,k=ratio>=1.2?'ok':ratio>=1?'warn':'bad';
+ const Lc=Math.max(s.L-s.D,.1),V=Math.PI*r*r*Lc+4/3*Math.PI*r**3,gal=V*264.172,Atot=2*Math.PI*r*Lc+4*Math.PI*r*r;
+ const rho=1/(w/C.p.rho+(1-w)/C.b.rho),mass=V*f*rho*s.N;
+ return{...s,w,xp,xb,r,f,Uk,th,hD,Aw,At,Pmin,Tmin,LvM,Qmax,mmax,Tl,Plq,ratio,k,Lc,V,gal,Atot,rho,mass,Pb,Lm};
+}
+function chart(el,xs,ys,dem,cx,cy,xl){
+ const W=340,Hh=210,l=36,rr=10,t=10,bt=32,mx=Math.max(...ys,dem,1)*1.15,x0=xs[0],x1=xs[xs.length-1];
+ const X=v=>l+(v-x0)/(x1-x0)*(W-l-rr),Y=v=>Hh-bt-v/mx*(Hh-bt-t);let s='';
+ s+=`<rect x="${l}" y="${t}" width="${W-l-rr}" height="${Y(dem)-t}" fill="#10b981" opacity=".13"/><rect x="${l}" y="${Y(dem)}" width="${W-l-rr}" height="${Hh-bt-Y(dem)}" fill="#ef4444" opacity=".11"/>`;
+ for(let i=0;i<=4;i++){const v=mx*i/4,xv=x0+(x1-x0)*i/4;s+=`<text x="${l-4}" y="${Y(v)+3}" text-anchor="end">${v.toFixed(0)}</text><text x="${X(xv)}" y="${Hh-bt+13}" text-anchor="middle">${xv.toFixed(0)}</text>`}
+ s+=`<polyline fill="none" stroke="#3b82f6" stroke-width="3" points="${xs.map((x,i)=>X(x)+','+Y(ys[i])).join(' ')}"/><line x1="${l}" x2="${W-rr}" y1="${Y(dem)}" y2="${Y(dem)}" stroke="#ef4444" stroke-dasharray="5 4"/>`;
+ s+=`<text x="${W-rr}" y="${Y(dem)-4}" text-anchor="end" style="fill:#fca5a5">tu demanda (${dem} kg/h)</text><circle cx="${X(cx)}" cy="${Y(cy)}" r="6" fill="#fff" stroke="#3b82f6" stroke-width="2"/><text x="${(W+l)/2}" y="${Hh-4}" text-anchor="middle">${xl} · eje vertical: kg/h que entrega el tanque</text>`;
+ el.innerHTML=s}
+const DT=[[125,'3 m','—','—'],[250,'3 m','3 m','—'],[500,'3 m','3 m','1 m'],[2000,'3 m','7,6 m','1 m'],[4000,'7,6 m','7,6 m','1 m'],[30000,'15 m','15 m','1,5 m']];
+function comps(c){
+ const big=c.gal>2000,L=[];
+ const add=(cat,name,norm,rq,col)=>L.push({cat,name,norm,rq,col});
+ if(!big){
+  add('fill','Válvula de llenado de doble cheque','NTC 3853 T.2.3.3.2.a','R*');
+  add('serv','Válvula de servicio (cierre manual) con exceso de flujo — salida de vapor','T.2.3.3.2.a','R*');
+  add('rel',c.ug=='u'?'Válvula de alivio de presión (externa permitida en enterrados)':'Válvula interna de alivio de presión de resorte','T.2.3.3.2.a · Anexo C','R');
+  add('lvl','Indicador fijo de máximo nivel de llenado','T.2.3.3.2.a · 2.3.4.2','R*');
+  add('lvl','Indicador magnético de nivel','T.2.3.3.2.a','R*');
+  if(c.gal>=125)add('serv','Válvula de exceso de flujo — evacuación de líquido','T.2.3.3.2.a nota 5','R');
+  add('fill','Retorno de vapor: válvula cheque + exceso de flujo','T.2.3.3.2.a','O');
+ }else{
+  add('serv','Evacuación de líquido: cierre positivo + exceso de flujo (o válvula interna con cierre remoto)','NTC 3853 2.3.3.2.b.1','R');
+  add('serv','Evacuación de vapor: cierre positivo + exceso de flujo (o válvula interna)','2.3.3.2.b.1','R');
+  add('fill','Entrada de líquido: cierre positivo + cheque o exceso de flujo (o interna)','2.3.3.2.b.2','R');
+  add('fill','Entrada de vapor (retorno): cierre positivo + cheque o exceso de flujo','2.3.3.2.b.2','R');
+  add('rel','Válvula de alivio de presión (interna de resorte o externa)','2.3.3.2.b.3 · Anexo C','R');
+  add('lvl','Indicador fijo de máximo nivel de llenado','2.3.3.2.b.3','R');
+  add('lvl','Indicador de nivel (magnético, rotativo o tubo deslizante)','2.3.3.2.c','R');
+  add('gau','Manómetro (tanques &gt; 2 000 gal agua)','2.3.4 literal f','R');
+ }
+ L.tank=L.length;
+ add('reg','Regulador de presión (alta/baja según etapa), conforme NTC 3873','NTC 4282 §3.7 · 3853-1','R');
+ add('pipe','Tubería de acero mín. cédula 40, válvula de corte ¼ de vuelta antes del regulador y en cada salida; venteo del regulador al exterior','NTC 4282 §3.5.2, 3.8, 3.7.4','R');
+ return L}
+const COL={fill:0x3b82f6,serv:0x10b981,rel:0xef4444,lvl:0xa855f7,gau:0xf59e0b,reg:0xe2e8f0,pipe:0x94a3b8};
+let T3=null;
+function init3(){
+ if(T3||!window.THREE){if(!window.THREE)$('cvw').innerHTML='<p style="padding:20px">El visor 3D necesita cargar three.js (conexión a internet).</p>';return}
+ const box=$('cvw'),w=box.clientWidth||600,h=380;
+ const scn=new THREE.Scene(),cam=new THREE.PerspectiveCamera(40,w/h,.1,100),ren=new THREE.WebGLRenderer({antialias:true,alpha:true});
+ ren.setSize(w,h);ren.setPixelRatio(Math.min(devicePixelRatio,2));ren.localClippingEnabled=true;box.appendChild(ren.domElement);
+ scn.add(new THREE.AmbientLight(0xffffff,.75));const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(5,8,6);scn.add(dl);
+ T3={scn,cam,ren,box,az:.8,ev:.35,d:11,auto:true,g:null,mk:[]};
+ let dn=false,px=0,py=0,pts={};const cv=ren.domElement;
+ cv.onpointerdown=e=>{dn=true;px=e.clientX;py=e.clientY;T3.auto=false;cv.setPointerCapture(e.pointerId)};
+ cv.onpointerup=()=>dn=false;
+ cv.onpointermove=e=>{if(!dn)return;T3.az-=(e.clientX-px)*.008;T3.ev=Math.max(-.2,Math.min(1.4,T3.ev+(e.clientY-py)*.006));px=e.clientX;py=e.clientY};
+ cv.onwheel=e=>{e.preventDefault();T3.d=Math.max(5,Math.min(25,T3.d*(1+e.deltaY*.001)))};
+ let pd=0;cv.addEventListener('touchmove',e=>{if(e.touches.length==2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);if(pd)T3.d=Math.max(5,Math.min(25,T3.d*pd/d));pd=d}},{passive:true});cv.addEventListener('touchend',()=>pd=0);
+ addEventListener('resize',resize3);
+ (function loop(){requestAnimationFrame(loop);if(!box.clientWidth)return;if(T3.auto)T3.az+=.004;
+  const{az,ev,d}=T3;cam.position.set(d*Math.cos(ev)*Math.sin(az),d*Math.sin(ev),d*Math.cos(ev)*Math.cos(az));cam.lookAt(0,0,0);ren.render(scn,cam);
+  const W=box.clientWidth;T3.mk.forEach(m=>{const v=m.p.clone().project(cam);m.e.style.left=(v.x*.5+.5)*W+'px';m.e.style.top=(-v.y*.5+.5)*380+'px'})})();
+}
+function resize3(){if(!T3)return;const w=T3.box.clientWidth;if(!w)return;T3.ren.setSize(w,380);T3.cam.aspect=w/380;T3.cam.updateProjectionMatrix()}
+function rst3(){if(T3){T3.az=.8;T3.ev=.35;T3.d=11;T3.auto=true}}
+function pipe(a,b,r,col){const d=b.clone().sub(a),m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,d.length(),10),new THREE.MeshPhongMaterial({color:col}));m.position.copy(a.clone().add(b).multiplyScalar(.5));m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize());return m}
+function build3(c,list){
+ if(!T3)return;const{scn}=T3;if(T3.g)scn.remove(T3.g);T3.mk.forEach(m=>m.e.remove());T3.mk=[];
+ const hor=c.or=='h',s=6/Math.max(c.L,c.D),R=c.r*s,Lc=c.Lc*s,g=new THREE.Group();
+ const shellMat=new THREE.MeshPhongMaterial({color:0x5b7aa8,transparent:true,opacity:.28,side:THREE.DoubleSide});
+ const wire=new THREE.MeshBasicMaterial({color:0x7aa2d8,wireframe:true,transparent:true,opacity:.12});
+ const yb=hor?-R:-(Lc/2+R),yl=hor?-R+c.hD*2*R:yb+c.f*(Lc+2*R),pl=new THREE.Plane(new THREE.Vector3(0,-1,0),yl);
+ const liqMat=new THREE.MeshPhongMaterial({color:0x2563eb,transparent:true,opacity:.6,side:THREE.DoubleSide,clippingPlanes:[pl]});
+ function shell(mat){const q=new THREE.Group(),cy=new THREE.Mesh(new THREE.CylinderGeometry(R,R,Lc,40,1,true),mat),hg=new THREE.SphereGeometry(R,40,20,0,2*Math.PI,0,Math.PI/2),h1=new THREE.Mesh(hg,mat),h2=new THREE.Mesh(hg,mat);
+  if(hor){cy.rotation.z=Math.PI/2;h1.position.x=Lc/2;h1.rotation.z=-Math.PI/2;h2.position.x=-Lc/2;h2.rotation.z=Math.PI/2}else{h1.position.y=Lc/2;h2.position.y=-Lc/2;h2.rotation.x=Math.PI}
+  q.add(cy,h1,h2);return q}
+ g.add(shell(shellMat),shell(wire),shell(liqMat));
+ const sf=hor?new THREE.Mesh(new THREE.PlaneGeometry(Lc,2*Math.sqrt(Math.max(R*R-(yl)**2,0))),new THREE.MeshBasicMaterial({color:0x3b82f6,transparent:true,opacity:.45,side:THREE.DoubleSide})):new THREE.Mesh(new THREE.CircleGeometry(R,40),new THREE.MeshBasicMaterial({color:0x3b82f6,transparent:true,opacity:.45,side:THREE.DoubleSide}));
+ sf.rotation.x=-Math.PI/2;sf.position.y=yl;g.add(sf);
+ const gr=new THREE.GridHelper(14,14,0x1e2a44,0x1e2a44);gr.position.y=yb-.05;g.add(gr);
+ const nt=list.tank,hh=.28*R+.2;let svc=null;
+ for(let i=0;i<nt;i++){let x,z,yt;
+  if(hor){x=-Lc/2*.8+(nt>1?i/(nt-1):.5)*Lc*.8;z=(i%2?1:-1)*R*.35;yt=Math.sqrt(R*R-z*z)}
+  else{const a=i*2*Math.PI/nt,rho=nt>1?.55*R:0;x=rho*Math.cos(a);z=rho*Math.sin(a);yt=Lc/2+Math.sqrt(R*R-rho*rho)}
+  const A=new THREE.Vector3(x,yt,z),B=new THREE.Vector3(x,yt+hh,z),col=COL[list[i].cat];
+  g.add(pipe(A,B,Math.max(.035,R*.04),0x94a3b8));const sp=new THREE.Mesh(new THREE.SphereGeometry(Math.max(.08,R*.09),16,12),new THREE.MeshPhongMaterial({color:col}));sp.position.copy(B);g.add(sp);
+  if(list[i].cat=='serv'&&!svc)svc=B.clone();
+  mark(i+1,new THREE.Vector3(x,yt+hh+.3,z))}
+ const sv=svc||new THREE.Vector3(0,R+hh,0),rx=hor?Lc/2+R+1.3:R+1.3,top=sv.y+.6,rg=new THREE.Vector3(rx,hor?-R+.3:yb+.5,0);
+ const regM=new THREE.Mesh(new THREE.BoxGeometry(.45,.45,.45),new THREE.MeshPhongMaterial({color:COL.reg}));regM.position.copy(rg);g.add(regM);
+ [[sv,new THREE.Vector3(sv.x,top,sv.z)],[new THREE.Vector3(sv.x,top,sv.z),new THREE.Vector3(rx,top,sv.z)],[new THREE.Vector3(rx,top,sv.z),new THREE.Vector3(rx,rg.y+.22,0)]].forEach(p=>g.add(pipe(p[0],p[1],.05,COL.pipe)));
+ mark(nt+1,new THREE.Vector3(rx,rg.y+.7,0));mark(nt+2,new THREE.Vector3((sv.x+rx)/2,top+.3,sv.z));
+ scn.add(g);T3.g=g;
+ function mark(k,p){const e=document.createElement('div');e.className='mk';e.textContent=k;T3.box.appendChild(e);T3.mk.push({e,p})}
+}
+function lists(c,L){
+ $('cls').textContent=`Volumen ≈ ${n(c.V,2)} m³ ≈ ${n(c.gal,0)} gal agua → clase ${c.gal>2000?'> 2 000 gal':'≤ 2 000 gal'} (cabezales semiesféricos)`;
+ $('lg').innerHTML=L.map((x,i)=>`<div class="lg"><b class="n">${i+1}</b><div style="flex:1">${x.name}<br><small>${x.norm}</small></div><span class="tag ${x.rq=='O'?'o':'r'}">${x.rq=='O'?'Opcional':x.rq=='R*'?'Requerido*':'Requerido'}</span></div>`).join('')+'<p><small>* Puede ir integrado en una multiválvula. La capacidad de descarga de la válvula de alivio se dimensiona con el área superficial del tanque ('+n(c.Atot,1)+' m² aprox.) según el Anexo C de la NTC 3853; consúltalo con el fabricante. Los diámetros de boquillas los define el fabricante del tanque (ASME VIII).</small></p>';
+ const r=DT.find(x=>c.gal<=x[0]);
+ $('ds').innerHTML=r?`<table><tr><th>Tamaño (gal agua)</th><th>Enterrado</th><th>Sobre el piso</th><th>Entre tanques</th></tr><tr><td>${n(c.gal,0)} (rango ≤ ${r[0]})</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr></table><p><small>Instalación elegida: <b>${c.ug=='u'?'enterrada → '+r[1]:'sobre el piso → '+r[2]}</b>. Ver Figura 2.2.2 y notas para el punto de medición (edificaciones, límite de predio, fuentes de ignición).</small></p>`:'<p>Más de 30 000 gal: consulta la Tabla 2.2.2 completa.</p>';
+}
+const TK=[['Verificar normativa vigente (Res. 40246, reglamento de tanques, OEC aplicable)',0,7],['Ingeniería y memoria de cálculo (NTC 4282 §3.1.1)',7,21],['Selección y compra de tanque con certificado de conformidad y accesorios (NTC 3853)',14,45],['Obra civil y ubicación según distancias (NTC 3853-1 T.2.2.2)',28,21],['Montaje de tanque, accesorios y regulación',49,14],['Tubería: soldadura con procesos y soldadores calificados (NTC 2057)',56,14],['Pruebas de presión y hermeticidad + registros (NTC 4282 §5.1–5.2)',70,5],['Purga y puesta en servicio (NTC 4282 §5.3)',75,3],['Inspección / certificación por organismo acreditado ONAC (confirmar alcance aplicable)',78,14],['Operación: revisión parcial (visual) — cada año',365,7],['Operación: revisión total (espesores, interna) — cada 10 años',3650,30]];
+function gantt(){
+ const d0=new Date($('d0').value||Date.now()),fm=d=>new Date(d0.getTime()+d*864e5).toLocaleDateString('es-CO');
+ $('gt').innerHTML='<tr><th>Actividad</th><th>Inicio</th><th>Fin</th><th>Duración</th><th>Primeros 100 días</th></tr>'+TK.map(t=>`<tr><td>${t[0]}</td><td>${fm(t[1])}</td><td>${fm(t[1]+t[2])}</td><td>${t[2]} d</td><td>${t[1]<100?`<div class="gt"><i style="left:${t[1]}%;width:${Math.max(2,Math.min(t[2],100-t[1]))}%"></i></div>`:'<small>recurrente</small>'}</td></tr>`).join('')}
+function go(){
+ const s=rd();$('fv').textContent=s.f;$('Uk').textContent=n(s.U*3.6,1);$('Ll').textContent=s.or=='h'?'Longitud total L (m)':'Altura total H (m)';
+ const c=calc(s),msg={ok:['EL TANQUE ALCANZA','Entrega al menos 1.2 veces lo que pides.'],warn:['JUSTO: SIN MARGEN DE SEGURIDAD','Alcanza, pero con menos de 20 % de reserva ante frío o bajo nivel.'],bad:['NO ALCANZA — RIESGO DE CONGELAMIENTO','Pides más gas del que el ambiente puede evaporar; la presión caerá bajo el mínimo.']}[c.k];
+ $('st').className='status '+c.k;$('st').innerHTML=msg[0]+'<small>'+msg[1]+(c.Tl<0?' Pared bajo 0 °C: posible escarcha.':'')+'</small>';
+ $('kp').innerHTML=[['Entrega máxima',n(c.mmax,1)+' kg/h'],['Tu demanda',n(c.m,1)+' kg/h'],['Margen',n((c.ratio-1)*100,0)+' %']].map(a=>`<div class="kpi"><small>${a[0]}</small><b>${a[1]}</b></div>`).join('');
+ const mx=Math.max(c.mmax,c.m,1);$('bars').innerHTML=`<div class="bar"><i style="width:${c.mmax/mx*100}%;background:#3b82f6"></i><span>Entrega máxima</span></div><div class="bar"><i style="width:${c.m/mx*100}%;background:${c.k=='bad'?'#ef4444':'#10b981'}"></i><span>Tu demanda</span></div>`;
+ $('kp2').innerHTML=[['Área húmeda total',n(c.At,2)+' m²'],['T líquido en operación',n(c.Tl,1)+' °C'],['Presión en operación',n(c.Plq-c.Pa,2)+' bar man.'],['T mínima admisible',n(c.Tmin,1)+' °C'],['Masa de GLP',n(c.mass,0)+' kg'],['Volumen',n(c.V,2)+' m³']].map(a=>`<div class="kpi"><small>${a[0]}</small><b style="font-size:16px">${a[1]}</b></div>`).join('');
+ const fx=[],fy=[];for(let v=5;v<=85;v+=2.5){fx.push(v);fy.push(calc({...s,f:v}).mmax)}
+ const tx=[],ty=[];for(let v=-10;v<=40;v+=2.5){tx.push(v);ty.push(calc({...s,Ta:v}).mmax)}
+ chart($('c1'),fx,fy,s.m,s.f,c.mmax,'Nivel de líquido (%)');chart($('c2'),tx,ty,s.m,Math.min(40,Math.max(-10,s.Ta)),c.mmax,'Temperatura ambiente (°C)');
+ const i1=fy.findIndex(v=>v>=s.m),i2=ty.findIndex(v=>v>=s.m);
+ $('k1').textContent=`Con ${s.f} % de nivel entrega ${n(c.mmax,1)} kg/h. `+(i1<0?'Con tus datos, ningún nivel alcanza la demanda.':i1==0?'Alcanza la demanda en todo el rango.':`Para cubrir ${s.m} kg/h necesitas al menos ${fx[i1]} % de nivel: rellena antes de bajar de ahí.`);
+ $('k2').textContent=i2<0?'Con tus datos, ni a 40 °C alcanza la demanda.':i2==0?'Alcanza la demanda incluso a −10 °C.':`Alcanza la demanda mientras la temperatura ambiente sea de ${tx[i2]} °C o más.`;
+ window._cv={fx,fy};
+ const L=comps(c);lists(c,L);if(T3)build3(c,L);
+ const st=(i,ti,f,su,re)=>`<div class="step"><b>${i}. ${ti}</b><div class="f mono">${f}</div><div class="mono">${su}</div><div class="r mono">→ ${re}</div></div>`;
+ let h=st(1,'Fracciones molares (desde masa)','x_p = (w/Mp)/(w/Mp + (1−w)/Mb)',`x_p = (${n(c.w,3)}/44.1)/(${n(c.w,3)}/44.1 + ${n(1-c.w,3)}/58.1)`,`x_p = ${n(c.xp,4)}, x_b = ${n(c.xb,4)}`);
+ h+=c.or=='h'?st(2,'Geometría horizontal','Resolver (θ−sen θ)/2π = f ; A = L·r·θ + r²(θ−sen θ)',`f=${n(c.f,3)} ⇒ θ=${n(c.th,4)} rad ; h/D=${n(c.hD,4)} ; A = ${c.L}·${n(c.r,3)}·${n(c.th,3)} + ${n(c.r,3)}²·(${n(c.th,3)}−${n(Math.sin(c.th),3)})`,`A_wet = ${n(c.Aw,3)} m² por tanque`):st(2,'Geometría vertical','A = π r² + 2π r H f',`A = π·${n(c.r,3)}² + 2π·${n(c.r,3)}·${c.L}·${n(c.f,3)}`,`A_wet = ${n(c.Aw,3)} m² por tanque`);
+ h+=st(3,'Área total y U','A_tot = N·A_wet ; U[kJ/h·m²·K] = 3.6·U[W/m²·K]',`${c.N}·${n(c.Aw,3)} ; 3.6·${c.U}`,`A_tot = ${n(c.At,3)} m² ; U = ${n(c.Uk,2)}`);
+ h+=st(4,'Temperatura mínima admisible','x_p·Psat_p(T) + x_b·Psat_b(T) = P_abs,min (Antoine)',`P_abs,min = ${c.Pm}+${c.Pa} = ${n(c.Pmin,3)} bar`,`T_min = ${n(c.Tmin,2)} °C (Psat_p=${n(ps(C.p,c.Tmin),3)}, Psat_b=${n(ps(C.b,c.Tmin),3)} bar)`);
+ h+=st(5,'Calor latente a T_min (Watson)','Lv = w·Lv_p(T) + (1−w)·Lv_b(T)',`${n(c.w,3)}·${n(lv(C.p,c.Tmin),1)} + ${n(1-c.w,3)}·${n(lv(C.b,c.Tmin),1)}`,`Lv = ${n(c.LvM,1)} kJ/kg`);
+ h+=st(6,'Calor máximo disponible','Q_max = U·A_tot·(T_amb − T_min)',`${n(c.Uk,2)}·${n(c.At,3)}·(${c.Ta} − ${n(c.Tmin,2)})`,`Q_max = ${n(c.Qmax,0)} kJ/h = ${n(c.Qmax/3600,2)} kW`);
+ h+=st(7,'Capacidad máxima','ṁ_max = Q_max / Lv',`${n(c.Qmax,0)} / ${n(c.LvM,1)}`,`ṁ_max = ${n(c.mmax,2)} kg/h`);
+ h+=st(8,'Punto de operación','T_líq = T_amb − ṁ·Lv(T_líq)/(U·A_tot) (iteración)',`ṁ = ${c.m} kg/h ⇒ Q_req = ${n(c.m*c.Lm(c.Tl),0)} kJ/h`,`T_líq = ${n(c.Tl,2)} °C ; P = ${n(c.Plq,3)} bar abs`);
+ h+=st(9,'Veredicto','Relación = ṁ_max/ṁ_demanda ; ≥1.2 alcanza, ≥1 justo',`${n(c.mmax,2)} / ${c.m}`,`${n(c.ratio,2)}× → ${msg[0]}`);
+ h+=st(10,'Volumen y clase para accesorios','V = π r² (L−D) + 4/3 π r³ ; gal = V·264.172',`V = π·${n(c.r,3)}²·${n(c.Lc,2)} + 4/3·π·${n(c.r,3)}³ = ${n(c.V,3)} m³`,`${n(c.gal,0)} gal agua → ${c.gal>2000?'> 2 000 gal':'≤ 2 000 gal'}`);
+ $('au').innerHTML=h;
+ $('tb').innerHTML=`<p class="mono"><small>Propano: A=${C.p.A}, B=${C.p.B}, C=${C.p.C}, Lv₁₅=${C.p.Lv}, Tc=${C.p.Tc} K · Butano: A=${C.b.A}, B=${C.b.B}, C=${C.b.C}, Lv₁₅=${C.b.Lv}, Tc=${C.b.Tc} K (log₁₀P[mmHg]=A−B/(C+T[°C]))</small></p><table><tr><th>Nivel %</th><th>Capacidad kg/h</th><th>Estado</th></tr>${fx.map((v,i)=>`<tr><td>${v}</td><td>${n(fy[i],2)}</td><td>${fy[i]>=1.2*s.m?'Alcanza':fy[i]>=s.m?'Justo':'No alcanza'}</td></tr>`).join('')}</table>`;
+}
+function csv(){const{fx,fy}=window._cv,b=new Blob(['nivel_pct,capacidad_kg_h\n'+fx.map((v,i)=>v+','+fy[i].toFixed(3)).join('\n')],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='curva_vaporizacion.csv';a.click()}
+$('d0').value=new Date().toISOString().slice(0,10);$('d0').addEventListener('input',gantt);
+IDS.forEach(i=>$(i).addEventListener('input',go));go();gantt();
+</script></body></html>
