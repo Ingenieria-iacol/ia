@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Herramientas de Ingeniería | El Futuro del Diseño y el aprendizaje</title>
+    <style>
+        html {
+            scroll-behavior: smooth; /* Desplazamiento suave al navegar */
+        }
+
+        :root {
+            --netflix-black: #141414;
+            --netflix-dark-gray: #181818;
+            --brand-blue: #0071eb; 
+            --brand-blue-hover: #005bb5;
+            --text-white: #ffffff;
+            --text-gray: #b3b3b3;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            /* Mejora para sensación de App nativa: evita resaltado azul al tocar */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--netflix-black);
+            color: var(--text-white);
+            overflow-x: hidden;
+            /* Evita selección de texto accidental al hacer scroll táctil */
+            -webkit-user-select: none;
+            user-select: none;
+            padding-bottom: 50px;
+        }
+
+        /* Permitir selección en inputs */
+        input, textarea {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        /* --- Header / Nav --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 4%;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 10%, rgba(0,0,0,0));
+            transition: background 0.5s, padding 0.3s;
+        }
+
+        /* Fondo sólido al hacer scroll */
+        header.scrolled {
+            background-color: var(--netflix-black);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .logo {
+            color: var(--brand-blue);
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 113, 235, 0.5);
+            white-space: nowrap; /* Evita que el logo se parta */
+        }
+
+        .nav-items {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap; /* Permite que los elementos bajen si no caben en móviles */
+            justify-content: flex-end;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-items {
+                justify-content: center;
+            }
+        }
+
+        .btn-login {
+            background-color: var(--brand-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .btn-login:hover, .btn-login:active {
+            background-color: var(--brand-blue-hover);
+            transform: scale(0.98); /* Efecto de presión */
+        }
+
+        .btn-ghost {
+            background-color: transparent;
+            border: 1px solid var(--text-white);
+            color: var(--text-white);
+        }
+        
+        .btn-ghost:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: white;
+        }
+
+        /* Estilos para los nuevos enlaces de texto en el header */
+        .nav-link {
+            color: var(--text-white);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+            display: inline-block;
+        }
+
+        .nav-link:hover {
+            color: var(--brand-blue); /* Resaltado azul al pasar el mouse */
+            text-decoration: underline;
+        }
+
+        /* Ajustes para móviles: ocultar o reducir estos enlaces si falta espacio, 
+           o permitir que hagan wrap (salto de línea) */
+        @media (max-width: 768px) {
+            .nav-link {
+                font-size: 0.8rem;
+                margin: 5px 0;
+            }
+        }
+
+        /* --- Hero Section --- */
+        .hero {
+            height: 85vh; /* Mantiene altura en desktop */
+            min-height: 500px; /* Altura mínima para móviles */
+            background-color: #000; 
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        #bg-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: 0;
+            transform: translate(-50%, -50%);
+            object-fit: cover;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5); 
+            box-shadow: inset 0 -50px 50px #141414; /* Sombra suavizada para móviles */
+            z-index: 1;
+        }
+
+        .hero-content {
+            z-index: 2;
+            width: 90%;
+            max-width: 800px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-bottom: 15px;
+            line-height: 1.1;
+        }
+
+        .hero p {
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            font-weight: 400;
+        }
+
+        .email-form {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .email-input {
+            padding: 15px;
+            width: 400px;
+            max-width: 100%;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .email-input:focus {
+            border-color: var(--brand-blue);
+            background: rgba(0,0,0,0.8);
+        }
+
+        .btn-cta {
+            background-color: var(--brand-blue);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: transform 0.2s;
+        }
+
+        .btn-cta:active {
+            transform: scale(0.95);
+        }
+
+        /* --- Content Sections --- */
+        .section-container {
+            padding: 40px 5%;
+            background-color: var(--netflix-black);
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            font-weight: 500;
+            color: #e5e5e5;
+            padding-left: 5px;
+            border-left: 4px solid var(--brand-blue);
+            line-height: 1.2;
+        }
+
+        .card-grid {
+            display: grid;
+            /* Responsivo automático: si cabe 250px pone columna, si no, apila */
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        /* Ajuste específico para móviles muy pequeños */
+        @media (max-width: 550px) {
+            .card-grid {
+                grid-template-columns: 1fr; /* Una sola columna estilo feed de Instagram/Facebook */
+            }
+        }
+
+        .card {
+            background-color: var(--netflix-dark-gray);
+            height: 180px; /* Un poco más alto para mejor toque */
+            border-radius: 8px;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+            border: 1px solid #333;
+            /* Propiedades añadidas para soportar etiqueta <a> */
+            display: block; 
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.7; /* Ligeramente más visible en móvil por defecto */
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        /* Efecto hover solo en dispositivos con ratón (no táctiles) */
+        @media (hover: hover) {
+            .card:hover {
+                transform: scale(1.03);
+                z-index: 10;
+                box-shadow: 0 0 15px rgba(0, 113, 235, 0.6);
+                border-color: var(--brand-blue);
+            }
+            .card:hover img {
+                opacity: 1 !important;
+            }
+        }
+
+        /* --- Header Perfiles (Intro) --- */
+        .feature-split-intro {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 50px 5% 20px 5%;
+            flex-wrap: wrap;
+            text-align: center;
+        }
+        
+        .feature-split-intro .feature-text {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .feature-text h2 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .feature-text p {
+            font-size: 1.2rem;
+            line-height: 1.5;
+            color: var(--text-gray);
+        }
+
+        /* --- CAROUSEL STYLES (Nueva Sección) --- */
+        .carousel-container {
+            position: relative;
+            width: 100%;
+            height: 500px; /* Altura suficiente para tarjeta + texto */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px; /* Clave para el efecto 3D */
+            overflow: hidden;
+            margin-bottom: 40px;
+            padding: 20px 0;
+            background: linear-gradient(to bottom, var(--netflix-black), #0a0a0a);
+        }
+
+        .carousel-track {
+            position: relative;
+            width: 300px; /* Ancho base de la tarjeta central */
+            height: 450px;
+            transform-style: preserve-3d;
+        }
+
+        .carousel-item {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: var(--netflix-dark-gray);
+            border: 1px solid #333;
+            border-radius: 12px;
+            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.8s, filter 0.8s;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            /* Centrado inicial */
+            top: 0;
+            left: 0;
+            /* Permite hacer clic para traer al frente */
+            cursor: pointer; 
+        }
+
+        /* Imagen en el carrusel */
+        .carousel-item img {
+            width: 100%;
+            height: 55%; /* La imagen ocupa la parte superior */
+            object-fit: cover;
+            border-bottom: 2px solid var(--brand-blue);
+        }
+
+        /* Texto en el carrusel */
+        .carousel-content {
+            padding: 20px;
+            text-align: left;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            background: linear-gradient(to bottom, #1f1f1f, #141414);
+        }
+
+        .carousel-content h3 {
+            color: var(--brand-blue);
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .carousel-content p {
+            font-size: 0.95rem;
+            color: #d1d1d1;
+            line-height: 1.4;
+        }
+
+        /* --- BOTONES DE CONTROL MANUAL --- */
+        .carousel-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: background-color 0.3s, transform 0.2s;
+            user-select: none;
+        }
+
+        .carousel-nav-btn:hover {
+            background-color: var(--brand-blue);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .carousel-nav-btn.prev {
+            left: 5%;
+        }
+
+        .carousel-nav-btn.next {
+            right: 5%;
+        }
+
+        /* --- Estados del Carrusel --- */
+        
+        /* Central (Activa) */
+        .carousel-item.active {
+            transform: translate3d(0, 0, 0) scale(1.1);
+            opacity: 1;
+            z-index: 10;
+            filter: brightness(1.1);
+            border-color: var(--brand-blue);
+            box-shadow: 0 0 25px rgba(0, 113, 235, 0.3);
+            cursor: default; /* No clicable si ya está activa */
+        }
+
+        /* Siguiente (Derecha) */
+        .carousel-item.next {
+            transform: translate3d(110%, 0, -100px) scale(0.85) rotateY(-15deg);
+            opacity: 0.4;
+            z-index: 5;
+            filter: grayscale(80%) brightness(0.6);
+        }
+        .carousel-item.next:hover {
+            filter: grayscale(40%) brightness(0.8);
+            opacity: 0.6;
+        }
+
+        /* Anterior (Izquierda) */
+        .carousel-item.prev {
+            transform: translate3d(-110%, 0, -100px) scale(0.85) rotateY(15deg);
+            opacity: 0.4;
+            z-index: 5;
+            filter: grayscale(80%) brightness(0.6);
+        }
+        .carousel-item.prev:hover {
+            filter: grayscale(40%) brightness(0.8);
+            opacity: 0.6;
+        }
+
+        /* Ocultos (Detrás) */
+        .carousel-item.hidden {
+            transform: translate3d(0, 0, -200px) scale(0.5);
+            opacity: 0;
+            z-index: 0;
+        }
+
+        /* --- Footer --- */
+        footer {
+            padding: 40px 5%;
+            color: var(--text-gray);
+            font-size: 0.9rem;
+            border-top: 8px solid #222;
+            text-align: center; /* Centrado general */
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center; /* Centra los enlaces horizontalmente */
+            flex-wrap: wrap; /* Permite que bajen si no hay espacio */
+            gap: 20px; /* Espacio entre enlaces */
+            margin-top: 20px;
+        }
+
+        .footer-links a {
+            color: var(--text-gray);
+            text-decoration: none;
+            padding: 5px 10px; /* Un poco más de área lateral para el clic */
+            display: inline-block;
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+
+        /* --- MEDIA QUERIES (TABLETS & MOVILES) --- */
+        
+        /* Tablets (hasta 768px) */
+        @media (max-width: 768px) {
+            header {
+                padding: 15px 3%;
+            }
+            
+            .logo {
+                font-size: 1.4rem;
+                letter-spacing: 1px;
+            }
+
+            .hero {
+                height: 60vh; /* Altura más manejable en tablets */
+            }
+            
+            .hero h1 { font-size: 2.5rem; }
+            .hero p { font-size: 1.2rem; }
+            
+            /* Ajuste del carrusel para móviles */
+            .carousel-track {
+                width: 80%; /* Más ancho en móvil relativo a pantalla */
+                max-width: 280px; 
+            }
+            
+            .carousel-item.next {
+                transform: translate3d(60%, 0, -150px) scale(0.8) rotateY(-10deg);
+            }
+            
+            .carousel-item.prev {
+                transform: translate3d(-60%, 0, -150px) scale(0.8) rotateY(10deg);
+            }
+
+            .carousel-nav-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+            .carousel-nav-btn.prev { left: 10px; }
+            .carousel-nav-btn.next { right: 10px; }
+        }
+
+        /* Móviles (hasta 480px) */
+        @media (max-width: 480px) {
+            header {
+                flex-direction: column;
+                padding: 10px;
+                background: var(--netflix-black); /* Fondo sólido para legibilidad */
+                gap: 10px;
+            }
+
+            .nav-items {
+                width: 100%;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            .btn-login {
+                font-size: 0.8rem;
+                flex: 1; /* Botones ocupan espacio equitativo */
+                text-align: center;
+            }
+
+            .hero h1 { 
+                font-size: 2rem; 
+                margin-bottom: 10px;
+            }
+            
+            .hero p { 
+                font-size: 1rem; 
+                margin-bottom: 20px;
+            }
+
+            .email-form {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .email-input {
+                width: 100%;
+                margin-bottom: 10px;
+                height: 50px; /* Más alto para dedos */
+            }
+
+            .btn-cta {
+                width: 100%;
+                font-size: 1.1rem;
+                height: 50px;
+            }
+
+            .card {
+                height: 200px; /* Cards grandes estilo feed */
+            }
+
+            .footer-links {
+                grid-template-columns: 1fr; /* 1 sola columna en footer */
+                text-align: center;
+            }
+            
+            .footer-links a {
+                padding: 10px 0;
+                border-bottom: 1px solid #333;
+            }
+            
+            /* Carrusel en móvil vertical */
+            .carousel-container {
+                height: 480px;
+            }
+            .carousel-content p {
+                font-size: 0.85rem; /* Texto más pequeño */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header id="main-header">
+        <!-- Título del Header cambiado a ENTALPIA -->
+        <div class="logo">ENTALPIA: Learning Lab</div>
+        
+        <div class="nav-items">
+            <!-- Enlaces reubicados (Texto simple) -->
+            <a href="../Modales Plataforma/modal_catalogovr.html" class="nav-link">VR</a>
+            <a href="../Modales Plataforma/modal_network.html" class="nav-link">TECHGUARD</a>
+            
+            <!-- Botones originales -->
+            <a href="../Modales Plataforma/modal_precios.html" class="btn-login btn-ghost">Planes</a>
+            <a href="../Modales Plataforma/interfazDeOpcionInicio.html" class="btn-login">✨ App's Pioneer's🧑‍🚀</a>
+        </div>
+    </header>
+
+    <div class="hero">
+        <video autoplay playsinline id="bg-video">
+            <source src="../Videos Plataforma/VideoSaberMas.mp4" type="video/mp4">
+            Tu navegador no soporta el video HTML5.
+        </video>
+
+        <div class="hero-content">
+            <h1>INGENIERIA</h1>
+            <p>Precisión que genera potencia</p>
+            
+            <div class="email-form">
+                <!-- Campo de correo eliminado -->
+                <!-- Botón convertido en enlace ancla (anchor link) -->
+                <a href="#tecnologias-basicas" class="btn-cta" style="text-decoration: none;">
+                    Comenzar &nbsp; &#10095;
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Se agregó el ID 'tecnologias-basicas' para que el botón funcione -->
+    <div class="section-container" id="tecnologias-basicas">
+        <div class="section-title">Tecnologías Básicas</div>
+        <div class="card-grid">
+            <!-- CAMBIO: Ahora es un enlace 'a' que lleva a TarjetaModeladores.html -->
+            <a href="../Modales Plataforma/tjt_diseñomodeladosimulacion.html" class="card">
+                <img id="card-img-0" src="../ImagenesPlataformas/img_modeladores_interfazopcioninicio.png" alt="Modeladores" onerror="this.onerror=null;this.src='https://placehold.co/300x200/141414/white?text=Modeladores';">
+                <div class="card-overlay">
+                    <div class="card-title">Diseño, Modelado y Simulacion</div>
+                </div>
+            </a>
+            
+            <a href="../Modales Plataforma/tjt_convertidores_calculadoras.html" class="card">
+                <img id="card-img-1" src="../ImagenesPlataformas/img_calculadoras_interfazopcioninicio.png" alt="Calculadoras" onerror="this.onerror=null;this.src='https://placehold.co/300x200/141414/white?text=Calculadoras';">
+                <div class="card-overlay">
+                    <div class="card-title">Calculadoras y Convertidores</div>
+                </div>
+            </a>
+            <a href="../Modales Plataforma/tjt_ingenieriadeprocesoconsultoria.html" class="card">
+                <img id="card-img-2" src="../ImagenesPlataformas/img_ia_interfazopcioninicio.png" alt="Consultorías" onerror="this.onerror=null;this.src='https://placehold.co/300x200/141414/white?text=IA+Consultoria';">
+                <div class="card-overlay">
+                    <div class="card-title">Ingeniería de proceso y Consultorías</div>
+                </div>
+            </a>
+            <a href="../Modales Plataforma/tjt_validacionestecnicas.html" class="card">
+                <img id="card-img-3" src="../ImagenesPlataformas/ImgUtilidades.png" alt="Utilidades" onerror="this.onerror=null;this.src='https://placehold.co/300x200/141414/white?text=Utilidades';">
+                <div class="card-overlay">
+                     <div class="card-title">Validaciones Tecnicas</div>
+                </div>
+            </a>
+        </div>
+
+        <div class="section-title">Herramientas de Colaboración</div>
+        <div class="card-grid">
+            <!-- Corregido: div cambiado a 'a' y URL corregida a IndiceDocentes.html (sin tilde) -->            
+            <a href="ModalDeCursosPerfilAcademico_V1.html" class="card">
+                <img id="card-img-5" src="../ImagenesPlataformas/img-estudiantes1.png" alt="Semilleros" onerror="this.onerror=null;this.src='https://placehold.co/300x200/141414/white?text=Planes';">
+                <div class="card-overlay">
+                    <div class="card-title">Psynapsis Campus</div>
+                </div>
+            </a>
+
+            <a href="modal_extensiones_interfazdeopciondeiniciov1.html" class="card">
+                <img src="../ImagenesPlataformas/img_logoextenssiones_interfazdeopciondeinicio.png" alt="ERP & CRM" onerror="this.onerror=null;this.src='https://placehold.co/300x200/141414/white?text=ERP+CRM';">
+                <div class="card-overlay">
+                    <div class="card-title">Extensiones</div>
+                </div>
+            </a>
+            
+            <a href="../ImagenesPlataformas/logo_entalpia.png" class="card">
+                <img src="../ImagenesPlataformas/img_usuario_corporativo.png" alt="ERP & CRM" onerror="this.onerror=null;this.src='https://placehold.co/300x200/141414/white?text=ERP+CRM';">
+                <div class="card-overlay">
+                    <div class="card-title">Sistema de Gestion de Proyecto</div>
+                </div>
+            </a>
+
+            <!-- NUEVA TARJETA: Mis Aplicaciones -->
+            <a href="../Modales Plataforma/LoginAppMisAplicaciones.html" class="card">
+                <img src="../ImagenesPlataformas/Logo_Pioneer2.png" alt="Mis Aplicaciones" onerror="this.onerror=null;this.src='https://placehold.co/300x200/141414/white?text=Mis+Apps';">
+                <div class="card-overlay">
+                    <div class="card-title">Cuentas Pioneer's</div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- SECCIÓN DE PERFILES MODIFICADA (Carrusel con Controles) -->
+    
+    <div class="feature-split-intro">
+        <div class="feature-text">
+            <h2>PERFILES.</h2>
+            <p>Descubre el enfoque ideal para ti: Profesional, Docente, Académico, Corporativo y Comercial.</p>
+        </div>
+    </div>
+
+    <!-- Contenedor del Carrusel -->
+    <div class="carousel-container">
+        <!-- Botones de Navegación Manual -->
+        <button class="carousel-nav-btn prev" id="prev-btn">&#10094;</button>
+        <button class="carousel-nav-btn next" id="next-btn">&#10095;</button>
+
+        <div class="carousel-track" id="profiles-track">
+            <!-- Los items serán renderizados aquí por JS o inyectados directamente -->
+            
+            <!-- Item 1: FORMANDO -->
+            <div class="carousel-item active" data-index="0">
+                <img src="../ImagenesPlataformas/ImgEstudiantes.png" alt="Formando" onerror="this.onerror=null;this.src='https://placehold.co/600x400/141414/white?text=Formando';">
+                <div class="carousel-content">
+                    <h3>FORMANDO</h3>
+                    <p>En la educación, la formación es lo que una persona va obteniendo a lo largo de sus estudios y su vida. Material de estudio y desarrollo de actividades con miras al "Concepto de aptitud".</p>
+                </div>
+            </div>
+
+            <!-- Item 2: PROFESIONAL -->
+            <div class="carousel-item next" data-index="1">
+                <img src="../ImagenesPlataformas/img_perfilprofecionale_interfazopcioninicio.png" alt="Profesional" onerror="this.onerror=null;this.src='https://placehold.co/600x400/141414/white?text=Profesional';">
+                <div class="carousel-content">
+                    <h3>PROFESIONAL</h3>
+                    <p>Los profesionales se rigen por códigos de ética y profesan un compromiso con la competencia, la integridad y el bien común. Responsables ante quienes sirven y ante la sociedad.</p>
+                </div>
+            </div>
+
+            <!-- Item 3: DOCENTE -->
+            <div class="carousel-item hidden" data-index="2">
+                <img src="../ImagenesPlataformas/img_perfildocente_interfazopcioninicio.png" alt="Docente" onerror="this.onerror=null;this.src='https://placehold.co/600x400/141414/white?text=Docente';">
+                <div class="carousel-content">
+                    <h3>DOCENTE</h3>
+                    <p>Un docente es un profesional dedicado a la enseñanza y facilitación del aprendizaje, cuya función principal es transmitir conocimientos y habilidades a estudiantes en cualquier nivel.</p>
+                </div>
+            </div>
+
+            <!-- Item 4: CORPORATIVO -->
+            <div class="carousel-item hidden" data-index="3">
+                <img src="../ImagenesPlataformas/img_perfilcorporativo_interfazopcioninicio.png" alt="Corporativo" onerror="this.onerror=null;this.src='https://placehold.co/600x400/141414/white?text=Corporativo';">
+                <div class="carousel-content">
+                    <h3>CORPORATIVO</h3>
+                    <p>Membresía donde una empresa paga una tarifa para que sus empleados accedan a beneficios exclusivos, recursos de desarrollo y eventos de networking.</p>
+                </div>
+            </div>
+
+            <!-- Item 5: COMERCIAL -->
+            <div class="carousel-item prev" data-index="4">
+                <img src="../ImagenesPlataformas/img_perfilcomercial_interfazopcioninicio.png" alt="Comercial" onerror="this.onerror=null;this.src='https://placehold.co/600x400/141414/white?text=Comercial';">
+                <div class="carousel-content">
+                    <h3>COMERCIAL</h3>
+                    <p>Modelo de negocio basado en un acuerdo contractual donde el cliente paga una tarifa recurrente para acceder de forma continua a beneficios exclusivos y servicios.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    
+    <footer>
+        <p>¿Preguntas? Llama al +57 304-221-4098</p>
+        <div class="footer-links">
+            <!-- Enlaces restantes en el footer -->
+            <a href="#">Centro de Ayuda</a>
+            <a href="#">Privacidad</a>
+            <a href="../README.md">Acerca de...</a>
+        </div>
+        <br>
+        <p style="font-size: 0.8rem;">© 2025 Software De Inteligencia Artificial - SofI.A.</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- Cambio de color del header al hacer scroll ---
+            const header = document.getElementById('main-header');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            });
+
+            // --- Lógica del Video Banner ---
+            const heroSection = document.querySelector('.hero');
+            const video = document.getElementById('bg-video');
+
+            if (heroSection && video) {
+                heroSection.addEventListener('click', (e) => {
+                    if (e.target.closest('.email-form')) return;
+                    if (video.paused || video.ended) {
+                        video.currentTime = 0;
+                        video.play().catch(err => console.log("Error al reproducir video:", err));
+                    }
+                });
+            }
+
+            // --- Lógica del Carrusel 3D Automático y Manual ---
+            const items = document.querySelectorAll('.carousel-item');
+            const totalItems = items.length;
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const container = document.querySelector('.carousel-container');
+            let currentIndex = 0;
+            let autoRotate;
+
+            function updateCarousel() {
+                items.forEach((item, index) => {
+                    // Limpiar clases
+                    item.className = 'carousel-item';
+
+                    // Calcular distancia relativa circular
+                    // (0 = active, 1 = next, -1 = prev, etc)
+                    let diff = index - currentIndex;
+                    
+                    // Ajuste para loop infinito visual
+                    if (diff > totalItems / 2) diff -= totalItems;
+                    if (diff < -totalItems / 2) diff += totalItems;
+
+                    if (diff === 0) {
+                        item.classList.add('active');
+                    } else if (diff === 1) {
+                        item.classList.add('next');
+                        // Hacer clicable el item "next"
+                        item.onclick = () => { manualRotate(1); };
+                    } else if (diff === -1) {
+                        item.classList.add('prev');
+                        // Hacer clicable el item "prev"
+                        item.onclick = () => { manualRotate(-1); };
+                    } else {
+                        item.classList.add('hidden');
+                        item.onclick = null;
+                    }
+                });
+            }
+
+            // Función para rotar una posición (1 para derecha, -1 para izquierda)
+            function rotate(direction) {
+                if (direction === 1) {
+                    currentIndex = (currentIndex + 1) % totalItems;
+                } else {
+                    currentIndex = (currentIndex - 1 + totalItems) % totalItems;
+                }
+                updateCarousel();
+            }
+
+            // Función para rotación manual (resetea el timer)
+            function manualRotate(direction) {
+                rotate(direction);
+                resetTimer();
+            }
+
+            // Iniciar intervalo automático
+            function startTimer() {
+                autoRotate = setInterval(() => rotate(1), 3500);
+            }
+
+            function stopTimer() {
+                clearInterval(autoRotate);
+            }
+
+            function resetTimer() {
+                stopTimer();
+                startTimer();
+            }
+
+            // Event Listeners para botones
+            nextBtn.addEventListener('click', () => manualRotate(1));
+            prevBtn.addEventListener('click', () => manualRotate(-1));
+
+            // Pausar al pasar el mouse por encima (opcional, pero buena UX)
+            container.addEventListener('mouseenter', stopTimer);
+            container.addEventListener('mouseleave', startTimer);
+
+            // Iniciar todo
+            updateCarousel();
+            startTimer();
+        });
+    </script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
