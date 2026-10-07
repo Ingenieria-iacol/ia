@@ -16,43 +16,111 @@
             theme: {
                 extend: {
                     colors: {
-                        netflix: {
-                            base: '#141414',      /* Fondo casi negro */
-                            card: '#1f1f1f',      /* Tarjetas gris oscuro */
-                            light: '#e5e5e5',     /* Texto claro */
-                            blue: '#0071eb',      /* Azul principal */
-                            metal: '#2b313d',     /* Gris azulado metalico */
-                        }
+                        ti950: '#070a10',
+                        ti900: '#0c1119',
+                        ti850: '#101722',
+                        ti800: '#151e2b',
+                        steel: { 200: '#d3e0ef', 300: '#a9bdd3', 400: '#7f9bbb', 500: '#4f78a8', 600: '#34598a', 700: '#243f66' },
+                        ember: '#ffb020'
                     }
                 }
             }
         }
     </script>
     <style>
-        /* Estilos extra para scrollbar y efectos */
-        body { background-color: #141414; color: #e5e5e5; }
-        .metal-gradient { background: linear-gradient(145deg, #0071eb, #004fb3); }
-        .glass-panel { background: rgba(31, 31, 31, 0.95); backdrop-filter: blur(10px); }
+        :root {
+            --ti-950: #070a10; --ti-900: #0c1119; --ti-850: #101722; --ti-800: #151e2b;
+            --eng-line: #243245; --eng-line-soft: #1a2535;
+            --steel-200: #d3e0ef; --steel-300: #a9bdd3; --steel-400: #7f9bbb; --steel-500: #4f78a8; --steel-600: #34598a; --steel-700: #243f66;
+        }
+        body {
+            background-color: var(--ti-950);
+            color: #e5e5e5;
+            font-family: 'Bahnschrift', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-image:
+                linear-gradient(rgba(127,155,187,.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(127,155,187,.06) 1px, transparent 1px);
+            background-size: 48px 48px;
+        }
+        .panel {
+            background: linear-gradient(180deg, rgba(21,30,43,.94) 0%, rgba(12,17,25,.94) 100%);
+            border: 1px solid var(--eng-line);
+            box-shadow: 0 16px 36px rgba(0,0,0,.4), inset 0 0 0 1px rgba(169,189,211,.04);
+        }
+        .metal-edge { height: 2px; background: linear-gradient(90deg, transparent, var(--steel-500) 20%, var(--steel-200) 50%, var(--steel-500) 80%, transparent); }
+        .metal-text { background: linear-gradient(180deg, #ffffff 0%, var(--steel-200) 55%, var(--steel-400) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .metal-fill {
+            background: linear-gradient(180deg, #a9c8ec 0%, #5d8cc4 46%, #2f5686 54%, #4476ad 100%);
+            border: 1px solid #a9c8ec; color: #06101e; font-weight: 800;
+            text-shadow: 0 1px 0 rgba(255,255,255,.35);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 0 -1px 0 rgba(0,0,0,.25), 0 6px 18px rgba(47,86,134,.35);
+        }
+        .metal-fill:hover { filter: brightness(1.08); }
+        .key {
+            background: linear-gradient(180deg, #1c2738, #121a27);
+            border: 1px solid var(--eng-line);
+            color: var(--steel-200);
+            transition: border-color .15s ease, background .15s ease, transform .1s ease;
+        }
+        .key:hover { border-color: var(--steel-400); background: linear-gradient(180deg, #243349, #162133); }
+        .key:active { transform: scale(.95); }
+        .key-fn { color: var(--steel-300); background: linear-gradient(180deg, #172233, #0f1623); }
+        .key-op { color: #ffd88a; }
+        .tile { background: linear-gradient(180deg, #2c4a74 0%, #172a46 100%); border: 1px solid var(--steel-600); color: var(--steel-200); box-shadow: inset 0 1px 0 rgba(255,255,255,.18); transition: background .2s ease, color .2s ease; }
+        .app-card { background: linear-gradient(180deg, var(--ti-800), var(--ti-900)); border: 1px solid var(--eng-line); transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease; }
+        .app-card:hover { transform: translateY(-3px); border-color: var(--steel-500); box-shadow: 0 18px 36px rgba(0,0,0,.5); }
+        .app-card:hover .tile { background: linear-gradient(180deg, #a9c8ec 0%, #4476ad 100%); color: #06101e; border-color: #a9c8ec; }
+        .field { background: #0c1119; border: 1px solid var(--eng-line); color: #e5e5e5; }
+        .field:focus { outline: none; border-color: var(--steel-400); box-shadow: 0 0 0 1px var(--steel-400); }
+        .eng-focus:focus-visible { outline: 2px solid var(--steel-300); outline-offset: 2px; }
+        .readout { font-variant-numeric: tabular-nums; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--ti-950); }
+        ::-webkit-scrollbar-thumb { background: #2a3a52; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--steel-500); }
+        .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #5fcf9b; }
+        @media (prefers-reduced-motion: reduce) {
+            .app-card, .key { transition: none; }
+            .app-card:hover { transform: none; }
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef, useMemo } = React;
 
-        // --- ICONOS SVG (Para no depender de librerías externas en un solo archivo) ---
-        const IconClock = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
-        const IconCalc = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="8" y2="6"/><line x1="16" y1="6" x2="16" y2="6"/><line x1="12" y1="6" x2="12" y2="6"/><line x1="12" y1="10" x2="12" y2="10"/><line x1="8" y1="10" x2="8" y2="10"/><line x1="16" y1="10" x2="16" y2="10"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/><line x1="12" y1="18" x2="12" y2="18"/><line x1="8" y1="18" x2="8" y2="18"/><line x1="16" y1="18" x2="16" y2="18"/></svg>;
-        const IconNote = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
-        const IconCheck = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
-        const IconTrash = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>;
-        const IconPlus = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
-        const IconSearch = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
-        const IconLink = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
+        // --- ALMACENAMIENTO (tolerante a navegadores que lo bloquean) ---
+        const store = {
+            get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
+            set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento */ } }
+        };
+
+        // --- ICONOS SVG (sin librerías externas) ---
+        const Svg = ({ size = 20, children }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>
+        );
+        const IconScan = ({ size }) => <Svg size={size}><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></Svg>;
+        const IconVideo = ({ size }) => <Svg size={size}><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m16 10.5 5.5-3.5v10L16 13.5"/></Svg>;
+        const IconSpeaker = ({ size }) => <Svg size={size}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></Svg>;
+        const IconInvoice = ({ size }) => <Svg size={size}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></Svg>;
+        const IconChat = ({ size }) => <Svg size={size}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></Svg>;
+        const IconClipboard = ({ size }) => <Svg size={size}><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><polyline points="9 14 11 16 15 12"/></Svg>;
+        const IconExternal = ({ size }) => <Svg size={size}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></Svg>;
+        const IconClock = ({ size }) => <Svg size={size}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></Svg>;
+        const IconCalc = ({ size }) => <Svg size={size}><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="12" y1="10" x2="12.01" y2="10"/><line x1="16" y1="10" x2="16.01" y2="10"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="12" y1="14" x2="12.01" y2="14"/><line x1="16" y1="14" x2="16.01" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></Svg>;
+        const IconGraph = ({ size }) => <Svg size={size}><path d="M3 3v18h18"/><path d="M7 15c2-8 4-8 6-2s4 4 6-5"/></Svg>;
+        const IconNote = ({ size }) => <Svg size={size}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></Svg>;
+        const IconCheck = ({ size = 16 }) => <Svg size={size}><polyline points="20 6 9 17 4 12"/></Svg>;
+        const IconTrash = ({ size = 16 }) => <Svg size={size}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></Svg>;
+        const IconPlus = ({ size = 18 }) => <Svg size={size}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Svg>;
+        const IconSound = ({ size = 18, off }) => <Svg size={size}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>{off ? <><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></> : <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>}</Svg>;
 
         // --- SONIDOS ---
+        let soundOn = store.get('ENTALPIA_sound', '1') !== '0';
         const playSound = (type) => {
+            if (!soundOn) return;
             const sounds = {
                 click: "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
                 success: "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3", 
@@ -63,61 +131,250 @@
             audio.play().catch(e => console.log("Audio play prevented")); 
         };
 
+        // <<PARSER
+        // --- MOTOR DE EXPRESIONES MATEMÁTICAS (sin eval) ---
+        const FN_NAMES = new Set(['asin', 'acos', 'atan', 'sqrt', 'sin', 'cos', 'tan', 'abs', 'exp', 'ln', 'log']);
+        const NAMES = ['asin', 'acos', 'atan', 'sqrt', 'sin', 'cos', 'tan', 'abs', 'exp', 'ln', 'log', 'pi', 'ans', 'x', 'e'];
+
+        function tokenize(src) {
+            const s = src.replace(/\s+/g, '').replace(/,/g, '.');
+            const out = [];
+            let i = 0;
+            while (i < s.length) {
+                const c = s[i];
+                if (/[0-9.]/.test(c)) {
+                    let j = i, dot = false;
+                    while (j < s.length && /[0-9.]/.test(s[j])) {
+                        if (s[j] === '.') { if (dot) throw new Error('Número no válido'); dot = true; }
+                        j++;
+                    }
+                    const txt = s.slice(i, j);
+                    if (txt === '.') throw new Error('Número no válido');
+                    out.push({ t: 'num', v: parseFloat(txt) });
+                    i = j; continue;
+                }
+                if ('+-*/^()'.includes(c)) { out.push({ t: 'op', v: c }); i++; continue; }
+                if (c === '×') { out.push({ t: 'op', v: '*' }); i++; continue; }
+                if (c === '÷') { out.push({ t: 'op', v: '/' }); i++; continue; }
+                if (c === '−') { out.push({ t: 'op', v: '-' }); i++; continue; }
+                if (c === 'π') { out.push({ t: 'sym', v: 'pi' }); i++; continue; }
+                if (c === '√') { out.push({ t: 'fn', v: 'sqrt' }); i++; continue; }
+                if (/[a-zA-Z]/.test(c)) {
+                    const rest = s.slice(i).toLowerCase();
+                    const name = NAMES.find(n => rest.startsWith(n));
+                    if (!name) throw new Error('Símbolo no reconocido');
+                    out.push(FN_NAMES.has(name) ? { t: 'fn', v: name } : { t: 'sym', v: name });
+                    i += name.length; continue;
+                }
+                throw new Error('Símbolo no reconocido: ' + c);
+            }
+            return out;
+        }
+
+        function parse(tokens) {
+            let p = 0;
+            const peek = () => tokens[p];
+            const next = () => tokens[p++];
+            const isOp = (t, v) => t && t.t === 'op' && t.v === v;
+            const startsFactor = (t) => t && (t.t === 'num' || t.t === 'fn' || t.t === 'sym' || isOp(t, '('));
+
+            function expr() {
+                let n = term();
+                while (isOp(peek(), '+') || isOp(peek(), '-')) {
+                    const op = next().v;
+                    n = { k: 'bin', op, a: n, b: term() };
+                }
+                return n;
+            }
+            function term() {
+                let n = unary();
+                for (;;) {
+                    const t = peek();
+                    if (isOp(t, '*') || isOp(t, '/')) { next(); n = { k: 'bin', op: t.v, a: n, b: unary() }; }
+                    else if (startsFactor(t)) { n = { k: 'bin', op: '*', a: n, b: power() }; } // multiplicación implícita: 2x, 3(x+1)
+                    else break;
+                }
+                return n;
+            }
+            function unary() {
+                const t = peek();
+                if (isOp(t, '-') || isOp(t, '+')) { next(); const a = unary(); return t.v === '-' ? { k: 'neg', a } : a; }
+                return power();
+            }
+            function power() {
+                const b = atom();
+                if (isOp(peek(), '^')) { next(); return { k: 'bin', op: '^', a: b, b: unary() }; }
+                return b;
+            }
+            function atom() {
+                const t = next();
+                if (!t) throw new Error('Expresión incompleta');
+                if (t.t === 'num') return { k: 'num', v: t.v };
+                if (t.t === 'sym') return { k: 'sym', v: t.v };
+                if (t.t === 'fn') {
+                    if (isOp(peek(), '(')) {
+                        next();
+                        const a = expr();
+                        if (peek()) { if (!isOp(next(), ')')) throw new Error('Falta cerrar el paréntesis'); }
+                        return { k: 'fn', f: t.v, a };
+                    }
+                    return { k: 'fn', f: t.v, a: power() };
+                }
+                if (isOp(t, '(')) {
+                    const a = expr();
+                    if (peek()) { if (!isOp(next(), ')')) throw new Error('Falta cerrar el paréntesis'); }
+                    return a;
+                }
+                throw new Error('Expresión no válida');
+            }
+
+            if (!tokens.length) throw new Error('Expresión vacía');
+            const ast = expr();
+            if (p < tokens.length) throw new Error('Expresión no válida');
+            return ast;
+        }
+
+        function evalAst(n, env) {
+            switch (n.k) {
+                case 'num': return n.v;
+                case 'sym':
+                    if (n.v === 'pi') return Math.PI;
+                    if (n.v === 'e') return Math.E;
+                    if (n.v === 'ans') return env.ans || 0;
+                    if (n.v === 'x') { if (env.x === undefined) throw new Error('La variable x no está definida aquí'); return env.x; }
+                    throw new Error('Símbolo no reconocido');
+                case 'neg': return -evalAst(n.a, env);
+                case 'bin': {
+                    const a = evalAst(n.a, env), b = evalAst(n.b, env);
+                    switch (n.op) {
+                        case '+': return a + b;
+                        case '-': return a - b;
+                        case '*': return a * b;
+                        case '/': return a / b;
+                        case '^': return Math.pow(a, b);
+                    }
+                    throw new Error('Operador no válido');
+                }
+                case 'fn': {
+                    const v = evalAst(n.a, env);
+                    const toRad = (z) => env.deg ? z * Math.PI / 180 : z;
+                    const fromRad = (z) => env.deg ? z * 180 / Math.PI : z;
+                    switch (n.f) {
+                        case 'sin': return Math.sin(toRad(v));
+                        case 'cos': return Math.cos(toRad(v));
+                        case 'tan': return Math.tan(toRad(v));
+                        case 'asin': return fromRad(Math.asin(v));
+                        case 'acos': return fromRad(Math.acos(v));
+                        case 'atan': return fromRad(Math.atan(v));
+                        case 'ln': return Math.log(v);
+                        case 'log': return Math.log10(v);
+                        case 'sqrt': return Math.sqrt(v);
+                        case 'abs': return Math.abs(v);
+                        case 'exp': return Math.exp(v);
+                    }
+                    throw new Error('Función no válida');
+                }
+            }
+            throw new Error('Expresión no válida');
+        }
+
+        function formatNum(v) {
+            if (!isFinite(v)) return 'Indefinido';
+            if (Math.abs(v) < 1e-12) return '0';
+            return String(parseFloat(v.toPrecision(12))).replace('.', ',');
+        }
+        // PARSER>>
+
+        function calcEval(src, deg, ans) {
+            const v = evalAst(parse(tokenize(src)), { deg, ans });
+            if (typeof v !== 'number' || Number.isNaN(v)) throw new Error('Operación no válida');
+            return v;
+        }
+
         // --- COMPONENTES ---
 
         const Card = ({ children, className = "" }) => (
-            <div className={`glass-panel rounded-xl shadow-lg border border-gray-800 p-6 ${className}`}>
+            <div className={`panel relative rounded-xl overflow-hidden p-6 ${className}`}>
+                <div className="metal-edge absolute top-0 left-0 right-0 opacity-70"></div>
                 {children}
             </div>
         );
 
-        // 1. RELOJ
-        const TimeWidget = () => {
-            const [time, setTime] = useState(new Date());
-            useEffect(() => {
-                const timer = setInterval(() => setTime(new Date()), 1000);
-                return () => clearInterval(timer);
-            }, []);
-            return (
-                <Card className="flex flex-col items-center justify-center metal-gradient text-white border-none shadow-blue-900/50 shadow-lg">
-                    <div className="mb-2 opacity-80"><IconClock /></div>
-                    <h3 className="text-4xl font-bold font-mono tracking-widest">
-                        {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </h3>
-                    <p className="text-sm opacity-90 mt-1 uppercase tracking-wide">
-                        {time.toLocaleDateString('es-ES', { weekday: 'long', month: 'long', day: 'numeric' })}
-                    </p>
-                </Card>
-            );
-        };
+        const WidgetTitle = ({ icon, children, hint }) => (
+            <div className="flex items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2 text-steel-300">
+                    <span className="text-steel-400">{icon}</span>
+                    <h3 className="font-bold text-white">{children}</h3>
+                </div>
+                {hint && <span className="text-xs text-steel-400">{hint}</span>}
+            </div>
+        );
 
-        // 2. CALCULADORA
+        // 1. CALCULADORA CIENTÍFICA
         const CalculatorWidget = () => {
-            const [input, setInput] = useState("");
-            const handleCalc = (val) => {
+            const [expr, setExpr] = useState("");
+            const [deg, setDeg] = useState(true);
+            const [ans, setAns] = useState(0);
+
+            const preview = useMemo(() => {
+                if (!expr.trim()) return { text: "0", error: false };
+                try { return { text: formatNum(calcEval(expr, deg, ans)), error: false }; }
+                catch (e) { return { text: e.message, error: true }; }
+            }, [expr, deg, ans]);
+
+            const press = (val) => {
                 playSound('click');
-                if (val === 'C') setInput("");
-                else if (val === '=') {
-                    try { setInput(String(eval(input))); } catch { setInput("Error"); }
-                } else setInput(input + val);
+                if (val === 'C') return setExpr("");
+                if (val === '⌫') return setExpr(expr.replace(/(asin\(|acos\(|atan\(|sqrt\(|sin\(|cos\(|tan\(|log\(|ln\(|√\(|Ans|.)$/u, ''));
+                if (val === 'MODE') return setDeg(!deg);
+                if (val === '=') {
+                    if (!expr.trim()) return;
+                    try {
+                        const v = calcEval(expr, deg, ans);
+                        if (!isFinite(v)) return;
+                        setAns(v);
+                        setExpr(formatNum(v));
+                    } catch (e) { /* el mensaje ya se muestra en la vista previa */ }
+                    return;
+                }
+                const map = { 'x²': '^2', 'Ans': 'ans' };
+                setExpr(expr + (map[val] || val));
             };
+
+            const rows = [
+                ['sin(', 'cos(', 'tan(', 'MODE'],
+                ['ln(', 'log(', '√(', '^'],
+                ['(', ')', 'π', '⌫'],
+                ['7', '8', '9', '÷'],
+                ['4', '5', '6', '×'],
+                ['1', '2', '3', '−'],
+                ['0', '.', 'Ans', '+'],
+                ['C', 'x²', 'e', '=']
+            ];
+            const kind = (b) => b === '=' ? 'metal-fill' : ['sin(', 'cos(', 'tan(', 'ln(', 'log(', '√(', '^', '(', ')', 'π', 'x²', 'e', 'Ans', 'MODE'].includes(b) ? 'key key-fn' : ['÷', '×', '−', '+'].includes(b) ? 'key key-op' : 'key';
+
             return (
-                <Card>
-                    <div className="flex items-center gap-2 mb-4 text-blue-400">
-                        <IconCalc /><span className="font-bold tracking-wide">CALCULADORA</span>
-                    </div>
-                    <div className="bg-black/50 border border-gray-700 p-3 rounded mb-3 text-right font-mono text-xl h-12 overflow-hidden text-white shadow-inner">
-                        {input || "0"}
+                <Card className="lg:col-span-1">
+                    <WidgetTitle icon={<IconCalc />} hint="Calculadora científica">Calculadora</WidgetTitle>
+                    <label htmlFor="calcInput" className="sr-only">Expresión</label>
+                    <input
+                        id="calcInput"
+                        value={expr}
+                        onChange={(e) => setExpr(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') press('='); }}
+                        placeholder="Escribe o usa las teclas"
+                        autoComplete="off" spellCheck="false"
+                        className="field readout w-full rounded-lg px-3 py-2 text-right text-xl font-mono"
+                    />
+                    <div className={`readout text-right text-sm mt-2 mb-3 h-5 truncate ${preview.error ? 'text-ember' : 'text-steel-300'}`} aria-live="polite">
+                        {expr.trim() ? (preview.error ? preview.text : '= ' + preview.text) : ''}
                     </div>
                     <div className="grid grid-cols-4 gap-2">
-                        {['7','8','9','/', '4','5','6','*', '1','2','3','-', 'C','0','=','+'].map((btn) => (
-                            <button key={btn} onClick={() => handleCalc(btn)} 
-                                className={`h-10 w-full rounded font-bold transition-all shadow-md active:scale-95 ${
-                                    btn === '=' ? 'metal-gradient text-white hover:brightness-110' : 
-                                    btn === 'C' ? 'bg-red-900/40 text-red-200 hover:bg-red-900/60 border border-red-900' :
-                                    'bg-netflix-metal hover:bg-gray-600 border border-gray-700'
-                                }`}>
-                                {btn}
+                        {rows.flat().map((btn) => (
+                            <button key={btn} onClick={() => press(btn)}
+                                aria-label={btn === 'MODE' ? (deg ? 'Modo grados activo; cambiar a radianes' : 'Modo radianes activo; cambiar a grados') : btn === '⌫' ? 'Borrar' : btn}
+                                className={`${kind(btn)} eng-focus h-10 rounded-lg text-sm font-semibold`}>
+                                {btn === 'MODE' ? (deg ? 'DEG' : 'RAD') : btn}
                             </button>
                         ))}
                     </div>
@@ -125,20 +382,220 @@
             );
         };
 
+        // 2. GRAFICADORA
+        const compileFn = (src) => {
+            if (!src.trim()) return null;
+            try {
+                const ast = parse(tokenize(src));
+                evalAst(ast, { x: 0, deg: false, ans: 0 }); // valida variables y símbolos
+                return { fn: (x) => { try { return evalAst(ast, { x, deg: false, ans: 0 }); } catch (e) { return NaN; } } };
+            } catch (e) {
+                return { error: e.message };
+            }
+        };
+        const niceStep = (range) => {
+            const raw = range / 8;
+            const p = Math.pow(10, Math.floor(Math.log10(raw)));
+            const m = raw / p;
+            return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p;
+        };
+        const tidy = (v) => String(parseFloat(v.toPrecision(6)));
+
+        const GraphWidget = () => {
+            const canvasRef = useRef(null);
+            const [fx, setFx] = useState('sin(x)');
+            const [gx, setGx] = useState('x^2/10');
+            const [xmin, setXmin] = useState('-10');
+            const [xmax, setXmax] = useState('10');
+            const [hover, setHover] = useState(null);
+            const [tick, setTick] = useState(0);
+
+            const compiled = useMemo(() => ({ f: compileFn(fx), g: compileFn(gx) }), [fx, gx]);
+            const range = useMemo(() => {
+                const a = parseFloat(xmin.replace(',', '.')), b = parseFloat(xmax.replace(',', '.'));
+                return (isFinite(a) && isFinite(b) && a < b) ? [a, b] : null;
+            }, [xmin, xmax]);
+
+            const yr = useMemo(() => {
+                if (!range) return [-1, 1];
+                const vals = [];
+                [compiled.f, compiled.g].forEach(c => {
+                    if (c && c.fn) for (let i = 0; i <= 400; i++) {
+                        const y = c.fn(range[0] + (range[1] - range[0]) * i / 400);
+                        if (isFinite(y) && Math.abs(y) < 1e9) vals.push(y);
+                    }
+                });
+                if (!vals.length) return [-1, 1];
+                vals.sort((a, b) => a - b);
+                const lo = vals[Math.floor(vals.length * 0.02)], hi = vals[Math.ceil(vals.length * 0.98) - 1];
+                if (hi - lo < 1e-9) return [lo - 1, hi + 1];
+                const pad = (hi - lo) * 0.15;
+                return [lo - pad, hi + pad];
+            }, [compiled, range]);
+
+            useEffect(() => {
+                const onResize = () => setTick(t => t + 1);
+                window.addEventListener('resize', onResize);
+                return () => window.removeEventListener('resize', onResize);
+            }, []);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const rect = canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                const w = rect.width, h = rect.height;
+                canvas.width = Math.round(w * dpr);
+                canvas.height = Math.round(h * dpr);
+                const ctx = canvas.getContext('2d');
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = '#0c1119';
+                ctx.fillRect(0, 0, w, h);
+                if (!range) return;
+
+                const [a, b] = range, [y0, y1] = yr;
+                const X = (x) => (x - a) / (b - a) * w;
+                const Y = (y) => h - (y - y0) / (y1 - y0) * h;
+
+                ctx.font = '11px Segoe UI, sans-serif';
+                const sx = niceStep(b - a), sy = niceStep(y1 - y0);
+                ctx.lineWidth = 1;
+                for (let x = Math.ceil(a / sx) * sx; x <= b; x += sx) {
+                    ctx.strokeStyle = '#1a2535'; ctx.beginPath(); ctx.moveTo(X(x), 0); ctx.lineTo(X(x), h); ctx.stroke();
+                }
+                for (let y = Math.ceil(y0 / sy) * sy; y <= y1; y += sy) {
+                    ctx.strokeStyle = '#1a2535'; ctx.beginPath(); ctx.moveTo(0, Y(y)); ctx.lineTo(w, Y(y)); ctx.stroke();
+                }
+                // Ejes
+                const axisX = (y0 <= 0 && y1 >= 0) ? Y(0) : (y0 > 0 ? h - 1 : 1);
+                const axisY = (a <= 0 && b >= 0) ? X(0) : (a > 0 ? 1 : w - 1);
+                ctx.strokeStyle = '#4f78a8'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(0, axisX); ctx.lineTo(w, axisX); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(axisY, 0); ctx.lineTo(axisY, h); ctx.stroke();
+                // Etiquetas
+                ctx.fillStyle = '#7f9bbb';
+                for (let x = Math.ceil(a / sx) * sx; x <= b; x += sx) {
+                    if (Math.abs(x) < sx / 100) continue;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(tidy(x), X(x), Math.min(h - 4, Math.max(12, axisX + 14)));
+                }
+                for (let y = Math.ceil(y0 / sy) * sy; y <= y1; y += sy) {
+                    if (Math.abs(y) < sy / 100) continue;
+                    ctx.textAlign = 'left';
+                    ctx.fillText(tidy(y), Math.min(w - 36, Math.max(4, axisY + 5)), Y(y) - 3);
+                }
+
+                // Curvas
+                ctx.save();
+                ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
+                const plot = (c, color) => {
+                    if (!c || !c.fn) return;
+                    ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.beginPath();
+                    let pen = false, prev = null;
+                    const N = Math.max(300, Math.floor(w));
+                    for (let i = 0; i <= N; i++) {
+                        const x = a + (b - a) * i / N, y = c.fn(x);
+                        if (!isFinite(y)) { pen = false; prev = null; continue; }
+                        const px = X(x), py = Y(y);
+                        if (!pen || (prev !== null && Math.abs(py - prev) > h)) { ctx.moveTo(px, py); pen = true; } else { ctx.lineTo(px, py); }
+                        prev = py;
+                    }
+                    ctx.stroke();
+                };
+                plot(compiled.f, '#a9c8ec');
+                plot(compiled.g, '#ffb020');
+                ctx.restore();
+
+                // Cursor
+                if (hover) {
+                    ctx.strokeStyle = 'rgba(211,224,239,.35)'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.moveTo(X(hover.x), 0); ctx.lineTo(X(hover.x), h); ctx.stroke(); ctx.setLineDash([]);
+                    [[hover.f, '#a9c8ec'], [hover.g, '#ffb020']].forEach(([v, col]) => {
+                        if (v !== null && isFinite(v) && Y(v) >= 0 && Y(v) <= h) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X(hover.x), Y(v), 4.5, 0, Math.PI * 2); ctx.fill(); }
+                    });
+                }
+            }, [compiled, range, yr, tick, hover]);
+
+            const onMove = (e) => {
+                if (!range) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = range[0] + ((e.clientX - rect.left) / rect.width) * (range[1] - range[0]);
+                setHover({
+                    x,
+                    f: compiled.f && compiled.f.fn ? compiled.f.fn(x) : null,
+                    g: compiled.g && compiled.g.fn ? compiled.g.fn(x) : null
+                });
+            };
+
+            const zoom = (factor) => {
+                if (!range) return;
+                const c = (range[0] + range[1]) / 2, half = (range[1] - range[0]) / 2 * factor;
+                setXmin(tidy(c - half)); setXmax(tidy(c + half));
+            };
+
+            const errMsg = (c) => c && c.error ? c.error : null;
+            const readout = (v) => (v === null || v === undefined) ? '—' : formatNum(v);
+
+            return (
+                <Card className="lg:col-span-2">
+                    <WidgetTitle icon={<IconGraph />} hint="Graficadora de funciones">Graficadora</WidgetTitle>
+                    <div className="grid sm:grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label htmlFor="fx" className="flex items-center gap-2 text-xs text-steel-300 mb-1"><span className="w-3 h-1 rounded bg-[#a9c8ec]"></span>f(x) =</label>
+                            <input id="fx" value={fx} onChange={(e) => setFx(e.target.value)} spellCheck="false" autoComplete="off" className="field w-full rounded-lg px-3 py-2 font-mono text-sm" placeholder="sin(x)" />
+                            {errMsg(compiled.f) && <p className="text-xs text-ember mt-1">{errMsg(compiled.f)}</p>}
+                        </div>
+                        <div>
+                            <label htmlFor="gx" className="flex items-center gap-2 text-xs text-steel-300 mb-1"><span className="w-3 h-1 rounded bg-[#ffb020]"></span>g(x) =</label>
+                            <input id="gx" value={gx} onChange={(e) => setGx(e.target.value)} spellCheck="false" autoComplete="off" className="field w-full rounded-lg px-3 py-2 font-mono text-sm" placeholder="x^2/10" />
+                            {errMsg(compiled.g) && <p className="text-xs text-ember mt-1">{errMsg(compiled.g)}</p>}
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap items-end gap-3 mb-3">
+                        <div>
+                            <label htmlFor="xmin" className="block text-xs text-steel-300 mb-1">x mínimo</label>
+                            <input id="xmin" value={xmin} onChange={(e) => setXmin(e.target.value)} className="field w-24 rounded-lg px-3 py-1.5 font-mono text-sm" />
+                        </div>
+                        <div>
+                            <label htmlFor="xmax" className="block text-xs text-steel-300 mb-1">x máximo</label>
+                            <input id="xmax" value={xmax} onChange={(e) => setXmax(e.target.value)} className="field w-24 rounded-lg px-3 py-1.5 font-mono text-sm" />
+                        </div>
+                        <div className="flex gap-2 ml-auto">
+                            <button onClick={() => zoom(0.7)} aria-label="Acercar" className="key eng-focus w-10 h-9 rounded-lg font-bold">+</button>
+                            <button onClick={() => zoom(1 / 0.7)} aria-label="Alejar" className="key eng-focus w-10 h-9 rounded-lg font-bold">−</button>
+                            <button onClick={() => { setXmin('-10'); setXmax('10'); }} className="key eng-focus px-3 h-9 rounded-lg text-sm">Restablecer</button>
+                        </div>
+                    </div>
+                    {!range && <p className="text-xs text-ember mb-2">El valor mínimo de x debe ser menor que el máximo.</p>}
+                    <canvas ref={canvasRef} onMouseMove={onMove} onMouseLeave={() => setHover(null)}
+                        className="w-full rounded-lg border border-[#243245] cursor-crosshair" style={{ height: '320px', display: 'block' }}
+                        role="img" aria-label="Gráfica de las funciones ingresadas"></canvas>
+                    <div className="readout flex flex-wrap gap-x-6 gap-y-1 text-sm text-steel-300 mt-3 min-h-[1.5rem]">
+                        {hover ? (<>
+                            <span>x = <span className="text-white">{formatNum(hover.x)}</span></span>
+                            <span className="text-[#a9c8ec]">f(x) = <span className="text-white">{readout(hover.f)}</span></span>
+                            <span className="text-[#ffb020]">g(x) = <span className="text-white">{readout(hover.g)}</span></span>
+                        </>) : <span className="text-steel-400">Pasa el cursor sobre la gráfica para leer valores. Acepta sin, cos, tan, ln, log, √, abs, exp, π y e; los ángulos van en radianes.</span>}
+                    </div>
+                </Card>
+            );
+        };
+
         // 3. BLOC DE NOTAS
         const NotesWidget = () => {
-            const [note, setNote] = useState(() => localStorage.getItem('ENTALPIA_note') || "");
+            const [note, setNote] = useState(() => store.get('ENTALPIA_note', ""));
             const handleChange = (e) => {
                 setNote(e.target.value);
-                localStorage.setItem('ENTALPIA_note', e.target.value);
+                store.set('ENTALPIA_note', e.target.value);
             };
             return (
                 <Card className="flex flex-col h-full">
-                    <div className="flex items-center gap-2 mb-2 text-yellow-500">
-                        <IconNote /><span className="font-bold tracking-wide">NOTAS RÁPIDAS</span>
-                    </div>
+                    <WidgetTitle icon={<IconNote />} hint="Se guarda en este navegador">Notas rápidas</WidgetTitle>
+                    <label htmlFor="noteArea" className="sr-only">Notas rápidas</label>
                     <textarea
-                        className="w-full h-full min-h-[150px] bg-black/30 border border-gray-700 text-gray-300 p-3 rounded focus:ring-1 focus:ring-blue-500 outline-none resize-none"
+                        id="noteArea"
+                        className="field w-full flex-1 min-h-[180px] p-3 rounded-lg resize-none text-gray-200"
                         placeholder="Escribe recordatorios aquí..."
                         value={note}
                         onChange={handleChange}
@@ -150,12 +607,14 @@
         // 4. LISTA DE TAREAS (TODO)
         const TodoWidget = () => {
             const [tasks, setTasks] = useState(() => {
-                const saved = localStorage.getItem('ENTALPIA_todos');
-                return saved ? JSON.parse(saved) : [{ id: 1, text: "Revisar certificaciones", completed: false }];
+                try {
+                    const saved = store.get('ENTALPIA_todos', null);
+                    return saved ? JSON.parse(saved) : [{ id: 1, text: "Revisar certificaciones", completed: false }];
+                } catch (e) { return [{ id: 1, text: "Revisar certificaciones", completed: false }]; }
             });
             const [input, setInput] = useState("");
 
-            useEffect(() => localStorage.setItem('ENTALPIA_todos', JSON.stringify(tasks)), [tasks]);
+            useEffect(() => { store.set('ENTALPIA_todos', JSON.stringify(tasks)); }, [tasks]);
 
             const addTask = () => {
                 if (!input.trim()) return;
@@ -163,7 +622,6 @@
                 setTasks([...tasks, { id: Date.now(), text: input, completed: false }]);
                 setInput("");
             };
-
             const toggleTask = (id) => {
                 setTasks(tasks.map(t => {
                     if (t.id === id) {
@@ -173,41 +631,41 @@
                     return t;
                 }));
             };
-
             const deleteTask = (id) => {
                 playSound('delete');
                 setTasks(tasks.filter(t => t.id !== id));
             };
+            const pending = tasks.filter(t => !t.completed).length;
 
             return (
                 <Card className="h-full flex flex-col">
-                    <div className="flex items-center gap-2 mb-4 text-emerald-500">
-                        <IconCheck /><span className="font-bold tracking-wide">TAREAS PENDIENTES</span>
-                    </div>
+                    <WidgetTitle icon={<IconCheck size={20} />} hint={`${pending} ${pending === 1 ? 'pendiente' : 'pendientes'}`}>Tareas pendientes</WidgetTitle>
                     <div className="flex gap-2 mb-4">
+                        <label htmlFor="taskInput" className="sr-only">Nueva tarea</label>
                         <input
-                            type="text" value={input}
+                            id="taskInput" type="text" value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && addTask()}
                             placeholder="Nueva tarea..."
-                            className="flex-1 bg-black/30 border border-gray-700 text-white rounded px-3 py-2 text-sm focus:ring-1 focus:ring-emerald-500 outline-none"
+                            className="field flex-1 rounded-lg px-3 py-2 text-sm"
                         />
-                        <button onClick={addTask} className="bg-emerald-600 hover:bg-emerald-500 text-white p-2 rounded transition-colors shadow-lg">
+                        <button onClick={addTask} aria-label="Agregar tarea" className="metal-fill eng-focus p-2 rounded-lg">
                             <IconPlus />
                         </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto space-y-2 max-h-[200px] pr-1">
+                    <div className="flex-1 overflow-y-auto space-y-1 max-h-[220px] pr-1">
+                        {tasks.length === 0 && <p className="text-sm text-steel-400">No hay tareas. Escribe la primera arriba.</p>}
                         {tasks.map((task) => (
-                            <div key={task.id} className="group flex items-center justify-between p-2 rounded hover:bg-white/5 transition-colors border border-transparent hover:border-gray-700">
+                            <div key={task.id} className="group flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-[#243245]">
                                 <div className="flex items-center gap-3 overflow-hidden">
-                                    <button onClick={() => toggleTask(task.id)} className={`flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-all ${task.completed ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-500 hover:border-emerald-500'}`}>
+                                    <button onClick={() => toggleTask(task.id)} aria-label={task.completed ? 'Marcar como pendiente' : 'Marcar como hecha'} className={`eng-focus flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-all ${task.completed ? 'bg-steel-500 border-steel-300 text-white' : 'border-gray-500 hover:border-steel-300'}`}>
                                         {task.completed && <IconCheck />}
                                     </button>
-                                    <span className={`text-sm truncate transition-all ${task.completed ? 'text-gray-500 line-through' : 'text-gray-300'}`}>
+                                    <span className={`text-sm truncate transition-all ${task.completed ? 'text-gray-500 line-through' : 'text-gray-200'}`}>
                                         {task.text}
                                     </span>
                                 </div>
-                                <button onClick={() => deleteTask(task.id)} className="text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                                <button onClick={() => deleteTask(task.id)} aria-label="Eliminar tarea" className="eng-focus text-gray-500 hover:text-ember opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all">
                                     <IconTrash />
                                 </button>
                             </div>
@@ -217,75 +675,103 @@
             );
         };
 
+        // --- RELOJ (compacto, en el encabezado) ---
+        const ClockChip = () => {
+            const [time, setTime] = useState(new Date());
+            useEffect(() => {
+                const timer = setInterval(() => setTime(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+            return (
+                <div className="flex items-center gap-3 text-steel-300">
+                    <IconClock size={20} />
+                    <div className="leading-tight">
+                        <div className="readout text-lg font-bold text-white">{time.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</div>
+                        <div className="text-xs text-steel-400">{time.toLocaleDateString('es-ES', { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+                    </div>
+                </div>
+            );
+        };
+
         // --- APP PRINCIPAL ---
         const App = () => {
+            const [sound, setSound] = useState(soundOn);
+            const toggleSound = () => {
+                soundOn = !soundOn;
+                store.set('ENTALPIA_sound', soundOn ? '1' : '0');
+                setSound(soundOn);
+            };
+
             const shortcuts = [
-                { name: "OCR", url: "../extensiones/app_ocr_v1.html", color: "text-blue-400 border-blue-900" },
-                { name: "Grabar pantalla", url: "../extensiones/app_grabar_pantalla_v1.html", color: "text-red-400 border-red-900" },
-                { name: "Texto a voz", url: "../extensiones/aap_texto_a_voz.html", color: "text-gray-400 border-red-900" }, // Placeholder
-                { name: "Generador ctas de cobro", url: "../extensiones/generador_ctas_de_cobro.html", color: "text-green border-gray-700" },
-                { name: "Chat INSE", url: "../inse/Mensajeria _INSE.html" },
-                { name: "ATS", url: "../extensiones/atsV1.html", color: "text-white border-gray-700" },
+                { name: "OCR", desc: "Convierte imágenes en texto editable.", icon: <IconScan size={22} />, url: "../extensiones/app_ocr_v1.html" },
+                { name: "Grabar pantalla", desc: "Graba tu pantalla para tutoriales y evidencias.", icon: <IconVideo size={22} />, url: "../extensiones/app_grabar_pantalla_v1.html" },
+                { name: "Texto a voz", desc: "Convierte texto escrito en audio.", icon: <IconSpeaker size={22} />, url: "../extensiones/aap_texto_a_voz.html" },
+                { name: "Generador ctas de cobro", desc: "Genera cuentas de cobro listas para enviar.", icon: <IconInvoice size={22} />, url: "../extensiones/generador_ctas_de_cobro.html" },
+                { name: "Chat INSE", desc: "Mensajería interna de INSE.", icon: <IconChat size={22} />, url: "../inse/Mensajeria _INSE.html" },
+                { name: "ATS", desc: "Abre la herramienta ATS.", icon: <IconClipboard size={22} />, url: "../extensiones/atsV1.html" },
             ];
 
             return (
-                <div className="min-h-screen p-6 font-sans">
-                    <header className="max-w-6xl mx-auto flex justify-between items-center mb-8 border-b border-gray-800 pb-6">
-                        <div>
-                            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-blue-200 uppercase tracking-tighter">
-                                ENTALPIA <span className="text-gray-600 font-light">Dashboard</span>
-                            </h1>
-                            <p className="text-gray-500 text-sm mt-1">Herramientas de Gestión e Ingeniería</p>
+                <div className="min-h-screen font-sans">
+                    <header className="border-b border-[#243245] bg-ti950/90 backdrop-blur sticky top-0 z-30">
+                        <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <img src="data:image/webp;base64,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" alt="Logo de Entalpía" className="h-11 w-auto" />
+                                <div className="leading-tight">
+                                    <h1 className="metal-text text-2xl font-bold tracking-tight">Entalpía <span className="font-light text-steel-400">Extensiones</span></h1>
+                                    <p className="text-steel-400 text-sm">Herramientas de gestión e ingeniería</p>
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-4">
+                                <div className="hidden md:flex items-center gap-2 text-xs">
+                                    <span className="px-3 py-1.5 rounded-full border border-[#243245] bg-ti800 text-steel-300">Patrocinado: software de uso libre</span>
+                                    <span className="px-3 py-1.5 rounded-full border border-[#243245] bg-ti800 text-steel-300 flex items-center gap-2"><span className="live-dot"></span>Activo</span>
+                                </div>
+                                <ClockChip />
+                                <button onClick={toggleSound} aria-pressed={sound} aria-label={sound ? 'Desactivar sonidos' : 'Activar sonidos'} title={sound ? 'Sonidos activados' : 'Sonidos desactivados'} className="key eng-focus w-10 h-10 rounded-full flex items-center justify-center">
+                                    <IconSound off={!sound} />
+                                </button>
+                            </div>
                         </div>
                     </header>
 
-                    <main className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Columna 1: Info */}
-                        <div className="space-y-6">
-                            <TimeWidget />
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-blue-900/20 border border-blue-900/50 rounded-xl p-4 text-blue-200 flex flex-col items-center justify-center shadow-lg">
-                                    <span className="text-2xl font-bold">Patrocinado</span>
-                                    <span className="text-xs opacity-70 uppercase">Software de uso libre</span>
-                                </div>
-                                <div className="bg-purple-900/20 border border-purple-900/50 rounded-xl p-4 text-purple-200 flex flex-col items-center justify-center shadow-lg">
-                                    <span className="text-2xl font-bold">Activo</span>
-                                    <span className="text-xs opacity-70 uppercase">Estado</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Columna 2 y 3: Apps */}
-                        <div className="md:col-span-2 space-y-8">
-                            
-                            {/* Accesos */}
-                            <div>
-                                <h2 className="text-lg font-bold text-gray-400 mb-4 border-l-4 border-blue-600 pl-3 uppercase">Accesos Rápidos</h2>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                    {shortcuts.map((link) => (
-                                        <a key={link.name} href={link.url} target="_blank" className={`group flex flex-col items-center justify-center p-4 bg-netflix-card rounded-xl hover:bg-gray-800 transition-all border ${link.color} border-opacity-30 hover:border-opacity-100 hover:shadow-[0_0_15px_rgba(0,113,235,0.2)]`}>
-                                            <div className="mb-2 p-2 bg-gray-800 rounded-full group-hover:scale-110 transition-transform">
-                                                <IconLink />
+                    <main className="max-w-6xl mx-auto px-4 md:px-6 py-10 space-y-14">
+                        {/* Aplicaciones */}
+                        <section aria-labelledby="h-apps">
+                            <h2 id="h-apps" className="text-2xl md:text-3xl font-bold text-white">Aplicaciones</h2>
+                            <p className="text-steel-400 mt-1 max-w-[60ch]">Se abren en una pestaña nueva para que sigas trabajando aquí.</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+                                {shortcuts.map((link) => (
+                                    <a key={link.name} href={link.url} target="_blank" rel="noopener noreferrer" className="app-card eng-focus group flex items-start gap-4 p-5 rounded-xl">
+                                        <div className="tile w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0">{link.icon}</div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <h3 className="font-bold text-white">{link.name}</h3>
+                                                <span className="text-steel-400 group-hover:text-white transition-colors"><IconExternal size={16} /></span>
                                             </div>
-                                            <span className="font-medium text-xs uppercase tracking-wider">{link.name}</span>
-                                        </a>
-                                    ))}
-                                </div>
+                                            <p className="text-sm text-steel-300 mt-1 leading-relaxed">{link.desc}</p>
+                                        </div>
+                                    </a>
+                                ))}
                             </div>
+                        </section>
 
-                            {/* Widgets Interactivos */}
-                            <div>
-                                <h2 className="text-lg font-bold text-gray-400 mb-4 border-l-4 border-blue-600 pl-3 uppercase">Herramientas</h2>
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <CalculatorWidget />
-                                    <NotesWidget />
-                                    <TodoWidget />
-                                </div>
+                        {/* Herramientas */}
+                        <section aria-labelledby="h-tools">
+                            <h2 id="h-tools" className="text-2xl md:text-3xl font-bold text-white">Herramientas</h2>
+                            <p className="text-steel-400 mt-1 max-w-[60ch]">Funcionan directamente en esta página, sin instalar nada.</p>
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                                <CalculatorWidget />
+                                <GraphWidget />
                             </div>
-                        </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                                <NotesWidget />
+                                <TodoWidget />
+                            </div>
+                        </section>
                     </main>
                     
-                    <footer className="max-w-6xl mx-auto mt-12 text-center text-gray-600 text-xs border-t border-gray-800 pt-6">
+                    <footer className="max-w-6xl mx-auto px-4 md:px-6 pb-10 text-center text-gray-600 text-xs border-t border-[#1a2535] pt-6">
                         <p>Desarrollado para Industrias IA Col. - 2026</p>
                     </footer>
                 </div>
