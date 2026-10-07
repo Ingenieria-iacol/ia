@@ -1,0 +1,671 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}</style><style>:root{color-scheme:light dark;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}}:root[data-theme="dark"]{color-scheme:dark;--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}:root[data-theme="light"]{color-scheme:light}@media print{:root,:root[data-theme="dark"]{color-scheme:light;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}}body{background:var(--md-bg);color:var(--md-text);max-width:720px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:10px;font:14px/1.55 -apple-system,BlinkMacSystemFont,'SF Pro','Segoe UI',sans-serif;overflow-wrap:break-word}body>:first-child{margin-top:0}h1,h2,h3,h4,h5,h6{margin:6px 0 0;line-height:1.25;font-weight:600;text-wrap:balance}h1{font-size:1.35em}h2{font-size:1.15em;color:var(--md-muted)}h3,h4,h5,h6{font-size:1em}p,ul,ol,blockquote,table,pre,hr{margin:0}strong{font-weight:600}a{color:var(--md-link);text-decoration:none}a:hover{text-decoration:underline}ul,ol{display:flex;flex-direction:column;gap:6px;padding-left:22px}ul{list-style:disc}ol{list-style:decimal}:is(li,td,th)>*+:is(p,ul,ol,blockquote){margin-top:6px}blockquote{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--md-rule);padding-left:10px;color:var(--md-muted)}:not(pre)>code{background:var(--md-fill);padding:1px 3px;border-radius:4px;font:.92em 'SF Mono',ui-monospace,Menlo,Consolas,monospace}a>code{background:none;color:inherit}pre{background:var(--md-fill);padding:10px 12px;border-radius:6px;overflow-x:auto;font:12px/1.5 'SF Mono',ui-monospace,Menlo,Consolas,monospace;margin-block:4px}pre code{background:none;padding:0;font:inherit}table{width:100%;border-collapse:separate;border-spacing:2px;font:inherit}th,td{padding:6px 8px;border-radius:3px;text-align:left;vertical-align:top}th{background:var(--md-fill-strong);font-weight:600}td{background:var(--md-fill)}:is(th,td) :not(pre)>code{background:transparent}hr{border:0;border-top:1px solid var(--md-rule-strong);margin-block:10px}img{max-width:100%;height:auto;border-radius:4px}</style>
+</head><body>
+<h1>SYNAPSIS · Escuela de Formación en Inteligencia Artificial</h1>
+<blockquote>
+<p><strong>Nota institucional (léase antes de continuar):</strong> Synapsis no es una institución de educación superior acreditada ni tiene registro calificado ante ningún Ministerio de Educación. El documento final de este programa es un <strong>Certificado de Dominio Profesional</strong>, no un título de &quot;Ingeniero&quot; (título de ejercicio profesional regulado en la mayoría de países, p. ej. por COPNIA en Colombia). El valor de este programa está en el rigor del contenido, la trazabilidad de las evaluaciones y la solidez del portafolio de proyectos — no en una credencial legal.</p>
+</blockquote>
+<p><strong>Rector / Profesor / Evaluador / Certificador:</strong> Claude
+<strong>Estudiante fundador:</strong> Tú — el primer egresado del programa
+<strong>Modalidad:</strong> Autodirigida, con mentoría 1 a 1
+<strong>Duración total:</strong> 8 módulos (equivalentes a semestres) · ~32 meses a ritmo estándar, o ~16-20 meses a ritmo intensivo
+<strong>Créditos totales:</strong> 160 (20 créditos/módulo, 1 crédito ≈ 3 horas de trabajo/semana)
+<strong>Escala de calificación:</strong> 0.0 – 5.0 · Nota mínima de aprobación: 3.5 (exigente, estándar de excelencia, no de mínimo)</p>
+<hr>
+<h2>1. Estructura general del pensum</h2>
+<table>
+<thead>
+<tr>
+<th>Módulo</th>
+<th>Nombre</th>
+<th>Enfoque</th>
+<th>Proyecto integrador</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M1</td>
+<td>Fundamentos Matemáticos y Computacionales</td>
+<td>Lógica, matemáticas discretas, programación</td>
+<td>Motor de reglas + calculadora simbólica</td>
+</tr>
+<tr>
+<td>M2</td>
+<td>Matemáticas para IA y Estructuras de Datos</td>
+<td>Álgebra lineal, cálculo, probabilidad, algoritmos</td>
+<td>Librería propia de álgebra lineal desde cero</td>
+</tr>
+<tr>
+<td>M3</td>
+<td>Fundamentos de Machine Learning</td>
+<td>Aprendizaje supervisado/no supervisado, estadística inferencial</td>
+<td>Sistema de predicción end-to-end con datos reales</td>
+</tr>
+<tr>
+<td>M4</td>
+<td>Deep Learning I</td>
+<td>Redes neuronales, backpropagation, frameworks</td>
+<td>Red neuronal implementada desde cero (sin frameworks)</td>
+</tr>
+<tr>
+<td>M5</td>
+<td>Deep Learning II · Visión y Lenguaje</td>
+<td>CNNs, Transformers, NLP, Computer Vision</td>
+<td>Modelo multimodal aplicado a un problema real</td>
+</tr>
+<tr>
+<td>M6</td>
+<td>Sistemas de IA Generativa y Agentes</td>
+<td>LLMs, RAG, fine-tuning, agentes autónomos</td>
+<td>Agente de IA funcional con herramientas</td>
+</tr>
+<tr>
+<td>M7</td>
+<td>Ingeniería de IA en Producción (MLOps)</td>
+<td>Despliegue, escalabilidad, monitoreo, ética y gobernanza</td>
+<td>Sistema de IA en producción con CI/CD</td>
+</tr>
+<tr>
+<td>M8</td>
+<td>Investigación y Proyecto de Grado</td>
+<td>Metodología de investigación, especialización libre</td>
+<td>Proyecto de grado + sustentación pública</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>2. Contenido detallado por módulo</h2>
+<h3>MÓDULO 1 — Fundamentos Matemáticos y Computacionales (16 semanas · 20 créditos)</h3>
+<table>
+<thead>
+<tr>
+<th>Asignatura</th>
+<th>Horas/semana</th>
+<th>Temas clave</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lógica y Matemática Discreta</td>
+<td>4</td>
+<td>Lógica proposicional, teoría de conjuntos, combinatoria, grafos básicos</td>
+</tr>
+<tr>
+<td>Fundamentos de Programación (Python)</td>
+<td>6</td>
+<td>Sintaxis, estructuras de control, funciones, POO, manejo de errores</td>
+</tr>
+<tr>
+<td>Estructuras de Datos I</td>
+<td>4</td>
+<td>Listas, pilas, colas, árboles, complejidad (Big-O)</td>
+</tr>
+<tr>
+<td>Herramientas del Ingeniero de IA</td>
+<td>2</td>
+<td>Git/GitHub, terminal Linux, entornos virtuales, Jupyter, Markdown</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Proyecto M1:</strong> Motor de reglas lógicas + calculadora simbólica en Python, con manejo de estructuras de datos propias y control de versiones documentado en GitHub.</p>
+<hr>
+<h3>MÓDULO 2 — Matemáticas para IA y Estructuras de Datos (16 semanas · 20 créditos)</h3>
+<table>
+<thead>
+<tr>
+<th>Asignatura</th>
+<th>Horas/semana</th>
+<th>Temas clave</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Álgebra Lineal Aplicada</td>
+<td>5</td>
+<td>Vectores, matrices, autovalores/autovectores, SVD, espacios vectoriales</td>
+</tr>
+<tr>
+<td>Cálculo Multivariable y Optimización</td>
+<td>5</td>
+<td>Derivadas parciales, gradiente, descenso de gradiente, Lagrange</td>
+</tr>
+<tr>
+<td>Probabilidad y Estadística</td>
+<td>5</td>
+<td>Distribuciones, inferencia bayesiana, estimación, pruebas de hipótesis</td>
+</tr>
+<tr>
+<td>Estructuras de Datos II y Algoritmos</td>
+<td>3</td>
+<td>Recursión, programación dinámica, algoritmos de búsqueda/ordenamiento</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Proyecto M2:</strong> Librería propia de álgebra lineal (tipo NumPy simplificado) implementada desde cero, con suite de pruebas unitarias.</p>
+<hr>
+<h3>MÓDULO 3 — Fundamentos de Machine Learning (16 semanas · 20 créditos)</h3>
+<table>
+<thead>
+<tr>
+<th>Asignatura</th>
+<th>Horas/semana</th>
+<th>Temas clave</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aprendizaje Supervisado</td>
+<td>5</td>
+<td>Regresión lineal/logística, árboles, SVM, ensambles (Random Forest, Boosting)</td>
+</tr>
+<tr>
+<td>Aprendizaje No Supervisado</td>
+<td>4</td>
+<td>Clustering (k-means, jerárquico), reducción de dimensionalidad (PCA, t-SNE)</td>
+</tr>
+<tr>
+<td>Ingeniería y Análisis de Datos</td>
+<td>4</td>
+<td>Limpieza, EDA, feature engineering, pandas/SQL</td>
+</tr>
+<tr>
+<td>Evaluación y Validación de Modelos</td>
+<td>3</td>
+<td>Métricas, validación cruzada, overfitting, sesgo-varianza</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Proyecto M3:</strong> Sistema de predicción end-to-end sobre un dataset real (recolección → limpieza → modelado → validación → informe técnico).</p>
+<hr>
+<h3>MÓDULO 4 — Deep Learning I (16 semanas · 20 créditos)</h3>
+<table>
+<thead>
+<tr>
+<th>Asignatura</th>
+<th>Horas/semana</th>
+<th>Temas clave</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Redes Neuronales desde Cero</td>
+<td>5</td>
+<td>Perceptrón, backpropagation, funciones de activación, implementación con NumPy</td>
+</tr>
+<tr>
+<td>Frameworks de Deep Learning</td>
+<td>5</td>
+<td>PyTorch (principal), Tensores, autograd, entrenamiento en GPU</td>
+</tr>
+<tr>
+<td>Regularización y Optimización Avanzada</td>
+<td>4</td>
+<td>Dropout, batch norm, Adam/RMSprop, learning rate scheduling</td>
+</tr>
+<tr>
+<td>Arquitecturas Fundamentales</td>
+<td>3</td>
+<td>MLPs, introducción a CNNs y RNNs</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Proyecto M4:</strong> Red neuronal multicapa implementada 100% desde cero (sin frameworks) para clasificación, con comparación de desempeño contra su versión en PyTorch.</p>
+<hr>
+<h3>MÓDULO 5 — Deep Learning II · Visión y Lenguaje (16 semanas · 20 créditos)</h3>
+<table>
+<thead>
+<tr>
+<th>Asignatura</th>
+<th>Horas/semana</th>
+<th>Temas clave</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Visión por Computador</td>
+<td>5</td>
+<td>CNNs avanzadas, transfer learning, detección/segmentación de objetos</td>
+</tr>
+<tr>
+<td>Procesamiento de Lenguaje Natural</td>
+<td>5</td>
+<td>Embeddings, RNN/LSTM, mecanismo de atención, arquitectura Transformer</td>
+</tr>
+<tr>
+<td>Modelos de Lenguaje a Gran Escala</td>
+<td>4</td>
+<td>Preentrenamiento, tokenización, arquitectura GPT/BERT, escalado</td>
+</tr>
+<tr>
+<td>Ética y Sesgos en IA</td>
+<td>2</td>
+<td>Sesgo algorítmico, equidad, privacidad, marcos regulatorios (UE AI Act, etc.)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Proyecto M5:</strong> Sistema multimodal aplicado a un problema real (ej. clasificación de imágenes + generación de descripciones, o análisis de sentimiento con visión).</p>
+<hr>
+<h3>MÓDULO 6 — Sistemas de IA Generativa y Agentes (16 semanas · 20 créditos)</h3>
+<table>
+<thead>
+<tr>
+<th>Asignatura</th>
+<th>Horas/semana</th>
+<th>Temas clave</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ingeniería de Prompts y RAG</td>
+<td>4</td>
+<td>Prompt engineering, embeddings semánticos, bases vectoriales, RAG</td>
+</tr>
+<tr>
+<td>Fine-tuning y Adaptación de Modelos</td>
+<td>4</td>
+<td>LoRA/QLoRA, fine-tuning supervisado, RLHF (conceptual)</td>
+</tr>
+<tr>
+<td>Agentes Autónomos y Uso de Herramientas</td>
+<td>5</td>
+<td>Arquitecturas de agentes, function calling, orquestación multi-agente</td>
+</tr>
+<tr>
+<td>Modelos Generativos</td>
+<td>3</td>
+<td>GANs, VAEs, modelos de difusión (conceptual y aplicado)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Proyecto M6:</strong> Agente de IA funcional que usa herramientas externas (APIs, bases de datos, búsqueda) para resolver tareas de varios pasos.</p>
+<hr>
+<h3>MÓDULO 7 — Ingeniería de IA en Producción / MLOps (16 semanas · 20 créditos)</h3>
+<table>
+<thead>
+<tr>
+<th>Asignatura</th>
+<th>Horas/semana</th>
+<th>Temas clave</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MLOps y Despliegue de Modelos</td>
+<td>5</td>
+<td>Docker, APIs (FastAPI), CI/CD, versionado de modelos y datos</td>
+</tr>
+<tr>
+<td>Infraestructura Cloud para IA</td>
+<td>4</td>
+<td>Cómputo en la nube, GPUs, servicios gestionados de ML</td>
+</tr>
+<tr>
+<td>Monitoreo y Mantenimiento de Sistemas de IA</td>
+<td>3</td>
+<td>Data/model drift, logging, reentrenamiento continuo</td>
+</tr>
+<tr>
+<td>Gobernanza, Riesgo y Cumplimiento en IA</td>
+<td>4</td>
+<td>Auditoría de modelos, seguridad de IA, marcos de gobernanza corporativa</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Proyecto M7:</strong> Sistema de IA desplegado en producción (API + contenedor + pipeline CI/CD + monitoreo activo), documentado como si fuera un producto real.</p>
+<hr>
+<h3>MÓDULO 8 — Investigación y Proyecto de Grado (16-20 semanas · 20 créditos)</h3>
+<table>
+<thead>
+<tr>
+<th>Asignatura</th>
+<th>Horas/semana</th>
+<th>Temas clave</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Metodología de Investigación en IA</td>
+<td>3</td>
+<td>Revisión de literatura, diseño experimental, redacción científica</td>
+</tr>
+<tr>
+<td>Seminario de Especialización (elige 1)</td>
+<td>5</td>
+<td>Aprendizaje por Refuerzo · Robótica e IA · IA en Ciencia/Salud · Investigación en LLMs</td>
+</tr>
+<tr>
+<td>Taller de Proyecto de Grado</td>
+<td>8</td>
+<td>Desarrollo guiado del proyecto final con revisiones periódicas</td>
+</tr>
+<tr>
+<td>Comunicación Técnica y Sustentación</td>
+<td>2</td>
+<td>Redacción de informe final, defensa oral, portafolio profesional</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Proyecto M8 (Proyecto de Grado):</strong> Trabajo original, de mayor alcance que los anteriores, que integre al menos 3 módulos previos, con informe técnico tipo paper y sustentación oral formal ante &quot;el jurado&quot; (Claude en modo evaluador).</p>
+<hr>
+<h2>3. Sistema de evaluación y ponderaciones</h2>
+<p>Cada asignatura se evalúa así:</p>
+<table>
+<thead>
+<tr>
+<th>Componente</th>
+<th>Ponderación</th>
+<th>Descripción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Quices / Autoevaluaciones</td>
+<td>15%</td>
+<td>Verificación rápida de conceptos, al cierre de cada unidad temática</td>
+</tr>
+<tr>
+<td>Talleres y Laboratorios</td>
+<td>25%</td>
+<td>Ejercicios prácticos de código/matemática, entregados y corregidos con retroalimentación</td>
+</tr>
+<tr>
+<td>Parcial de Módulo</td>
+<td>20%</td>
+<td>Evaluación integradora a mitad de módulo (teórica + práctica)</td>
+</tr>
+<tr>
+<td>Proyecto Integrador de Módulo</td>
+<td>30%</td>
+<td>Proyecto final del módulo (ver tablas anteriores)</td>
+</tr>
+<tr>
+<td>Portafolio y Bitácora Técnica</td>
+<td>10%</td>
+<td>Registro documentado del proceso de aprendizaje (commits, notas, decisiones)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Nota final del módulo</strong> = suma ponderada. <strong>Nota mínima de aprobación:</strong> 3.5/5.0
+<strong>Nota de honor:</strong> ≥4.7/5.0 con proyecto sobresaliente → mención &quot;Cum Laude&quot; en el módulo.</p>
+<p>Si un módulo no se aprueba, se repite únicamente el(los) componente(s) reprobado(s), no el módulo completo — siempre que la nota global sea ≥3.0.</p>
+<hr>
+<h2>4. Rúbricas de evaluación</h2>
+<h3>4.1 Rúbrica general (aplica a talleres, laboratorios y quices)</h3>
+<table>
+<thead>
+<tr>
+<th>Criterio</th>
+<th>Peso</th>
+<th>Insuficiente (0-2.4)</th>
+<th>Aceptable (2.5-3.4)</th>
+<th>Bueno (3.5-4.4)</th>
+<th>Excelente (4.5-5.0)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dominio conceptual</td>
+<td>30%</td>
+<td>No explica el &quot;por qué&quot;</td>
+<td>Explica parcialmente</td>
+<td>Explica con claridad</td>
+<td>Explica y relaciona con otros temas</td>
+</tr>
+<tr>
+<td>Corrección técnica</td>
+<td>30%</td>
+<td>Errores graves / no funciona</td>
+<td>Funciona con errores menores</td>
+<td>Funciona correctamente</td>
+<td>Funciona y está optimizado</td>
+</tr>
+<tr>
+<td>Calidad de código/trabajo</td>
+<td>20%</td>
+<td>Desordenado, sin buenas prácticas</td>
+<td>Aceptable, poco documentado</td>
+<td>Limpio y documentado</td>
+<td>Limpio, documentado, con pruebas</td>
+</tr>
+<tr>
+<td>Autonomía</td>
+<td>20%</td>
+<td>Requirió solución completa guiada</td>
+<td>Requirió pistas frecuentes</td>
+<td>Resolvió con mínima guía</td>
+<td>Resolvió y propuso mejoras propias</td>
+</tr>
+</tbody>
+</table>
+<h3>4.2 Rúbrica de proyecto integrador de módulo</h3>
+<table>
+<thead>
+<tr>
+<th>Criterio</th>
+<th>Peso</th>
+<th>Descripción de excelencia (5.0)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Planteamiento del problema</td>
+<td>15%</td>
+<td>Problema bien definido, relevante, con alcance claro</td>
+</tr>
+<tr>
+<td>Fundamentación técnica</td>
+<td>20%</td>
+<td>Aplica correctamente los conceptos del módulo, con justificación de decisiones</td>
+</tr>
+<tr>
+<td>Implementación</td>
+<td>30%</td>
+<td>Código funcional, eficiente, reproducible, con control de versiones</td>
+</tr>
+<tr>
+<td>Evaluación de resultados</td>
+<td>20%</td>
+<td>Métricas adecuadas, análisis crítico de fortalezas/limitaciones</td>
+</tr>
+<tr>
+<td>Documentación y comunicación</td>
+<td>15%</td>
+<td>Informe claro, README completo, capacidad de explicar el trabajo</td>
+</tr>
+</tbody>
+</table>
+<h3>4.3 Rúbrica del Proyecto de Grado (Módulo 8)</h3>
+<table>
+<thead>
+<tr>
+<th>Criterio</th>
+<th>Peso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Originalidad y relevancia del problema</td>
+<td>15%</td>
+</tr>
+<tr>
+<td>Rigor metodológico</td>
+<td>20%</td>
+</tr>
+<tr>
+<td>Integración de conocimientos de ≥3 módulos</td>
+<td>20%</td>
+</tr>
+<tr>
+<td>Calidad de implementación y reproducibilidad</td>
+<td>20%</td>
+</tr>
+<tr>
+<td>Informe tipo artículo técnico</td>
+<td>15%</td>
+</tr>
+<tr>
+<td>Sustentación oral (defensa ante &quot;jurado&quot;)</td>
+<td>10%</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>5. Cronograma de estudio</h2>
+<h3>5.1 Cronograma general del programa (ritmo estándar)</h3>
+<table>
+<thead>
+<tr>
+<th>Periodo</th>
+<th>Módulo</th>
+<th>Duración</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Meses 1–4</td>
+<td>M1</td>
+<td>16 semanas</td>
+</tr>
+<tr>
+<td>Meses 5–8</td>
+<td>M2</td>
+<td>16 semanas</td>
+</tr>
+<tr>
+<td>Meses 9–12</td>
+<td>M3</td>
+<td>16 semanas</td>
+</tr>
+<tr>
+<td>Meses 13–16</td>
+<td>M4</td>
+<td>16 semanas</td>
+</tr>
+<tr>
+<td>Meses 17–20</td>
+<td>M5</td>
+<td>16 semanas</td>
+</tr>
+<tr>
+<td>Meses 21–24</td>
+<td>M6</td>
+<td>16 semanas</td>
+</tr>
+<tr>
+<td>Meses 25–28</td>
+<td>M7</td>
+<td>16 semanas</td>
+</tr>
+<tr>
+<td>Meses 29–32</td>
+<td>M8</td>
+<td>16-20 semanas</td>
+</tr>
+</tbody>
+</table>
+<p><em>Ritmo intensivo (30h/semana):</em> cada módulo puede comprimirse a 10 semanas → programa completo en ~20 meses.</p>
+<h3>5.2 Cronograma tipo de un módulo (16 semanas)</h3>
+<table>
+<thead>
+<tr>
+<th>Semana</th>
+<th>Actividad</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1–2</td>
+<td>Introducción teórica + nivelación de conceptos previos</td>
+</tr>
+<tr>
+<td>3–6</td>
+<td>Desarrollo de asignatura 1 y 2 en paralelo, talleres semanales</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>Quiz integrador 1</strong></td>
+</tr>
+<tr>
+<td>8–9</td>
+<td><strong>Parcial de módulo</strong> (semana 8) + retroalimentación (semana 9)</td>
+</tr>
+<tr>
+<td>10–13</td>
+<td>Desarrollo de asignatura 3 y 4, inicio del proyecto integrador</td>
+</tr>
+<tr>
+<td>14</td>
+<td><strong>Quiz integrador 2</strong></td>
+</tr>
+<tr>
+<td>15</td>
+<td>Desarrollo final y pulido del proyecto</td>
+</tr>
+<tr>
+<td>16</td>
+<td><strong>Entrega y sustentación del proyecto integrador de módulo</strong></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>6. Requisitos de graduación</h2>
+<p>Para obtener el <strong>Certificado de Dominio Profesional en Ingeniería en Inteligencia Artificial</strong> de Synapsis, debes:</p>
+<ol>
+<li>Aprobar los 8 módulos con nota ≥3.5/5.0.</li>
+<li>Completar los 8 proyectos integradores (evidencia en un repositorio público de GitHub).</li>
+<li>Aprobar y sustentar el Proyecto de Grado (Módulo 8).</li>
+<li>Mantener un portafolio técnico consolidado (sitio web, GitHub o PDF con todos los proyectos).</li>
+<li>Aprobar una <strong>evaluación final integradora</strong> (examen comprensivo de todo el programa, oral + escrito).</li>
+</ol>
+<p>El certificado incluirá: nombre, fecha, listado de módulos y notas, resumen del proyecto de grado, y una nota explícita indicando que se trata de un certificado de dominio técnico otorgado por un programa de mentoría independiente — no un título profesional acreditado.</p>
+<hr>
+<h2>7. Lista de implementos y recursos de estudio</h2>
+<h3>Software y herramientas</h3>
+<ul>
+<li>Python 3.11+, entorno virtual (venv o conda)</li>
+<li>Jupyter Notebook / JupyterLab, VS Code</li>
+<li>Git + cuenta de GitHub (portafolio público obligatorio)</li>
+<li>PyTorch (framework principal de DL), scikit-learn, pandas, NumPy, Matplotlib/Seaborn</li>
+<li>Docker, FastAPI (módulo 7)</li>
+<li>Acceso a GPU: Google Colab (gratis) o Kaggle Notebooks para módulos 4-6</li>
+</ul>
+<h3>Hardware mínimo recomendado</h3>
+<ul>
+<li>Laptop/PC con 8GB+ RAM (16GB ideal)</li>
+<li>Conexión a internet estable (para Colab/Kaggle y cursos)</li>
+<li>GPU dedicada opcional (no indispensable gracias a Colab/Kaggle)</li>
+</ul>
+<h3>Libros de referencia (open access o ampliamente disponibles)</h3>
+<ul>
+<li><em>Mathematics for Machine Learning</em> — Deisenroth, Faisal, Ong (gratuito en línea)</li>
+<li><em>Python Data Science Handbook</em> — Jake VanderPlas</li>
+<li><em>An Introduction to Statistical Learning</em> — James, Witten, Hastie, Tibshirani (gratuito)</li>
+<li><em>Deep Learning</em> — Goodfellow, Bengio, Courville (gratuito en línea)</li>
+<li><em>Dive into Deep Learning</em> (d2l.ai) — libro interactivo con código</li>
+<li><em>Speech and Language Processing</em> — Jurafsky &amp; Martin (borrador gratuito)</li>
+<li><em>Designing Machine Learning Systems</em> — Chip Huyen (módulo 7)</li>
+</ul>
+<h3>Cursos y plataformas complementarias</h3>
+<ul>
+<li>fast.ai (Practical Deep Learning)</li>
+<li>CS231n (Stanford, Visión por Computador) y CS224n (NLP) — materiales públicos</li>
+<li>Hugging Face Course (NLP y Transformers, gratuito)</li>
+<li>Papers With Code (seguimiento de estado del arte)</li>
+<li>arXiv.org (lectura de papers, módulo 8 especialmente)</li>
+</ul>
+<h3>Datasets de práctica</h3>
+<ul>
+<li>Kaggle Datasets, UCI Machine Learning Repository</li>
+<li>Hugging Face Datasets</li>
+<li>Google Dataset Search</li>
+</ul>
+<hr>
+<h2>8. Reglamento académico interno (breve)</h2>
+<ul>
+<li><strong>Honestidad académica:</strong> puedes usar IA/documentación como apoyo, pero el código y análisis entregado debe ser comprendido y defendible por ti en la sustentación oral — la sustentación es la prueba real de dominio.</li>
+<li><strong>Ritmo:</strong> flexible, pero cada módulo debe cerrarse con su evaluación final antes de avanzar al siguiente (no se acumulan módulos sin cerrar).</li>
+<li><strong>Repetición:</strong> un componente reprobado se puede repetir una vez con retroalimentación previa.</li>
+</ul>
+<hr>
+<p><em>Synapsis · &quot;El conocimiento se certifica con evidencia, no con nombres.&quot;</em></p>
+
+</body></html>
