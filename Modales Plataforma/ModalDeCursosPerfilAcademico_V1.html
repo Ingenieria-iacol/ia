@@ -235,6 +235,91 @@
 
         .eng-focus:focus-visible { outline: 2px solid var(--steel-300); outline-offset: 2px; }
 
+        /* =====================================================
+           CATÁLOGO DE CURSOS DISPONIBLES (AZUL METALIZADO)
+           ===================================================== */
+        .catalog {
+            --ti-900: #0c1119;
+            --ti-850: #101722;
+            --ti-800: #151e2b;
+            --eng-line: #243245;
+            --eng-line-soft: #1a2535;
+            --steel-200: #d3e0ef;
+            --steel-300: #a9bdd3;
+            --steel-400: #7f9bbb;
+            --steel-500: #4f78a8;
+            --steel-600: #34598a;
+            font-family: 'Bahnschrift', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .catalog-icon {
+            background: linear-gradient(180deg, #a9c8ec 0%, #4f7fb8 48%, #2f5686 54%, #4476ad 100%);
+            border: 1px solid #a9c8ec;
+            color: #06101e;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 6px 18px rgba(47,86,134,.35);
+        }
+
+        .filter-chip {
+            color: var(--steel-300);
+            background: rgba(36,63,102,.25);
+            border: 1px solid var(--eng-line);
+            transition: border-color .2s ease, background .2s ease, color .2s ease;
+        }
+        .filter-chip:hover { border-color: var(--steel-400); color: #fff; }
+        .filter-chip[aria-pressed="true"] {
+            color: #06101e;
+            font-weight: 700;
+            background: linear-gradient(180deg, #a9c8ec 0%, #5d8cc4 50%, #3f6ea5 100%);
+            border-color: #a9c8ec;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
+        }
+
+        .course-card {
+            background: linear-gradient(180deg, var(--ti-800) 0%, var(--ti-900) 100%);
+            border: 1px solid var(--eng-line);
+            box-shadow: 0 18px 40px rgba(0,0,0,.45), inset 0 0 0 1px rgba(169,189,211,.04);
+            transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+        }
+        .course-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--steel-500);
+            box-shadow: 0 24px 50px rgba(0,0,0,.6), 0 0 0 1px rgba(127,155,187,.25);
+        }
+        .course-card:focus-visible { outline: 2px solid var(--steel-300); outline-offset: 3px; }
+        .course-card .card-edge {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--steel-500) 20%, var(--steel-200) 50%, var(--steel-500) 80%, transparent);
+            opacity: .55;
+            transition: opacity .25s ease;
+        }
+        .course-card:hover .card-edge { opacity: 1; }
+
+        .card-blueprint {
+            background-image:
+                linear-gradient(rgba(127,155,187,.12) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(127,155,187,.12) 1px, transparent 1px);
+            background-size: 32px 32px;
+            mask-image: linear-gradient(180deg, rgba(0,0,0,.85), transparent 90%);
+            -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,.85), transparent 90%);
+        }
+
+        .card-chip {
+            color: var(--steel-200);
+            background: rgba(12,17,25,.65);
+            border: 1px solid rgba(169,189,211,.35);
+            backdrop-filter: blur(4px);
+        }
+
+        .card-readouts { border-top: 1px solid var(--eng-line-soft); }
+        .card-readouts > div + div { border-left: 1px solid var(--eng-line-soft); }
+
+        .card-cta { color: var(--steel-300); transition: color .2s ease; }
+        .course-card:hover .card-cta { color: #fff; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .course-card, .course-card:hover { transition: none; transform: none; }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             .animate-modal, .eng-overlay { animation: none; }
             .metal-btn, .metal-btn::after { transition: none; }
@@ -663,12 +748,16 @@
         function App() {
             const [plans, setPlans] = useState(initialTrainingPlans);
             const [selectedPlan, setSelectedPlan] = useState(null);
+            const [typeFilter, setTypeFilter] = useState('Todos');
 
             // FILTROS Y MEZCLA DE CURSOS ACTIVOS
             const activePlans = useMemo(() => {
                 const active = plans.filter(p => p.status === 'active');
                 return shuffleArray(active); 
             }, [plans]);
+
+            const typeOptions = ['Todos', ...Array.from(new Set(activePlans.map(p => p.type)))];
+            const visiblePlans = typeFilter === 'Todos' ? activePlans : activePlans.filter(p => p.type === typeFilter);
 
             const upcomingPlans = plans.filter(p => p.status === 'coming_soon');
             const carouselPlans = [...upcomingPlans, ...upcomingPlans]; 
@@ -737,47 +826,95 @@
                         <div className="max-w-7xl mx-auto space-y-12">
                             
                             {/* SECCIÓN 1: CURSOS DISPONIBLES */}
-                            <section>
-                                <div className="mb-6 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <Icon name="BookOpenCheck" className="text-orange-500" />
-                                        <h2 className="text-3xl font-bold text-white">Cursos Disponibles</h2>
+                            <section className="catalog">
+                                <div className="mb-8 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
+                                    <div className="flex items-center gap-4">
+                                        <div className="catalog-icon w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <Icon name="BookOpenCheck" size={24} />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-3xl font-bold text-white leading-tight">Cursos Disponibles</h2>
+                                            <p className="text-sm text-[#7f9bbb] mt-1">{visiblePlans.length} {visiblePlans.length === 1 ? 'programa' : 'programas'} listos para iniciar</p>
+                                        </div>
                                     </div>
-                                    <div className="hidden md:flex gap-2 text-gray-500 text-sm items-center animate-pulse">
-                                        <Icon name="ArrowLeft" size={16} />
-                                        <span>Desliza para ver más</span>
-                                        <Icon name="ArrowRight" size={16} />
+
+                                    <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por modalidad">
+                                        {typeOptions.map(opt => (
+                                            <button
+                                                key={opt}
+                                                onClick={() => setTypeFilter(opt)}
+                                                aria-pressed={typeFilter === opt}
+                                                className="filter-chip eng-focus px-4 py-1.5 rounded-full text-sm"
+                                            >
+                                                {opt}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                                 
-                                <div className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory custom-scrollbar">
-                                    {activePlans.map(plan => (
-                                        <div 
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    {visiblePlans.map(plan => (
+                                        <article 
                                             key={plan.id}
+                                            role="button"
+                                            tabIndex={0}
+                                            aria-label={`Ver programa: ${plan.title}`}
                                             onClick={() => setSelectedPlan(plan)}
-                                            className="relative min-w-[85vw] md:min-w-[45vw] lg:min-w-[35vw] h-[400px] rounded-2xl overflow-hidden cursor-pointer group border border-gray-800 hover:border-orange-500/50 transition-all shadow-2xl snap-center flex-shrink-0"
+                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedPlan(plan); } }}
+                                            className="course-card group relative flex flex-col rounded-2xl overflow-hidden cursor-pointer"
                                         >
-                                            <img 
-                                                src={plan.imageUrl} 
-                                                alt={plan.title}
-                                                className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
-                                                onError={(e) => { e.target.style.display = 'none'; }}
-                                            />
-                                            <div className={`absolute inset-0 bg-gradient-to-r ${plan.gradientColor} mix-blend-multiply opacity-80`}></div>
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
-                                            
-                                            <div className="absolute bottom-0 left-0 p-8 w-full">
-                                                <span className="bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded mb-3 inline-block shadow-lg animate-pulse">
-                                                    DISPONIBLE
-                                                </span>
-                                                <h3 className="text-3xl font-black text-white mb-2 leading-tight drop-shadow-lg line-clamp-2">{plan.title}</h3>
-                                                <p className="text-gray-200 mb-6 text-sm md:text-base line-clamp-2 drop-shadow-md">{plan.description}</p>
-                                                
-                                                <button className="bg-white text-black px-6 py-3 rounded font-bold flex items-center gap-2 hover:bg-gray-200 transition-colors">
-                                                    <Icon name="Play" fill="black" /> Comenzar Ahora
-                                                </button>
+                                            <div className="card-edge absolute top-0 left-0 right-0 z-20"></div>
+
+                                            <div className={`relative h-44 bg-gradient-to-b ${plan.gradientColor} overflow-hidden`}>
+                                                <img 
+                                                    src={plan.imageUrl} 
+                                                    alt={plan.title}
+                                                    className="absolute inset-0 w-full h-full object-cover opacity-70 mix-blend-overlay group-hover:scale-105 transition-transform duration-700"
+                                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                                />
+                                                <div className="card-blueprint absolute inset-0 pointer-events-none"></div>
+                                                <div className="absolute inset-0 bg-gradient-to-t from-[#101722] via-[#101722]/20 to-transparent"></div>
+
+                                                <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 z-10">
+                                                    <span className="card-chip text-xs font-semibold px-2.5 py-1 rounded truncate">{plan.category}</span>
+                                                    <span className="card-chip text-xs font-semibold px-2.5 py-1 rounded flex-shrink-0">{plan.type}</span>
+                                                </div>
                                             </div>
-                                        </div>
+
+                                            <div className="flex-1 flex flex-col p-5 pt-3">
+                                                <h3 className="text-lg font-bold text-white leading-snug line-clamp-2 mb-1">{plan.title}</h3>
+                                                <p className="text-xs text-[#7f9bbb] mb-3 flex items-center gap-1.5">
+                                                    <Icon name="User" size={12} />
+                                                    <span className="truncate">{plan.instructor}</span>
+                                                </p>
+                                                <p className="text-sm text-[#a9bdd3] leading-relaxed line-clamp-3 mb-4">{plan.description}</p>
+
+                                                <div className="flex flex-wrap gap-1.5 mt-auto">
+                                                    {plan.tags.slice(0, 3).map(tag => (
+                                                        <span key={tag} className="tag-steel px-2 py-0.5 rounded text-[11px]">{tag}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="card-readouts grid grid-cols-4 text-center bg-[#0c1119]/60">
+                                                <div className="py-3 px-1">
+                                                    <div className="text-sm font-bold text-[#d3e0ef]">{plan.hours} h</div>
+                                                    <div className="text-[10px] text-[#7f9bbb]">Duración</div>
+                                                </div>
+                                                <div className="py-3 px-1">
+                                                    <div className="text-sm font-bold text-[#d3e0ef] truncate">{plan.level}</div>
+                                                    <div className="text-[10px] text-[#7f9bbb]">Nivel</div>
+                                                </div>
+                                                <div className="py-3 px-1">
+                                                    <div className="text-sm font-bold text-[#d3e0ef]">{plan.year}</div>
+                                                    <div className="text-[10px] text-[#7f9bbb]">Año</div>
+                                                </div>
+                                                <div className="card-cta py-3 px-1 flex flex-col items-center justify-center gap-0.5">
+                                                    <Icon name="ArrowRight" size={18} className="group-hover:translate-x-1 transition-transform" />
+                                                    <div className="text-[10px]">Ver</div>
+                                                </div>
+                                            </div>
+                                        </article>
                                     ))}
                                 </div>
                             </section>
