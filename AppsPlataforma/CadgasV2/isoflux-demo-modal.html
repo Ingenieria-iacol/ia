@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Isoflux · Demo del aplicativo</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== ESTILOS DEL MODAL (copia este bloque a tu página) ===== */
+:root{--abyss:#07101c;--hull:#0e1b2e;--line:#27415f;--steel:#8fb8de;--ice:#e8f1fb;--cy:#3ad0e6;--am:#f5b942;--em:#ff6b4a}
+.ifx *{box-sizing:border-box}
+.ifx{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:rgba(3,8,15,.82);font-family:Barlow,"Segoe UI",system-ui,sans-serif;color:var(--ice)}
+.ifx[hidden]{display:none}
+.ifx-panel{width:min(1100px,96vw);max-height:96vh;background:var(--hull);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.ifx-panel:fullscreen{width:100vw;max-height:none;height:100vh;border-radius:0}
+.ifx-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line);font-size:15px}
+.ifx-head span{color:var(--steel);font-weight:400;margin-left:8px}
+.ifx button{font:inherit;color:inherit;background:none;border:1px solid transparent;border-radius:6px;cursor:pointer}
+.ifx button:hover{background:#17304d}
+.ifx button:focus-visible,.ifx input:focus-visible,.ifx select:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.ifx-x{font-size:22px;line-height:1;width:32px;height:32px}
+.ifx-stage{position:relative;aspect-ratio:16/9;width:100%;flex:1 1 auto;min-height:0;background:radial-gradient(circle at 50% 40%,#10213a,var(--abyss) 75%);overflow:hidden}
+.ifx-stage:before{content:"";position:absolute;inset:0;background-image:radial-gradient(#27415f 1px,transparent 1.2px);background-size:26px 26px;opacity:.45}
+.ifx-stage canvas{position:absolute;inset:0;width:100%;height:100%}
+.ifx-tabs{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:4px;padding:8px 12px;background:linear-gradient(#07101cdd,transparent);font-size:13px}
+.ifx-tabs b{margin-right:10px;font-size:14px;letter-spacing:.02em}
+.ifx-tabs i{font-style:normal;padding:4px 10px;border-radius:5px;color:var(--steel);transition:.3s}
+.ifx-tabs i.on{background:#17304d;color:var(--ice);box-shadow:inset 0 -2px var(--cy)}
+.ifx-leg{margin-left:auto;display:flex;gap:10px;color:var(--steel);font-size:12px}
+.ifx-leg u{text-decoration:none;display:flex;align-items:center;gap:5px}
+.ifx-leg u:before{content:"";width:16px;height:4px;border-radius:2px;background:var(--c)}
+.ifx-cap{position:absolute;left:0;right:0;bottom:0;padding:34px 18px 14px;background:linear-gradient(transparent,#07101cf2 55%);min-height:92px}
+.ifx-cap h3{margin:0 0 3px;font-size:clamp(15px,2.2vw,20px);font-weight:700}
+.ifx-cap p{margin:0;max-width:62ch;color:#bcd2e8;font-size:clamp(12px,1.6vw,15px);line-height:1.4}
+.ifx-cap.in{animation:ifxin .45s ease}
+@keyframes ifxin{from{opacity:0;transform:translateY(6px)}}
+.card{position:absolute;top:50px;right:14px;width:min(272px,44%);padding:12px 14px;background:#0b1829ee;border:1px solid var(--line);border-radius:8px;opacity:0;transform:translateY(6px);pointer-events:none;transition:.35s;font-size:clamp(11px,1.4vw,13px)}
+.card.on{opacity:1;transform:none}
+.card h4{margin:0 0 8px;font-size:14px;color:var(--cy)}
+.card dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
+.card dt{color:var(--steel)}.card dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.card small{display:block;margin-top:8px;color:var(--steel);line-height:1.35}
+.card.l{right:auto;left:14px;top:50px}
+.over{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;text-align:center;gap:10px;padding:24px;background:rgba(7,16,28,.78);opacity:0;pointer-events:none;transition:.5s}
+.over.on{opacity:1;pointer-events:auto}
+.over h2{margin:0;font-size:clamp(30px,6vw,64px);font-weight:700;letter-spacing:-.01em}
+.over p{margin:0;max-width:44ch;color:#bcd2e8;font-size:clamp(14px,2vw,19px)}
+.over button{margin-top:6px;padding:9px 18px;border-color:var(--cy);color:var(--cy)}
+.ifx-ctl{display:grid;grid-template-columns:auto auto 1fr auto auto;align-items:center;gap:10px;padding:8px 14px 10px;border-top:1px solid var(--line);font-size:13px;font-variant-numeric:tabular-nums}
+.ifx-ctl button,.ifx-ctl select{height:32px;min-width:34px;padding:0 8px;background:#12263f;border-color:var(--line);color:var(--ice);border-radius:6px}
+.rng{position:relative;height:32px;display:flex;align-items:center}
+.rng input{width:100%;accent-color:var(--cy);margin:0}
+.rng .tk{position:absolute;bottom:-3px;width:3px;height:9px;padding:0;background:var(--steel);border-radius:1px;transform:translateX(-1px)}
+.rng .tk:hover{background:var(--cy)}
+@media(max-width:620px){.ifx-leg,.ifx-tabs b{display:none}.ifx-ctl{grid-template-columns:auto auto 1fr auto}.ifx-ctl #ifxSp{display:none}}
+@media(prefers-reduced-motion:reduce){.card,.over,.ifx-cap.in{transition:none;animation:none}}
+
+/* ===== Solo para esta página de ejemplo ===== */
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#07101c;color:#e8f1fb;font-family:Barlow,"Segoe UI",system-ui,sans-serif}
+.host{max-width:520px;padding:32px;text-align:left}
+.host h1{margin:0 0 8px;font-size:44px}
+.host p{color:#8fb8de;line-height:1.5;margin:0 0 20px}
+.host button{font:600 16px inherit;font-family:inherit;color:#07101c;background:#3ad0e6;border:0;border-radius:8px;padding:12px 22px;cursor:pointer}
+.host button:focus-visible{outline:2px solid #fff;outline-offset:3px}
+</style>
+</head>
+<body>
+
+<!-- ===== BOTÓN: cualquier elemento con data-ifx-open abre la demo ===== -->
+<main class="host">
+  <h1>Isoflux</h1>
+  <p>Mira cómo se dibuja una derivación de gas de principio a fin: del medidor a los quemadores, con tuberías, componentes, etiquetas y fichas técnicas.</p>
+  <button data-ifx-open>Ver demo · 1:31</button>
+</main>
+
+<!-- ===== MODAL ===== -->
+<div class="ifx" id="ifx" hidden role="dialog" aria-modal="true" aria-label="Demo de Isoflux">
+ <div class="ifx-panel" id="ifxPanel">
+  <div class="ifx-head"><div><b>Isoflux</b><span>Demo · Punto adicional 1.000 kW</span></div><button class="ifx-x" id="ifxX" aria-label="Cerrar demo">×</button></div>
+  <div class="ifx-stage" id="ifxStage">
+   <canvas id="ifxCv" aria-hidden="true"></canvas>
+   <div class="ifx-tabs"><b>Isoflux</b><i>Archivo</i><i>Vista</i><i>Dibujo</i><i>Parámetros</i>
+    <div class="ifx-leg"><u style="--c:#ff6b4a">60 psi</u><u style="--c:#f5b942">20 psi</u><u style="--c:#3ad0e6">5 psi</u></div></div>
+   <div class="card" id="c-proj"><h4>Datos del proyecto</h4><dl>
+    <dt>Proyecto</dt><dd>Punto adicional 1.000 kW</dd><dt>Cliente</dt><dd>Sr. Wok (Bomba Food)</dd><dt>Ubicación</dt><dd>Acopi, Yumbo, Cali</dd><dt>Tipo</dt><dd>Modificación de red existente</dd><dt>Código</dt><dd>202606101906</dd><dt>Autor</dt><dd>INSE</dd></dl></div>
+   <div class="card" id="c-prop"></div>
+   <div class="card" id="c-reg"><h4>Regulador N12</h4><dl>
+    <dt>Marca</dt><dd>ITALPUMP · IFR3/5</dd><dt>Tipo</dt><dd>Doble etapa</dd><dt>Entrada</dt><dd>15–20 psi</dd><dt>Salida</dt><dd>5 psi</dd><dt>Caudal</dt><dd>80–100 m³/h</dd></dl>
+    <small>Filtro de entrada, válvula de alivio y toma de presión de salida. Incluye enlace a la ficha del fabricante.</small></div>
+   <div class="card" id="c-calc"><h4>Criterios de cálculo</h4><dl>
+    <dt>Método</dt><dd>Pole</dd><dt>Gas</dt><dd>Natural · d = 0,6</dd><dt>PCI</dt><dd>10,4 kWh/m³</dd><dt>Temperatura</dt><dd>15 °C</dd><dt>Suministro</dt><dd>20 psi</dd><dt>Velocidad máx.</dt><dd>20 m/s</dd><dt>ΔP máx.</dt><dd>10 %</dd><dt>Carga</dt><dd>4 × 200 kW</dd></dl></div>
+   <div class="over" id="c-intro"><h2>Isoflux</h2><p>Así se dibuja una derivación de gas, nodo por nodo.</p></div>
+   <div class="over" id="c-out"><h2>Del medidor al quemador</h2><p>Todo en un solo plano, listo para revisar, calcular y compartir.</p><button id="ifxAgain">Ver otra vez</button></div>
+   <div class="ifx-cap" id="ifxCap"><h3></h3><p></p></div>
+  </div>
+  <div class="ifx-ctl">
+   <button id="ifxPlay" aria-label="Reproducir o pausar">❚❚</button>
+   <span id="ifxTime">0:00 / 1:31</span>
+   <div class="rng"><input id="ifxRng" type="range" min="0" max="9100" value="0" aria-label="Posición del video"></div>
+   <select id="ifxSp" aria-label="Velocidad"><option value="1">1×</option><option value="1.5">1,5×</option><option value="2">2×</option></select>
+   <button id="ifxFs" aria-label="Pantalla completa">⛶</button>
+  </div>
+ </div>
+</div>
+
+<script>
+/* ===== SCRIPT DE LA DEMO ===== */
+(()=>{
+/* Datos del JSON: nodos [x,y,z,tipo] — te, u=unión universal, v=válvula, r=regulador, c=consumo, m=medidor */
+const N={N4:[17.7,8,-4.5,'te'],N6:[17.7,8,-3.5,'te'],N8:[18.7,8,-3.5,'te'],N10:[18.7,8,-2,'te'],N12:[18.7,5,-2,'r'],N15:[18.7,5.5,-2,'u'],N17:[18.7,5.3,-2,'v'],N20:[18.7,4.9,-2,'u'],N22:[18.7,4.6,-2,'te'],N26:[18.8,4.6,-2,'te'],N28:[19,4.6,-2,'te'],N30:[19,4.4,-2,'u'],N32:[18.8,4.4,-2,'u'],N34:[18.6,4.6,-2,'te'],N36:[18.4,4.6,-2,'te'],N38:[18.4,4.4,-2,'u'],N40:[18.6,4.4,-2,'u'],N42:[18.4,4.2,-2,'v'],N44:[18.6,4.2,-2,'v'],N46:[18.8,4.2,-2,'v'],N48:[19,4.2,-2,'v'],N50:[18.4,3.2,-2,'te'],N52:[18.6,3.2,-2,'te'],N54:[18.8,3.2,-2,'te'],N56:[19,3.2,-2,'te'],N58:[21,3.2,-2,'te'],N60:[16.4,3.2,-2,'te'],N62:[18.6,3.2,-1.9,'te'],N66:[18.8,3.2,-1.9,'te'],N70:[16.7,3.2,-1.9,'te'],N72:[16.7,3.2,.1,'te'],N74:[16.4,3.2,1.5,'te'],N76:[20.7,3.2,-1.9,'te'],N83:[20.7,3.2,.1,'te'],N85:[21,3.2,1.5,'te'],N87:[20.7,4.2,.1,'c'],N89:[21,4.2,1.5,'c'],N91:[16.7,4.2,.1,'c'],N93:[16.4,4.2,1.5,'c'],N95:[8.5,8,-4.5,'m']};
+/* Tuberías [id, nodo A, nodo B, Ø, psi, material (c=carbón, g=galvanizado), etiqueta/cota, anclaje] */
+const P=[['P96','N95','N4','1½',20,'c',0,'Aéreo · cercha · escalera'],['P7','N4','N6','1½',20,'c',1,'Aéreo'],['P9','N6','N8','1½',20,'c',1,'Aéreo'],['P11','N8','N10','1½',20,'c',1,'Aéreo'],['P16','N10','N15','1½',20,'c',1,'Aéreo'],['P18','N15','N17','1½',60,'c'],['P19','N17','N12','1½',60,'c'],['P21','N12','N20','1½',20,'g'],
+['P23','N20','N22','1',5,'g',1,'Adosado'],['P27','N22','N26','1',5,'g',1,'Adosado'],['P29','N26','N28','1',5,'g',1,'Adosado'],['P31','N28','N30','1',5,'g',1,'Adosado'],['P33','N26','N32','1',5,'g',1,'Adosado'],['P35','N22','N34','1',5,'g',1,'Adosado'],['P37','N34','N36','1',5,'g',1,'Adosado'],['P39','N36','N38','1',5,'g',1,'Adosado'],['P41','N34','N40','1',5,'g',1,'Adosado'],
+['P43','N38','N42','¾',5,'g'],['P45','N40','N44','¾',5,'g'],['P47','N32','N46','¾',5,'g'],['P49','N30','N48','¾',20,'g'],['P51','N42','N50','¾',5,'g'],['P53','N44','N52','¾',5,'g'],['P55','N46','N54','¾',5,'g'],['P57','N48','N56','¾',5,'g'],['P59','N56','N58','¾',5,'g'],['P61','N50','N60','¾',5,'g'],['P63','N52','N62','¾',5,'g'],['P67','N54','N66','¾',5,'g'],['P71','N62','N70','¾',5,'g'],['P73','N70','N72','¾',5,'g'],['P75','N60','N74','¾',5,'g'],['P77','N66','N76','¾',5,'g'],['P84','N76','N83','¾',5,'g'],['P86','N58','N85','¾',5,'g'],['P88','N83','N87','¾',20,'g'],['P90','N85','N89','¾',20,'g'],['P92','N72','N91','¾',5,'g'],['P94','N74','N93','¾',5,'g']];
+
+const $=s=>document.querySelector(s),clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)),ease=u=>u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+const COL={60:'#ff6b4a',20:'#f5b942',5:'#3ad0e6'},fmt=n=>n.toFixed(2).replace('.',',')+' m';
+const nd={};for(const k in N)nd[k]={x:N[k][0],y:N[k][1],z:N[k][2],t:N[k][3]};
+const pipes=P.map(p=>({id:p[0],a:p[1],b:p[2],dia:p[3],pr:p[4],mat:p[5]=='c'?'Acero al carbón':'Acero galvanizado',lab:p[6],anc:p[7]||'—'}));
+const byId={};pipes.forEach(p=>byId[p.id]=p);
+const len=(a,b)=>Math.hypot(nd[a].x-nd[b].x,nd[a].y-nd[b].y,nd[a].z-nd[b].z);
+
+/* Orden de dibujo: recorrido del gas desde el medidor */
+const adj={},seen=new Set(),order=[];
+pipes.forEach((p,i)=>{(adj[p.a]=adj[p.a]||[]).push(i);(adj[p.b]=adj[p.b]||[]).push(i)});
+(function dfs(n){for(const i of adj[n]||[]){if(seen.has(i))continue;seen.add(i);const p=pipes[i];if(p.a!==n)[p.a,p.b]=[p.b,p.a];order.push(p);dfs(p.b)}})('N95');
+
+/* Línea de tiempo (segundos) */
+const DS=8.5,D=34,DUR=91,INS0=71,INS1=85;
+const raw=order.map(p=>.4+.55*Math.pow(len(p.a,p.b),.55)),sum=raw.reduce((a,b)=>a+b,0);
+let cur=DS;order.forEach((p,i)=>{p.t0=cur;p.d=raw[i]*D/sum;cur+=p.d;p.t1=cur});
+const appear={N95:DS};order.forEach(p=>{if(!(p.b in appear))appear[p.b]=p.t1});
+const tFC=Math.min(...order.filter(p=>nd[p.b].t==='c').map(p=>p.t0));
+const CH=[[0,'','',''],
+[3.5,'Archivo','Datos del proyecto','Registras cliente, ubicación, tipo de obra y código. También puedes abrir un proyecto guardado (.json).',1],
+[DS,'Dibujo','Empieza por el medidor','El ITRON Delta G100 existente es el nodo de origen. Desde allí trazas la línea de 1½″ en acero al carbón.',1],
+[byId.P16.t0,'Dibujo','Tubería y nodos en 3D','Cada tramo une dos nodos con coordenadas X, Y, Z. El color indica la presión: 60, 20 o 5 psi.'],
+[byId.P18.t0,'Dibujo','Componentes sobre la línea','Insertas unión, válvula de corte y el regulador de doble etapa que baja la presión a 5 psi.'],
+[byId.P23.t0,'Dibujo','Manifold','Tes, uniones universales y válvulas arman el tren de regulación que alimenta los quemadores.'],
+[tFC,'Dibujo','Ramales a quemadores','Cada ramal termina en un nodo de consumo: cuatro quemadores de 200 kW.'],
+[42.5,'Vista','Etiquetas y cotas','Se activan por tramo y se ocultan solas cuando no caben, así el plano sigue legible.',1],
+[50.4,'Parámetros','Propiedades por tramo','Haz clic en una tubería para ver o editar diámetro, material, presión y anclaje.',1],
+[60.8,'Dibujo','Ficha técnica','Los equipos traen su ficha: marca, rango de presión y caudal, y el enlace al fabricante.',1],
+[66.5,'Parámetros','Criterios de cálculo','Defines gas, presión de suministro, método y los límites de velocidad y caída de presión.',1],
+[INS0,'Vista','Modo inspector','La cámara recorre y acerca el sistema sola, sin que toques nada. Ideal para presentar.',1],
+[85,'Archivo','Guarda, exporta y comparte','Guarda el .json, exporta un HTML de solo lectura y descarga el manual técnico y la guía.',1]];
+const CUR=[{t0:50.8,t1:52.4,t2:55,sel:'P23'},{t0:56.3,t1:57.9,t2:60.4,sel:'P96'},{t0:61.2,t1:62.5,t2:66.3,sel:'N12'}];
+
+/* Proyección isométrica con giro sobre el eje vertical (Y arriba) */
+const proj=(k,th)=>{const o=nd[k],c=Math.cos(th),s=Math.sin(th),x=o.x*c-o.z*s,z=o.x*s+o.z*c;return[(x-z)*.866,(x+z)*.5-o.y]};
+const ALL=Object.keys(nd),SETS={all:ALL,aer:['N95','N4','N6','N8','N10','N15'],reg:['N10','N15','N17','N12','N20','N22'],man:ALL.filter(k=>nd[k].y<=4.7)};
+function boxOf(set,th,pr=0){let a=1e9,b=1e9,c=-1e9,d=-1e9;for(const k of SETS[set]){const q=proj(k,th);a=Math.min(a,q[0]);c=Math.max(c,q[0]);b=Math.min(b,q[1]);d=Math.max(d,q[1])}return{cx:(a+c)/2,cy:(b+d)/2,w:Math.max(c-a,1.6),h:Math.max(d-b,1.3),pr}}
+const mix=(a,b,u)=>{const o={};for(const k in a)o[k]=a[k]+(b[k]-a[k])*u;return o};
+const CAMS=[[0,'all',0],[DS-.2,'aer',0],[byId.P18.t0+.3,'reg',0],[byId.P23.t0+1,'man',0],[43.3,'all',0],[50.4,'man',.27],[55.8,'aer',.27],[61.2,'reg',.27],[67,'all',0]].map(c=>({t:c[0],b:boxOf(c[1],0,c[2])}));
+function camBox(t){const k=CAMS.findIndex(c=>t<c.t);if(k<0)return CAMS[CAMS.length-1].b;if(!k)return CAMS[0].b;return mix(CAMS[k-1].b,CAMS[k].b,ease(clamp((t-(CAMS[k].t-1.6))/1.6)))}
+const thetaAt=t=>t>=INS0&&t<INS1?2*Math.PI*ease((t-INS0)/(INS1-INS0)):0;
+function boxAt(t){if(t>=INS0&&t<INS1){const th=thetaAt(t),u=(t-INS0)/(INS1-INS0),k=Math.pow(Math.sin(2*Math.PI*u),2);return mix(boxOf('all',th),boxOf('man',th),k*.92)}return camBox(t)}
+const fit=(b,W,H)=>{const aw=W*(1-b.pr),ah=H-48-104;return{s:Math.min(aw/(b.w*1.2),ah/(b.h*1.2)),x:b.cx,y:b.cy,ox:aw/2,oy:48+ah/2}};
+
+/* Canvas */
+const cv=$('#ifxCv'),ctx=cv.getContext('2d'),stage=$('#ifxStage');let W=0,H=0,dpr=1;
+function resize(){dpr=Math.min(devicePixelRatio||1,2);W=stage.clientWidth;H=stage.clientHeight;cv.width=W*dpr;cv.height=H*dpr}
+const rr=(x,y,w,h,r)=>{ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h)};
+const pop=u=>{u=clamp(u);return 1+2.7*Math.pow(u-1,3)+1.7*Math.pow(u-1,2)};
+function sym(tp,x,y,r,t){ctx.save();ctx.translate(x,y);ctx.lineWidth=1.4;ctx.strokeStyle='#e8f1fb';
+ if(tp==='te'){ctx.fillStyle='#cfe3f7';ctx.beginPath();ctx.arc(0,0,r*.3,0,7);ctx.fill()}
+ else if(tp==='u'){ctx.fillStyle='#0e1b2e';ctx.rotate(.785);rr(-r*.32,-r*.32,r*.64,r*.64,1);ctx.fill();ctx.stroke()}
+ else if(tp==='v'){ctx.fillStyle='#0e1b2e';ctx.beginPath();ctx.moveTo(-r*.8,-r*.5);ctx.lineTo(0,0);ctx.lineTo(-r*.8,r*.5);ctx.closePath();ctx.moveTo(r*.8,-r*.5);ctx.lineTo(0,0);ctx.lineTo(r*.8,r*.5);ctx.closePath();ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-r);ctx.moveTo(-r*.4,-r);ctx.lineTo(r*.4,-r);ctx.stroke()}
+ else if(tp==='r'){ctx.fillStyle='#1b3a5f';ctx.beginPath();ctx.arc(0,-r*.3,r*.95,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#8fb8de';ctx.beginPath();ctx.arc(0,-r*.3,r*.42,0,7);ctx.fill();ctx.fillStyle='#0e1b2e';ctx.fillRect(-r*.3,r*.55,r*.6,r*.5);ctx.strokeRect(-r*.3,r*.55,r*.6,r*.5)}
+ else if(tp==='m'){ctx.fillStyle='#18314f';rr(-r*1.3,-r*1.2,r*2.6,r*2,r*.3);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(0,-r*.2,r*.6,0,7);ctx.stroke();ctx.beginPath();ctx.moveTo(0,-r*.2);ctx.lineTo(r*.35,-r*.55);ctx.stroke()}
+ else{const h=r*(1.6+.25*Math.sin(t*12+x));ctx.fillStyle='#2a3f5a';ctx.fillRect(-r*.5,-r*.1,r,r*.5);ctx.strokeRect(-r*.5,-r*.1,r,r*.5);ctx.fillStyle='#ffa53a';ctx.beginPath();ctx.moveTo(-r*.45,-r*.1);ctx.quadraticCurveTo(-r*.55,-h*.7,0,-h);ctx.quadraticCurveTo(r*.55,-h*.7,r*.45,-r*.1);ctx.closePath();ctx.fill();ctx.fillStyle='#fff0b0';ctx.beginPath();ctx.moveTo(-r*.2,-r*.1);ctx.quadraticCurveTo(-r*.25,-h*.45,0,-h*.6);ctx.quadraticCurveTo(r*.25,-h*.45,r*.2,-r*.1);ctx.closePath();ctx.fill()}
+ ctx.restore()}
+function chip(x,y,a,b,al){ctx.save();ctx.globalAlpha=al;ctx.font='600 11px Barlow,Segoe UI,sans-serif';const w=Math.max(ctx.measureText(a).width,b?ctx.measureText(b).width:0)+12,h=b?30:18;ctx.fillStyle='rgba(7,16,28,.86)';ctx.strokeStyle='#27415f';rr(x-w/2,y-h/2,w,h,4);ctx.fill();ctx.stroke();ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#8fb8de';ctx.fillText(a,x,b?y-7:y);if(b){ctx.fillStyle='#e8f1fb';ctx.fillText(b,x,y+7)}ctx.restore()}
+const tgt=(ev,S)=>{if(ev.sel[0]==='P'){const p=byId[ev.sel];return[(S[p.a][0]+S[p.b][0])/2,(S[p.a][1]+S[p.b][1])/2]}return S[ev.sel]};
+const selAt=t=>CUR.find(e=>t>=e.t1&&t<e.t2);
+
+function render(t){
+ ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+ const th=thetaAt(t),cam=fit(boxAt(t),W,H),S={};
+ for(const k in nd){const q=proj(k,th);S[k]=[(q[0]-cam.x)*cam.s+cam.ox,(q[1]-cam.y)*cam.s+cam.oy]}
+ const wb=clamp(.55+cam.s/90,.8,1.7),sel=selAt(t),flow=t>DS+D+.5;
+ ctx.lineCap='round';ctx.lineJoin='round';
+ for(const p of order){if(t<p.t0)continue;
+  const u=clamp((t-p.t0)/p.d),e=ease(u),A=S[p.a],B=S[p.b],X=A[0]+(B[0]-A[0])*e,Y=A[1]+(B[1]-A[1])*e,w=({'1½':5,'1':3.6,'¾':2.8})[p.dia]*wb;
+  ctx.beginPath();ctx.moveTo(A[0],A[1]);ctx.lineTo(X,Y);
+  if(sel&&sel.sel===p.id){ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=w+9;ctx.stroke()}
+  ctx.strokeStyle='#06101b';ctx.lineWidth=w+3;ctx.stroke();
+  ctx.strokeStyle=COL[p.pr];ctx.lineWidth=w;ctx.stroke();
+  if(flow){ctx.setLineDash([1,10]);ctx.lineDashOffset=-t*20;ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=w*.4;ctx.stroke();ctx.setLineDash([])}
+  if(u<1){const g=ctx.createRadialGradient(X,Y,0,X,Y,14);g.addColorStop(0,'rgba(255,255,255,.95)');g.addColorStop(1,'rgba(58,208,230,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(X,Y,14,0,7);ctx.fill()}}
+ const r=clamp(cam.s*.17,5.5,15);
+ for(const k in nd){const ap=appear[k];if(ap==null||t<ap)continue;sym(nd[k].t,S[k][0],S[k][1],r*pop((t-ap)/.35),t)}
+ if(sel&&sel.sel==='N12'){ctx.strokeStyle='#3ad0e6';ctx.lineWidth=2;ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(S.N12[0],S.N12[1]-r*.3,r*1.5,0,7);ctx.stroke();ctx.setLineDash([])}
+ /* Etiquetas y cotas: aparecen en 42,5 s y se ocultan en el modo inspector; solo si caben */
+ const la=clamp((t-42.5)/1.5)*clamp((INS0-t)/1.2);
+ if(la>0){
+  for(const p of order){if(!p.lab||t<p.t1)continue;const A=S[p.a],B=S[p.b],dx=B[0]-A[0],dy=B[1]-A[1];if(Math.hypot(dx,dy)<40)continue;
+   const v=Math.abs(dy)>Math.abs(dx)*1.5;chip((A[0]+B[0])/2+(v?-30:0),(A[1]+B[1])/2+(v?0:-17),p.id,fmt(len(p.a,p.b)),la)}
+  if(cam.s>26)for(const k in nd)if(nd[k].t!=='te'&&nd[k].t!=='u')chip(S[k][0],S[k][1]-r*2.1,k,'',la*.9)}
+ /* Cursor */
+ let i=-1;CUR.forEach((e,j)=>{if(t>=e.t0)i=j});const last=CUR[CUR.length-1];
+ if(i>=0&&t<last.t2+.6){const e=CUR[i],from=i?tgt(CUR[i-1],S):[W*.94,H*.8],to=tgt(e,S),u=ease(clamp((t-e.t0)/(e.t1-e.t0))),x=from[0]+(to[0]-from[0])*u,y=from[1]+(to[1]-from[1])*u,c=t-e.t1;
+  ctx.save();ctx.globalAlpha=clamp(1-(t-last.t2)/.6);
+  if(c>=0&&c<.6){ctx.strokeStyle='#fff';ctx.globalAlpha*=1-c/.6;ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,6+c*50,0,7);ctx.stroke();ctx.globalAlpha=1}
+  ctx.translate(x,y);ctx.fillStyle='#fff';ctx.strokeStyle='#06101b';ctx.lineWidth=1.2;ctx.beginPath();[[0,0],[0,17],[4.5,13],[8,20],[10.5,19],[7,12],[12.5,12]].forEach((q,n)=>n?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
+ /* Ejes */
+ if(t>=DS){const c=Math.cos(th),s=Math.sin(th),o=[34,H-118];ctx.font='600 11px Barlow,sans-serif';ctx.lineWidth=1.5;
+  [['X',1,0,0,'#ff6b4a'],['Y',0,1,0,'#8fe38f'],['Z',0,0,1,'#6aa6ff']].forEach(a=>{const x=a[1]*c-a[3]*s,z=a[1]*s+a[3]*c,px=(x-z)*.866*22,py=((x+z)*.5-a[2])*22;ctx.strokeStyle=a[4];ctx.fillStyle=a[4];ctx.beginPath();ctx.moveTo(o[0],o[1]);ctx.lineTo(o[0]+px,o[1]+py);ctx.stroke();ctx.fillText(a[0],o[0]+px*1.25-3,o[1]+py*1.25+4)})}
+}
+
+/* Interfaz: pestañas, leyenda, tarjetas */
+const tabs=[...document.querySelectorAll('.ifx-tabs i')],cap=$('#ifxCap'),cards={intro:$('#c-intro'),proj:$('#c-proj'),prop:$('#c-prop'),reg:$('#c-reg'),calc:$('#c-calc'),out:$('#c-out')};
+let uiC=-1,uiOn='',uiSel='';
+function ui(t){
+ let c=0;CH.forEach((x,i)=>{if(t>=x[0])c=i});
+ if(c!==uiC){uiC=c;const x=CH[c];tabs.forEach(e=>e.classList.toggle('on',e.textContent===x[1]));cap.querySelector('h3').textContent=x[2];cap.querySelector('p').textContent=x[3];cap.style.visibility=x[2]?'visible':'hidden';cap.classList.remove('in');void cap.offsetWidth;cap.classList.add('in')}
+ const sel=selAt(t),on=[];
+ if(t<3.5)on.push('intro');else if(t<8.7)on.push('proj');
+ if(sel&&sel.sel[0]==='P')on.push('prop');if(sel&&sel.sel==='N12')on.push('reg');
+ if(t>=67&&t<70.8)on.push('calc');if(t>=85.6)on.push('out');
+ const key=on.join();if(key!==uiOn){uiOn=key;for(const k in cards)cards[k].classList.toggle('on',on.includes(k))}
+ if(sel&&sel.sel[0]==='P'&&sel.sel!==uiSel){uiSel=sel.sel;const p=byId[sel.sel],row=(a,b)=>`<dt>${a}</dt><dd>${b}</dd>`;
+  cards.prop.innerHTML=`<h4>Tramo ${p.id}</h4><dl>${row('Diámetro',p.dia+'″')}${row('Material',p.mat)}${row('Presión',`<span style="color:${COL[p.pr]}">●</span> ${p.pr} psi`)}${row('Obra','Nueva')}${row('Anclaje',p.anc)}${row('Longitud',fmt(len(p.a,p.b)))}</dl>`}
+}
+
+/* Reproductor */
+const rng=$('#ifxRng'),tm=$('#ifxTime'),pb=$('#ifxPlay'),root=$('#ifx'),panel=$('#ifxPanel');
+const mmss=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+let t=0,play=false,last=0,spd=1,raf=0,drag=false,opener=null;
+CH.filter(x=>x[4]).forEach(x=>{const b=document.createElement('button');b.className='tk';b.style.left=x[0]/DUR*100+'%';b.title=x[2];b.setAttribute('aria-label',x[2]);b.onclick=()=>{t=x[0];setPlay(true)};rng.parentNode.appendChild(b)});
+function setPlay(v){play=v;pb.textContent=v?'❚❚':'▶';if(v&&t>=DUR)t=0}
+function loop(ts){raf=requestAnimationFrame(loop);const dt=Math.min((ts-last)/1000,.1);last=ts;
+ if(play){t+=dt*spd;if(t>=DUR){t=DUR;setPlay(false)}}
+ render(t);ui(t);if(!drag)rng.value=t*100;tm.textContent=mmss(t)+' / '+mmss(DUR)}
+function open(){opener=document.activeElement;root.hidden=false;document.body.style.overflow='hidden';resize();t=0;uiC=-1;uiOn='';uiSel='';
+ setPlay(!matchMedia('(prefers-reduced-motion:reduce)').matches);last=performance.now();raf=requestAnimationFrame(loop);$('#ifxX').focus()}
+function close(){cancelAnimationFrame(raf);setPlay(false);if(document.fullscreenElement)document.exitFullscreen();root.hidden=true;document.body.style.overflow='';opener&&opener.focus()}
+document.querySelectorAll('[data-ifx-open]').forEach(b=>b.addEventListener('click',open));
+$('#ifxX').onclick=close;root.addEventListener('pointerdown',e=>{if(e.target===root)close()});
+pb.onclick=()=>setPlay(!play);$('#ifxAgain').onclick=()=>{t=0;setPlay(true)};
+rng.addEventListener('pointerdown',()=>drag=true);addEventListener('pointerup',()=>drag=false);rng.addEventListener('input',()=>{t=rng.value/100});
+$('#ifxSp').onchange=e=>spd=+e.target.value;
+$('#ifxFs').onclick=()=>document.fullscreenElement?document.exitFullscreen():panel.requestFullscreen&&panel.requestFullscreen();
+new ResizeObserver(resize).observe(stage);
+addEventListener('keydown',e=>{if(root.hidden)return;
+ if(e.key==='Escape'&&!document.fullscreenElement)close();
+ else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='SELECT'){e.preventDefault();setPlay(!play)}
+ else if(e.key==='ArrowRight'&&e.target!==rng)t=Math.min(DUR,t+5);else if(e.key==='ArrowLeft'&&e.target!==rng)t=Math.max(0,t-5);
+ else if(e.key==='Tab'){const f=[...panel.querySelectorAll('button,input,select')].filter(x=>x.offsetParent!==null||x===document.activeElement);if(!f.length)return;const a=f[0],z=f[f.length-1];
+  if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus()}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}}});
+window.IsofluxDemo={open,close};
+})();
+</script>
+</body>
+</html>
