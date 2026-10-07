@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasEngineering Hub - Panel Principal</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { background-color: #0b0b0b; color: #e5e5e5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 8px; } /* Altura para scroll horizontal */
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
+        
+        /* Animaciones */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-card { animation: fadeIn 0.4s ease-out forwards; }
+
+        @keyframes modalPop { 
+            0% { opacity: 0; transform: scale(0.95) translateY(20px); } 
+            100% { opacity: 1; transform: scale(1) translateY(0); } 
+        }
+        .animate-modal { animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        /* Animación de Rotación (Scroll Infinito para Próximamente) */
+        @keyframes scrollLeft {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(calc(-280px * 5)); } /* Ajustar según cantidad/ancho */
+        }
+
+        .carousel-track {
+            display: flex;
+            gap: 1.5rem;
+            width: max-content;
+            animation: scrollLeft 40s linear infinite;
+        }
+        
+        .carousel-container:hover .carousel-track {
+            animation-play-state: paused;
+        }
+
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* =====================================================
+           MODAL DE CURSO · ENTORNO DE INGENIERÍA (AZUL METALIZADO)
+           ===================================================== */
+        .eng-modal {
+            --ti-950: #070a10;
+            --ti-900: #0c1119;
+            --ti-850: #101722;
+            --ti-800: #151e2b;
+            --eng-line: #243245;
+            --eng-line-soft: #1a2535;
+            --steel-200: #d3e0ef;
+            --steel-300: #a9bdd3;
+            --steel-400: #7f9bbb;
+            --steel-500: #4f78a8;
+            --steel-600: #34598a;
+            --steel-700: #243f66;
+            font-family: 'Bahnschrift', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .eng-overlay {
+            background:
+                radial-gradient(1200px 500px at 50% -10%, rgba(79,120,168,.18), transparent 60%),
+                rgba(4,7,12,.86);
+            backdrop-filter: blur(6px);
+            animation: engFade .25s ease-out both;
+        }
+        @keyframes engFade { from { opacity: 0; } to { opacity: 1; } }
+
+        .eng-panel {
+            background: linear-gradient(180deg, var(--ti-850) 0%, var(--ti-900) 100%);
+            border: 1px solid var(--eng-line);
+            box-shadow:
+                0 40px 90px rgba(0,0,0,.75),
+                inset 0 0 0 1px rgba(169,189,211,.05);
+        }
+
+        /* Filo metálico superior con reflejo especular */
+        .metal-edge {
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, var(--steel-500) 18%, var(--steel-200) 50%, var(--steel-500) 82%, transparent 100%);
+        }
+
+        /* Retícula tipo plano técnico */
+        .blueprint {
+            background-image:
+                linear-gradient(rgba(127,155,187,.10) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(127,155,187,.10) 1px, transparent 1px),
+                linear-gradient(rgba(127,155,187,.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(127,155,187,.05) 1px, transparent 1px);
+            background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+            mask-image: linear-gradient(180deg, rgba(0,0,0,.9), rgba(0,0,0,.15) 85%, transparent);
+            -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,.9), rgba(0,0,0,.15) 85%, transparent);
+        }
+
+        /* Título con acabado de acero cepillado */
+        .metal-title {
+            background: linear-gradient(180deg, #ffffff 0%, var(--steel-200) 55%, var(--steel-400) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            filter: drop-shadow(0 2px 14px rgba(0,0,0,.6));
+        }
+
+        /* Botón principal azul metalizado */
+        .metal-btn {
+            position: relative;
+            overflow: hidden;
+            color: #06101e;
+            font-weight: 800;
+            background: linear-gradient(180deg, #a9c8ec 0%, #5d8cc4 46%, #2f5686 54%, #4476ad 100%);
+            border: 1px solid #a9c8ec;
+            text-shadow: 0 1px 0 rgba(255,255,255,.35);
+            box-shadow:
+                inset 0 1px 0 rgba(255,255,255,.6),
+                inset 0 -1px 0 rgba(0,0,0,.25),
+                0 8px 22px rgba(47,86,134,.45);
+            transition: transform .15s ease, filter .2s ease, box-shadow .2s ease;
+        }
+        .metal-btn::after {
+            content: "";
+            position: absolute;
+            top: 0; bottom: 0; left: -60%;
+            width: 40%;
+            background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
+            transform: skewX(-20deg);
+            transition: left .6s ease;
+        }
+        .metal-btn:hover { filter: brightness(1.08); }
+        .metal-btn:hover::after { left: 130%; }
+        .metal-btn:active { transform: scale(.97); }
+
+        .metal-btn-done {
+            color: #eafff3;
+            background: linear-gradient(180deg, #3fae7a 0%, #1f7a53 48%, #14583b 54%, #1b6d4a 100%);
+            border: 1px solid #5fcf9b;
+            text-shadow: 0 1px 0 rgba(0,0,0,.35);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 8px 22px rgba(20,88,59,.45);
+        }
+
+        .ghost-btn {
+            color: var(--steel-200);
+            background: linear-gradient(180deg, rgba(79,120,168,.18), rgba(36,63,102,.18));
+            border: 1px solid var(--eng-line);
+            transition: border-color .2s ease, background .2s ease;
+        }
+        .ghost-btn:hover { border-color: var(--steel-400); background: linear-gradient(180deg, rgba(79,120,168,.3), rgba(36,63,102,.25)); }
+
+        .close-btn {
+            background: rgba(12,17,25,.8);
+            border: 1px solid var(--eng-line);
+            color: var(--steel-200);
+            transition: border-color .2s ease, background .2s ease;
+        }
+        .close-btn:hover { border-color: var(--steel-400); background: var(--ti-800); }
+
+        /* Chips metálicos */
+        .chip-steel {
+            color: var(--steel-200);
+            background: linear-gradient(180deg, rgba(127,155,187,.28), rgba(52,89,138,.28));
+            border: 1px solid rgba(169,189,211,.35);
+            backdrop-filter: blur(4px);
+        }
+        .chip-warn {
+            color: #1a1405;
+            background: linear-gradient(180deg, #e9cf86, #b8913a);
+            border: 1px solid #f2dc9d;
+        }
+
+        /* Tablero de indicadores */
+        .spec-strip {
+            background: linear-gradient(180deg, rgba(21,30,43,.9), rgba(12,17,25,.9));
+            border-top: 1px solid var(--eng-line);
+            border-bottom: 1px solid var(--eng-line);
+        }
+        .spec-cell + .spec-cell { border-left: 1px solid var(--eng-line-soft); }
+        .spec-value {
+            background: linear-gradient(180deg, #ffffff, var(--steel-300));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* Temario: secuencia real de módulos con riel conector */
+        .module-rail { list-style: none; margin: 0; padding: 0; }
+        .module-rail > li { position: relative; }
+        .module-rail > li:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            left: 21px; top: 46px; bottom: -6px;
+            width: 1px;
+            background: linear-gradient(180deg, var(--steel-600), var(--eng-line-soft));
+        }
+        .module-row {
+            border: 1px solid transparent;
+            transition: background .2s ease, border-color .2s ease;
+        }
+        .module-row:hover {
+            background: linear-gradient(90deg, rgba(79,120,168,.14), rgba(79,120,168,.03));
+            border-color: var(--eng-line);
+        }
+        .module-badge {
+            color: var(--steel-200);
+            background: linear-gradient(180deg, #2c4a74 0%, #172a46 100%);
+            border: 1px solid var(--steel-600);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+        }
+        .module-row:hover .module-badge {
+            background: linear-gradient(180deg, #a9c8ec 0%, #4476ad 100%);
+            color: #06101e;
+            border-color: #a9c8ec;
+        }
+
+        .tag-steel {
+            color: var(--steel-300);
+            background: rgba(36,63,102,.35);
+            border: 1px solid var(--eng-line);
+        }
+
+        .eng-focus:focus-visible { outline: 2px solid var(--steel-300); outline-offset: 2px; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .animate-modal, .eng-overlay { animation: none; }
+            .metal-btn, .metal-btn::after { transition: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, createElement, useRef, useMemo } = React;
+
+        // --- ICON COMPONENT ---
+        const Icon = ({ name, size = 24, className = "", fill = "none" }) => {
+            const iconData = lucide.icons[name];
+            if (!iconData) return null;
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {iconData.map((child, index) => {
+                        const [tag, attrs] = child;
+                        return createElement(tag, { ...attrs, key: index });
+                    })}
+                </svg>
+            );
+        };
+
+        // --- DATOS DE CURSOS (BLOQUE COMPLETO RESTAURADO) ---
+        const initialTrainingPlans = [
+            { 
+                id: 108, 
+                title: "Avanzado: Evaluacion Diagnostica instaladores Residencial y comercial.", 
+                category: "Diagnostico", 
+                status: "active", 
+                description: "Esta evaluación diagnóstica tiene como objetivo identificar el nivel de dominio técnico de instaladores de redes de gas avanzados.",
+                matchScore: 98,
+                year: "2025",
+                instructor: "SofI.A.",
+                tags: ["NTC 2505", "NTC 3631", "NTC 3632"],
+                type: "Versión Libre", 
+                hours: 1, 
+                level: "Avanzado", 
+                enrolled: false, 
+                progress: 0, 
+                imageColor: "bg-slate-800",
+                gradientColor: "from-slate-900 to-black",
+                imageUrl: "../ImagenesPlataformas/img_banner_evaluacion_diagnotica_ntc2505.png",
+                url: "https://script.google.com/macros/s/AKfycbyRaxLJ02raMevZRV9iceaaKFCDBpx4SAeCC5xCwmf1ygnNbQcMXXNHYc4qVN3EMgyo/exec",
+                chapters: [
+                    { title: "NTC 2505 (4ta Actualización)", duration: "15m" },
+                    { title: "NTC 3631 (2da Actualización)", duration: "15m" },
+                    { title: "NTC 3632 (Gasodomésticos de Cocción)", duration: "15m" },
+                    { title: "Fundamentos en Ciencias Aplicadas", duration: "15m" },
+                    { title: "Aspectos Matemáticos de Ingeniería", duration: "15m" },
+                    { title: "Aspectos Metrológicos", duration: "15m" },
+                    { title: "RESOLUCIÓN 90902:2013", duration: "15m" }
+                ]
+            },
+            { 
+                id: 107, 
+                title: "Trabajo Seguro En Alturas Resol. 4272:2021", 
+                category: "Resol. 4272", 
+                status: "active", 
+                description: "Curso completo sobre los requisitos mínimos de seguridad para el desarrollo de trabajo en alturas según la Resolución 4272 de 2021. Aprende sobre medidas de prevención, protección y rescate.",
+                matchScore: 98,
+                year: "2025",
+                instructor: "Ing. Carlos Altura",
+                tags: ["Res. 4272", "Alturas", "HSE"],
+                type: "Versión Libre", 
+                hours: 20, 
+                level: "Avanzado", 
+                enrolled: false, 
+                progress: 0, 
+                imageColor: "bg-slate-800",
+                gradientColor: "from-slate-900 to-black",
+                imageUrl: "./ImgCursoResolucion4272_2021_V1Libre.png",
+                url: "../CursosPlataforma/cursoResolucion4272_2021_V1Libre.html",
+                chapters: [
+                    { title: "Marco Legal Res. 4272", duration: "45m" },
+                    { title: "Medidas de Prevención", duration: "60m" },
+                    { title: "Sistemas de Protección Contra Caídas", duration: "90m" }
+                ]
+            },
+            { 
+                id: 106, 
+                title: "Re entrenamiento Solucion Tecnica Alternativa (Anexo C NTC 3833)", 
+                category: "NTC 3833",
+                status: "active", 
+                description: "Capacitación interactiva para la aplicación del Anexo C (Informativo) de la NTC 3833. Aprende a calcular si la suma de puntos por ganancia de cota menos pérdidas cumple el requisito de +1.0.",
+                matchScore: 99,
+                year: "2025",
+                instructor: "Ing. Ana (Virtual)",
+                tags: ["NTC 3833", "Cálculo de Tiro", "Evacuación"],
+                type: "Versión Libre", 
+                hours: 5, 
+                level: "Básico", 
+                enrolled: false, 
+                progress: 0, 
+                imageColor: "bg-orange-900",
+                gradientColor: "from-orange-900 to-black",
+                imageUrl: "./ImgCursoAnexoC_NTC3833_V1Libre.png",
+                url: "../CursosPlataforma/curso_anexo_c_ntc_3833.html",
+                chapters: [
+                    { title: "Introducción y Premisa", duration: "15m" },
+                    { title: "Factor de Altitud y Puntos", duration: "25m" },
+                    { title: "Análisis de Caso y Solución", duration: "30m" }
+                ]
+            },
+            { 
+                id: 105, 
+                title: "Métodos de ventilación NTC 3631", 
+                category: "NTC 3631", 
+                status: "active", 
+                description: "Domina los métodos de ventilación para recintos interiores según la NTC 3631. Cálculo de aberturas, rejillas y volúmenes de aire requeridos para la combustión segura.",
+                matchScore: 95,
+                year: "2025",
+                instructor: "Ing. Pedro Aire",
+                tags: ["NTC 3631", "Ventilación", "Seguridad"],
+                type: "Versión Libre", 
+                hours: 10, 
+                level: "Intermedio", 
+                enrolled: false, 
+                progress: 0,
+                imageColor: "bg-purple-900",
+                gradientColor: "from-purple-900 to-black",
+                imageUrl: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=1000&auto=format&fit=crop",
+                url: "../CursosPlataforma/cursoNral4_NTC3631_V1Libre.html", 
+                chapters: [
+                    { title: "Principios de Ventilación", duration: "20m" },
+                    { title: "Método 1: Comunicación Directa", duration: "35m" },
+                    { title: "Método 2: Comunicación Indirecta", duration: "40m" }
+                ]
+            },
+            { 
+                id: 104, 
+                title: "Ingenieria en I.A.", 
+                category: "Desarrollo Tegnologico", 
+                status: "active", 
+                description: "Programa de formacion certificada por I.A. en Inteligencia Artificial aplicada a la ingenieria de los sistemas de presion",
+                matchScore: 90, 
+                year: "2025", 
+                instructor: "I.A. Anthropic Claude",
+                tags: ["Modelos de I.A.", "Redes neuronales", "Campos de Embeding"],
+                type: "Premium", 
+                hours: 8, 
+                level: "Todos", 
+                enrolled: false, 
+                progress: 0, 
+                imageColor: "bg-yellow-700",
+                gradientColor: "from-yellow-800 to-black",
+                imageUrl: "https://images.unsplash.com/photo-1599818827727-4a7b7a57acbd?q=80&w=1000&auto=format&fit=crop",
+                url: "../CursosPlataforma/Synapsis_programa_de_Ingeniería_en_IA.html", 
+                chapters: [ 
+                    { title: "Fundamentos Matemáticos y Computacionales", duration: "16 semanas" },
+                    { title: "Matemáticas para IA y Estructuras de Datos", duration: "16 semanas" },
+                    { title: "Fundamentos de Machine Learning", duration: "216 semanas" },
+                    { title: "Deep Learning I", duration: "16 semanas" },
+                    { title: "Deep Learning II · Visión y Lenguaje", duration: "16 semanas" },
+                    { title: "Sistemas de IA Generativa y Agentes", duration: "16 semanas" },
+                    { title: "Ingeniería de IA en Producción (MLOps)", duration: "16 semanas" },
+                    { title: "Investigación y Proyecto de Grado", duration: "16 - 20 semanas" }
+                ]
+            },
+            { 
+                id: 101, 
+                title: "Instructivo PO-044", 
+                category: "Metodos de acople",
+                status: "active",
+                description: "Procedimiento operativo soldadura termofusion a socket P80-P100 en redes de distribuicon de gas V-001.",
+                matchScore: 98,
+                year: "2026",
+                instructor: "Ing. SofI.A.",
+                tags: ["Tuberias", "Metodos de acople"],
+                type: "Demo", 
+                hours: 45, 
+                level: "Basico", 
+                imageColor: "bg-sky-900",
+                gradientColor: "from-sky-900 to-black",
+                imageUrl: "ImagenesPlataformas/img_soldador_pe.png",
+                url: "../CursosPlataforma/cursos_concali/PO-044 Vdemo.html",
+                chapters: [
+                    { title: "Ambito y alcance", duration: "15m" },
+                    { title: "Roles y Responsabilidades", duration: "25m" },
+                    { title: "Marco Legal, Normativo y de referencia", duration: "30m" }
+                ]
+            },
+            { 
+                id: 102, 
+                title: "Diseño de Redes Internas Residenciales y Comerciales", 
+                category: "Redes", 
+                status: "coming_soon",
+                description: "Aprende a diseñar redes de gas seguras para el hogar. Normativas y cálculo.",
+                matchScore: 85,
+                year: "2023",
+                instructor: "Arq. Sofia Tubería",
+                tags: ["Residencial", "Normativa"],
+                type: "Versión Libre", 
+                hours: 12, 
+                level: "Básico", 
+                imageColor: "bg-blue-800",
+                gradientColor: "from-blue-900 to-black",
+                imageUrl: "https://images.unsplash.com/photo-1581092921461-eab62e97a78e?q=80&w=1000&auto=format&fit=crop"
+            },
+            { 
+                id: 103, 
+                title: "Instrumentación en Estaciones (ERM)", 
+                category: "Instrumentación", 
+                status: "coming_soon",
+                description: "Profundiza en los sistemas de regulación y medición en city gates.",
+                matchScore: 92,
+                year: "2024",
+                instructor: "Ing. Roberto Flujo",
+                tags: ["City Gate", "Telemetría"],
+                type: "Membresía", 
+                hours: 60, 
+                level: "Intermedio", 
+                imageColor: "bg-green-800",
+                gradientColor: "from-green-900 to-black",
+                imageUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1000&auto=format&fit=crop"
+            }
+        ];
+
+        // --- COMPONENTE MODAL · ENTORNO DE FORMACIÓN DE ALTA INGENIERÍA ---
+        const CourseModal = ({ plan, onClose, onRegister, onPlay }) => {
+            const modalRef = useRef(null);
+
+            useEffect(() => {
+                const handleClickOutside = (event) => {
+                    if (modalRef.current && !modalRef.current.contains(event.target)) {
+                        onClose();
+                    }
+                };
+                const handleEscape = (event) => {
+                    if (event.key === 'Escape') onClose();
+                };
+                document.addEventListener("mousedown", handleClickOutside);
+                document.addEventListener("keydown", handleEscape);
+                return () => {
+                    document.removeEventListener("mousedown", handleClickOutside);
+                    document.removeEventListener("keydown", handleEscape);
+                };
+            }, [onClose]);
+
+            if (!plan) return null;
+
+            const isComingSoon = plan.status === 'coming_soon';
+            const moduleCount = plan.chapters ? plan.chapters.length : 0;
+
+            const specs = [
+                { icon: "Gauge", value: `${plan.matchScore}%`, label: "Coincidencia con tu perfil" },
+                { icon: "Clock", value: `${plan.hours} h`, label: "Duración total" },
+                { icon: "Layers", value: plan.level, label: "Nivel técnico" },
+                { icon: "Award", value: plan.type, label: "Modalidad" }
+            ];
+
+            return (
+                <div className="eng-modal eng-overlay fixed inset-0 z-50 flex justify-center items-start pt-6 sm:pt-14 px-3 sm:px-4 overflow-y-auto custom-scrollbar">
+                    <div 
+                        ref={modalRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="course-modal-title"
+                        className="eng-panel relative w-full max-w-4xl rounded-2xl overflow-hidden animate-modal mb-10"
+                    >
+                        <div className="metal-edge absolute top-0 left-0 right-0 z-30"></div>
+
+                        <button 
+                            onClick={onClose}
+                            aria-label="Cerrar"
+                            className="close-btn eng-focus absolute top-4 right-4 z-30 rounded-full p-2"
+                        >
+                            <Icon name="X" size={20} />
+                        </button>
+
+                        {/* HERO */}
+                        <div className={`relative h-[22rem] sm:h-[26rem] w-full bg-gradient-to-b ${plan.gradientColor}`}>
+                            <img 
+                                src={plan.imageUrl} 
+                                alt={plan.title}
+                                className={`absolute inset-0 w-full h-full object-cover mix-blend-overlay ${isComingSoon ? 'opacity-30 grayscale' : 'opacity-80'}`}
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                            <div className="blueprint absolute inset-0 pointer-events-none"></div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-[#0c1119]/70 via-transparent to-transparent"></div>
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0c1119] via-[#0c1119]/20 to-black/30"></div>
+                            
+                            <div className="absolute bottom-0 left-0 p-6 sm:p-10 w-full z-20">
+                                <div className="flex flex-wrap items-center gap-2 mb-4">
+                                    {isComingSoon && (
+                                        <span className="chip-warn text-xs font-bold px-3 py-1 rounded">
+                                            Próximamente
+                                        </span>
+                                    )}
+                                    <span className="chip-steel text-xs font-semibold px-3 py-1 rounded">{plan.category}</span>
+                                    <span className="chip-steel text-xs font-semibold px-3 py-1 rounded">{plan.year}</span>
+                                </div>
+
+                                <h2 id="course-modal-title" className="metal-title text-3xl sm:text-5xl font-black mb-2 leading-[1.08] tracking-tight">
+                                    {plan.title}
+                                </h2>
+                                <p className="text-sm text-[color:var(--steel-300)] flex items-center gap-2">
+                                    <Icon name="User" size={14} />
+                                    <span>{plan.instructor}</span>
+                                </p>
+                                
+                                <div className="flex flex-wrap gap-3 mt-6">
+                                    {isComingSoon ? (
+                                        <button disabled className="flex items-center gap-2 bg-[#1a2535] text-[#7f9bbb] border border-[#243245] px-6 py-2.5 rounded-lg font-bold text-lg cursor-not-allowed">
+                                            <Icon name="Lock" size={22} /> No Disponible Aún
+                                        </button>
+                                    ) : (
+                                        <button 
+                                            onClick={() => {
+                                                if (plan.enrolled) {
+                                                    onPlay(plan.url);
+                                                } else {
+                                                    // Sinergia: Pasamos ID y URL para redirección inmediata
+                                                    onRegister(plan.id, plan.url);
+                                                }
+                                            }}
+                                            className={`metal-btn eng-focus flex items-center gap-2 px-7 py-2.5 rounded-lg text-lg ${plan.enrolled ? 'metal-btn-done' : ''}`}
+                                        >
+                                            {plan.enrolled ? (
+                                                <> <Icon name="CheckCircle" size={22} className="animate-bounce" /> ¡Inscrito con éxito! </>
+                                            ) : (
+                                                <> <Icon name="PlusCircle" size={22} /> Inscribirse </>
+                                            )}
+                                        </button>
+                                    )}
+
+                                    <button aria-label="Agregar a mi lista" className="ghost-btn eng-focus flex items-center gap-2 px-5 py-2.5 rounded-lg font-bold text-lg">
+                                        <Icon name="Plus" size={22} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* TABLERO DE INDICADORES */}
+                        <div className="spec-strip grid grid-cols-2 md:grid-cols-4">
+                            {specs.map((s, i) => (
+                                <div key={i} className={`spec-cell px-6 py-4 ${i === 2 ? 'border-l-0 md:border-l' : ''}`}>
+                                    <div className="flex items-center gap-2 text-[color:var(--steel-400)] text-xs mb-1">
+                                        <Icon name={s.icon} size={14} />
+                                        <span>{s.label}</span>
+                                    </div>
+                                    <div className="spec-value text-xl font-bold leading-tight">{s.value}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* CUERPO */}
+                        <div className="px-6 sm:px-10 py-8 grid grid-cols-1 md:grid-cols-3 gap-10 text-gray-300">
+                            <div className="md:col-span-2">
+                                <p className="text-[#d3e0ef] text-base leading-relaxed max-w-[68ch]">{plan.description}</p>
+                                
+                                {isComingSoon && (
+                                    <div className="mt-8 border border-[#243245] rounded-lg p-5 bg-[#101722] flex items-start gap-3">
+                                        <Icon name="CalendarClock" size={20} className="text-[#7f9bbb] mt-0.5 flex-shrink-0" />
+                                        <p className="text-sm text-[#a9bdd3] leading-relaxed">
+                                            Este programa se habilitará próximamente. Cuando esté disponible, aquí verás los módulos y podrás inscribirte.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {!isComingSoon && plan.chapters && (
+                                    <div className="mt-8 pt-6 border-t border-[#243245]">
+                                        <div className="flex justify-between items-end mb-5">
+                                            <h3 className="text-xl font-bold text-white">Módulos</h3>
+                                            <span className="text-xs text-[#7f9bbb]">{moduleCount} {moduleCount === 1 ? 'módulo' : 'módulos'}</span>
+                                        </div>
+                                        <ol className="module-rail space-y-1.5">
+                                            {plan.chapters.map((chapter, idx) => (
+                                                <li key={idx}>
+                                                    <div className="module-row group flex items-center gap-4 p-3 rounded-lg cursor-pointer">
+                                                        <span className="module-badge w-[43px] h-[43px] rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors">
+                                                            {idx + 1}
+                                                        </span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="font-semibold text-gray-200 group-hover:text-white text-sm leading-snug">{chapter.title}</h4>
+                                                        </div>
+                                                        <span className="text-xs text-[#7f9bbb] font-mono flex-shrink-0">{chapter.duration}</span>
+                                                        <Icon name="Play" size={14} className="text-[#a9bdd3] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="currentColor" />
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ol>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* FICHA TÉCNICA */}
+                            <aside className="md:col-span-1 text-sm space-y-6">
+                                <div className="rounded-xl border border-[#243245] bg-gradient-to-b from-[#151e2b] to-[#101722] p-5 space-y-5">
+                                    <div>
+                                        <span className="text-[#7f9bbb] block mb-1 text-xs">Instructor</span>
+                                        <span className="text-gray-100 font-medium">{plan.instructor}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-[#7f9bbb] block mb-1 text-xs">Año de publicación</span>
+                                        <span className="text-gray-100 font-medium">{plan.year}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-[#7f9bbb] block mb-2 text-xs">Normas y temas</span>
+                                        <div className="flex flex-wrap gap-2">
+                                            {plan.tags.map(tag => (<span key={tag} className="tag-steel px-2.5 py-1 rounded text-xs">{tag}</span>))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </aside>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- FUNCION HELPER PARA MEZCLAR (SHUFFLE) ---
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // --- APP PRINCIPAL (RESTURADA Y MEJORADA) ---
+        function App() {
+            const [plans, setPlans] = useState(initialTrainingPlans);
+            const [selectedPlan, setSelectedPlan] = useState(null);
+
+            // FILTROS Y MEZCLA DE CURSOS ACTIVOS
+            const activePlans = useMemo(() => {
+                const active = plans.filter(p => p.status === 'active');
+                return shuffleArray(active); 
+            }, [plans]);
+
+            const upcomingPlans = plans.filter(p => p.status === 'coming_soon');
+            const carouselPlans = [...upcomingPlans, ...upcomingPlans]; 
+
+            const handleRegister = (planId, url) => {
+                // 1. Actualizamos el estado global
+                const updatedPlans = plans.map(p => {
+                    if (p.id === planId) return { ...p, enrolled: true, progress: 0 };
+                    return p;
+                });
+                setPlans(updatedPlans);
+
+                // 2. Sincronizamos el plan seleccionado para feedback visual en el modal
+                if (selectedPlan && selectedPlan.id === planId) {
+                    setSelectedPlan({ ...selectedPlan, enrolled: true, progress: 0 });
+                }
+
+                // 3. Pequeña pausa para UX (confirmación visual) antes de navegar
+                setTimeout(() => {
+                    if (url) {
+                        handleNavigation(url);
+                    }
+                }, 850);
+            };
+
+            const handleNavigation = (url) => {
+                if (!url) return;
+                try {
+                    const baseUrl = window.location.href;
+                    const targetUrl = new URL(url, baseUrl).href;
+                    window.location.href = targetUrl;
+                } catch (error) {
+                    window.open(url, '_self');
+                }
+            };
+
+            return (
+                <div className="flex flex-col h-screen bg-[#0b0b0b] font-sans text-gray-100 overflow-hidden relative">
+                    
+                    <header className="flex items-center justify-between px-8 py-5 bg-[#0b0b0b]/95 backdrop-blur border-b border-gray-800 z-30 sticky top-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20">
+                                <Icon name="LayoutGrid" className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold tracking-tight leading-none">GasEngineering<span className="text-gray-500 font-normal">Hub</span></h1>
+                                <p className="text-xs text-gray-400 mt-1">Portal de Formación Profesional</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-6">
+                            <button onClick={() => handleNavigation('../Modales Plataforma/interfazDeOpcionInicio.html')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800/50 hover:bg-gray-700 text-gray-300 hover:text-white transition-all border border-gray-700 hover:border-gray-600 group">
+                                <Icon name="ArrowLeft" size={18} className="group-hover:-translate-x-1 transition-transform" />
+                                <span className="hidden sm:inline font-medium text-sm">Volver al Inicio</span>
+                            </button>
+                            <div className="flex items-center gap-3 pl-6 border-l border-gray-800">
+                                <div className="text-right hidden sm:block">
+                                    <p className="text-sm font-semibold">Ing. Estudiante</p>
+                                    <p className="text-xs text-green-500">Cuenta Activa</p>
+                                </div>
+                                <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center font-bold border border-gray-600">IE</div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-y-auto custom-scrollbar p-8">
+                        <div className="max-w-7xl mx-auto space-y-12">
+                            
+                            {/* SECCIÓN 1: CURSOS DISPONIBLES */}
+                            <section>
+                                <div className="mb-6 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <Icon name="BookOpenCheck" className="text-orange-500" />
+                                        <h2 className="text-3xl font-bold text-white">Cursos Disponibles</h2>
+                                    </div>
+                                    <div className="hidden md:flex gap-2 text-gray-500 text-sm items-center animate-pulse">
+                                        <Icon name="ArrowLeft" size={16} />
+                                        <span>Desliza para ver más</span>
+                                        <Icon name="ArrowRight" size={16} />
+                                    </div>
+                                </div>
+                                
+                                <div className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory custom-scrollbar">
+                                    {activePlans.map(plan => (
+                                        <div 
+                                            key={plan.id}
+                                            onClick={() => setSelectedPlan(plan)}
+                                            className="relative min-w-[85vw] md:min-w-[45vw] lg:min-w-[35vw] h-[400px] rounded-2xl overflow-hidden cursor-pointer group border border-gray-800 hover:border-orange-500/50 transition-all shadow-2xl snap-center flex-shrink-0"
+                                        >
+                                            <img 
+                                                src={plan.imageUrl} 
+                                                alt={plan.title}
+                                                className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
+                                                onError={(e) => { e.target.style.display = 'none'; }}
+                                            />
+                                            <div className={`absolute inset-0 bg-gradient-to-r ${plan.gradientColor} mix-blend-multiply opacity-80`}></div>
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                                            
+                                            <div className="absolute bottom-0 left-0 p-8 w-full">
+                                                <span className="bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded mb-3 inline-block shadow-lg animate-pulse">
+                                                    DISPONIBLE
+                                                </span>
+                                                <h3 className="text-3xl font-black text-white mb-2 leading-tight drop-shadow-lg line-clamp-2">{plan.title}</h3>
+                                                <p className="text-gray-200 mb-6 text-sm md:text-base line-clamp-2 drop-shadow-md">{plan.description}</p>
+                                                
+                                                <button className="bg-white text-black px-6 py-3 rounded font-bold flex items-center gap-2 hover:bg-gray-200 transition-colors">
+                                                    <Icon name="Play" fill="black" /> Comenzar Ahora
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                            {/* SECCIÓN 2: PRÓXIMAMENTE (CARRUSEL ROTATIVO RESTAURADO) */}
+                            <section className="overflow-hidden">
+                                <div className="mb-6 flex items-center gap-3">
+                                    <Icon name="CalendarClock" className="text-gray-500" />
+                                    <h2 className="text-2xl font-bold text-gray-300">Próximamente</h2>
+                                </div>
+
+                                <div className="carousel-container w-full overflow-hidden relative pb-4">
+                                    <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-[#0b0b0b] to-transparent z-10 pointer-events-none"></div>
+                                    <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-[#0b0b0b] to-transparent z-10 pointer-events-none"></div>
+
+                                    <div className="carousel-track py-2">
+                                        {carouselPlans.map((plan, index) => (
+                                            <div 
+                                                key={`${plan.id}-${index}`} 
+                                                onClick={() => setSelectedPlan(plan)}
+                                                className="relative flex-shrink-0 w-64 h-80 bg-[#151515] rounded-xl border border-gray-800 overflow-hidden cursor-pointer group hover:scale-105 transition-transform duration-300 opacity-60 hover:opacity-100 grayscale hover:grayscale-0"
+                                            >
+                                                <div className="absolute top-3 right-3 z-20">
+                                                    <span className="bg-gray-800/80 backdrop-blur text-gray-300 text-[10px] font-bold px-2 py-1 rounded border border-gray-600">
+                                                        PRONTO
+                                                    </span>
+                                                </div>
+
+                                                <div className={`h-1/2 ${plan.imageColor} relative`}>
+                                                    <img 
+                                                        src={plan.imageUrl} 
+                                                        alt={plan.title}
+                                                        className="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-overlay"
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-[#151515] to-transparent"></div>
+                                                </div>
+                                                
+                                                <div className="p-4 h-1/2 flex flex-col relative z-10">
+                                                    <div className="text-xs font-bold text-blue-500 mb-1">{plan.category}</div>
+                                                    <h3 className="font-bold text-base text-gray-300 leading-tight mb-2 line-clamp-2">
+                                                        {plan.title}
+                                                    </h3>
+                                                    <div className="mt-auto flex items-center gap-2 text-xs text-gray-500">
+                                                        <Icon name="Lock" size={12} />
+                                                        <span>Disponible 2025</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </section>
+
+                        </div>
+                    </main>
+
+                    {selectedPlan && (
+                        <CourseModal 
+                            plan={selectedPlan} 
+                            onClose={() => setSelectedPlan(null)}
+                            onRegister={handleRegister}
+                            onPlay={handleNavigation}
+                        />
+                    )}
+
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
