@@ -544,7 +544,7 @@
             { id: 'modbus', label: 'Modbus RTU/TCP', text: 'Protocolo maestro-esclavo muy extendido en PLC, variadores y medidores. RTU viaja por línea serie (RS-485) y TCP por Ethernet.', use: 'Leer registros de presión, caudal, estados y alarmas de equipos existentes.' },
             { id: 'opcua', label: 'OPC UA', text: 'Estándar de interoperabilidad industrial con modelo de información propio y seguridad integrada, con autenticación y cifrado.', use: 'Integrar PLC y sistemas SCADA modernos sin depender de un fabricante.' },
             { id: 'mqtt', label: 'MQTT', text: 'Mensajería ligera de publicación y suscripción, pensada para enviar telemetría desde equipos remotos con poco ancho de banda.', use: 'Recibir datos de sensores distribuidos o instalaciones lejanas.' },
-            { id: 'ma', label: 'Señal 4–20 mA', text: 'Señal analógica de corriente: 4 mA equivale al 0 % del rango y 20 mA al 100 %. Una lectura por debajo de 4 mA indica un lazo con falla.', use: 'Conectar transmisores de presión, temperatura y caudal mediante un módulo de adquisición.' }
+            { id: 'ma', label: 'Señal 4–20 mA', text: 'La trama enviada por el ESP32 representa la variable del proceso de combustión, donde el valor base del rango equivale al 0 % y el valor máximo al 100 % de la escala térmica. Un dato por debajo de la referencia o la pérdida de señal indica una falla en la sonda o en el nodo de transmisión.', use: 'Conectar transmisores de presión, temperatura y caudal mediante un módulo ESP32.' }
         ];
 
         // ---------- Pestañas principales ----------
