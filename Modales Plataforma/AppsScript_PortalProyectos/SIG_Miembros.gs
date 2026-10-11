@@ -84,9 +84,6 @@ const HOJAS = {
   DocsMarca: ['miembroId', 'docId', 'clave', 'pdfId', 'fecha'],
   Campo: ['id', 'proyectoId', 'fecha', 'tipo', 'texto', 'autor', 'email', 'origen', 'gps', 'archivos'],
   EnlacesCampo: ['token', 'proyectoId', 'email', 'expira', 'creadoPor', 'fecha', 'estado', 'mensaje'],
-  // Planos de Isoflux asignados a proyectos (módulo Isoflux_Planos.gs)
-  Planos: ['planoId', 'proyectoId', 'nombre', 'version', 'fileId', 'bytes', 'nodos', 'tuberias', 'fondos', 'sha256', 'autor', 'email', 'creado', 'actualizado', 'actualizadoPor', 'estado', 'miniatura', 'nota'],
-  PlanosVersiones: ['planoId', 'version', 'fileId', 'bytes', 'sha256', 'autor', 'email', 'fecha', 'nota'],
 };
 
 // ---------- ROUTER ----------
@@ -111,8 +108,6 @@ function sigApi(b, u) {
   const esAdmin = u.rol === 'admin';
   SIG_LOGO_SHA_ = String(b.logoSha || '');
   try {
-    // ---- planos de Isoflux dentro de los proyectos (Isoflux_Planos.gs) ----
-    if (String(b.a).indexOf('sgcPlano') === 0) return isoApi_(u, b);
     switch (b.a) {
       case 'sgcPerfil':          return sigPerfil(u);
       case 'sgcCompromiso':      return sigCompromiso(u, b);
@@ -1023,8 +1018,6 @@ function sigBlobsProyecto_(proyectoId) {
   const camp = sigLeer_('Campo').filter(e => String(e.proyectoId) === String(proyectoId));
   if (camp.length) out.push(Utilities.newBlob(camp.map(e => sigFechaTxt_(e.fecha) + ' | ' + e.tipo + ' | ' + e.autor + ' <' + e.email + '>' + (e.gps ? ' | GPS ' + e.gps : '') + '\n' + e.texto +
     (String(e.archivos || '') ? '\nArchivos: ' + JSON.parse(e.archivos || '[]').map(a => a.n).join(', ') : '')).join('\n\n----------------\n\n'), 'text/plain', 'Bitacora de campo.txt'));
-  // Planos de Isoflux del proyecto (versión vigente de cada uno)
-  if (typeof isoBlobsProyecto_ === 'function') { const pl = isoBlobsProyecto_(proyectoId); pl.blobs.forEach(x => out.push(x)); pl.lista.forEach(x => lista.push(x)); }
   return { blobs: out, lista: lista };
 }
 const sigFechaTxt_ = f => Utilities.formatDate(f instanceof Date ? f : new Date(f), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
@@ -1220,11 +1213,11 @@ function sigDecHtml_(m, x) {
     (x.mensaje ? '<p style="text-align:justify">' + h(x.mensaje) + '</p>' : '') +
     '<h3 style="color:' + AZ + ';font-size:11pt;margin:14px 0 6px">2. Alcance</h3><p>Servicios cubiertos por el sistema:</p><ul>' + d.servicios.map(s => '<li>' + h(s) + '</li>').join('') + '</ul>' +
     '<h3 style="color:' + AZ + ';font-size:11pt;margin:14px 0 6px">3. Marco normativo y regulatorio</h3><p style="text-align:justify">El sistema está elaborado con base en las siguientes normas, reglamentos y disposiciones legales, identificadas y verificadas en el normograma del sistema (GI-MZ-01):</p>' +
-    orden.filter(g => grupos[g]).map(g => '<p style="margin:8px 0 4px"><b>' + h(g) + '</b></p><table style="' + T + '"><tr><td style="' + TH + ';width:30%">Norma</td><td style="' + TH + ';width:12%">Año</td><td style="' + TH + ';width:16%">Emisor</td><td style="' + TH + '">Objeto</td></tr>' +
-      grupos[g].map((n, i) => '<tr style="background:' + (i % 2 ? GR : '#ffffff') + '"><td style="' + C + '">' + h(n.norma) + '</td><td style="' + C + '">' + h(n.anio) + '</td><td style="' + C + '">' + h(n.emisor) + '</td><td style="' + C + '">' + h(n.requisito) + '</td></tr>').join('') + '</table>').join('') +
+    orden.filter(g => grupos[g]).map(g => '<p style="margin:8px 0 4px"><b>' + h(g) + '</b></p><table style="' + T + '"><tr><td bgcolor="' + AZ + '" style="' + TH + ';width:30%"><font color="#ffffff"><b>Norma</b></font></td><td bgcolor="' + AZ + '" style="' + TH + ';width:12%"><font color="#ffffff"><b>Año</b></font></td><td bgcolor="' + AZ + '" style="' + TH + ';width:16%"><font color="#ffffff"><b>Emisor</b></font></td><td bgcolor="' + AZ + '" style="' + TH + '"><font color="#ffffff"><b>Objeto</b></font></td></tr>' +
+      grupos[g].map((n, i) => '<tr bgcolor="' + (i % 2 ? GR : '#ffffff') + '" style="background:' + (i % 2 ? GR : '#ffffff') + '"><td style="' + C + '">' + h(n.norma) + '</td><td style="' + C + '">' + h(n.anio) + '</td><td style="' + C + '">' + h(n.emisor) + '</td><td style="' + C + '">' + h(n.requisito) + '</td></tr>').join('') + '</table>').join('') +
     '<h3 style="color:' + AZ + ';font-size:11pt;margin:14px 0 6px">4. Documentos que constituyen el sistema</h3><p style="text-align:justify">El sistema está constituido por los siguientes documentos controlados (listado maestro GI-MZ-08), vigentes en la versión indicada a la fecha de esta declaración:</p>' +
-    '<table style="' + T + '"><tr><td style="' + TH + ';width:17%">Código</td><td style="' + TH + '">Documento</td><td style="' + TH + ';width:9%">Versión</td><td style="' + TH + ';width:13%">Estado</td></tr>' +
-    Object.keys(porProc).sort((a, b) => { const O = Object.keys(SIG_DEC.PROCESOS); return (O.indexOf(a) + 99) % 99 - (O.indexOf(b) + 99) % 99; }).map(p => '<tr><td colspan="4" style="' + C + ';background:#DBEAFE"><b>' + h(SIG_DEC.PROCESOS[p] || p) + '</b></td></tr>' +
+    '<table style="' + T + '"><tr><td bgcolor="' + AZ + '" style="' + TH + ';width:17%"><font color="#ffffff"><b>Código</b></font></td><td bgcolor="' + AZ + '" style="' + TH + '"><font color="#ffffff"><b>Documento</b></font></td><td bgcolor="' + AZ + '" style="' + TH + ';width:9%"><font color="#ffffff"><b>Versión</b></font></td><td bgcolor="' + AZ + '" style="' + TH + ';width:13%"><font color="#ffffff"><b>Estado</b></font></td></tr>' +
+    Object.keys(porProc).sort((a, b) => { const O = Object.keys(SIG_DEC.PROCESOS); return (O.indexOf(a) + 99) % 99 - (O.indexOf(b) + 99) % 99; }).map(p => '<tr><td colspan="4" bgcolor="#DBEAFE" style="' + C + ';background:#DBEAFE"><b>' + h(SIG_DEC.PROCESOS[p] || p) + '</b></td></tr>' +
       porProc[p].map(z => '<tr><td style="' + C + '">' + h(z.codigo) + '</td><td style="' + C + '">' + h(z.titulo) + '</td><td style="' + C + '">' + h(z.version) + '</td><td style="' + C + '">' + h(z.estado) + '</td></tr>').join('')).join('') + '</table>' +
     '<h3 style="color:' + AZ + ';font-size:11pt;margin:14px 0 6px">5. Compromisos</h3><ul>' +
     ['Cumplir los requisitos acordados con el cliente y los requisitos legales y reglamentarios aplicables.', 'Prevenir lesiones y deterioro de la salud de los trabajadores y contratistas.', 'Prevenir la contaminación y gestionar los aspectos ambientales del servicio.', 'Conservar la evidencia de cada servicio (formatos, registros de campo, actas y pruebas) y ponerla a disposición del cliente cuando lo solicite.', 'Mejorar continuamente el desempeño del sistema.'].map(t => '<li>' + t + '</li>').join('') + '</ul>' +
