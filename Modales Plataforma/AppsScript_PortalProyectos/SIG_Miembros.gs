@@ -113,7 +113,8 @@ function sigApi(b, u) {
       // ---- documentos, registros y auditorías ----
       case 'sgcDocs':            return sigDocs(u);
       case 'sgcDocVer':          return sigDocVer(u, b.id);
-      case 'sgcDiligenciar':     return sigDiligenciar(u, b.id);
+      case 'sgcDiligenciar':     return sigDiligenciar(u, b.id, b.proyectoId);
+      case 'sgcRegistrosProyecto': return sigRegistrosProyecto(u, b.proyectoId);
       case 'sgcRegistros':       return sigRegistros(u, b.miembroId);
       case 'sgcRegistroVer':     return sigRegistroVer(u, b.id);
       case 'sgcSubirRegistro':   return sigSubirRegistro(u, b);
@@ -545,8 +546,8 @@ function sigEditoresEquipo_(file, miembroId) {
     .forEach(x => { try { file.addEditor(String(x.email)); } catch (e) { no.push(x.email); } });
   return no;
 }
-function sigDiligenciar(u, id) {
-  const n = sigNivel_(u);
+function sigDiligenciar(u, id, proyectoId) {
+  const n = sigNivel_(u), pj = proyectoId ? sigProyectoVisible_(u, proyectoId) : null;
   if (!n.m) throw new Error('Debes pertenecer a una empresa de la red.');
   if (SIG_EST_REG.indexOf(n.m.estadoSIG) < 0) throw new Error('Los formatos se diligencian desde el estado Implementación. Estado actual: ' + n.m.estadoSIG + '.');
   const d = sigDocsMaestros_().find(x => x.id === id && x.plantilla);
@@ -557,7 +558,7 @@ function sigDiligenciar(u, id) {
   sigMarcarCopia_(copia.getId(), n.m);
   const sinAcceso = sigEditoresEquipo_(copia, n.m.miembroId);
   const rid = 'REG-' + Utilities.getUuid().slice(0, 8).toUpperCase();
-  sigAgregar_('Registros', { registroId: rid, miembroId: n.m.miembroId, codigo: d.codigo, titulo: d.nombre, origen: 'plantilla', fileId: copia.getId(), creadoPor: u.email, fecha: sigAhora_(), estado: 'abierto' });
+  sigAgregar_('Registros', { registroId: rid, miembroId: n.m.miembroId, codigo: d.codigo, titulo: d.nombre + (pj ? ' · ' + pj.titulo : ''), origen: 'plantilla', fileId: copia.getId(), creadoPor: u.email, fecha: sigAhora_(), estado: 'abierto', proyectoId: pj ? String(pj.id) : '' });
   sigBitacora_(u.email, n.m.miembroId, 'registro_creado', { registroId: rid, codigo: d.codigo });
   return { registroId: rid, url: copia.getUrl(), sinAcceso: sinAcceso };
 }
@@ -592,11 +593,11 @@ function sigSubirRegistro(u, b) {
   const bytes = Utilities.base64Decode(String(b.b64 || ''));
   if (!bytes.length) throw new Error('No llegó el archivo.');
   if (bytes.length > SIG.REGISTRO_MAX_BYTES) throw new Error('El archivo supera 20 MB.');
-  const codigo = String(b.codigo || '').toUpperCase().slice(0, 12), nombre = String(b.nombre || 'registro').slice(0, 120);
+  const codigo = String(b.codigo || '').toUpperCase().slice(0, 12), nombre = String(b.nombre || 'registro').slice(0, 120), pj = b.proyectoId ? sigProyectoVisible_(u, b.proyectoId) : null;
   const sha = sigShaBytes_(bytes), rid = 'REG-' + Utilities.getUuid().slice(0, 8).toUpperCase();
   const f = sigCarpetaRegistros_(n.m).createFile(Utilities.newBlob(bytes, String(b.mime || 'application/octet-stream'), n.m.miembroId + ' · ' + (codigo ? codigo + ' · ' : '') + nombre));
   f.setDescription('Evidencia ' + rid + ' · SHA-256 ' + sha + ' · cargada por ' + u.email);
-  sigAgregar_('Registros', { registroId: rid, miembroId: n.m.miembroId, codigo: codigo, titulo: nombre, origen: 'cargado', fileId: f.getId(), creadoPor: u.email, fecha: sigAhora_(), estado: 'cerrado', pdfId: f.getId(), sha256: sha, cerradoPor: u.email, fechaCierre: sigAhora_() });
+  sigAgregar_('Registros', { registroId: rid, miembroId: n.m.miembroId, codigo: codigo, titulo: nombre, origen: 'cargado', fileId: f.getId(), creadoPor: u.email, fecha: sigAhora_(), estado: 'cerrado', pdfId: f.getId(), sha256: sha, cerradoPor: u.email, fechaCierre: sigAhora_(), proyectoId: pj ? String(pj.id) : '' });
   sigBitacora_(u.email, n.m.miembroId, 'evidencia_cargada', { registroId: rid, codigo: codigo, sha256: sha });
   return { registroId: rid, sha256: sha };
 }
@@ -796,12 +797,7 @@ function sigFormEnviar(u, b) {
   const m = n.m, nom = m.nombreComercial || m.razonSocial, msg = String(b.mensaje || '').slice(0, 500);
   // Vínculo con un proyecto del portal: solo proyectos que este usuario puede ver (propios, compartidos o de su empresa)
   let proyectoId = '', proyecto = String(b.proyecto || '').slice(0, 120);
-  if (b.proyectoId) {
-    const p = rows('Proyectos').find(x => String(x.id) === String(b.proyectoId));
-    const ve = p && (u.rol === 'admin' || p.owner === u.email || p.miembroId === m.miembroId || String(p.miembros || '').toLowerCase().split(',').map(z => z.trim()).indexOf(u.email) >= 0);
-    if (!ve) throw new Error('No tienes acceso a ese proyecto.');
-    proyectoId = String(p.id); proyecto = (p.titulo + (proyecto ? ' · ' + proyecto : '')).slice(0, 160);
-  }
+  if (b.proyectoId) { const p = sigProyectoVisible_(u, b.proyectoId); proyectoId = String(p.id); proyecto = (p.titulo + (proyecto ? ' · ' + proyecto : '')).slice(0, 160); }
   let logo = null; if (m.logoFileId && b.enviar !== false) { try { logo = DriveApp.getFileById(m.logoFileId).getBlob().setName('logo'); } catch (e) {} }
   const out = [];
   correos.forEach(em => {
@@ -870,18 +866,6 @@ function sigFormPublico(q) {
       const jf = carpeta.createFile(Utilities.newBlob(txt, 'application/json', nom + '.json'));
       pf.setDescription('Formulario en línea ' + rid + ' · SHA-256 PDF ' + sha + ' · datos ' + shaDatos + ' · ' + s.email);
       sigAgregar_('Registros', { registroId: rid, miembroId: m.miembroId, codigo: F.c, titulo: F.c + ' ' + F.t + (s.proyecto ? ' · ' + s.proyecto : ''), origen: 'formulario', fileId: jf.getId(), creadoPor: s.email, fecha: ahora, estado: 'cerrado', pdfId: pf.getId(), sha256: sha, cerradoPor: s.email, fechaCierre: ahora, proyectoId: s.proyectoId || '' });
-      // Copia del PDF en los archivos del proyecto vinculado (aparece en el detalle del proyecto)
-      if (s.proyectoId) {
-        try {
-          const p = rows('Proyectos').find(x => String(x.id) === String(s.proyectoId));
-          if (p && p.carpeta) {
-            const cf = DriveApp.getFolderById(p.carpeta).createFile(pdf.copyBlob().setName(nom + '.pdf'));
-            cf.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-            add('Archivos', { id: uid(), proyecto: p.id, nombre: nom + '.pdf', fid: cf.getId(), autor: String(datos._nombre).slice(0, 80) + ' (formulario en línea)', fecha: now() });
-            CacheService.getScriptCache().put('v_' + p.id, String(Date.now()), 21600);
-          }
-        } catch (e) {}
-      }
       sigActualizar_('Solicitudes', s._fila, { estado: 'diligenciada', registroId: rid, fechaRespuesta: ahora });
       sigBitacora_('formulario:' + s.email, m.miembroId, 'formulario_recibido', { registroId: rid, codigo: F.c, nombre: String(datos._nombre).slice(0, 80), sha256: sha });
       try { MailApp.sendEmail({ to: s.creadoPor, subject: 'Formulario diligenciado: ' + F.c + ' · ' + rid, noReply: true, attachments: [pdf],
@@ -916,6 +900,41 @@ function sigFormHtml_(F, m, logo, d, meta) {
   if (fotos.length) o += '<h4 style="color:#12408f;margin:14px 0 4px">Registro fotográfico</h4>' + fotos.map(f => '<img src="' + f + '" style="width:48%;margin:0 1% 8px 0">').join('');
   o += '<p style="font-size:7.5pt;color:#555;border-top:1px solid #c9d2e3;margin-top:14px;padding-top:6px">Registro generado en línea en la plataforma ENTALPIA LABS · SIG administrado por ' + e(SIG.TITULAR) + '. Huella SHA-256 de los datos: ' + e(meta.sha) + '. Documento cerrado: no admite modificaciones.</p></body></html>';
   return o;
+}
+
+// =====================================================================================
+//  DOCUMENTOS DEL SIG EN LA FICHA DEL PROYECTO Y EN EL PAQUETE DE ENTREGA
+// =====================================================================================
+/** Proyecto que el usuario puede ver: propio, compartido, de su misma empresa o cualquiera si es administrador. */
+function sigProyectoVisible_(u, proyectoId) {
+  const p = rows('Proyectos').find(x => String(x.id) === String(proyectoId));
+  if (!p) throw new Error('Proyecto no encontrado.');
+  if (u.rol === 'admin' || p.owner === u.email) return p;
+  if (String(p.miembros || '').toLowerCase().split(',').map(z => z.trim()).indexOf(u.email) >= 0) return p;
+  const v = sigVinculo_(u.email);
+  if (v && p.miembroId && p.miembroId === v.miembroId) return p;
+  throw new Error('No tienes acceso a ese proyecto.');
+}
+/** Registros del SIG vinculados a un proyecto y formularios enviados que siguen pendientes. */
+function sigRegistrosProyecto(u, proyectoId) {
+  const p = sigProyectoVisible_(u, proyectoId), id = String(p.id);
+  const pend = sigLeer_('Solicitudes').filter(x => String(x.proyectoId) === id && x.estado === 'pendiente' && new Date(x.expira) > new Date())
+    .map(x => ({ codigo: x.codigo, email: x.email, fecha: x.fecha instanceof Date ? x.fecha.toISOString() : x.fecha, token: x.token }));
+  return { registros: sigRegistrosDe_('*').filter(r => String(r.proyectoId) === id), pendientes: pend };
+}
+/** Para el paquete de entrega (acción 'paquete' de Código.gs): archivos de todos los registros del proyecto. */
+function sigBlobsProyecto_(proyectoId) {
+  const out = [], lista = [];
+  sigLeer_('Registros').filter(r => String(r.proyectoId) === String(proyectoId)).forEach(r => {
+    try {
+      const f = DriveApp.getFileById(r.pdfId || r.fileId), bl = f.getBlob();
+      let n = bl.getName() || f.getName();
+      if (f.getMimeType().indexOf('application/vnd.google-apps') === 0 && !/\.pdf$/i.test(n)) n += '.pdf';
+      out.push(bl.setName('Documentos SIG/' + r.registroId + ' - ' + String(n).replace(/[\\/:*?"<>|]/g, '_')));
+      lista.push(r.registroId + ' | ' + r.codigo + ' | ' + r.titulo + ' | ' + r.estado + ' | SHA-256 ' + (r.sha256 || '—'));
+    } catch (e) {}
+  });
+  return { blobs: out, lista: lista };
 }
 
 // ---------- DEFINICIONES DE LOS FORMULARIOS EN LÍNEA (31 formatos del SIG; generado desde formularios.json) ----------
