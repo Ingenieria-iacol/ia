@@ -88,6 +88,20 @@ const HOJAS = {
 
 // ---------- ROUTER ----------
 /** Devuelve un objeto de respuesta si la acción es del módulo SIG; si no, null. */
+/* ---------- AUTORIZAR PERMISOS (ejecutar una vez desde el editor: elige "autorizarSIG" y pulsa Ejecutar) ----------
+ * Pide los permisos que usa el módulo: Documentos (logo y nombre en las copias), Drive, Hojas y correo. No modifica nada. */
+function autorizarSIG() {
+  const r = [];
+  r.push('Documentos: ' + (typeof DocumentApp.openById === 'function' ? 'ok' : '—'));
+  r.push('Drive: ' + DriveApp.getRootFolder().getName());
+  r.push('Hojas: ' + SpreadsheetApp.openById(SIG.SHEET_ID).getName());
+  r.push('Correo disponible: ' + MailApp.getRemainingDailyQuota());
+  const docs = sigLeer_('DocsMarca');
+  if (docs.length) { try { DocumentApp.openById(docs[0].docId).getName(); r.push('Abrir documento: ok'); } catch (e) { r.push('Abrir documento: ' + e.message); } }
+  Logger.log(r.join('\n'));
+  return r.join(' | ');
+}
+
 function sigApi(b, u) {
   if (!b || !b.a || String(b.a).indexOf('sgc') !== 0) return null;
   if (!u || !u.email) return { error: 'Sesión no válida.' };
