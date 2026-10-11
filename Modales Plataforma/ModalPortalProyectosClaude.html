@@ -64,6 +64,7 @@ iframe.pdf{width:100%;height:72vh;border:1px solid var(--ln);border-radius:8px;m
 .toast{position:fixed;left:50%;top:14px;transform:translate(-50%,-140%);z-index:80;display:flex;gap:12px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 32px);background:#0f1b33f2;border:1px solid var(--ok);color:var(--tx);border-radius:10px;padding:10px 14px;box-shadow:0 12px 40px #000a;transition:transform .4s ease}.toast.on{transform:translate(-50%,0)}
 .fins{margin:8px 0 0;padding-left:22px}.fins li{margin:6px 0;color:var(--tx);font-size:14px;line-height:1.45}.fins li::marker{color:var(--b2);font-weight:700}
 .fi{margin-top:6px;font-size:13px}.fi summary{cursor:pointer;color:var(--b2);font-size:12px;list-style:none}.fi summary::-webkit-details-marker{display:none}.fi[open]{background:#0b1120;border:1px solid var(--ln);border-radius:8px;padding:8px 10px}.fi[open] summary{margin-bottom:6px}.fi p{margin:0 0 8px;color:var(--mu)}
+.mxw{position:sticky;top:0;height:0;display:flex;justify-content:flex-end;z-index:6}.mx{transform:translate(12px,-12px);width:36px;height:36px;border-radius:50%;border:1px solid var(--ln);background:#0b1120ee;color:var(--tx);font-size:16px;cursor:pointer;box-shadow:0 4px 14px #0008}.mx:hover{background:var(--b);border-color:var(--b)}
 @media(max-width:760px){.hp{grid-template-columns:1fr}.hpi{position:static;flex-direction:row;flex-wrap:wrap}.hps{max-height:none}.dr{grid-template-columns:1fr}.da{justify-content:flex-start}.hit p{margin-left:0}}
 </style></head><body><div id="app"></div><div id="m"></div>
 <script>
@@ -73,7 +74,7 @@ const L={ent:"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAY
 const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let tok=null,me=null,D={p:[],c:[],f:[],u:[]},setupNeeded=false,idle;
 const INV=new URLSearchParams(location.search).get("inv");let G=null,GE="",live=null,ver="";
-const modal=h=>{clearInterval(live);$("#m").innerHTML=h?`<div class="mod"><div class="box ${h.w?"w":""}">${h.h||h}</div></div>`:"";eyes()},cerrar=()=>modal("");
+const modal=h=>{clearInterval(live);$("#m").innerHTML=h?`<div class="mod" onclick="if(event.target===this)cerrar()"><div class="box ${h.w?"w":""}"><div class="mxw"><button type="button" class="mx" onclick="cerrar()" title="Cerrar (Esc)" aria-label="Cerrar">✕</button></div>${h.h||h}</div></div>`:"";eyes()},cerrar=()=>modal("");
 function eyes(){document.querySelectorAll("#m input[type=password]").forEach(i=>{const w=document.createElement("div");w.className="pw";i.replaceWith(w);w.append(i);const b=document.createElement("button");b.type="button";b.textContent="👁";b.title="Ver / ocultar";b.onclick=()=>{i.type=i.type==="password"?"text":"password"};w.append(b)})}
 async function api(o){const q=!/pulso$/.test(o.a||"");if(q){NAPI++;prog()}try{if(/^sgc/.test(o.a||"")&&o.a!=="sgcAud")o={logoSha:logoCache().sha||"",...o};const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({t:tok,...o})});const j=await r.json();if(j.error)throw Error(j.error);if(j&&j.miembro&&typeof j.logo==="string"&&o.a!=="sgcAud")j.logo=logoFix(j);return j}finally{if(q){NAPI--;prog()}}}
 const busy=(b,f)=>async()=>{b.disabled=true;$("#er")&&($("#er").textContent="");try{await f()}catch(e){$("#er")&&($("#er").textContent=e.message)}b.disabled=false};
@@ -434,6 +435,8 @@ async function entrar(){cerrar();introAbrir();try{await load()}catch(e){introCer
 function bienvenida(){const m=S?.miembro,d=document.createElement("div");d.className="toast";
 d.innerHTML=`<span>✓ Ingresaste como <b>${esc(me.nombre)}</b> · ${esc(me.email||"")}${me.rol==="admin"?" · <b>Administrador</b>":m?" · "+esc(nomM(m))+" ("+esc(m.miembroId)+")":""}</span><button class="btn ghost sm">No soy yo</button>`;
 d.querySelector("button").onclick=()=>{d.remove();out()};document.body.append(d);setTimeout(()=>d.classList.add("on"),30);setTimeout(()=>{d.classList.remove("on");setTimeout(()=>d.remove(),400)},8000)}
+// Tecla Esc: cierra el visor de documentos o la ventana abierta
+addEventListener("keydown",e=>{if(e.key!=="Escape"||$("#intro"))return;const vw=$("#vw");if(vw&&vw.innerHTML){visorX();return}if($("#m").innerHTML)cerrar()});
 // ================== FIN MÓDULO SIG ==================
 
 // ================== FORMULARIOS EN LÍNEA (enlace ?f=… que llega por correo) ==================
