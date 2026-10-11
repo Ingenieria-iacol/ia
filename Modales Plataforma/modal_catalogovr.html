@@ -190,7 +190,8 @@ function toast(msg){
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
   toast3D(msg);
 }
-function status(msg){ const s = $('#status'); s.textContent = msg; s.style.display = msg ? 'block' : 'none'; }
+let statusTimer;
+function status(msg){ const s = $('#status'); s.textContent = msg; s.style.display = msg ? 'block' : 'none'; clearTimeout(statusTimer); if (msg) statusTimer = setTimeout(() => s.style.display = 'none', 9000); }
 
 /* =====================================================================
    3. ESCENA BÁSICA
@@ -1457,7 +1458,7 @@ function setPlanMode(m){
     planView.add(planPivot); planView.visible = true;
     env.userData.floor.visible = true; env.userData.grid.visible = true; realGrid.visible = false;
     env.userData.arc.visible = true; env.userData.dust.visible = true;
-    if (!renderer.xr.isPresenting){ yaw = 0; pitch = 0.32; }
+    if (!renderer.xr.isPresenting){ yaw = innerWidth / innerHeight < 1.2 ? 0.45 : 0.26; pitch = 0.32; }
     buildPlan(); placeTable(); placePlanUI(false);
   }
 }
