@@ -96,6 +96,7 @@ function sigApi(b, u) {
   try {
     switch (b.a) {
       case 'sgcPerfil':          return sigPerfil(u);
+      case 'sgcCompromiso':      return sigCompromiso(u, b);
       case 'sgcCrearMiembro':    return sigCrearMiembro(u, b);
       case 'sgcGuardarPerfil':   return sigGuardarPerfil(u, b);
       case 'sgcLogo':            return sigCargarLogo(u, b);
@@ -432,7 +433,34 @@ function sigPerfil(u) {
     miembro: pub, rolMiembro: v.rolMiembro, equipo: v.rolMiembro === 'responsable' ? equipo : [],
     logo: m.logoSha256 && SIG_LOGO_SHA_ === String(m.logoSha256) ? '=' : sigLogoDataUrl_(m), servicios: SIG.SERVICIOS, titular: SIG.TITULAR, red: SIG.RED,
     legalesBloqueados: ['Evaluación', 'Adscrito', 'Suspendido', 'Retirado'].indexOf(m.estadoSIG) >= 0,
+    compromisoSGC: sigCompromisoDe_(u.email, m.miembroId),
   };
+}
+
+/* ---------- Compromiso con el SGC: aceptación formal registrada en la bitácora encadenada ----------
+ * Queda una fila por usuario, organización y versión del texto, con fecha, correo, estado SIG y la huella del texto aceptado. */
+const SIG_COMPROMISO_V = 'C1';
+const SIG_COMPROMISO_TXT = 'Entiendo que los proyectos de mi organización se gestionan bajo el SGC y me comprometo a cumplirlo: ' +
+  'diligenciar los formatos de cada fase en el portal, cargar la evidencia del servicio el mismo día en que se presta, ' +
+  'usar solo la versión vigente de cada documento SIG y atender las auditorías cerrando los hallazgos a tiempo.';
+function sigCompromisoDe_(email, miembroId) {
+  const e = String(email).toLowerCase();
+  const r = sigLeer_('BitacoraSIG').filter(x => x.accion === 'compromiso_sgc' && x.miembroId === miembroId && String(x.email).toLowerCase() === e)
+    .filter(x => { try { return JSON.parse(x.detalle).version === SIG_COMPROMISO_V; } catch (err) { return false; } }).pop();
+  return r ? { fecha: r.fecha instanceof Date ? r.fecha.toISOString() : String(r.fecha), n: r.n, version: SIG_COMPROMISO_V, hash: r.hash } : null;
+}
+function sigCompromiso(u, b) {
+  const v = sigVinculo_(u.email);
+  if (!v) throw new Error('Tu cuenta no está vinculada a una organización.');
+  const m = sigMiembro_(v.miembroId);
+  if (['Implementación', 'Adscrito'].indexOf(m.estadoSIG) < 0) throw new Error('El compromiso se registra cuando la organización está en implementación o adscrita.');
+  const ya = sigCompromisoDe_(u.email, m.miembroId);
+  if (ya) return { ok: true, compromisoSGC: ya, existente: true };
+  sigBitacora_(u.email, m.miembroId, 'compromiso_sgc', {
+    version: SIG_COMPROMISO_V, nombre: u.nombre || '', organizacion: m.nombreComercial || m.razonSocial || '', estadoSIG: m.estadoSIG,
+    rolMiembro: v.rolMiembro || '', texto: SIG_COMPROMISO_TXT, huellaTexto: sigSha_(SIG_COMPROMISO_TXT),
+  });
+  return { ok: true, compromisoSGC: sigCompromisoDe_(u.email, m.miembroId) };
 }
 function sigBitacoraDe(u, miembroId) {
   const v = sigVinculo_(u.email);
