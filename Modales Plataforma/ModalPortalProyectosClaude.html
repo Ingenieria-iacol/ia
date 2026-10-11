@@ -274,12 +274,12 @@ return `<div class="cob">${S.logo?`<img src="${S.logo}" alt="Logo ${esc(nomM(m))
 let PDFLIB=null;
 function pdfLib(){return PDFLIB||(PDFLIB=new Promise((ok,no)=>{if(window.PDFLib)return ok(window.PDFLib);const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js";s.onload=()=>ok(window.PDFLib);s.onerror=()=>{PDFLIB=null;no(Error("No se pudo cargar pdf-lib"))};document.head.append(s)}))}
 function aPng(u){return new Promise((ok,no)=>{const i=new Image();i.onload=()=>{const c=document.createElement("canvas");c.width=i.naturalWidth||512;c.height=i.naturalHeight||512;c.getContext("2d").drawImage(i,0,0,c.width,c.height);ok(c.toDataURL("image/png"))};i.onerror=()=>no(Error("logo"));i.src=u})}
-async function marcaAgua(r,logo,nombre){if(!r||r.mime!=="application/pdf"||(!logo&&!nombre))return r;
+async function marcaAgua(r,logo,nombre){if(!r||r.mime!=="application/pdf")return r;
 try{const P=await pdfLib(),doc=await P.PDFDocument.load(Uint8Array.from(atob(r.b64),c=>c.charCodeAt(0)),{ignoreEncryption:true});let img=null;if(logo){try{img=await doc.embedPng(await aPng(logo))}catch(e){}}
-const font=await doc.embedFont(P.StandardFonts.HelveticaBold),t=String(nombre||"").normalize("NFC").replace(/[^\x20-\x7E\u00A0-\u00FF]/g,"").toUpperCase();
+const font=await doc.embedFont(P.StandardFonts.HelveticaBold),fr=await doc.embedFont(P.StandardFonts.HelveticaOblique),pie=(nombre?String(nombre).normalize("NFC").replace(/[^\x20-\x7E\u00A0-\u00FF]/g,"")+(S?.miembro?.miembroId?" ("+S.miembro.miembroId+")":"")+" · ":"")+"Documento impreso por el Software ENTALPIA LABS",t=String(nombre||"").normalize("NFC").replace(/[^\x20-\x7E\u00A0-\u00FF]/g,"").toUpperCase();
 for(const pg of doc.getPages()){const {width:w,height:h}=pg.getSize();let yT=h/2;
 if(img){const s=Math.min(w*0.5/img.width,h*0.32/img.height),iw=img.width*s,ih=img.height*s;pg.drawImage(img,{x:(w-iw)/2,y:(h-ih)/2+24,width:iw,height:ih,opacity:0.07});yT=(h-ih)/2-14}
-if(t){const fs=Math.max(14,Math.min(40,w*0.8/(t.length*0.62)));pg.drawText(t,{x:(w-font.widthOfTextAtSize(t,fs))/2,y:yT,size:fs,font,color:P.rgb(0.12,0.25,0.5),opacity:0.08})}}
+if(t){const fs=Math.max(14,Math.min(40,w*0.8/(t.length*0.62)));pg.drawText(t,{x:(w-font.widthOfTextAtSize(t,fs))/2,y:yT,size:fs,font,color:P.rgb(0.12,0.25,0.5),opacity:0.08})}pg.drawText(pie,{x:(w-fr.widthOfTextAtSize(pie,7.5))/2,y:12,size:7.5,font:fr,color:P.rgb(0.42,0.45,0.5)})}
 const out=await doc.save();let bin="";for(let i=0;i<out.length;i+=32768)bin+=String.fromCharCode.apply(null,out.subarray(i,i+32768));return {...r,b64:btoa(bin)}}catch(e){console.warn("Marca de agua:",e.message);return r}}
 const marcaMia=r=>S?.miembro?marcaAgua(r,S.logo,nomM(S.miembro)):Promise.resolve(r);
 // ---------- Utilidades de archivos ----------
