@@ -82,6 +82,8 @@ const HOJAS = {
   Auditorias: ['token', 'email', 'miembroId', 'expira', 'creadoPor', 'fecha', 'estado', 'motivo'],
   Solicitudes: ['token', 'miembroId', 'codigo', 'email', 'proyecto', 'mensaje', 'expira', 'creadoPor', 'fecha', 'estado', 'registroId', 'fechaRespuesta', 'proyectoId'],
   DocsMarca: ['miembroId', 'docId', 'clave', 'pdfId', 'fecha'],
+  Campo: ['id', 'proyectoId', 'fecha', 'tipo', 'texto', 'autor', 'email', 'origen', 'gps', 'archivos'],
+  EnlacesCampo: ['token', 'proyectoId', 'email', 'expira', 'creadoPor', 'fecha', 'estado', 'mensaje'],
 };
 
 // ---------- ROUTER ----------
@@ -115,6 +117,12 @@ function sigApi(b, u) {
       case 'sgcDocVer':          return sigDocVer(u, b.id);
       case 'sgcDiligenciar':     return sigDiligenciar(u, b.id, b.proyectoId);
       case 'sgcRegistrosProyecto': return sigRegistrosProyecto(u, b.proyectoId);
+      // ---- bitácora de campo del proyecto ----
+      case 'sgcCampoListar':     return sigCampoListar(u, b.proyectoId);
+      case 'sgcCampoEntrada':    { const p = sigProyectoVisible_(u, b.proyectoId); return sigCampoEntrada_(p, u.nombre || u.email, u.email, 'portal', b); }
+      case 'sgcCampoArchivo':    { const e = sigCampoEntradaDe_(b.entradaId); sigProyectoVisible_(u, e.proyectoId); return sigCampoArchivo_(e, b, u.nombre || u.email); }
+      case 'sgcCampoEnlace':     return sigCampoEnlace(u, b);
+      case 'sgcCampoRevocar':    return sigCampoRevocar(u, b.token);
       case 'sgcRegistros':       return sigRegistros(u, b.miembroId);
       case 'sgcRegistroVer':     return sigRegistroVer(u, b.id);
       case 'sgcSubirRegistro':   return sigSubirRegistro(u, b);
@@ -934,7 +942,121 @@ function sigBlobsProyecto_(proyectoId) {
       lista.push(r.registroId + ' | ' + r.codigo + ' | ' + r.titulo + ' | ' + r.estado + ' | SHA-256 ' + (r.sha256 || '—'));
     } catch (e) {}
   });
+  // Bitácora de campo del proyecto (los archivos ya están en la carpeta del proyecto y entran al paquete)
+  const camp = sigLeer_('Campo').filter(e => String(e.proyectoId) === String(proyectoId));
+  if (camp.length) out.push(Utilities.newBlob(camp.map(e => sigFechaTxt_(e.fecha) + ' | ' + e.tipo + ' | ' + e.autor + ' <' + e.email + '>' + (e.gps ? ' | GPS ' + e.gps : '') + '\n' + e.texto +
+    (String(e.archivos || '') ? '\nArchivos: ' + JSON.parse(e.archivos || '[]').map(a => a.n).join(', ') : '')).join('\n\n----------------\n\n'), 'text/plain', 'Bitacora de campo.txt'));
   return { blobs: out, lista: lista };
+}
+const sigFechaTxt_ = f => Utilities.formatDate(f instanceof Date ? f : new Date(f), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
+
+// =====================================================================================
+//  BITÁCORA DE CAMPO: el personal registra la prestación del servicio (avances, novedades,
+//  fotos, videos y documentos) desde el portal o con un enlace de campo sin cuenta.
+//  Los archivos quedan en la carpeta del proyecto (Archivos y fotos) y entran al paquete.
+// =====================================================================================
+const SIG_CAMPO_TIPOS = ['Avance del día', 'Novedad', 'Incidente o casi accidente', 'Visita / reunión', 'Material o equipo', 'Prueba o medición', 'Entrega parcial', 'Otro'];
+const SIG_CAMPO_MAX = 30 * 1024 * 1024;
+function sigCampoEntradaDe_(id) { const e = sigLeer_('Campo').find(x => x.id === id); if (!e) throw new Error('Entrada no encontrada.'); return e; }
+function sigCampoJson_(e) {
+  return { id: e.id, fecha: e.fecha instanceof Date ? e.fecha.toISOString() : e.fecha, tipo: e.tipo, texto: e.texto, autor: e.autor, email: e.email, origen: e.origen, gps: e.gps,
+    archivos: (() => { try { return JSON.parse(e.archivos || '[]'); } catch (x) { return []; } })() };
+}
+function sigCampoLista_(proyectoId) { return sigLeer_('Campo').filter(e => String(e.proyectoId) === String(proyectoId)).reverse().slice(0, 200).map(sigCampoJson_); }
+function sigCampoEntrada_(p, autor, email, origen, b) {
+  const texto = String(b.texto || '').trim().slice(0, 4000);
+  if (!texto && !b.conArchivos) throw new Error('Escribe una descripción o agrega archivos.');
+  const tipo = SIG_CAMPO_TIPOS.indexOf(b.tipo) >= 0 ? b.tipo : 'Otro', id = 'C' + Utilities.getUuid().slice(0, 8);
+  sigAgregar_('Campo', { id: id, proyectoId: String(p.id), fecha: sigAhora_(), tipo: tipo, texto: texto, autor: String(autor).slice(0, 80), email: email, origen: origen, gps: String(b.gps || '').slice(0, 80), archivos: '[]' });
+  sigBitacora_(email, p.miembroId || '', 'campo_entrada', { proyecto: String(p.id), tipo: tipo });
+  CacheService.getScriptCache().put('v_' + p.id, String(Date.now()), 21600);
+  return { id: id };
+}
+function sigCampoArchivo_(e, b, autor) {
+  const p = rows('Proyectos').find(x => String(x.id) === String(e.proyectoId));
+  if (!p || !p.carpeta) throw new Error('El proyecto no tiene carpeta de archivos.');
+  const bytes = Utilities.base64Decode(String(b.b64 || ''));
+  if (!bytes.length) throw new Error('No llegó el archivo.');
+  if (bytes.length > SIG_CAMPO_MAX) throw new Error('El archivo supera 30 MB.');
+  const fecha = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HHmm');
+  const nombre = (fecha + ' · ' + String(b.nombre || 'archivo')).replace(/[\\/:*?"<>|]/g, '_').slice(0, 140);
+  const f = DriveApp.getFolderById(p.carpeta).createFile(Utilities.newBlob(bytes, String(b.mime || 'application/octet-stream'), nombre));
+  f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  f.setDescription('Bitácora de campo ' + e.id + ' · ' + e.tipo + ' · ' + autor + ' · SHA-256 ' + sigShaBytes_(bytes));
+  add('Archivos', { id: uid(), proyecto: p.id, nombre: nombre, fid: f.getId(), autor: String(autor).slice(0, 80) + ' (campo)', fecha: now() });
+  const lista = (() => { try { return JSON.parse(e.archivos || '[]'); } catch (x) { return []; } })();
+  lista.push({ fid: f.getId(), n: nombre, m: String(b.mime || '') });
+  sigActualizar_('Campo', e._fila, { archivos: JSON.stringify(lista) });
+  CacheService.getScriptCache().put('v_' + p.id, String(Date.now()), 21600);
+  return { fid: f.getId(), nombre: nombre };
+}
+function sigCampoListar(u, proyectoId) {
+  const p = sigProyectoVisible_(u, proyectoId);
+  const en = sigLeer_('EnlacesCampo').filter(x => String(x.proyectoId) === String(p.id)).reverse().map(x => ({ token: x.token, email: x.email,
+    expira: x.expira instanceof Date ? x.expira.toISOString() : x.expira, estado: x.estado, creadoPor: x.creadoPor }));
+  return { entradas: sigCampoLista_(p.id), enlaces: en, tipos: SIG_CAMPO_TIPOS };
+}
+function sigCampoEnlace(u, b) {
+  const p = sigProyectoVisible_(u, b.proyectoId);
+  if (!/^https?:\/\//.test(b.base || '')) throw new Error('Enlace base inválido.');
+  const correos = String(b.emails || '').split(/[\s,;]+/).map(x => x.trim().toLowerCase()).filter(Boolean).filter((x, i, a) => a.indexOf(x) === i);
+  if (!correos.length) throw new Error('Escribe al menos un correo.');
+  if (correos.length > 20) throw new Error('Máximo 20 correos por envío.');
+  const malo = correos.find(x => !/^\S+@\S+\.\S+$/.test(x)); if (malo) throw new Error('Correo inválido: ' + malo);
+  const d = Math.max(1, Math.min(90, +b.dias || 30)), ex = new Date(Date.now() + d * 864e5).toISOString(), msg = String(b.mensaje || '').slice(0, 500);
+  const m = p.miembroId ? sigMiembro_(p.miembroId) : null, nom = m ? (m.nombreComercial || m.razonSocial) : SIG.TITULAR;
+  let logo = null; if (m && m.logoFileId) { try { logo = DriveApp.getFileById(m.logoFileId).getBlob().setName('logo'); } catch (e) {} }
+  const out = [];
+  correos.forEach(em => {
+    const tk = 'K' + Utilities.getUuid().replace(/-/g, ''), link = b.base + '?campo=' + tk;
+    sigAgregar_('EnlacesCampo', { token: tk, proyectoId: String(p.id), email: em, expira: ex, creadoPor: u.email, fecha: sigAhora_(), estado: 'activo', mensaje: msg });
+    out.push({ email: em, link: link });
+    if (b.enviar === false) return;
+    const html = '<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;border:1px solid #dde3ee;border-radius:10px;overflow:hidden"><div style="background:#0a1a3d;color:#fff;padding:18px;text-align:center">' +
+      (logo ? '<img src="cid:logo" style="max-height:60px;max-width:200px;background:#fff;border-radius:6px;padding:4px"><br>' : '') + '<b style="font-size:18px">' + sigEsc_(nom) + '</b></div>' +
+      '<div style="padding:20px;color:#1f2937"><p>Hola,</p><p>Te damos acceso a la <b>bitácora de campo</b> del proyecto:</p><p style="font-size:17px;background:#eef4ff;border-radius:8px;padding:12px"><b>' + sigEsc_(p.titulo) + '</b>' + (p.cliente ? '<br><span style="font-size:13px">' + sigEsc_(p.cliente) + '</span>' : '') + '</p>' +
+      (msg ? '<p style="border-left:3px solid #3d8bff;padding-left:10px">' + sigEsc_(msg) + '</p>' : '') +
+      '<p>Desde el celular podrás registrar avances, novedades, fotos, videos y documentos de la prestación del servicio, y diligenciar los formatos del SIG de la fase actual.</p>' +
+      '<p style="text-align:center;margin:26px 0"><a href="' + link + '" style="background:#1d5fd8;color:#fff;text-decoration:none;padding:14px 26px;border-radius:8px;font-weight:bold;font-size:16px">Abrir bitácora de campo</a></p>' +
+      '<p style="font-size:12px;color:#6b7280">Guarda este correo: el enlace es personal, puedes usarlo varias veces y vence el ' + Utilities.formatDate(new Date(ex), Session.getScriptTimeZone(), 'dd/MM/yyyy') + '. No necesitas cuenta.</p></div>' +
+      '<div style="background:#f3f5f9;color:#6b7280;font-size:11px;padding:10px;text-align:center">SIG administrado por ' + sigEsc_(SIG.TITULAR) + '</div></div>';
+    try { MailApp.sendEmail({ to: em, subject: 'Bitácora de campo · ' + p.titulo, htmlBody: html, name: nom, noReply: true, inlineImages: logo ? { logo: logo } : {} }); } catch (e) { out[out.length - 1].error = 'No se pudo enviar el correo'; }
+  });
+  sigBitacora_(u.email, p.miembroId || '', 'campo_enlace', { proyecto: String(p.id), destinatarios: correos });
+  return { enviados: out };
+}
+function sigCampoRevocar(u, token) {
+  const x = sigLeer_('EnlacesCampo').find(r => r.token === token); if (!x) throw new Error('Enlace no encontrado.');
+  sigProyectoVisible_(u, x.proyectoId);
+  sigActualizar_('EnlacesCampo', x._fila, { estado: 'revocado' });
+  return sigCampoListar(u, x.proyectoId);
+}
+/** Pública (sin sesión): página de campo con enlace personal. Llamar ANTES de validar la sesión. */
+function sigCampoPublico(q) {
+  try {
+    const C = CacheService.getScriptCache(), k = 'ca_' + q.token, f = +C.get(k) || 0;
+    if (f >= 10) return { error: 'Demasiados intentos. Intenta en 10 minutos.' };
+    const x = sigLeer_('EnlacesCampo').find(r => r.token === String(q.token || ''));
+    if (!x) { C.put(k, String(f + 1), 600); return { error: 'Enlace no válido.' }; }
+    if (x.estado !== 'activo') return { error: 'Este enlace fue anulado. Pide uno nuevo al responsable del proyecto.' };
+    if (new Date(x.expira) < new Date()) return { error: 'Este enlace venció. Pide uno nuevo al responsable del proyecto.' };
+    const p = rows('Proyectos').find(r => String(r.id) === String(x.proyectoId)); if (!p) return { error: 'El proyecto ya no existe.' };
+    const m = p.miembroId ? sigMiembro_(p.miembroId) : null;
+    if (q.paso === 'entrada') return sigCampoEntrada_(p, String(q.autor || x.email).slice(0, 80), x.email, 'enlace', q);
+    if (q.paso === 'archivo') { const e = sigCampoEntradaDe_(q.entradaId); if (String(e.proyectoId) !== String(p.id) || e.email !== x.email) return { error: 'Entrada no válida.' }; return sigCampoArchivo_(e, q, e.autor); }
+    if (q.paso === 'form') {
+      if (!m) return { error: 'Este proyecto no pertenece a una empresa de la red.' };
+      const F = sigForms_()[q.codigo]; if (!F) return { error: 'Ese formato no tiene formulario en línea.' };
+      const tk = 'F' + Utilities.getUuid().replace(/-/g, '');
+      sigAgregar_('Solicitudes', { token: tk, miembroId: m.miembroId, codigo: F.c, email: x.email, proyecto: p.titulo, mensaje: 'Diligenciado desde la bitácora de campo', expira: new Date(Date.now() + 3 * 864e5).toISOString(), creadoPor: x.creadoPor, fecha: sigAhora_(), estado: 'pendiente', proyectoId: String(p.id) });
+      return { link: String(q.base || '') + '?f=' + tk };
+    }
+    const nf = String(q.n || '').length;
+    return { proyecto: { id: p.id, titulo: p.titulo, cliente: p.cliente, ubicacion: p.ubicacion, tipo: p.tipo, estado: p.estado, avance: p.avance },
+      email: x.email, expira: x.expira instanceof Date ? x.expira.toISOString() : x.expira, mensaje: x.mensaje, tipos: SIG_CAMPO_TIPOS,
+      miembro: m ? { miembroId: m.miembroId, nombre: m.nombreComercial || m.razonSocial } : null, logo: m ? sigLogoDataUrl_(m) : '', titular: SIG.TITULAR,
+      formularios: m ? Object.keys(sigForms_()) : [], entradas: sigCampoLista_(p.id).slice(0, 40) };
+  } catch (e) { return { error: e.message }; }
 }
 
 // ---------- DEFINICIONES DE LOS FORMULARIOS EN LÍNEA (31 formatos del SIG; generado desde formularios.json) ----------
