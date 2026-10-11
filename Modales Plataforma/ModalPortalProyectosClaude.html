@@ -53,11 +53,11 @@ iframe.pdf{width:100%;height:72vh;border:1px solid var(--ln);border-radius:8px;m
 .hps{max-height:62vh;overflow:auto;padding-right:6px}.hcat h4{display:flex;gap:8px;align-items:center;font-size:18px;margin:6px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--ln)}.hit{background:linear-gradient(160deg,#1b2a4a,#0e1424);border:1px solid var(--ln);border-radius:10px;padding:12px 14px;margin:0 0 10px}.hit b{display:flex;gap:10px;align-items:center}.hit i{font-style:normal;min-width:24px;height:24px;border-radius:50%;background:var(--m);display:grid;place-items:center;font-size:12px;color:#fff}.hit p{margin:6px 0 0 34px;color:var(--mu);font-size:14px}
 #pg{position:fixed;top:0;left:0;height:3px;width:0;z-index:99;background:var(--m);box-shadow:0 0 10px var(--b2);opacity:0;transition:opacity .3s}#pg.on{opacity:1;width:100%;animation:pgx 1.2s ease-in-out infinite}@keyframes pgx{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 #intro{position:fixed;inset:0;z-index:95;background:#000;overflow:hidden;transition:opacity .7s ease}#intro.out{opacity:0;pointer-events:none}
-#intro .il{position:absolute;inset:0;display:grid;place-items:center;transition:opacity .6s ease,transform .8s ease}#intro .il img{max-width:min(42vw,340px);max-height:32vh;object-fit:contain;animation:ipulse 1.6s ease-in-out infinite;filter:drop-shadow(0 0 34px #3d8bffaa)}#intro .il b{font-size:72px;color:var(--b2);animation:ipulse 1.6s ease-in-out infinite}
-@keyframes ipulse{0%,100%{transform:scale(.95);opacity:.65}50%{transform:scale(1.05);opacity:1}}
+#intro .il{position:absolute;inset:0;display:grid;place-items:center;transition:opacity .6s ease,transform .8s ease}#intro .il img{max-width:min(42vw,340px);max-height:32vh;object-fit:contain;animation:ifade 1.1s ease both}#intro .il b{font-size:72px;color:var(--b2);animation:ifade 1.1s ease both}
+@keyframes ifade{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}@keyframes ild{0%{margin-left:0;width:0}50%{margin-left:25%;width:50%}100%{margin-left:100%;width:0}}
 #intro video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;opacity:0;transition:opacity .9s ease}#intro.play video{opacity:1}#intro.play .il{opacity:0;transform:scale(1.15)}
 #intro .isk,#intro .isn{position:absolute;bottom:7%;z-index:2;border:1px solid #ffffff55;background:#00000088;color:#fff;padding:10px 18px;border-radius:6px;font-weight:700;cursor:pointer;opacity:0;transition:opacity .6s .8s}#intro .isk{right:4%}#intro .isn{left:4%}#intro.play .isk,#intro.play .isn{opacity:1}#intro .isk:hover,#intro .isn:hover{background:#ffffff22}
-#intro .ibar{position:absolute;left:0;right:0;bottom:0;height:3px;background:#ffffff1a;z-index:2}#intro .ibar i{display:block;height:100%;width:0;background:var(--m)}
+#intro .ibar{position:absolute;left:0;right:0;bottom:0;height:3px;background:#ffffff1a;z-index:2}#intro .ibar i{display:block;height:100%;width:0;background:var(--m)}#intro.ld:not(.play) .ibar i{animation:ild 1.4s ease-in-out infinite}body:has(#intro) #pg{display:none}
 .ff{max-width:900px;margin:0 auto}.fs{background:linear-gradient(160deg,#1b2a4a,#0e1424);border:1px solid var(--ln);border-radius:12px;padding:14px 16px;margin:12px 0}.fs h4{margin:0 0 6px;color:var(--b2)}.fn{font-size:13px;margin:0 0 6px}.fc1{grid-column:1/-1}
 .fk{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--ln);flex-wrap:wrap}.fk>span{flex:1;min-width:220px;font-size:14px}.seg{display:flex;border:1px solid var(--ln);border-radius:8px;overflow:hidden}.seg button{background:#0b1120;color:var(--mu);border:0;border-right:1px solid var(--ln);padding:8px 11px;cursor:pointer;font-size:13px;font-weight:600}.seg button:last-child{border:0}.seg button.on[data-v=C]{background:#3ddc9733;color:var(--ok)}.seg button.on[data-v=NC]{background:#ff6b7a33;color:var(--er)}.seg button.on[data-v=NA]{background:#8fa0bf33;color:var(--tx)}
 .spd{border:1px dashed var(--b);border-radius:8px;background:#fff;overflow:hidden}.spd canvas{display:block;width:100%;height:120px;touch-action:none;cursor:crosshair}.spb{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:#0b1120}
@@ -173,7 +173,7 @@ const GUIA=[
 {ic:"🚀",t:"Primeros pasos",s:[
 ["Crear tu cuenta","Pulsa Ingresar y luego Crear cuenta. Escribe tu nombre, tu correo y una clave de mínimo 6 caracteres. Usa el botón del ojo para ver lo que escribes. Si vas a diligenciar formatos del SIG, registra un correo de Google (Gmail o Workspace): con él se te da permiso de edición sobre las copias de tu organización."],
 ["Ingresar","Escribe tu correo y tu clave y pulsa Continuar: entras en un solo paso. Al ingresar verás un aviso con el nombre, el correo y la organización de la cuenta con la que entraste; si no eres tú, pulsa “No soy yo”. Tras 5 intentos fallidos la cuenta se bloquea 10 minutos. Si pasas 10 minutos sin actividad, la sesión se cierra sola. Revisa que el correo sea el tuyo: el navegador puede autocompletar otra cuenta."],
-["Tu portal con tu marca","Si tu organización ya tiene logo, verás ese logo y su nombre en la barra superior y en la franja de organización. Si la función central definió un video de bienvenida, al validar tus claves la pantalla pasa a negro con el logo de tu organización, el video se reproduce solo a pantalla completa y al terminar se abre tu interfaz de trabajo. Puedes saltarlo con “Omitir intro” o la tecla Esc."],
+["Tu portal con tu marca","Si tu organización ya tiene logo, verás ese logo y su nombre en la barra superior y en la franja de organización. Si la función central cargó un video de bienvenida para tu organización, al validar tu clave ese video se reproduce a pantalla completa, tal como fue cargado, mientras el portal prepara tu información; al terminar se abre tu interfaz de trabajo. Si no hay video, aparece un instante el logo de tu organización. Puedes saltarlo con “Omitir” o la tecla Esc."],
 ["Cambiar tu clave","Pulsa Mi clave, escribe tu clave actual y la nueva. Hazlo si crees que alguien más las conoce."]]},
 {ic:"📁",t:"Proyectos",s:[
 ["Crear un proyecto","Pulsa + Nuevo proyecto y completa título, tipo, cliente, ubicación, fechas y alcance. Al guardar se crea su carpeta de archivos. El proyecto queda marcado con tu organización: si tu organización está Adscrita y el servicio está en su alcance, queda bajo el SIG (etiqueta verde “SIG”); si no, queda “fuera del SIG”. Los proyectos anteriores a la adscripción nunca se incluyen de forma retroactiva."],
@@ -300,19 +300,32 @@ if(m=u.match(/vimeo\.com\/(?:video\/)?(\d+)/))return `<iframe src="https://playe
 if(/^https:\/\/\S+\.(mp4|webm)(\?\S*)?$/i.test(u))return `<video src="${esc(u)}" controls autoplay playsinline></video>`;return ""}
 // INTRO tipo "Netflix": al validar las claves la pantalla pasa a negro con el logo de la organización,
 // el video .mp4 arranca solo a pantalla completa y al terminar se desvanece para mostrar la interfaz.
-function introAbrir(){let d=$("#intro");if(d)return d;d=document.createElement("div");d.id="intro";
-d.innerHTML=`<div class="il"><img src="${L.ent}" alt=""></div><video playsinline preload="auto"></video><button class="isn" hidden>🔊 Activar sonido</button><button class="isk">Omitir intro ⏭</button><div class="ibar"><i></i></div>`;document.body.append(d);return d}
-function introCerrar(){const d=$("#intro");if(!d||d.classList.contains("out"))return;d.classList.add("out");const v=d.querySelector("video");try{v.pause()}catch(e){}setTimeout(()=>d.remove(),750)}
-function introVid(){const m=S?.miembro,id=(String(m?.introVideo||"").match(/^drive:([\w-]+)$/)||[])[1];const d=introAbrir();
-const lg=d.querySelector(".il");lg.innerHTML=S?.logo?`<img src="${S.logo}" alt="">`:m?`<b>${iniM(m)}</b>`:`<img src="${L.ent}" alt="">`;
-if(!id){setTimeout(introCerrar,m?900:300);return Promise.resolve()}
-return new Promise(fin=>{const v=d.querySelector("video"),sn=d.querySelector(".isn"),bar=d.querySelector(".ibar i");let fuera=false,arr=false;
-const salir=()=>{if(fuera)return;fuera=true;clearTimeout(to);removeEventListener("keydown",tecla);introCerrar();fin()},tecla=e=>{if(e.key==="Escape")salir()};
-const to=setTimeout(()=>{if(!arr)salir()},10000);addEventListener("keydown",tecla);
+// Lo que ve el integrante al ingresar es SU video, tal como lo cargó el administrador (sin logos genéricos ni efectos encima).
+// Este navegador recuerda qué video y logo corresponden a la cuenta, así el video arranca con el mismo clic de "Ingresar",
+// mientras el portal carga los datos detrás. Si la organización no tiene video, aparece su logo un instante.
+const vidId=m=>(String(m?.introVideo||"").match(/^drive:([\w-]+)$/)||[])[1]||"";
+function introMem(){try{const r=JSON.parse(localStorage.getItem("sig_intro")||"null");return r&&r.email===String(me?.email||"").toLowerCase()?r:null}catch(e){return null}}
+function introRecordar(){try{const m=S?.miembro;localStorage.setItem("sig_intro",JSON.stringify({email:String(me?.email||"").toLowerCase(),id:vidId(m),ini:m?iniM(m):"",logo:!!(m&&S.logo)}))}catch(e){}}
+function introMarca(d,logo,ini){d.querySelector(".il").innerHTML=logo?`<img src="${logo}" alt="">`:ini?`<b>${esc(ini)}</b>`:""}
+let INT=null;
+function introAbrir(){let d=$("#intro");if(d)return d;d=document.createElement("div");d.id="intro";d.className="ld";
+d.innerHTML=`<div class="il"></div><video playsinline preload="auto"></video><button class="isn" hidden>🔊 Activar sonido</button><button class="isk">Omitir ⏭</button><div class="ibar"><i></i></div>`;document.body.append(d);
+const k=introMem();if(k){if(k.id)introPlay(k.id);else introMarca(d,k.logo&&logoCache().data,k.ini)}return d}
+function introCerrar(){const d=$("#intro");if(!d||d.classList.contains("out"))return;d.classList.add("out");const v=d.querySelector("video");try{v.pause()}catch(e){}if(INT)INT.fin();INT=null;setTimeout(()=>d.remove(),750)}
+function introPlay(id){if(INT&&INT.id===id)return INT.p;const d=introAbrir(),v=d.querySelector("video"),sn=d.querySelector(".isn"),bar=d.querySelector(".ibar i");let fuera=false,arr=false,fin;
+const p=new Promise(r=>fin=r);
+const salir=()=>{if(fuera)return;fuera=true;clearTimeout(to);removeEventListener("keydown",tecla);try{v.pause()}catch(e){}d.classList.remove("play");bar.style.width="";fin()},tecla=e=>{if(e.key==="Escape")salir()};
+const to=setTimeout(()=>{if(!arr)salir()},12000);addEventListener("keydown",tecla);
 d.querySelector(".isk").onclick=salir;v.onended=salir;v.onerror=salir;sn.onclick=()=>{v.muted=false;sn.hidden=true};
 v.ontimeupdate=()=>{bar.style.width=(v.duration?v.currentTime/v.duration*100:0)+"%"};
-v.oncanplay=async()=>{if(arr)return;arr=true;clearTimeout(to);d.classList.add("play");try{await v.play()}catch(e){v.muted=true;try{await v.play();sn.hidden=false}catch(x){salir()}}};
-v.src="https://drive.google.com/uc?export=download&id="+id})}
+v.oncanplay=async()=>{if(arr||fuera)return;arr=true;clearTimeout(to);d.classList.add("play");try{await v.play()}catch(e){v.muted=true;try{await v.play();sn.hidden=false}catch(x){salir()}}};
+INT={id,p,fin:salir};v.src="https://drive.google.com/uc?export=download&id="+id;return p}
+// Tras cargar los datos: confirma el video vigente de la organización y espera a que termine (o a "Omitir")
+async function introVid(){const m=S?.miembro,id=vidId(m),d=introAbrir();d.classList.remove("ld");
+if(INT&&INT.id!==id)INT.fin();
+if(!id)introMarca(d,m&&S.logo,m?iniM(m):"");
+if(!id){await new Promise(r=>setTimeout(r,m?900:250));introCerrar();return}
+await introPlay(id);introCerrar()}
 
 // ---------- MI EMPRESA (acordeones) ----------
 async function empresa(primera){if(!S)await sigLoad();if(!S)return alert("No fue posible consultar tu organización. El servidor aún no tiene el módulo SIG.");
@@ -457,7 +470,7 @@ const go=$("#go");go.onclick=busy(go,async()=>{await api({a:"sgcEditarLegal",mie
 function verificar(c){modal(`<img class="l" src="${L.pio}" alt=""><h3>Verificar miembro del SIG</h3><span class="mu">Escribe el código que aparece en la leyenda (ej. MBR-0007-A1B2C3D4E5).</span><label>Código</label><input id="vq" value="${esc(c||"")}"><div id="vr"></div><div class="err" id="er"></div><div class="acts"><button class="btn" id="go">Verificar</button><button class="btn ghost" onclick="cerrar()">Cerrar</button></div>`);
 const go=$("#go");go.onclick=busy(go,async()=>{const r=await api({a:"sgcVerificar",codigo:$("#vq").value.trim()});$("#vr").innerHTML=`<div class="cd" style="border-color:${r.valido?"var(--ok)":"var(--er)"}"><b style="color:${r.valido?"var(--ok)":"var(--er)"}">${esc(r.mensaje)}</b>${r.miembro?`<div>${esc(r.miembro)} · ${esc(r.miembroId)} · ${estTag(r.estado)}</div><small class="mu">Alcance: ${esc((r.alcance||[]).join(", "))}${r.desde?" · desde "+fm(new Date(r.desde)):""} · SIG administrado por ${esc(r.titular)}</small>`:""}</div>`});$("#vq").onkeydown=e=>{if(e.key==="Enter")go.click()};if(c)go.click()}
 // ---------- INGRESO: un solo paso y confirmación visible de la cuenta ----------
-async function entrar(){cerrar();introAbrir();try{await load()}catch(e){introCerrar();throw e}bump();await introVid();bienvenida();if(S&&!S.miembro&&!S.solicitudPendiente&&me.rol!=="admin")empresa(1)}
+async function entrar(){cerrar();introAbrir();try{await load()}catch(e){introCerrar();throw e}bump();introRecordar();await introVid();bienvenida();if(S&&!S.miembro&&!S.solicitudPendiente&&me.rol!=="admin")empresa(1)}
 function bienvenida(){const m=S?.miembro,d=document.createElement("div");d.className="toast";const ini=String(me.nombre||"?").split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();
 d.innerHTML=`<div class="tav">${m&&S.logo?`<img src="${S.logo}" alt="">`:`<b>${esc(ini)}</b>`}</div><div class="ttx"><small>Ingresaste como</small><b>${esc(me.nombre)}</b><small>${esc(me.email||"")}</small>${me.rol==="admin"?`<span class="tag">Administrador</span>`:m?`<span class="tag">${esc(nomM(m))} · ${esc(m.miembroId)}</span>`:""}<a href="#" class="tno">¿No eres tú? Cerrar sesión</a></div><button type="button" class="tx" title="Cerrar" aria-label="Cerrar">✕</button><i class="tbar"></i>`;
 const quita=()=>{d.classList.remove("on");setTimeout(()=>d.remove(),400)};d.querySelector(".tx").onclick=quita;d.querySelector(".tno").onclick=e=>{e.preventDefault();d.remove();out()};
