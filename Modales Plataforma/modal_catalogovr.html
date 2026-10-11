@@ -1,505 +1,1116 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VR | Entalpia</title>
-    <style>
-        /* --- ESTILOS GENERALES Y TEMA OSCURO --- */
-        :root {
-            --bg-color: #0f0f0f;
-            --nav-bg: rgba(0, 0, 0, 0.9);
-            --text-color: #ffffff;
-            --accent-color: #e50914; /* Rojo tipo Netflix */
-            --card-hover-border: #fff;
-            --vr-split-line: #333;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#05060a">
+<title>VR | Entalpia</title>
+<!--
+  =====================================================================
+   VR ENTALPIA · Mundo Virtual (WebXR)
+   Catálogo inmersivo 3D compatible con Meta Quest (2 / 3 / 3S / Pro)
+  ---------------------------------------------------------------------
+   · En el navegador de Meta Quest: botón "Entrar en VR".
+   · En PC / móvil: vista 3D navegable (arrastrar para mirar, clic para abrir).
+   · Requiere HTTPS (GitHub Pages ya lo cumple).
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
+   CÓMO AGREGAR PROYECTOS  →  edita el arreglo `database` (más abajo).
+   Cada item admite:
+     title, subtitle, icon (emoji), img (miniatura opcional)
+     tipo: "video"     → pantalla gigante en el laboratorio   (url = .mp4)
+           "video360"  → esfera inmersiva equirectangular     (url = .mp4)
+                         estereo: "sbs" (lado a lado) | "tb" (arriba/abajo) | omitir = mono
+           "modelo"    → modelo 3D en pedestal, se agarra y gira
+                         modelo: "erm" (gemelo digital incluido) | glb: "ruta/archivo.glb"
+     descripcion: texto para el panel de información (modelos)
+   Los videos e imágenes de otros dominios deben permitir CORS; lo más
+   seguro es alojarlos en este mismo repositorio / dominio.
+  =====================================================================
+-->
+<style>
+  :root{
+    --bg:#05060a; --accent:#e50914; --accent-2:#ff2a35; --text:#fff; --muted:#a7a9b4;
+    --glass:rgba(10,11,16,.72); --line:rgba(255,255,255,.14);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:var(--bg);color:var(--text);overflow:hidden;
+    font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
+  canvas{display:block;touch-action:none;cursor:grab}
+  canvas.dragging{cursor:grabbing}
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            overflow-x: hidden;
-            padding-bottom: 50px;
-        }
+  nav{position:fixed;top:0;left:0;right:0;height:60px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 16px;gap:12px;z-index:10;background:linear-gradient(to bottom,rgba(0,0,0,.85),rgba(0,0,0,0));}
+  .logo{font-size:1.4rem;font-weight:800;color:var(--accent);letter-spacing:2px;text-transform:uppercase;white-space:nowrap;text-decoration:none}
+  .logo span{color:#fff;font-weight:300}
+  .actions{display:flex;gap:10px;align-items:center}
+  .btn{border:1px solid var(--line);background:var(--glass);color:#fff;padding:8px 16px;border-radius:999px;cursor:pointer;
+    font-size:.85rem;font-weight:600;display:inline-flex;align-items:center;gap:8px;backdrop-filter:blur(6px);
+    text-decoration:none;transition:background .2s,transform .2s}
+  .btn:hover{background:rgba(255,255,255,.14);transform:translateY(-1px)}
+  .btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
+  .btn-vr{background:var(--accent);border-color:var(--accent)}
+  .btn-vr:hover{background:var(--accent-2)}
+  .btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
 
-        /* --- NAVBAR --- */
-        nav {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            height: 60px;
-            background: var(--nav-bg);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 4%;
-            z-index: 1000;
-            backdrop-filter: blur(5px);
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--accent-color);
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        .logo span { color: white; font-weight: 300; }
-
-        .nav-actions {
-            display: flex;
-            gap: 15px;
-        }
-
-        /* Botón de cambio de modo */
-        .mode-btn {
-            background: transparent;
-            border: 1px solid #fff;
-            color: #fff;
-            padding: 5px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .mode-btn:hover { background: rgba(255,255,255,0.1); }
-
-        /* --- CONTENEDOR 2D (Visible por defecto) --- */
-        #ui-2d {
-            transition: opacity 0.5s;
-        }
-
-        /* --- HERO SECTION 2D --- */
-        .hero {
-            height: 70vh;
-            background: linear-gradient(to top, var(--bg-color), transparent 50%),
-                        url('https://images.unsplash.com/photo-1535498730771-e735b998cd64?q=80&w=1200') center/cover;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 0 4%;
-            margin-bottom: 20px;
-        }
-
-        .hero h1 { font-size: 3rem; max-width: 600px; text-shadow: 2px 2px 4px black; }
-        .hero p { margin: 10px 0 20px; font-size: 1.2rem; max-width: 500px; text-shadow: 1px 1px 2px black; }
-        
-        .btn {
-            padding: 10px 24px;
-            border: none;
-            border-radius: 4px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-        }
-        
-        .btn-primary { background-color: var(--accent-color); color: white; }
-        .btn-secondary { background-color: rgba(109, 109, 110, 0.7); color: white; margin-left: 10px; }
-        .btn:hover { transform: scale(1.05); }
-
-        /* --- CATEGORÍAS Y CARROUSEL --- */
-        .category-section { padding: 20px 4%; }
-        .category-title { font-size: 1.2rem; margin-bottom: 10px; font-weight: 600; color: #e5e5e5; }
-
-        .carousel {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding-bottom: 20px;
-            scrollbar-width: none; 
-        }
-        .carousel::-webkit-scrollbar { display: none; }
-
-        .card {
-            min-width: 200px;
-            height: 120px;
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-            cursor: pointer;
-            transition: transform 0.3s, border 0.2s;
-            background-color: #222;
-        }
-
-        .card:hover { transform: scale(1.1); z-index: 10; border: 2px solid var(--card-hover-border); }
-        .card img { width: 100%; height: 100%; object-fit: cover; }
-
-        .card-overlay {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-            padding: 10px; opacity: 0; transition: opacity 0.3s;
-        }
-        .card:hover .card-overlay { opacity: 1; }
-        .card-title { font-size: 0.9rem; font-weight: bold; }
-        .badge { background: var(--accent-color); padding: 2px 5px; font-size: 0.6rem; border-radius: 2px; }
-
-
-        /* --- UI VR (MENÚ EN MODO GAFAS) --- */
-        #ui-vr {
-            display: none; /* Oculto por defecto */
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            background: #000;
-            z-index: 2000;
-            flex-direction: row;
-        }
-
-        #ui-vr.active { display: flex; }
-
-        .vr-viewport {
-            width: 50%;
-            height: 100%;
-            overflow-y: auto; /* Scroll vertical */
-            border-right: 1px solid #333;
-            position: relative;
-            padding: 20px;
-            /* Ocultar scrollbar pero permitir scroll */
-            scrollbar-width: none;
-        }
-        .vr-viewport::-webkit-scrollbar { display: none; }
-
-        .vr-content-wrapper {
-            /* Transformación para simular un poco de profundidad/pantalla */
-            transform-origin: center top;
-            padding-bottom: 100px;
-        }
-
-        /* Ajustes específicos para VR UI */
-        .vr-viewport h1 { font-size: 1.5rem; margin-bottom: 10px; }
-        .vr-viewport .category-section { padding: 10px 0; }
-        /* En VR, las tarjetas se ven mejor en grid vertical que carrousel horizontal */
-        .vr-viewport .carousel { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 15px;
-            overflow: visible;
-        }
-        .vr-viewport .card {
-            min-width: auto;
-            width: 100%;
-            height: 100px;
-        }
-        /* Overlay siempre visible en VR para saber qué es */
-        .vr-viewport .card-overlay { opacity: 1; padding: 5px; }
-        
-        .btn-exit-vr-ui {
-            background: #333;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #555;
-            cursor: pointer;
-            font-weight: bold;
-            display: block;
-        }
-
-
-        /* --- REPRODUCTOR VR (VIDEO) --- */
-        #vr-player-container {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            background: black;
-            z-index: 9999;
-            display: none;
-            flex-direction: column;
-        }
-        #vr-player-container.active { display: flex; }
-
-        .vr-controls {
-            position: absolute; top: 20px; left: 50%;
-            transform: translateX(-50%); z-index: 10000;
-            display: flex; gap: 20px; opacity: 0.5; transition: opacity 0.3s;
-        }
-        .vr-controls:hover { opacity: 1; }
-
-        .vr-screen-wrapper { display: flex; width: 100%; height: 100%; align-items: center; }
-        
-        .vr-eye {
-            width: 50%; height: 100%; position: relative;
-            overflow: hidden; display: flex; align-items: center; justify-content: center;
-            border-right: 1px solid #111;
-        }
-        .vr-eye video { width: 95%; max-width: 100%; height: auto; max-height: 100%; object-fit: contain; }
-
-        .center-line {
-            position: absolute; left: 50%; top: 0; bottom: 0; width: 2px;
-            background: rgba(255,255,255,0.2); z-index: 5000; pointer-events: none;
-        }
-        
-        #rotate-msg {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; color: #fff; z-index: 20000;
-            align-items: center; justify-content: center; text-align: center; flex-direction: column;
-        }
-        
-        @media screen and (orientation: portrait) {
-            #vr-player-container.active ~ #rotate-msg, #ui-vr.active ~ #rotate-msg { display: flex; }
-        }
-
-    </style>
+  #status{position:fixed;top:66px;right:16px;z-index:10;font-size:.75rem;color:var(--muted);background:var(--glass);
+    border:1px solid var(--line);border-radius:8px;padding:6px 10px;max-width:min(360px,calc(100vw - 32px));display:none}
+  #hint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:10;font-size:.8rem;color:var(--muted);
+    background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:8px 16px;text-align:center;
+    max-width:calc(100vw - 32px);backdrop-filter:blur(6px)}
+  #toast{position:fixed;bottom:64px;left:50%;transform:translateX(-50%) translateY(10px);z-index:11;opacity:0;
+    background:rgba(229,9,20,.92);color:#fff;font-weight:600;font-size:.9rem;padding:10px 18px;border-radius:10px;
+    transition:opacity .25s,transform .25s;pointer-events:none;max-width:calc(100vw - 32px);text-align:center}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #loading{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+    background:var(--bg);transition:opacity .5s}
+  #loading.hide{opacity:0;pointer-events:none}
+  .spinner{width:46px;height:46px;border-radius:50%;border:3px solid rgba(255,255,255,.12);border-top-color:var(--accent);animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (max-width:560px){ .logo{font-size:1.1rem} .btn .txt{display:none} #hint{font-size:.72rem} }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
 </head>
 <body>
 
-    <!-- NAVBAR 2D -->
-    <nav id="navbar-2d">
-        <div class="logo">VR<span>ENTALPIA</span></div>
-        <div class="nav-actions">
-            <button class="mode-btn" onclick="toggleVRInterface()">
-                <span>👓</span> Modo Gafas VR
-            </button>
-        </div>
-    </nav>
+<nav>
+  <a class="logo" href="../index.html" title="Volver a la plataforma">VR<span>ENTALPIA</span></a>
+  <div class="actions">
+    <button class="btn" id="btn-fs" title="Pantalla completa">⛶ <span class="txt">Pantalla completa</span></button>
+    <button class="btn btn-vr" id="btn-vr" disabled>👓 <span class="txt">Entrar en VR</span></button>
+  </div>
+</nav>
+<div id="status"></div>
+<div id="hint">Arrastra para mirar · Clic en una tarjeta para abrirla · Rueda del mouse sobre una fila para desplazarla · Esc para volver</div>
+<div id="toast"></div>
+<div id="loading"><div class="spinner"></div><div style="color:var(--muted);font-size:.9rem">Cargando el mundo virtual…</div></div>
 
-    <!-- MENSAJE DE GIRO (Para móviles) -->
-    <div id="rotate-msg">
-        <h2 style="font-size: 3rem;">↺</h2>
-        <p>Gira tu dispositivo<br>para usar las gafas VR</p>
-    </div>
+<script type="module">
+import * as THREE from 'three';
+import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-    <!-- UI 2D (ESTÁNDAR) -->
-    <div id="ui-2d">
-        <header class="hero">
-            <h1>Virtualidad Aplicada En Ambitos Laborales</h1>
-            <p>Experiencias inmersivas seleccionadas para ti.</p>
-            <div>
-                <button class="btn btn-primary" onclick="startVR('https://media.istockphoto.com/id/1364376361/video/abstract-space-background.mp4?s=mp4-640x640-is&k=20&c=i-qT57l8kK9rS9X6iJ6kLz8kM-4qP8_r1_x8qX9-5_o=')">
-                    ▶ Ver Destacado
-                </button>
-            </div>
-        </header>
-        <div id="content-container-2d"></div>
-    </div>
+/* =====================================================================
+   1. DATOS DEL CATÁLOGO
+   ===================================================================== */
+const DEMO_360 = 'https://threejs.org/examples/textures/MaryOculus.mp4';
+const DEMO_VIDEO = 'https://threejs.org/examples/textures/sintel.mp4';
 
-    <!-- UI VR (MENÚ DIVIDIDO) -->
-    <div id="ui-vr">
-        <!-- OJO IZQUIERDO MENU -->
-        <div class="vr-viewport" id="vr-menu-left">
-            <div class="vr-content-wrapper">
-                <div class="btn-exit-vr-ui" onclick="toggleVRInterface()">⬅ SALIR DEL MODO GAFAS</div>
-                <div style="text-align:center; margin-bottom:20px;">
-                    <h2 style="color:var(--accent-color)">VR FLIX</h2>
-                    <p style="font-size:0.8rem; color:#aaa">Interfaz VR v1.0</p>
-                </div>
-                <!-- Contenido inyectado por JS -->
-                <div id="vr-content-left"></div>
-            </div>
-        </div>
+const database = [
+  {
+    category: "Demostraciones VR", color: "#e50914", icon: "🥽",
+    items: [
+      { title: "Recorrido 360°", subtitle: "Video inmersivo estéreo", icon: "🌐", tipo: "video360", estereo: "sbs", url: DEMO_360 },
+      { title: "Sala de proyección", subtitle: "Pantalla gigante en el laboratorio", icon: "🎬", tipo: "video", url: DEMO_VIDEO },
+      { title: "Gemelo digital ERM", subtitle: "Estación de regulación y medición", icon: "🛠️", tipo: "modelo", modelo: "erm",
+        descripcion: "Tren de regulación de gas natural: válvulas de corte, filtro, regulador con venteo, medidor y manómetros de entrada y salida. Agárralo con el grip (o mantén el gatillo) para girarlo y examinarlo." }
+    ]
+  },
+  {
+    category: "Salud Ocupacional", color: "#1fae6b", icon: "⛑️",
+    items: [
+      { title: "N/R", img: "", url: "" },
+      { title: "N/R", img: "", url: "" }
+    ]
+  },
+  {
+    category: "Metrologia", color: "#2f7bff", icon: "📏",
+    items: [
+      { title: "N/R", img: "", url: "" },
+      { title: "N/R", img: "", url: "" }
+    ]
+  },
+  {
+    category: "Inspecciones", color: "#f2a516", icon: "🔍",
+    items: [
+      { title: "N/R", img: "", url: "" },
+      { title: "N/R", img: "", url: "" }
+    ]
+  }
+];
+const DESTACADO = database[0].items[0];
 
-        <!-- OJO DERECHO MENU -->
-        <div class="vr-viewport" id="vr-menu-right">
-            <div class="vr-content-wrapper">
-                <div class="btn-exit-vr-ui" onclick="toggleVRInterface()">⬅ SALIR DEL MODO GAFAS</div>
-                <div style="text-align:center; margin-bottom:20px;">
-                    <h2 style="color:var(--accent-color)">VR ENTALPIA</h2>
-                    <p style="font-size:0.8rem; color:#aaa">Interfaz VR v1.0</p>
-                </div>
-                <!-- Contenido inyectado por JS -->
-                <div id="vr-content-right"></div>
-            </div>
-        </div>
-        <div class="center-line"></div>
-    </div>
+/* =====================================================================
+   2. UTILIDADES DOM
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+let toastTimer;
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  toast3D(msg);
+}
+function status(msg){ const s = $('#status'); s.textContent = msg; s.style.display = msg ? 'block' : 'none'; }
 
-    <!-- REPRODUCTOR DE VIDEO VR -->
-    <div id="vr-player-container">
-        <div class="center-line"></div>
-        <div class="vr-controls">
-            <button class="btn btn-secondary" onclick="exitVideoVR()">Cerrar Video</button>
-            <button class="btn btn-primary" onclick="togglePlay()">⏯</button>
-        </div>
-        <div class="vr-screen-wrapper">
-            <div class="vr-eye"><video id="video-left" loop playsinline><source src="" type="video/mp4"></video></div>
-            <div class="vr-eye"><video id="video-right" loop playsinline muted><source src="" type="video/mp4"></video></div>
-        </div>
-    </div>
+/* =====================================================================
+   3. ESCENA BÁSICA
+   ===================================================================== */
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.xr.enabled = true;
+renderer.xr.setReferenceSpaceType('local-floor');
+document.body.appendChild(renderer.domElement);
 
-    <script>
-        // --- DATA ---
-        const database = [
-            {
-                category: "Salud Ocupacional",
-                items: [
-                    { title: "N/R", img: "", url: "" },
-                    { title: "N/R", img: "", url: "" }
-                ]
-            },
-            {
-                category: "Metrologia",
-                items: [
-                    { title: "N/R", img: "", url: "" },
-                    { title: "N/R", img: "", url: "" }
-                ]
-            },
-            {
-                category: "Inspecciones",
-                items: [
-                    { title: "N/R", img: "", url: "" },
-                    { title: "N/R", img: "", url: "" }
-                ]
-            }
-        ];
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x05060a);
+scene.fog = new THREE.Fog(0x05060a, 9, 30);
 
-        // --- GENERADOR DE CONTENIDO ---
-        // Genera HTML para un contenedor dado (2D o VR)
-        function renderContent(targetId, isVR) {
-            const container = document.getElementById(targetId);
-            container.innerHTML = '';
+const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.03, 200);
+const EYE = 1.6;
+camera.position.set(0, EYE, 0);
+camera.layers.enable(1);               // ver esfera "ojo izquierdo" fuera de VR
+const rig = new THREE.Group();         // "jugador": se gira con snap-turn
+rig.add(camera);
+scene.add(rig);
 
-            database.forEach(cat => {
-                const section = document.createElement('div');
-                section.className = 'category-section';
-                
-                const title = document.createElement('h3');
-                title.className = 'category-title';
-                title.innerText = cat.category;
+scene.add(new THREE.HemisphereLight(0xbfd4ff, 0x1a0a0a, 1.1));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+sun.position.set(2, 4, 3);
+scene.add(sun);
 
-                const list = document.createElement('div');
-                list.className = 'carousel'; // En CSS, si es VR, esto se convierte en Grid
+const FONT = 'system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+const ACCENT = '#e50914';
+const tmpV = new THREE.Vector3(), tmpV2 = new THREE.Vector3(), tmpM = new THREE.Matrix4(), Y_AXIS = new THREE.Vector3(0, 1, 0);
+const clock = new THREE.Clock();
+let elapsed = 0;
 
-                cat.items.forEach(item => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    const videoUrl = item.url || "https://media.istockphoto.com/id/1364376361/video/abstract-space-background.mp4?s=mp4-640x640-is&k=20&c=i-qT57l8kK9rS9X6iJ6kLz8kM-4qP8_r1_x8qX9-5_o=";
-                    
-                    // Al hacer click, inicia el video
-                    card.onclick = () => startVR(videoUrl);
+/* =====================================================================
+   4. AYUDANTES DE TEXTURAS (canvas → panel 3D)
+   ===================================================================== */
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath(); ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function wrapText(ctx, text, x, y, maxW, lh){
+  const words = String(text).split(/\s+/); let line = '';
+  for (const w of words){
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxW && line){ ctx.fillText(line, x, y); line = w; y += lh; }
+    else line = test;
+  }
+  if (line) ctx.fillText(line, x, y);
+  return y + lh;
+}
+function makeCanvas(w, h){ const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+function texFrom(canvas){
+  const t = new THREE.CanvasTexture(canvas);
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.generateMipmaps = true;
+  return t;
+}
+/* Panel con contenido dibujado; devuelve mesh con userData.redraw(fn) */
+function panel(wm, hm, draw, ppm = 420){
+  const c = makeCanvas(Math.round(wm * ppm), Math.round(hm * ppm));
+  const ctx = c.getContext('2d');
+  draw(ctx, c.width, c.height);
+  const tex = texFrom(c);
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(wm, hm),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.02 }));
+  mesh.userData.redraw = fn => { ctx.clearRect(0, 0, c.width, c.height); fn(ctx, c.width, c.height); tex.needsUpdate = true; };
+  return mesh;
+}
+function glassBg(ctx, W, H, r = 36, alpha = 0.78){
+  roundRect(ctx, 3, 3, W - 6, H - 6, r);
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, `rgba(22,24,32,${alpha})`); g.addColorStop(1, `rgba(8,9,13,${alpha})`);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.stroke();
+}
 
-                    card.innerHTML = `
-                        <img src="${item.img}" alt="${item.title}" loading="lazy">
-                        <div class="card-overlay">
-                            <div class="card-title">${item.title}</div>
-                        </div>
-                    `;
-                    list.appendChild(card);
-                });
+/* =====================================================================
+   5. SISTEMA DE INTERACCIÓN (hover / select para mouse, controles y manos)
+   ===================================================================== */
+const interactables = [];
+function registerUI(mesh, ui){ mesh.userData.ui = Object.assign({ count: 0, on: false }, ui); interactables.push(mesh); return mesh; }
+function setHover(obj, on){
+  const ui = obj.userData.ui; if (!ui) return;
+  ui.count = Math.max(0, ui.count + (on ? 1 : -1));
+  const now = ui.count > 0;
+  if (now !== ui.on){ ui.on = now; ui.onHover && ui.onHover(now); }
+}
+function visibleDeep(o){ while (o){ if (!o.visible) return false; o = o.parent; } return true; }
 
-                section.appendChild(title);
-                section.appendChild(list);
-                container.appendChild(section);
-            });
-        }
+function makeButton(text, { w = 0.32, h = 0.1, primary = false } = {}, onSelect){
+  const ppm = 600;
+  const c = makeCanvas(Math.round(w * ppm), Math.round(h * ppm)), ctx = c.getContext('2d');
+  const tex = texFrom(c);
+  let label = text, hover = false;
+  const draw = () => {
+    const W = c.width, H = c.height; ctx.clearRect(0, 0, W, H);
+    roundRect(ctx, 4, 4, W - 8, H - 8, (H - 8) / 2);
+    ctx.fillStyle = primary ? (hover ? '#ff2a35' : ACCENT) : (hover ? 'rgba(255,255,255,.30)' : 'rgba(30,32,40,.88)');
+    ctx.fill();
+    ctx.lineWidth = 4; ctx.strokeStyle = hover ? '#ffffff' : 'rgba(255,255,255,.28)'; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    let fs = H * 0.42; ctx.font = `700 ${fs}px ${FONT}`;
+    while (ctx.measureText(label).width > W * 0.86 && fs > 10){ fs -= 2; ctx.font = `700 ${fs}px ${FONT}`; }
+    ctx.fillText(label, W / 2, H / 2 + 2);
+    tex.needsUpdate = true;
+  };
+  draw();
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.02 }));
+  registerUI(mesh, {
+    onSelect,
+    onHover(on){ hover = on; draw(); mesh.scale.setScalar(on ? 1.07 : 1); }
+  });
+  mesh.userData.setText = t => { label = t; draw(); };
+  return mesh;
+}
 
-        // Renderizar en los 3 lugares (2D, Ojo Izquierdo, Ojo Derecho)
-        renderContent('content-container-2d', false);
-        renderContent('vr-content-left', true);
-        renderContent('vr-content-right', true);
+/* =====================================================================
+   6. ENTORNO: laboratorio holográfico
+   ===================================================================== */
+const env = new THREE.Group(); scene.add(env);
+{
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(16, 64),
+    new THREE.MeshStandardMaterial({ color: 0x0a0b10, roughness: 0.9, metalness: 0.1 }));
+  floor.rotation.x = -Math.PI / 2; env.add(floor);
 
-        // --- GESTIÓN DE MODO INTERFAZ VR ---
-        const ui2d = document.getElementById('ui-2d');
-        const uiVR = document.getElementById('ui-vr');
-        const navbar2d = document.getElementById('navbar-2d');
+  const grid = new THREE.GridHelper(32, 64, 0x5a0a10, 0x1b1d26);
+  grid.material.transparent = true; grid.material.opacity = 0.55; grid.position.y = 0.002; env.add(grid);
+  env.userData.grid = grid;
 
-        function toggleVRInterface() {
-            if (uiVR.classList.contains('active')) {
-                // Salir de VR UI
-                uiVR.classList.remove('active');
-                ui2d.style.display = 'block';
-                navbar2d.style.display = 'flex';
-                if (document.exitFullscreen) document.exitFullscreen();
-            } else {
-                // Entrar a VR UI
-                uiVR.classList.add('active');
-                ui2d.style.display = 'none';
-                navbar2d.style.display = 'none';
-                enterFullscreen();
-            }
-        }
+  // anillos de plataforma bajo el usuario
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0xe50914, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.66, 64), ringMat);
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.004; env.add(ring);
+  const ring2 = new THREE.Mesh(new THREE.RingGeometry(0.9, 0.905, 64),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.25, side: THREE.DoubleSide }));
+  ring2.rotation.x = -Math.PI / 2; ring2.position.y = 0.004; env.add(ring2);
+  env.userData.ring = ring;
 
-        // Sincronización de Scroll (Ojo Izquierdo controla Ojo Derecho)
-        const leftMenu = document.getElementById('vr-menu-left');
-        const rightMenu = document.getElementById('vr-menu-right');
-        
-        // Bandera para evitar bucle infinito de eventos scroll
-        let isSyncingLeft = false;
-        let isSyncingRight = false;
+  // arco holográfico detrás del catálogo
+  const arc = new THREE.Mesh(new THREE.CylinderGeometry(4.6, 4.6, 4.2, 96, 1, true, Math.PI - 1.4, 2.8),
+    new THREE.MeshBasicMaterial({ color: 0xe50914, wireframe: true, transparent: true, opacity: 0.05 }));
+  arc.position.y = 1.8; env.add(arc);
 
-        leftMenu.onscroll = function() {
-            if (!isSyncingLeft) {
-                isSyncingRight = true;
-                rightMenu.scrollTop = this.scrollTop;
-                rightMenu.scrollLeft = this.scrollLeft;
-            }
-            isSyncingLeft = false;
-        };
+  // estrellas / partículas
+  const N = 1400, pos = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++){
+    const r = 35 + Math.random() * 45, th = Math.random() * Math.PI * 2, ph = Math.acos(Math.random() * 1.8 - 0.8);
+    pos[i * 3] = r * Math.sin(ph) * Math.cos(th); pos[i * 3 + 1] = r * Math.cos(ph) + 5; pos[i * 3 + 2] = r * Math.sin(ph) * Math.sin(th);
+  }
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 0.12, transparent: true, opacity: 0.7, fog: false }));
+  env.add(stars); env.userData.stars = stars;
 
-        rightMenu.onscroll = function() {
-            if (!isSyncingRight) {
-                isSyncingLeft = true;
-                leftMenu.scrollTop = this.scrollTop;
-                leftMenu.scrollLeft = this.scrollLeft;
-            }
-            isSyncingRight = false;
-        };
+  // polvo flotante cercano
+  const M = 260, dp = new Float32Array(M * 3);
+  for (let i = 0; i < M; i++){ dp[i * 3] = (Math.random() - .5) * 12; dp[i * 3 + 1] = Math.random() * 3.5; dp[i * 3 + 2] = (Math.random() - .5) * 12; }
+  const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(dp, 3));
+  const dust = new THREE.Points(dg, new THREE.PointsMaterial({ color: 0xff4d57, size: 0.018, transparent: true, opacity: 0.6 }));
+  env.add(dust); env.userData.dust = dust;
+}
 
-        // --- REPRODUCTOR DE VIDEO VR ---
-        const playerContainer = document.getElementById('vr-player-container');
-        const vLeft = document.getElementById('video-left');
-        const vRight = document.getElementById('video-right');
+/* =====================================================================
+   7. MENÚ 3D: encabezado + filas curvas de tarjetas + paneles laterales
+   ===================================================================== */
+const menu = new THREE.Group(); scene.add(menu);
+const R = 3.2;                             // radio del arco de tarjetas
+const CW = 0.576, CH = 0.36, GAP = 0.07;   // tamaño tarjeta (m)
+const STEP = (CW + GAP) / R;               // ángulo entre tarjetas
+const HALF_VIS = 0.78;                     // medio ángulo visible por fila (rad)
+const ROW_GAP = 0.58;
+const nRows = database.length;
+const rowTop = 1.42 + (nRows - 1) * ROW_GAP / 2;
+const rows = [];
 
-        function startVR(url) {
-            vLeft.src = url;
-            vRight.src = url;
-            
-            playerContainer.classList.add('active');
-            
-            // Si no estamos ya en fullscreen (ej: viniendo de 2D), entrar
-            if (!document.fullscreenElement) enterFullscreen();
+const isPending = it => !it.url && !it.modelo && !it.glb;
+const tipoBadge = it => isPending(it) ? 'PRÓXIMAMENTE' : ({ video: 'VIDEO', video360: '360°', modelo: '3D' }[it.tipo] || 'VIDEO');
 
-            vLeft.play();
-            vRight.play();
-            syncVideos();
-        }
+function drawCard(ctx, W, H, item, cat, img){
+  ctx.clearRect(0, 0, W, H);
+  ctx.save(); roundRect(ctx, 0, 0, W, H, 26); ctx.clip();
+  if (img){
+    const s = Math.max(W / img.width, H / img.height), iw = img.width * s, ih = img.height * s;
+    ctx.drawImage(img, (W - iw) / 2, (H - ih) / 2, iw, ih);
+  } else {
+    const g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, cat.color); g.addColorStop(0.55, '#1a1b22'); g.addColorStop(1, '#0b0c10');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 32){ ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 32){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    ctx.globalAlpha = isPending(item) ? 0.35 : 0.95;
+    ctx.font = `${H * 0.4}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(item.icon || cat.icon || '🥽', W * 0.74, H * 0.4);
+    ctx.globalAlpha = 1;
+  }
+  const sh = ctx.createLinearGradient(0, H * 0.35, 0, H);
+  sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(0,0,0,.92)');
+  ctx.fillStyle = sh; ctx.fillRect(0, 0, W, H);
 
-        function exitVideoVR() {
-            playerContainer.classList.remove('active');
-            vLeft.pause();
-            vRight.pause();
-            // Si estábamos en Modo Interfaz VR, no salimos de fullscreen, solo ocultamos el video
-            // Si estábamos en 2D, salimos de fullscreen
-            if (!uiVR.classList.contains('active')) {
-                if (document.exitFullscreen) document.exitFullscreen();
-            }
-        }
+  const pend = isPending(item);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#fff'; ctx.font = `800 ${H * 0.12}px ${FONT}`;
+  ctx.fillText(pend ? 'Próximamente' : item.title, 26, H - (item.subtitle && !pend ? 62 : 30));
+  if (item.subtitle && !pend){ ctx.fillStyle = '#c9cad3'; ctx.font = `500 ${H * 0.075}px ${FONT}`; ctx.fillText(item.subtitle, 26, H - 26); }
+  if (pend){ ctx.fillStyle = '#9a9ca8'; ctx.font = `500 ${H * 0.07}px ${FONT}`; ctx.fillText(cat.category, 26, H - 70 + 44); }
 
-        function enterFullscreen() {
-            const doc = document.documentElement;
-            if (doc.requestFullscreen) doc.requestFullscreen();
-            else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
-        }
+  const b = tipoBadge(item); ctx.font = `800 ${H * 0.065}px ${FONT}`;
+  const bw = ctx.measureText(b).width + 26;
+  roundRect(ctx, 20, 20, bw, 36, 6); ctx.fillStyle = pend ? 'rgba(90,92,104,.9)' : ACCENT; ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.fillText(b, 33, 46);
+  ctx.restore();
+  roundRect(ctx, 1.5, 1.5, W - 3, H - 3, 26); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.stroke();
+}
 
-        function togglePlay() {
-            if (vLeft.paused) { vLeft.play(); vRight.play(); } 
-            else { vLeft.pause(); vRight.pause(); }
-        }
+function glowTexture(color){
+  const c = makeCanvas(640, 420), ctx = c.getContext('2d');
+  ctx.shadowColor = color; ctx.shadowBlur = 34;
+  roundRect(ctx, 40, 40, 560, 340, 30); ctx.lineWidth = 8; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+  ctx.shadowBlur = 0; ctx.stroke();
+  return texFrom(c);
+}
+const glowCache = {};
 
-        function syncVideos() {
-            setInterval(() => {
-                if (Math.abs(vLeft.currentTime - vRight.currentTime) > 0.1) {
-                    vRight.currentTime = vLeft.currentTime;
-                }
-            }, 1000);
-        }
+function makeCard(item, cat, row){
+  const g = new THREE.Group();
+  const c = makeCanvas(512, 320), ctx = c.getContext('2d');
+  drawCard(ctx, 512, 320, item, cat, null);
+  const tex = texFrom(c);
+  if (item.img){
+    const im = new Image(); im.crossOrigin = 'anonymous';
+    im.onload = () => { drawCard(ctx, 512, 320, item, cat, im); tex.needsUpdate = true; };
+    im.src = item.img;
+  }
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(CW, CH),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.02 }));
+  const gt = glowCache[cat.color] || (glowCache[cat.color] = glowTexture(cat.color));
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(CW * 640 / 560, CH * 420 / 340),
+    new THREE.MeshBasicMaterial({ map: gt, transparent: true, opacity: 0, depthWrite: false }));
+  glow.position.z = -0.003;
+  g.add(glow, face);
+  g.userData = { item, cat, row, hoverT: 0, face, glow };
+  face.userData.row = row;
+  registerUI(face, {
+    onSelect: () => openItem(item, cat),
+    onHover(on){ g.userData.hovered = on; }
+  });
+  return g;
+}
 
-    </script>
+/* Encabezado */
+const header = panel(2.3, 0.52, (ctx, W, H) => {
+  glassBg(ctx, W, H, 40, 0.55);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = `900 ${H * 0.2}px ${FONT}`; ctx.fillStyle = ACCENT; ctx.fillText('VR', 40, H * 0.32);
+  const vrw = ctx.measureText('VR ').width;
+  ctx.font = `300 ${H * 0.2}px ${FONT}`; ctx.fillStyle = '#fff'; ctx.fillText('ENTALPIA', 40 + vrw, H * 0.32);
+  ctx.font = `800 ${H * 0.15}px ${FONT}`; ctx.fillText('Virtualidad aplicada en ámbitos laborales', 40, H * 0.6);
+  ctx.font = `400 ${H * 0.095}px ${FONT}`; ctx.fillStyle = '#b8bac6';
+  ctx.fillText('Experiencias inmersivas seleccionadas para ti · Mundo Virtual del Hub de Ingeniería', 40, H * 0.82);
+}, 800);
+const headerY = rowTop + 0.62;
+header.position.set(-0.32, headerY, -R - 0.05);
+menu.add(header);
+const btnDest = makeButton('▶  Ver destacado', { w: 0.56, h: 0.13, primary: true }, () => openItem(DESTACADO, database[0]));
+btnDest.position.set(1.18, headerY + 0.06, -R + 0.02);
+menu.add(btnDest);
+const btnInfo = makeButton('ℹ  Cómo usar', { w: 0.56, h: 0.1 }, () => toast('Apunta con el láser y pulsa el gatillo · Joystick izq.: desplazar fila · Joystick der.: girar'));
+btnInfo.position.set(1.18, headerY - 0.1, -R + 0.02);
+menu.add(btnInfo);
+
+/* Filas */
+database.forEach((cat, ci) => {
+  const y = rowTop - ci * ROW_GAP;
+  const row = { cat, y, cards: [], offset: 0, target: 0, limit: 0 };
+  const n = cat.items.length, span = (n - 1) * STEP;
+  row.limit = Math.max(0, span / 2 - (HALF_VIS - STEP * 0.5));
+  row.offset = row.target = row.limit;
+  cat.items.forEach(it => { const card = makeCard(it, cat, row); row.cards.push(card); menu.add(card); });
+
+  row.label = panel(1.5, 0.09, (ctx, W, H) => {
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = cat.color; ctx.fillRect(0, H * 0.18, 8, H * 0.64);
+    ctx.font = `800 ${H * 0.56}px ${FONT}`; ctx.fillStyle = '#e8e9ef'; ctx.fillText(cat.category, 22, H / 2 + 2);
+    const w = ctx.measureText(cat.category).width;
+    ctx.font = `500 ${H * 0.42}px ${FONT}`; ctx.fillStyle = '#8d8f9b';
+    ctx.fillText(`· ${n} ${n === 1 ? 'experiencia' : 'experiencias'}`, 34 + w, H / 2 + 2);
+  }, 700);
+  menu.add(row.label);
+
+  const mkArrow = (dir) => {
+    const b = makeButton(dir < 0 ? '‹' : '›', { w: 0.09, h: 0.2 }, () => { row.target = THREE.MathUtils.clamp(row.target + dir * STEP * 2, -row.limit, row.limit); });
+    const a = dir * (HALF_VIS + STEP * 0.32);
+    b.position.set(Math.sin(a) * (R - 0.02), y, -Math.cos(a) * (R - 0.02)); b.lookAt(0, y, 0);
+    b.visible = row.limit > 0; menu.add(b); return b;
+  };
+  row.arrows = [mkArrow(-1), mkArrow(1)];
+  rows.push(row);
+});
+
+function layoutRows(dt){
+  const k = 1 - Math.pow(0.0001, dt);
+  for (const row of rows){
+    row.offset += (row.target - row.offset) * k;
+    const n = row.cards.length, span = (n - 1) * STEP;
+    let firstA = Infinity;
+    row.cards.forEach((card, i) => {
+      const ud = card.userData;
+      ud.hoverT += ((ud.hovered ? 1 : 0) - ud.hoverT) * Math.min(1, dt * 12);
+      const a = i * STEP - span / 2 + row.offset;
+      const over = Math.abs(a) - HALF_VIS;
+      const alpha = THREE.MathUtils.clamp(1 - over / (STEP * 0.6), 0, 1);
+      card.visible = alpha > 0.02;
+      if (!card.visible) return;
+      if (alpha > 0.5) firstA = Math.min(firstA, a);
+      const r = R - ud.hoverT * 0.12;
+      const y = row.y + ud.hoverT * 0.015;
+      card.position.set(Math.sin(a) * r, y, -Math.cos(a) * r);
+      card.lookAt(0, y, 0);
+      card.scale.setScalar(1 + ud.hoverT * 0.08);
+      ud.face.material.opacity = alpha;
+      ud.glow.material.opacity = ud.hoverT * alpha;
+    });
+    if (firstA === Infinity) firstA = -HALF_VIS;
+    const la = firstA - (CW / 2) / R + 0.75 / R;
+    const ly = row.y + CH / 2 + 0.065;
+    row.label.position.set(Math.sin(la) * R, ly, -Math.cos(la) * R);
+    row.label.lookAt(0, ly, 0);
+  }
+}
+
+/* Paneles laterales */
+const sideA = HALF_VIS + 0.48;
+const ctrlPanel = panel(0.95, 1.05, (ctx, W, H) => {
+  glassBg(ctx, W, H, 34);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = ACCENT; ctx.font = `900 ${H * 0.055}px ${FONT}`; ctx.fillText('CONTROLES', 36, 70);
+  const lines = [
+    ['🎯', 'Gatillo / pellizco', 'Seleccionar'],
+    ['✊', 'Grip o gatillo sostenido', 'Agarrar y girar modelos 3D'],
+    ['🕹️', 'Joystick izquierdo', 'Desplazar la fila apuntada'],
+    ['🔄', 'Joystick derecho', 'Girar 30° (snap turn)'],
+    ['🖐️', 'Manos (hand tracking)', 'Apunta y pellizca'],
+    ['🖱️', 'En PC', 'Arrastra para mirar · clic']
+  ];
+  let y = 140;
+  for (const [ic, a, b] of lines){
+    ctx.font = `${H * 0.05}px ${FONT}`; ctx.fillStyle = '#fff'; ctx.fillText(ic, 36, y + 6);
+    ctx.font = `700 ${H * 0.036}px ${FONT}`; ctx.fillText(a, 110, y - 8);
+    ctx.font = `400 ${H * 0.032}px ${FONT}`; ctx.fillStyle = '#a9abb8'; ctx.fillText(b, 110, y + 30);
+    y += 112;
+  }
+}, 1000);
+ctrlPanel.position.set(Math.sin(-sideA) * 2.8, 1.5, -Math.cos(-sideA) * 2.8);
+ctrlPanel.lookAt(0, 1.5, 0);
+menu.add(ctrlPanel);
+
+const total = database.reduce((s, c) => s + c.items.length, 0);
+const live = database.reduce((s, c) => s + c.items.filter(i => !isPending(i)).length, 0);
+const aboutPanel = panel(0.95, 0.72, (ctx, W, H) => {
+  glassBg(ctx, W, H, 34);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = ACCENT; ctx.font = `900 ${H * 0.08}px ${FONT}`; ctx.fillText('MUNDO VIRTUAL', 36, 72);
+  ctx.fillStyle = '#fff'; ctx.font = `400 ${H * 0.05}px ${FONT}`;
+  wrapText(ctx, 'Formación, inspección y metrología en realidad virtual para los equipos del Hub de Ingeniería.', 36, 130, W - 72, 40);
+  ctx.font = `800 ${H * 0.12}px ${FONT}`; ctx.fillText(String(database.length), 36, H - 70);
+  ctx.fillText(String(live), W * 0.36, H - 70); ctx.fillText(String(total - live), W * 0.68, H - 70);
+  ctx.font = `500 ${H * 0.042}px ${FONT}`; ctx.fillStyle = '#a9abb8';
+  ctx.fillText('categorías', 36, H - 30); ctx.fillText('disponibles', W * 0.36, H - 30); ctx.fillText('en desarrollo', W * 0.68, H - 30);
+}, 1000);
+aboutPanel.position.set(Math.sin(sideA) * 2.8, 1.72, -Math.cos(sideA) * 2.8);
+aboutPanel.lookAt(0, 1.72, 0);
+menu.add(aboutPanel);
+const sideBtns = new THREE.Group();
+sideBtns.position.set(Math.sin(sideA) * 2.8, 1.12, -Math.cos(sideA) * 2.8);
+sideBtns.lookAt(0, 1.12, 0);
+const btnRecenter = makeButton('⌖  Recentrar', { w: 0.44, h: 0.1 }, () => recenter(menu, 0));
+const btnExitXR = makeButton('⏏  Salir de VR', { w: 0.44, h: 0.1 }, () => renderer.xr.getSession()?.end());
+btnRecenter.position.x = -0.24; btnExitXR.position.x = 0.24;
+sideBtns.add(btnRecenter, btnExitXR); menu.add(sideBtns);
+btnExitXR.visible = false;
+
+/* =====================================================================
+   8. VISORES: pantalla, 360°, modelo 3D
+   ===================================================================== */
+const video = document.createElement('video');
+video.crossOrigin = 'anonymous'; video.playsInline = true; video.loop = true; video.preload = 'auto';
+video.setAttribute('webkit-playsinline', '');
+const vtex = new THREE.VideoTexture(video);
+vtex.colorSpace = THREE.SRGBColorSpace;
+video.addEventListener('error', () => { if (mode !== 'menu') toast('No se pudo cargar el video (revisa la URL o los permisos CORS)'); });
+
+let mode = 'menu', currentItem = null;
+
+/* --- Barra de reproducción reutilizable --- */
+const playerBars = [];
+function makePlayerBar(width){
+  const g = new THREE.Group();
+  const title = panel(width, 0.11, () => {}, 600); title.position.y = 0.2; g.add(title);
+  const track = new THREE.Mesh(new THREE.PlaneGeometry(width, 0.022), new THREE.MeshBasicMaterial({ color: 0x3a3c46 }));
+  track.position.y = 0.09; g.add(track);
+  const fillGeo = new THREE.PlaneGeometry(width, 0.022); fillGeo.translate(width / 2, 0, 0);
+  const fill = new THREE.Mesh(fillGeo, new THREE.MeshBasicMaterial({ color: 0xe50914 }));
+  fill.position.set(-width / 2, 0.09, 0.001); fill.scale.x = 0.0001; g.add(fill);
+  const hit = new THREE.Mesh(new THREE.PlaneGeometry(width, 0.07), new THREE.MeshBasicMaterial({ visible: false }));
+  hit.position.set(0, 0.09, 0.002); g.add(hit);
+  registerUI(hit, {
+    onSelect(h){ if (h && h.uv && isFinite(video.duration)) video.currentTime = h.uv.x * video.duration; },
+    onHover(on){ track.scale.y = fill.scale.y = on ? 1.8 : 1; }
+  });
+  const time = panel(0.5, 0.06, () => {}, 600); time.position.set(width / 2 - 0.25, 0.14, 0); g.add(time);
+  const bw = 0.2, gap = 0.025, defs = [
+    ['⏪ 10s', () => { video.currentTime = Math.max(0, video.currentTime - 10); }],
+    ['⏯', () => togglePlay(), true],
+    ['10s ⏩', () => { video.currentTime = Math.min(video.duration || 0, video.currentTime + 10); }],
+    ['🔊', () => { video.muted = !video.muted; syncBars(); }],
+    ['✕  Cerrar', () => closeViewer()]
+  ];
+  const btns = defs.map(([t, fn, p], i) => {
+    const b = makeButton(t, { w: i === 4 ? 0.26 : bw, h: 0.09, primary: !!p }, fn);
+    b.position.set((i - (defs.length - 1) / 2) * (bw + gap) + (i === 4 ? 0.03 : 0), -0.02, 0);
+    g.add(b); return b;
+  });
+  const bar = { g, title, fill, time, play: btns[1], mute: btns[3], lastT: -1 };
+  playerBars.push(bar); return bar;
+}
+function fmt(t){ if (!isFinite(t)) return '--:--'; t = Math.floor(t); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; }
+function syncBars(){
+  for (const b of playerBars){
+    b.play.userData.setText(video.paused ? '▶  Reproducir' : '⏸  Pausa');
+    b.mute.userData.setText(video.muted ? '🔇' : '🔊');
+  }
+}
+['play', 'pause'].forEach(e => video.addEventListener(e, syncBars));
+function setBarTitle(text){
+  for (const b of playerBars) b.title.userData.redraw((ctx, W, H) => {
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = `800 ${H * 0.6}px ${FONT}`; ctx.fillStyle = '#fff';
+    ctx.fillText(text, 4, H / 2 + 2);
+  });
+}
+function updateBars(){
+  const d = video.duration, t = video.currentTime;
+  for (const b of playerBars){
+    if (!visibleDeep(b.g)) continue;
+    b.fill.scale.x = isFinite(d) && d > 0 ? Math.max(0.0001, t / d) : 0.0001;
+    const s = Math.floor(t);
+    if (s !== b.lastT){
+      b.lastT = s;
+      b.time.userData.redraw((ctx, W, H) => {
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.font = `600 ${H * 0.6}px ${FONT}`; ctx.fillStyle = '#c9cad3';
+        ctx.fillText(`${fmt(t)} / ${fmt(d)}`, W - 4, H / 2 + 2);
+      });
+    }
+  }
+}
+function togglePlay(){ if (video.paused) video.play().catch(() => toast('Pulsa ▶ para reproducir')); else video.pause(); }
+
+/* --- Pantalla gigante --- */
+const screenView = new THREE.Group(); screenView.visible = false; scene.add(screenView);
+const SCREEN_H = 1.8;
+const screen = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: vtex, toneMapped: false }));
+screen.scale.set(SCREEN_H * 16 / 9, SCREEN_H, 1); screen.position.set(0, 1.85, 0);
+const screenGlow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0xe50914, transparent: true, opacity: 0.18 }));
+screenGlow.position.set(0, 1.85, -0.02);
+screenView.add(screenGlow, screen);
+const screenBar = makePlayerBar(1.6);
+screenBar.g.position.set(0, 0.98, 1.8); screenBar.g.rotation.x = -0.45;
+screenView.add(screenBar.g);
+video.addEventListener('loadedmetadata', () => {
+  if (!video.videoWidth) return;
+  let ar = video.videoWidth / video.videoHeight;
+  let h = SCREEN_H, w = h * ar; if (w > 3.8){ w = 3.8; h = w / ar; }
+  screen.scale.set(w, h, 1); screenGlow.scale.set(w + 0.12, h + 0.12, 1);
+});
+screenGlow.scale.set(SCREEN_H * 16 / 9 + 0.12, SCREEN_H + 0.12, 1);
+
+/* --- Esfera 360° (mono / estéreo) --- */
+const sphereView = new THREE.Group(); sphereView.visible = false; scene.add(sphereView);
+function sphereGeo(part){ // part: 'mono' | 'L' | 'R' con layout sbs/tb
+  const g = new THREE.SphereGeometry(30, 72, 48); g.scale(-1, 1, 1);
+  return g;
+}
+const sphMat = new THREE.MeshBasicMaterial({ map: vtex, toneMapped: false, fog: false });
+const sphMono = new THREE.Mesh(sphereGeo(), sphMat);
+const sphL = new THREE.Mesh(sphereGeo(), sphMat); sphL.layers.set(1);
+const sphR = new THREE.Mesh(sphereGeo(), sphMat); sphR.layers.set(2);
+const baseUV = sphMono.geometry.attributes.uv.array.slice();
+function setStereo(layout){
+  const apply = (mesh, eye) => {
+    const uv = mesh.geometry.attributes.uv.array;
+    for (let i = 0; i < uv.length; i += 2){
+      let u = baseUV[i], v = baseUV[i + 1];
+      if (layout === 'sbs'){ u = u * 0.5 + (eye === 'R' ? 0.5 : 0); }
+      else if (layout === 'tb'){ v = v * 0.5 + (eye === 'L' ? 0.5 : 0); }
+      uv[i] = u; uv[i + 1] = v;
+    }
+    mesh.geometry.attributes.uv.needsUpdate = true;
+  };
+  const stereo = layout === 'sbs' || layout === 'tb';
+  sphMono.visible = !stereo; sphL.visible = sphR.visible = stereo;
+  if (stereo){ apply(sphL, 'L'); apply(sphR, 'R'); }
+}
+sphereView.add(sphMono, sphL, sphR);
+const sphereUI = new THREE.Group(); scene.add(sphereUI); sphereUI.visible = false;
+const sphereBar = makePlayerBar(1.2);
+sphereBar.g.position.set(0, 0.95, 0); sphereBar.g.rotation.x = -0.55;
+sphereUI.add(sphereBar.g);
+const sphereToggle = makeButton('▾ Ocultar controles', { w: 0.36, h: 0.07 }, () => {
+  const show = !sphereBar.g.visible; sphereBar.g.visible = show;
+  sphereToggle.userData.setText(show ? '▾ Ocultar controles' : '▴ Mostrar controles');
+});
+sphereToggle.position.set(0, 0.72, 0.12); sphereToggle.rotation.x = -0.75;
+sphereUI.add(sphereToggle);
+
+/* --- Visor de modelos 3D --- */
+const modelView = new THREE.Group(); modelView.visible = false; scene.add(modelView);
+const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 0.88, 64),
+  new THREE.MeshStandardMaterial({ color: 0x15171f, metalness: 0.6, roughness: 0.35 }));
+pedestal.position.y = 0.44; modelView.add(pedestal);
+const pedRing = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.008, 8, 96), new THREE.MeshBasicMaterial({ color: 0xe50914 }));
+pedRing.rotation.x = Math.PI / 2; pedRing.position.y = 0.885; modelView.add(pedRing);
+const holo = new THREE.Mesh(new THREE.CylinderGeometry(0.43, 0.43, 0.9, 64, 1, true),
+  new THREE.MeshBasicMaterial({ color: 0xe50914, transparent: true, opacity: 0.06, side: THREE.DoubleSide, depthWrite: false }));
+holo.position.y = 1.33; modelView.add(holo);
+const modelHolder = new THREE.Group(); modelHolder.position.y = 1.12; modelView.add(modelHolder);
+let modelRoot = null, modelLabels = [], autoRot = true, labelsOn = true, grabbedBy = null;
+
+const modelInfo = panel(0.62, 0.7, () => {}, 1000);
+modelInfo.position.set(-0.98, 1.3, 0.12); modelInfo.rotation.y = 0.45; modelView.add(modelInfo);
+const modelBtns = new THREE.Group(); modelBtns.position.set(0.98, 1.38, 0.12); modelBtns.rotation.y = -0.45; modelView.add(modelBtns);
+[
+  ['⟳  Giro automático', () => { autoRot = !autoRot; toast(autoRot ? 'Giro automático activado' : 'Giro automático detenido'); }],
+  ['＋  Acercar', () => modelRoot && modelRoot.scale.multiplyScalar(1.2)],
+  ['－  Alejar', () => modelRoot && modelRoot.scale.multiplyScalar(1 / 1.2)],
+  ['🏷  Etiquetas', () => { labelsOn = !labelsOn; modelLabels.forEach(l => l.visible = labelsOn); }],
+  ['↺  Restablecer', () => resetModel()],
+  ['✕  Cerrar', () => closeViewer(), true]
+].forEach(([t, fn, p], i) => { const b = makeButton(t, { w: 0.46, h: 0.095, primary: !!p }, fn); b.position.y = -i * 0.115; modelBtns.add(b); });
+
+function label3D(text){
+  const p = panel(0.34, 0.07, (ctx, W, H) => {
+    roundRect(ctx, 2, 2, W - 4, H - 4, H / 2 - 2); ctx.fillStyle = 'rgba(10,11,16,.85)'; ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = ACCENT; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    let fs = H * 0.5; ctx.font = `700 ${fs}px ${FONT}`;
+    while (ctx.measureText(text).width > W * 0.88){ fs -= 1; ctx.font = `700 ${fs}px ${FONT}`; }
+    ctx.fillText(text, W / 2, H / 2 + 1);
+  }, 700);
+  p.material.depthTest = false; p.renderOrder = 10;
+  return p;
+}
+
+/* Gemelo digital: Estación de Regulación y Medición (ERM) — procedimental */
+function buildERM(){
+  const g = new THREE.Group();
+  const M = (color, m = 0.5, r = 0.4, extra = {}) => new THREE.MeshStandardMaterial({ color, metalness: m, roughness: r, ...extra });
+  const yellow = M(0xf2c200, 0.25, 0.45), steel = M(0xa4adb7, 0.85, 0.28), red = M(0xd62828, 0.2, 0.5),
+        dark = M(0x2a2e36, 0.6, 0.5), blue = M(0x1f5fbf, 0.35, 0.4), white = M(0xf2f2f2, 0, 0.6), black = M(0x111111, 0.2, 0.6);
+  const PY = 0.2, PR = 0.022;
+  const add = (geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); g.add(m); return m; };
+  const pipe = (x1, x2, y = PY, mat = yellow) => add(new THREE.CylinderGeometry(PR, PR, x2 - x1, 24), mat, (x1 + x2) / 2, y, 0, 0, 0, Math.PI / 2);
+  const flange = (x, y = PY) => add(new THREE.CylinderGeometry(PR * 2, PR * 2, 0.012, 24), steel, x, y, 0, 0, 0, Math.PI / 2);
+  const valve = (x) => {
+    add(new THREE.SphereGeometry(0.038, 24, 16), steel, x, PY, 0);
+    add(new THREE.CylinderGeometry(0.006, 0.006, 0.05, 12), steel, x, PY + 0.055, 0);
+    add(new THREE.BoxGeometry(0.13, 0.012, 0.022), red, x + 0.05, PY + 0.08, 0);
+    flange(x - 0.042); flange(x + 0.042);
+  };
+  const gauge = (x) => {
+    add(new THREE.CylinderGeometry(0.005, 0.005, 0.07, 10), steel, x, PY + 0.055, 0);
+    add(new THREE.CylinderGeometry(0.034, 0.034, 0.018, 32), steel, x, PY + 0.11, 0, Math.PI / 2);
+    add(new THREE.CircleGeometry(0.029, 32), white, x, PY + 0.11, 0.0095);
+    add(new THREE.BoxGeometry(0.003, 0.024, 0.002), red, x + 0.006, PY + 0.115, 0.011, 0, 0, -0.6);
+  };
+  // skid y soportes
+  add(new THREE.BoxGeometry(1.08, 0.035, 0.34), dark, 0, 0.018, 0);
+  [-0.42, -0.2, 0.04, 0.42].forEach(x => add(new THREE.BoxGeometry(0.03, PY - 0.04, 0.03), dark, x, (PY - 0.04) / 2 + 0.035, 0));
+  // tramos
+  pipe(-0.54, -0.37); valve(-0.33); pipe(-0.29, -0.25);
+  add(new THREE.CylinderGeometry(0.05, 0.05, 0.2, 32), blue, -0.2, PY + 0.01, 0);           // filtro
+  add(new THREE.CylinderGeometry(0.055, 0.055, 0.02, 32), steel, -0.2, PY + 0.12, 0);
+  add(new THREE.CylinderGeometry(0.012, 0.012, 0.04, 12), steel, -0.2, PY - 0.11, 0);
+  pipe(-0.15, -0.06); gauge(-0.1);
+  add(new THREE.SphereGeometry(0.055, 32, 20), steel, 0, PY, 0);                             // regulador
+  add(new THREE.CylinderGeometry(0.075, 0.075, 0.05, 40), blue, 0, PY + 0.085, 0);
+  add(new THREE.SphereGeometry(0.075, 40, 16, 0, Math.PI * 2, 0, Math.PI / 2), blue, 0, PY + 0.11, 0);
+  add(new THREE.CylinderGeometry(0.008, 0.008, 0.3, 12), yellow, 0.05, PY + 0.3, 0);          // venteo
+  add(new THREE.TorusGeometry(0.03, 0.008, 10, 24, Math.PI), yellow, 0.08, PY + 0.45, 0);
+  add(new THREE.CylinderGeometry(0.008, 0.008, 0.04, 12), yellow, 0.11, PY + 0.43, 0);
+  pipe(0.055, 0.17); gauge(0.12);
+  add(new THREE.BoxGeometry(0.15, 0.17, 0.13), M(0x6d7680, 0.6, 0.35), 0.24, PY + 0.03, 0);  // medidor
+  add(new THREE.PlaneGeometry(0.09, 0.04), new THREE.MeshBasicMaterial({ color: 0x0e2a14 }), 0.24, PY + 0.06, 0.066);
+  add(new THREE.PlaneGeometry(0.07, 0.018), new THREE.MeshBasicMaterial({ color: 0x39ff6a }), 0.24, PY + 0.06, 0.0665);
+  add(new THREE.BoxGeometry(0.04, 0.03, 0.02), black, 0.24, PY - 0.03, 0.07);
+  pipe(0.315, 0.37); valve(0.41); pipe(0.45, 0.55);
+  flange(-0.54); flange(0.55);
+
+  const labels = [
+    ['Entrada · alta presión', -0.5, 0.33], ['Válvula de corte', -0.33, 0.4], ['Filtro', -0.2, 0.42],
+    ['Manómetro P1', -0.1, 0.52], ['Regulador', 0.0, 0.62], ['Venteo', 0.12, 0.78],
+    ['Medidor', 0.24, 0.48], ['Válvula de salida', 0.41, 0.4], ['Salida · media presión', 0.5, 0.33]
+  ].map(([t, x, y], i) => { const l = label3D(t); l.position.set(x, y + (i % 2) * 0.06, 0.05); g.add(l); return l; });
+  g.position.y = -0.2;
+  const wrap = new THREE.Group(); wrap.add(g);
+  return { root: wrap, labels };
+}
+
+function fitObject(obj, size = 0.8){
+  const box = new THREE.Box3().setFromObject(obj), s = new THREE.Vector3(), c = new THREE.Vector3();
+  box.getSize(s); box.getCenter(c);
+  const k = size / Math.max(s.x, s.y, s.z, 1e-6);
+  const wrap = new THREE.Group(); obj.position.sub(c); wrap.add(obj); wrap.scale.setScalar(k);
+  return wrap;
+}
+const gltfLoader = new GLTFLoader();
+function loadModel(item){
+  return new Promise((res, rej) => {
+    if (item.modelo === 'erm') return res(buildERM());
+    if (!item.glb) return rej(new Error('Sin modelo'));
+    gltfLoader.load(item.glb, gl => res({ root: fitObject(gl.scene), labels: [] }), undefined, rej);
+  });
+}
+function resetModel(){ if (!modelRoot) return; modelHolder.attach(modelRoot); modelRoot.position.set(0, 0, 0); modelRoot.quaternion.identity(); modelRoot.scale.setScalar(1); autoRot = true; }
+
+/* --- Abrir / cerrar --- */
+function headPose(){
+  camera.getWorldPosition(tmpV);
+  camera.getWorldDirection(tmpV2); tmpV2.y = 0;
+  if (tmpV2.lengthSq() < 1e-4) tmpV2.set(0, 0, -1);
+  tmpV2.normalize();
+  return { pos: tmpV.clone(), dir: tmpV2.clone(), yaw: Math.atan2(-tmpV2.x, -tmpV2.z) };
+}
+function recenter(group, dist){
+  const h = headPose();
+  group.position.set(h.pos.x + h.dir.x * dist, 0, h.pos.z + h.dir.z * dist);
+  group.rotation.set(0, h.yaw, 0);
+  group.userData.intro = 0;
+}
+function showMenu(on){ menu.visible = on; }
+
+async function openItem(item, cat){
+  if (isPending(item)){ toast(`${cat.category}: experiencia en desarrollo · próximamente`); return; }
+  currentItem = item; clearAllHovers();
+  showMenu(false);
+  if (item.tipo === 'modelo'){
+    mode = 'modelo'; recenter(modelView, 1.25); modelView.visible = true;
+    modelInfo.userData.redraw((ctx, W, H) => {
+      glassBg(ctx, W, H, 30);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      const m = W * 0.07;
+      ctx.fillStyle = ACCENT; ctx.font = `800 ${H * 0.04}px ${FONT}`; ctx.fillText(cat.category.toUpperCase(), m, H * 0.1);
+      ctx.fillStyle = '#fff'; ctx.font = `800 ${H * 0.07}px ${FONT}`;
+      let y = wrapText(ctx, item.title, m, H * 0.2, W - 2 * m, H * 0.08);
+      ctx.fillStyle = '#c9cad3'; ctx.font = `500 ${H * 0.042}px ${FONT}`;
+      y = wrapText(ctx, item.subtitle || '', m, y, W - 2 * m, H * 0.055);
+      ctx.fillStyle = '#e6e7ee'; ctx.font = `400 ${H * 0.04}px ${FONT}`;
+      wrapText(ctx, item.descripcion || '', m, y + H * 0.03, W - 2 * m, H * 0.058);
+    });
+    if (modelRoot){ modelHolder.remove(modelRoot); modelRoot = null; }
+    try {
+      const m = await loadModel(item);
+      if (mode !== 'modelo' || currentItem !== item) return;
+      modelRoot = m.root; modelLabels = m.labels; modelLabels.forEach(l => l.visible = labelsOn);
+      modelHolder.add(modelRoot); resetModel();
+    } catch (e){ toast('No se pudo cargar el modelo 3D'); console.error(e); }
+    return;
+  }
+  setBarTitle(item.title);
+  video.src = item.url; video.currentTime = 0; video.muted = false;
+  if (item.tipo === 'video360'){
+    mode = '360'; setStereo(item.estereo);
+    recenter(sphereView, 0); sphereView.position.y = 0;
+    camera.getWorldPosition(tmpV); sphereView.position.set(tmpV.x, tmpV.y, tmpV.z);
+    recenter(sphereUI, 0.9);
+    sphereView.visible = true; sphereUI.visible = true; sphereBar.g.visible = true;
+    sphereToggle.userData.setText('▾ Ocultar controles');
+    env.visible = false;
+  } else {
+    mode = 'pantalla'; recenter(screenView, 3.3); screenView.visible = true;
+    env.userData.grid.material.opacity = 0.18;
+  }
+  video.play().catch(() => toast('Pulsa ▶ para reproducir'));
+  syncBars();
+}
+function closeViewer(){
+  if (mode === 'menu') return;
+  video.pause(); video.removeAttribute('src'); video.load();
+  releaseGrab();
+  screenView.visible = sphereView.visible = sphereUI.visible = modelView.visible = false;
+  env.visible = true; env.userData.grid.material.opacity = 0.55;
+  mode = 'menu'; currentItem = null; clearAllHovers();
+  showMenu(true); recenter(menu, 0);
+}
+
+/* =====================================================================
+   9. ENTRADAS: mouse/táctil (fuera de VR) y controles/manos (Quest)
+   ===================================================================== */
+const raycaster = new THREE.Raycaster();
+const pointers = [];
+function makePointer(){ const p = { hovered: null, hit: null }; pointers.push(p); return p; }
+function clearPointer(p){ if (p.hovered){ setHover(p.hovered, false); p.hovered = null; } p.hit = null; }
+function clearAllHovers(){ pointers.forEach(clearPointer); }
+function castPointer(p, origin, dir, haptic){
+  raycaster.set(origin, dir); raycaster.far = 40;
+  const targets = interactables.filter(o => visibleDeep(o));
+  const hits = raycaster.intersectObjects(targets, false);
+  const hit = hits[0] || null;
+  const obj = hit ? hit.object : null;
+  if (obj !== p.hovered){
+    if (p.hovered) setHover(p.hovered, false);
+    if (obj){ setHover(obj, true); haptic && haptic(); }
+    p.hovered = obj;
+  }
+  p.hit = hit;
+  return hit;
+}
+function select(p){ const h = p.hit; if (h && h.object.userData.ui?.onSelect) h.object.userData.ui.onSelect(h); }
+function hitModel(origin, dir){
+  if (mode !== 'modelo' || !modelRoot) return null;
+  raycaster.set(origin, dir);
+  return raycaster.intersectObject(modelRoot, true)[0] || null;
+}
+
+/* --- Mouse / táctil --- */
+const mouse = makePointer();
+const ndc = new THREE.Vector2(); let hasMouse = false;
+let yaw = 0, pitch = 0, drag = null;
+const cv = renderer.domElement;
+function setNDC(e){ ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); hasMouse = true; }
+function rayFromCamera(){ raycaster.setFromCamera(ndc, camera); return { o: raycaster.ray.origin.clone(), d: raycaster.ray.direction.clone() }; }
+cv.addEventListener('pointerdown', e => {
+  if (renderer.xr.isPresenting) return;
+  setNDC(e); cv.setPointerCapture(e.pointerId);
+  const r = rayFromCamera();
+  drag = { x: e.clientX, y: e.clientY, moved: 0, model: !!hitModel(r.o, r.d) };
+  if (drag.model) autoRot = false;
+  cv.classList.add('dragging');
+});
+cv.addEventListener('pointermove', e => {
+  if (renderer.xr.isPresenting) return;
+  setNDC(e);
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  drag.moved += Math.abs(dx) + Math.abs(dy); drag.x = e.clientX; drag.y = e.clientY;
+  if (drag.model && modelRoot){
+    modelRoot.rotateOnWorldAxis(Y_AXIS, dx * 0.01);
+  } else {
+    const k = e.pointerType === 'touch' ? 0.006 : 0.004;
+    yaw += dx * k; pitch = THREE.MathUtils.clamp(pitch + dy * k, -1.3, 1.3);
+  }
+});
+cv.addEventListener('pointerup', e => {
+  if (renderer.xr.isPresenting || !drag) return;
+  cv.classList.remove('dragging');
+  if (drag.moved < 8){ setNDC(e); const r = rayFromCamera(); castPointer(mouse, r.o, r.d); select(mouse); }
+  drag = null;
+});
+cv.addEventListener('pointerleave', () => { if (!drag){ hasMouse = false; clearPointer(mouse); } });
+cv.addEventListener('wheel', e => {
+  const row = mouse.hovered?.userData.row;
+  if (row && mode === 'menu'){ row.target = THREE.MathUtils.clamp(row.target + e.deltaY * 0.0025, -row.limit, row.limit); e.preventDefault(); }
+  else if (mode === 'modelo' && modelRoot){ modelRoot.scale.multiplyScalar(e.deltaY > 0 ? 0.92 : 1.08); e.preventDefault(); }
+}, { passive: false });
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeViewer();
+  if (e.key === ' ' && (mode === 'pantalla' || mode === '360')){ togglePlay(); e.preventDefault(); }
+  if (e.key === 'ArrowLeft') yaw += 0.2; if (e.key === 'ArrowRight') yaw -= 0.2;
+});
+
+/* --- Controles XR + manos --- */
+const ctrlFactory = new XRControllerModelFactory();
+const handFactory = new XRHandModelFactory();
+const controllers = [];
+const reticleGeo = new THREE.RingGeometry(0.008, 0.014, 24);
+for (let i = 0; i < 2; i++){
+  const c = renderer.xr.getController(i);
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, 0, -1)]),
+    new THREE.LineBasicMaterial({ color: 0xff3b45, transparent: true, opacity: 0.85 }));
+  line.scale.z = 3; c.add(line);
+  const reticle = new THREE.Mesh(reticleGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, transparent: true }));
+  reticle.renderOrder = 20; reticle.visible = false; scene.add(reticle);
+  c.userData = { ptr: makePointer(), line, reticle, src: null, active: false };
+  c.addEventListener('connected', e => { c.userData.src = e.data; c.userData.active = true; line.visible = e.data.targetRayMode !== 'gaze'; });
+  c.addEventListener('disconnected', () => { c.userData.active = false; c.userData.src = null; clearPointer(c.userData.ptr); reticle.visible = false; });
+  c.addEventListener('selectstart', () => { if (tryGrab(c)) c.userData.grabbedWithTrigger = true; });
+  c.addEventListener('selectend', () => { if (c.userData.grabbedWithTrigger){ c.userData.grabbedWithTrigger = false; if (grabbedBy === c){ releaseGrab(); return; } } });
+  c.addEventListener('select', () => { if (!c.userData.didGrab) select(c.userData.ptr); c.userData.didGrab = false; });
+  c.addEventListener('squeezestart', () => tryGrab(c));
+  c.addEventListener('squeezeend', () => { if (grabbedBy === c) releaseGrab(); });
+  rig.add(c);
+  controllers.push(c);
+
+  const grip = renderer.xr.getControllerGrip(i);
+  grip.add(ctrlFactory.createControllerModel(grip)); rig.add(grip);
+  const hand = renderer.xr.getHand(i);
+  hand.add(handFactory.createHandModel(hand, 'mesh')); rig.add(hand);
+}
+function ctrlRay(c){
+  tmpM.identity().extractRotation(c.matrixWorld);
+  const o = new THREE.Vector3().setFromMatrixPosition(c.matrixWorld);
+  const d = new THREE.Vector3(0, 0, -1).applyMatrix4(tmpM).normalize();
+  return { o, d };
+}
+function pulse(c, s = 0.25, ms = 16){ try { c.userData.src?.gamepad?.hapticActuators?.[0]?.pulse?.(s, ms); } catch (_){} }
+function tryGrab(c){
+  const r = ctrlRay(c);
+  if (!hitModel(r.o, r.d)) return false;
+  releaseGrab(); grabbedBy = c; autoRot = false; c.attach(modelRoot); c.userData.didGrab = true; pulse(c, 0.5, 40);
+  return true;
+}
+function releaseGrab(){ if (grabbedBy && modelRoot){ modelHolder.attach(modelRoot); } grabbedBy = null; }
+
+let turnLock = false;
+function snapTurn(a){
+  camera.getWorldPosition(tmpV);
+  rig.position.sub(tmpV); rig.position.applyAxisAngle(Y_AXIS, a); rig.position.add(tmpV);
+  rig.rotation.y += a;
+}
+function handleSticks(dt){
+  for (const c of controllers){
+    const src = c.userData.src; const gp = src?.gamepad; if (!gp || gp.axes.length < 4) continue;
+    const x = gp.axes[2], y = gp.axes[3];
+    if (src.handedness === 'right'){
+      if (mode === 'modelo' && modelRoot && grabbedBy !== c){
+        if (Math.abs(x) > 0.15){ modelRoot.rotateOnWorldAxis(Y_AXIS, x * dt * 2.5); autoRot = false; }
+        if (Math.abs(y) > 0.3) modelRoot.scale.multiplyScalar(1 - y * dt * 0.8);
+      } else {
+        if (Math.abs(x) > 0.7 && !turnLock){ snapTurn(-Math.sign(x) * Math.PI / 6); turnLock = true; }
+        if (Math.abs(x) < 0.3) turnLock = false;
+      }
+    } else if (Math.abs(x) > 0.2 && mode === 'menu'){
+      const row = c.userData.ptr.hovered?.userData.row || controllers.map(k => k.userData.ptr.hovered?.userData.row).find(Boolean);
+      if (row) row.target = THREE.MathUtils.clamp(row.target + x * dt * 1.6, -row.limit, row.limit);
+    }
+  }
+}
+
+/* --- Aviso flotante (cabeza) --- */
+const toastMesh = panel(0.9, 0.11, () => {}, 600);
+toastMesh.material.depthTest = false; toastMesh.renderOrder = 30;
+toastMesh.position.set(0, -0.28, -1.2); toastMesh.visible = false; camera.add(toastMesh);
+let toast3DTimer;
+function toast3D(msg){
+  toastMesh.userData.redraw((ctx, W, H) => {
+    roundRect(ctx, 3, 3, W - 6, H - 6, (H - 6) / 2); ctx.fillStyle = 'rgba(229,9,20,.94)'; ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    let fs = H * 0.38; ctx.font = `700 ${fs}px ${FONT}`;
+    while (ctx.measureText(msg).width > W * 0.92 && fs > 10){ fs -= 1; ctx.font = `700 ${fs}px ${FONT}`; }
+    ctx.fillText(msg, W / 2, H / 2 + 1);
+  });
+  toastMesh.visible = true; clearTimeout(toast3DTimer); toast3DTimer = setTimeout(() => toastMesh.visible = false, 2600);
+}
+
+/* =====================================================================
+   10. SESIÓN WebXR (botón "Entrar en VR")
+   ===================================================================== */
+const btnVR = $('#btn-vr');
+let needRecenter = false;
+async function setupXR(){
+  if (!('xr' in navigator)){
+    status(window.isSecureContext ? 'Este navegador no soporta WebXR. Abre la página en el navegador de Meta Quest para la experiencia inmersiva.' : 'WebXR requiere HTTPS.');
+    return;
+  }
+  let ok = false;
+  try { ok = await navigator.xr.isSessionSupported('immersive-vr'); } catch (_){}
+  if (!ok){ status('Visor VR no detectado: estás en vista 3D. Abre esta página en el navegador de Meta Quest y pulsa "Entrar en VR".'); return; }
+  btnVR.disabled = false;
+  btnVR.addEventListener('click', async () => {
+    const cur = renderer.xr.getSession();
+    if (cur){ cur.end(); return; }
+    try {
+      const s = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'] });
+      await renderer.xr.setSession(s);
+    } catch (e){ toast('No se pudo iniciar la sesión VR'); console.error(e); }
+  });
+}
+renderer.xr.addEventListener('sessionstart', () => {
+  btnVR.querySelector('.txt').textContent = 'Salir de VR';
+  clearPointer(mouse); hasMouse = false;
+  camera.layers.disable(1);             // cada ojo ve su esfera estéreo
+  try { renderer.xr.setFoveation(1); } catch (_){}
+  rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0);
+  btnExitXR.visible = true; needRecenter = true;
+});
+renderer.xr.addEventListener('sessionend', () => {
+  btnVR.querySelector('.txt').textContent = 'Entrar en VR';
+  camera.layers.enable(1);
+  controllers.forEach(c => { clearPointer(c.userData.ptr); c.userData.reticle.visible = false; });
+  releaseGrab();
+  rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0);
+  camera.position.set(0, EYE, 0); yaw = pitch = 0;
+  btnExitXR.visible = false;
+  recenter(menu, 0);
+  if (mode !== 'menu') closeViewer();
+});
+setupXR();
+
+$('#btn-fs').addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen?.();
+  else (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)?.call(document.documentElement);
+});
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+/* =====================================================================
+   11. BUCLE DE RENDER
+   ===================================================================== */
+const groupsIntro = [menu, screenView, modelView, sphereUI];
+function loop(){
+  const dt = Math.min(clock.getDelta(), 0.05); elapsed += dt;
+  const inXR = renderer.xr.isPresenting;
+
+  if (inXR){
+    if (needRecenter){ needRecenter = false; setTimeout(() => recenter(menu, 0), 300); }
+    for (const c of controllers){
+      const ud = c.userData;
+      if (!ud.active){ ud.reticle.visible = false; continue; }
+      const r = ctrlRay(c);
+      const hit = castPointer(ud.ptr, r.o, r.d, () => pulse(c));
+      const mh = hit ? null : hitModel(r.o, r.d);
+      const h = hit || mh;
+      ud.line.scale.z = h ? h.distance : 3;
+      ud.line.material.color.set(hit ? 0xffffff : 0xff3b45);
+      ud.reticle.visible = !!hit;
+      if (hit){ ud.reticle.position.copy(hit.point); ud.reticle.lookAt(r.o); }
+    }
+    handleSticks(dt);
+  } else {
+    camera.rotation.set(-pitch, -yaw, 0, 'YXZ');
+    if (hasMouse && !drag){ const r = rayFromCamera(); castPointer(mouse, r.o, r.d); }
+    else if (!hasMouse) clearPointer(mouse);
+  }
+
+  if (menu.visible) layoutRows(dt);
+
+  // animación de entrada de grupos
+  for (const g of groupsIntro){
+    if (!g.visible) continue;
+    if (g.userData.intro === undefined) g.userData.intro = 1;
+    if (g.userData.intro < 1){ g.userData.intro = Math.min(1, g.userData.intro + dt * 3); const s = 0.92 + 0.08 * (1 - Math.pow(1 - g.userData.intro, 3)); g.scale.setScalar(s); }
+  }
+
+  // entorno
+  if (env.visible){
+    env.userData.stars.rotation.y += dt * 0.004;
+    env.userData.dust.rotation.y -= dt * 0.02;
+    env.userData.ring.material.opacity = 0.55 + 0.3 * Math.sin(elapsed * 2);
+  }
+  // visores
+  if (mode === 'pantalla' || mode === '360') updateBars();
+  if (mode === 'modelo'){
+    if (modelRoot && autoRot && !grabbedBy) modelRoot.rotation.y += dt * 0.35;
+    holo.material.opacity = 0.05 + 0.03 * Math.sin(elapsed * 3);
+    if (modelLabels.length && labelsOn){ camera.getWorldPosition(tmpV); modelLabels.forEach(l => l.lookAt(tmpV)); }
+  }
+  renderer.render(scene, camera);
+}
+
+recenter(menu, 0);
+renderer.setAnimationLoop(loop);
+requestAnimationFrame(() => $('#loading').classList.add('hide'));
+</script>
 </body>
 </html>
