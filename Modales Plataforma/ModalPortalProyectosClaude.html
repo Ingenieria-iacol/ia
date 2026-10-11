@@ -70,7 +70,11 @@ iframe.pdf{width:100%;height:72vh;border:1px solid var(--ln);border-radius:8px;m
 .ff{max-width:900px;margin:0 auto}.fs{background:linear-gradient(160deg,#1b2a4a,#0e1424);border:1px solid var(--ln);border-radius:12px;padding:14px 16px;margin:12px 0}.fs h4{margin:0 0 6px;color:var(--b2)}.fn{font-size:13px;margin:0 0 6px}.fc1{grid-column:1/-1}
 .fk{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--ln);flex-wrap:wrap}.fk>span{flex:1;min-width:220px;font-size:14px}.seg{display:flex;border:1px solid var(--ln);border-radius:8px;overflow:hidden}.seg button{background:#0b1120;color:var(--mu);border:0;border-right:1px solid var(--ln);padding:8px 11px;cursor:pointer;font-size:13px;font-weight:600}.seg button:last-child{border:0}.seg button.on[data-v=C]{background:#3ddc9733;color:var(--ok)}.seg button.on[data-v=NC]{background:#ff6b7a33;color:var(--er)}.seg button.on[data-v=NA]{background:#8fa0bf33;color:var(--tx)}
 .spd{border:1px dashed var(--b);border-radius:8px;background:#fff;overflow:hidden}.spd canvas{display:block;width:100%;height:120px;touch-action:none;cursor:crosshair}.spb{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:#0b1120}
-.fgr{border:1px solid var(--ln);border-radius:10px;padding:8px 10px;margin:8px 0;background:#0b112055}.fgh{display:flex;justify-content:space-between;align-items:center}
+.fgr{border:1px solid var(--ln);border-radius:10px;padding:0;margin:8px 0;background:#0b112055}.fgr>.g2{padding:4px 12px 12px}.fgh{display:flex;gap:10px;justify-content:space-between;align-items:center;padding:10px 12px;cursor:pointer;list-style:none}.fgh::-webkit-details-marker{display:none}.fgh::before{content:"▸";color:var(--b2);transition:transform .2s}.fgr[open]>.fgh::before{transform:rotate(90deg)}.fgh b{flex:1}.fst{font-size:12px;color:var(--mu)}
+details.fsd>summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;margin:-2px 0}details.fsd>summary::-webkit-details-marker{display:none}details.fsd>summary h4{flex:1;margin:0}details.fsd>summary::after{content:"⌄";font-size:20px;color:var(--b2);transition:transform .2s}details.fsd[open]>summary::after{transform:rotate(180deg)}details.fsd[open]>summary{margin-bottom:10px}
+.fpg{font-size:12px;color:var(--mu);border:1px solid var(--ln);border-radius:99px;padding:2px 9px;white-space:nowrap}.fpg.ok{color:var(--ok);border-color:#3ddc9766}
+.fh{display:block;font-size:11.5px;color:var(--mu);margin:-2px 0 5px;line-height:1.35}.fsx{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin:6px 0}
+.frt{display:flex;flex-wrap:wrap;gap:6px}.frt button{min-width:44px;padding:9px 12px;border-radius:8px;border:1px solid var(--ln);background:#0b1120;color:var(--mu);font-weight:700;cursor:pointer}.frt button.on{background:var(--b);border-color:var(--b);color:#fff}
 .toast{position:fixed;right:16px;top:14px;transform:translateY(-150%);z-index:80;display:flex;gap:12px;align-items:flex-start;width:min(380px,calc(100% - 32px));background:linear-gradient(160deg,#16274a,#0c1426);border:1px solid #3d8bff66;color:var(--tx);border-radius:14px;padding:14px 40px 16px 14px;box-shadow:0 18px 50px #000b;overflow:hidden;transition:transform .45s cubic-bezier(.2,.9,.3,1.2)}.toast.on{transform:translateY(0)}
 .tav{flex:0 0 46px;height:46px;border-radius:50%;background:var(--m);display:grid;place-items:center;overflow:hidden;box-shadow:0 0 0 2px #3ddc9799}.tav img{width:100%;height:100%;object-fit:contain;background:#fff}.tav b{color:#fff;font-size:17px}
 .ttx{display:flex;flex-direction:column;gap:2px;min-width:0}.ttx small{color:var(--mu);font-size:12px;overflow:hidden;text-overflow:ellipsis}.ttx b{font-size:16px}.ttx .tag{align-self:flex-start;margin-top:4px}.tno{margin-top:6px;font-size:12px;color:var(--b2)}
@@ -294,7 +298,7 @@ function b64De(f,max){max=max||20e6;return new Promise((ok,no)=>{if(f.size>max)r
 function b64Blob(b,m){const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return new Blob([u],{type:m})}
 // Visor de solo lectura (capa propia, no cierra el modal de abajo)
 function visor(r,t){const u=URL.createObjectURL(b64Blob(r.b64,r.mime)),pdf=r.mime==="application/pdf",img=/^image\//.test(r.mime);let d=$("#vw");if(!d){d=document.createElement("div");d.id="vw";document.body.append(d)}
-d.innerHTML=`<div class="mod" style="z-index:40"><div class="box w" style="width:min(1040px,100%)"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h3 style="flex:1;min-width:200px">${esc(t||r.nombre)}</h3><a class="btn sm" href="${u}" download="${esc(r.nombre)}">⬇ Descargar</a><button class="btn ghost sm" onclick="visorX()">Cerrar</button></div><small class="mu">Copia controlada de solo lectura · la consulta quedó registrada en la bitácora del SIG.</small>${pdf?`<iframe class="pdf" src="${u}" title="Documento"></iframe>`:img?`<img src="${u}" alt="" style="max-width:100%;margin-top:10px;border-radius:8px">`:`<p class="mu">Este tipo de archivo no tiene vista previa. Usa Descargar.</p>`}</div></div>`}
+d.innerHTML=`<div class="mod" style="z-index:40" onclick="if(event.target===this)visorX()"><div class="box w" style="width:min(1040px,100%)"><div class="mxw"><button type="button" class="mx" onclick="visorX()" title="Cerrar (Esc)" aria-label="Cerrar">✕</button></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h3 style="flex:1;min-width:200px">${esc(t||r.nombre)}</h3><a class="btn sm" href="${u}" download="${esc(r.nombre)}">⬇ Descargar</a><button class="btn ghost sm" onclick="visorX()">Cerrar</button></div><small class="mu">Copia controlada de solo lectura · la consulta quedó registrada en la bitácora del SIG.</small>${pdf?`<iframe class="pdf" src="${u}" title="Documento"></iframe>`:img?`<img src="${u}" alt="" style="max-width:100%;margin-top:10px;border-radius:8px">`:`<p class="mu">Este tipo de archivo no tiene vista previa. Usa Descargar.</p>`}</div></div>`}
 function visorX(){const d=$("#vw");if(d)d.innerHTML=""}
 const msgOk=t=>{const e=$("#er");if(e){e.style.color="var(--ok)";e.textContent=t;setTimeout(()=>{e.style.color="";},4000)}};
 
@@ -590,11 +594,71 @@ c.onpointerdown=e=>{dib=true;usado=true;c.setPointerCapture(e.pointerId);const[a
 el.querySelector("button").onclick=()=>{x.clearRect(0,0,c.width,c.height);usado=false;el.dataset.v="";fGuarda()};
 el.valor=()=>usado?(()=>{const o=document.createElement("canvas");o.width=600;o.height=180;const q=o.getContext("2d");q.fillStyle="#fff";q.fillRect(0,0,600,180);q.drawImage(c,0,0,600,180);return o.toDataURL("image/png")})():(el.dataset.v||"");
 el.carga=v=>{if(!v)return;el.dataset.v=v;const i=new Image();i.onload=()=>{const r=c.getBoundingClientRect();x.drawImage(i,0,0,r.width,r.height)};i.src=v};
-requestAnimationFrame(ajusta)}
+el.ajusta=()=>{ajusta();if(!usado&&el.dataset.v){const i=new Image();i.onload=()=>{const r=c.getBoundingClientRect();x.drawImage(i,0,0,r.width,r.height)};i.src=el.dataset.v}};requestAnimationFrame(ajusta)}
 const padH=(k,l)=>`<div class="spd" data-k="${k}"><canvas></canvas><div class="spb"><small class="mu">${esc(l||"Firma aquí con el dedo o el mouse")}</small><button type="button" class="btn ghost sm">Borrar</button></div></div>`;
-function fCampo(k,l){const t=fTipo(l);if(t==="firma")return `<div class="fc1"><label>${esc(l)}</label>${padH(k)}</div>`;if(t==="area")return `<div class="fc1"><label>${esc(l)}</label><textarea data-k="${k}" rows="3"></textarea></div>`;return `<div><label>${esc(l)}</label><input data-k="${k}" type="${t}"></div>`}
-function fFila(i,g,r,pre,vals){vals=vals||[];return `<div class="fgr" data-g="${i}"><div class="fgh"><b>${pre?esc(pre):vals[0]?esc(String(vals[0]).slice(0,60)):"Fila "+(r+1)}</b>${pre?"":`<button type="button" class="btn ghost sm" onclick="this.closest('.fgr').remove();fGuarda()">Quitar</button>`}</div><div class="g2">${g.h.map((h,c)=>{const v=vals[c]||"",t=fTipo(h);return c===0&&pre?`<input type="hidden" data-c="0" value="${esc(pre)}">`:t==="firma"?`<div class="fc1"><label>${esc(h)}</label>${padH("g"+i+"."+r+"."+c)}</div>`:(v.length>48||t==="area")?`<div class="fc1"><label>${esc(h)}</label><textarea data-c="${c}" rows="${v.length>140?4:2}">${esc(v)}</textarea></div>`:`<div><label>${esc(h)}</label><input data-c="${c}" type="${t==="area"||(v&&t==="date")?"text":t}" value="${esc(v)}"></div>`}).join("")}</div></div>`}
-function fAgregar(i){const b=FX.form.s[i],box=$("#fg"+i),n=box.querySelectorAll(".fgr").length;if(n>=b.g.r+15)return;box.insertAdjacentHTML("beforeend",fFila(i,b.g,n));box.querySelectorAll(".spd").forEach(e=>{if(!e.valor)sigPad(e)})}
+// Opciones de lista: "(a / b / c)", "(sí/no)", "(1-5)"; listas con comas solo en Tipo/Fuente/Clasificación; preguntas de sí/no
+function fOpts(l){const s=String(l),m=s.match(/\(([^()]+)\)\s*\??\s*$/);
+if(m){const x=m[1].trim();if(/^\d\s*[-–]\s*\d$/.test(x)){const[a,b]=x.split(/[-–]/).map(Number);if(b>a&&b-a<=10)return Array.from({length:b-a+1},(_,i)=>String(a+i))}
+if(/\//.test(x)&&!/^medici|kpa|ppm|%/i.test(s)){const o=x.split(/\s*\/\s*/).map(t=>t.trim()).filter(Boolean);if(o.length>=2&&o.every(t=>t.length<=48)){const yn=o.map(t=>t.toLowerCase());if(yn.join()==="sí,no"||yn.join()==="si,no")return["Sí","No"];if(yn.join()==="s,n")return["S","N"];return o.map(t=>t[0].toUpperCase()+t.slice(1))}}
+if(/,/.test(x)&&/^(tipo|fuente|clasificaci)/i.test(s)){const o=x.split(/\s*,\s*/).filter(Boolean);if(o.length>=2)return o.map(t=>t[0].toUpperCase()+t.slice(1))}}
+if(/^ciclo phva/i.test(s))return["P","H","V","A"];if(/^¿/.test(s)&&!/\(/.test(s))return["Sí","No","N/A"];
+if(/\b(conforme|correcto|instalada|cerrado|eficaz|apto para)\b/i.test(s)&&!/\(/.test(s)&&!/fecha|descrip|observ/i.test(s))return["Sí","No","N/A"];
+return null}
+function fHint(l,o){const s=String(l).toLowerCase(),u=(s.match(/\((kpa|m|h|v|kw|s|m³\/h|m³|ppm|%)\)/)||[])[1];
+if(/^ciclo phva/.test(s))return "P = planear, H = hacer, V = verificar, A = actuar.";if(o)return o.length===2&&o[0]==="Sí"?"Marca Sí o No según lo verificado.":o.length===3&&o[0]==="Sí"?"Sí, No o N/A si no aplica en este caso.":"Elige la opción que corresponda.";
+if(/firma/.test(s))return "Firma con el dedo o el mouse dentro del recuadro; Borrar permite repetirla.";
+if(/^fecha|fecha de|fecha \(/.test(s))return "Usa el calendario. Si es una fecha prevista, la del compromiso.";
+if(/^hora/.test(s))return "Hora en formato de 24 h (ej. 14:30).";
+if(u)return "Escribe solo el número, en "+u+".";
+if(/observ|comentario/.test(s))return "Detalles que ayuden a entender el registro. Si no hay, déjalo vacío.";
+if(/descrip|hallazgo|evidencia/.test(s))return "Qué se encontró, dónde y cómo se comprobó (foto, medición o registro).";
+if(/acci[oó]n|correcci[oó]n|tratamiento|control/.test(s))return "Qué se hará o se hizo, de forma concreta y verificable.";
+if(/responsable|ejecut|elabor|revis|aprob|verific|inspector|auditor|supervisor|t[eé]cnico|facilitador|evaluad|emisor|conductor|solicitante|report/.test(s))return "Nombre completo de la persona"+(/matr[ií]cula|certificado/.test(s)?" y el número de su matrícula o certificado.":".");
+if(/^nit|nit \/|documento|^cc/.test(s))return "Número sin puntos; en el NIT incluye el dígito de verificación.";
+if(/n\.º|c[oó]digo|serie|placa|n[uú]mero/.test(s))return "Número o código tal como aparece en el documento o el equipo.";
+if(/proyecto/.test(s))return "Nombre o código del proyecto en el portal.";
+if(/cliente|raz[oó]n social|contratante|contratista|miembro|organizaci/.test(s))return "Nombre o razón social completa.";
+if(/direcci|ubicaci|lugar|sitio|sede|zona/.test(s))return "Dirección o sitio exacto, con referencias si hace falta.";
+if(/cantidad|kilometraje|n\.º de|puntaje|peso|%/.test(s))return "Valor numérico.";
+if(/^actividad|^tarea|^tema/.test(s))return "Qué se hace, en una frase que empiece con un verbo.";
+if(/recurso/.test(s))return "Personas, equipos, presupuesto o tiempo que se necesitan.";
+if(/est[aá]ndar|requisito|norma|criterio|numeral/.test(s))return "Norma, resolución o documento y su numeral (ej. Res. 0312, est. 1.1.1).";
+if(/meta/.test(s))return "Valor a alcanzar, con su unidad (ej. ≥ 90 %).";
+if(/frecuencia|periodo|plazo/.test(s))return "Cada cuánto o hasta cuándo (ej. mensual, trimestral, 30 días).";
+if(/indicador|f[oó]rmula/.test(s))return "Nombre del indicador o cómo se calcula.";
+if(/dirigido|participantes|auditados|equipo auditor/.test(s))return "Personas o grupos que participan.";
+if(/proceso/.test(s))return "Código o nombre del proceso (ej. DI, CN, GI).";
+return "Escribe el dato solicitado; si no aplica, escribe N/A."}
+const fH=(l,o)=>`<small class="fh">💡 ${esc(fHint(l,o))}</small>`;
+const fSel=(attr,o,v)=>{if(v&&!o.includes(v))o=[...o,v];return `<select ${attr}><option value="">— Elige —</option>${o.map(x=>`<option${x===v?" selected":""}>${esc(x)}</option>`).join("")}</select>`};
+function fCampo(k,l){const t=fTipo(l),o=fOpts(l);if(t==="firma")return `<div class="fc1"><label>${esc(l)}</label>${fH(l)}${padH(k)}</div>`;if(o)return `<div><label>${esc(l)}</label>${fH(l,o)}${fSel(`data-k="${k}"`,o)}</div>`;if(t==="area")return `<div class="fc1"><label>${esc(l)}</label>${fH(l)}<textarea data-k="${k}" rows="3"></textarea></div>`;return `<div><label>${esc(l)}</label>${fH(l)}<input data-k="${k}" type="${t}"></div>`}
+// Columnas especiales de las tablas: calificación (1…5 o "Bueno (3)") y meses (Ene…Dic)
+const MESES=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+function fGrupos(h){const rt=[],ms=[];h.forEach((x,c)=>{if(/^\d$/.test(x.trim())||/\(\d\)$/.test(x.trim()))rt.push(c);if(MESES.includes(x.trim()))ms.push(c)});return{rt:rt.length>=3?rt:[],ms:ms.length>=3?ms:[]}}
+function fFila(i,g,r,pre,vals){vals=vals||[];const G=fGrupos(g.h),abre=r===0&&!vals.length;
+const pv=vals.slice(0,3).map(x=>String(x||"").trim()).filter(Boolean),li=pv.findIndex(x=>x.length>12),tv=(li<0?pv.slice(0,2):pv.slice(0,li+1)).join(" · ");
+const tit=pre?esc(pre):tv?esc(tv.length>90?tv.slice(0,88)+"…":tv):"Fila "+(r+1);
+let out=`<details class="fgr" data-g="${i}"${abre?" open":""}><summary class="fgh"><b>${tit}</b><span class="fst"></span>${pre?"":`<button type="button" class="btn ghost sm" onclick="event.preventDefault();this.closest('.fgr').remove();fGuarda();fProg()">Quitar</button>`}</summary><div class="g2">`;
+g.h.forEach((h,c)=>{const v=vals[c]||"",t=fTipo(h);
+if(c===0&&pre){out+=`<input type="hidden" class="fpre" data-c="0" value="${esc(pre)}">`;return}
+if(G.rt.length&&c===G.rt[0]){const et=G.rt.map(k=>g.h[k]);out+=`<div class="fc1"><label>Calificación</label><small class="fh">💡 ${/^\d$/.test(et[0])?`Elige de ${et[0]} (muy insatisfecho) a ${et[et.length-1]} (muy satisfecho).`:"Elige el nivel que mejor describe el desempeño."}</small><div class="frt">${G.rt.map(k=>`<button type="button" data-k2="${k}" class="${vals[k]?"on":""}">${esc(g.h[k])}</button>`).join("")}</div>${G.rt.map(k=>`<input type="hidden" class="fhx" data-c="${k}" value="${esc(vals[k]||"")}">`).join("")}</div>`;return}
+if(G.rt.includes(c))return;
+if(G.ms.length&&c===G.ms[0]){out+=`<div class="fc1"><label>Meses programados</label><small class="fh">💡 Toca los meses en que se ejecuta la actividad.</small><div class="frt fms">${G.ms.map(k=>`<button type="button" data-k2="${k}" class="${vals[k]?"on":""}">${esc(g.h[k])}</button>`).join("")}</div>${G.ms.map(k=>`<input type="hidden" class="fhx" data-c="${k}" value="${esc(vals[k]||"")}">`).join("")}</div>`;return}
+if(G.ms.includes(c))return;
+const o=fOpts(h);
+out+=t==="firma"?`<div class="fc1"><label>${esc(h)}</label>${fH(h)}${padH("g"+i+"."+r+"."+c)}</div>`:o?`<div><label>${esc(h)}</label>${fH(h,o)}${fSel(`data-c="${c}"`,o,v)}</div>`:(v.length>48||t==="area")?`<div class="fc1"><label>${esc(h)}</label>${fH(h)}<textarea data-c="${c}" rows="${v.length>140?4:2}">${esc(v)}</textarea></div>`:`<div><label>${esc(h)}</label>${fH(h)}<input data-c="${c}" type="${t==="area"||(v&&t==="date")?"text":t}" value="${esc(v)}"></div>`});
+return out+`</div></details>`}
+// Botones de calificación (uno solo) y de meses (varios)
+document.addEventListener("click",e=>{const b=e.target.closest(".frt button");if(!b)return;const w=b.closest(".frt"),f=w.parentElement,uno=!w.classList.contains("fms");
+if(uno)w.querySelectorAll("button").forEach(x=>{if(x!==b)x.classList.remove("on")});b.classList.toggle("on");
+w.querySelectorAll("button").forEach(x=>{const h=f.querySelector(`.fhx[data-c="${x.dataset.k2}"]`);if(h)h.value=x.classList.contains("on")?"X":""});fGuarda();fProg()});
+// Avance por sección y por fila
+function fLleno(e){if(e.classList.contains("spd"))return !!e.valor();if(e.classList.contains("seg"))return !!e.dataset.v;return String(e.value||"").trim()!==""}
+function fProg(){document.querySelectorAll("details.fsd").forEach(d=>{const els=[...d.querySelectorAll("[data-k],.fgr [data-c]:not(.fpre):not(.fhx),.fgr .frt")].filter(e=>!e.closest(".frt")||e.classList.contains("frt"));
+const ok=els.filter(e=>e.classList.contains("frt")?!!e.querySelector(".on"):fLleno(e)).length,z=d.querySelector(":scope>summary .fpg");if(z){z.textContent=ok+" de "+els.length;z.classList.toggle("ok",els.length&&ok===els.length)}});
+document.querySelectorAll("details.fgr").forEach(r=>{const n=[...r.querySelectorAll("[data-c]:not(.fpre):not(.fhx)")].some(fLleno)||!!r.querySelector(".frt .on"),z=r.querySelector(".fst");if(z)z.textContent=n?"✓ con datos":"pendiente"})}
+document.addEventListener("toggle",e=>{if(e.target.matches&&e.target.matches("details.fsd,details.fgr")&&e.target.open)e.target.querySelectorAll(".spd").forEach(p=>p.ajusta&&p.ajusta())},true);
+function fAgregar(i){const b=FX.form.s[i],box=$("#fg"+i),n=box.querySelectorAll(".fgr").length;if(n>=b.g.r+15)return;box.insertAdjacentHTML("beforeend",fFila(i,b.g,n));box.querySelectorAll(".fgr").forEach((f,k)=>f.open=k===n);box.querySelectorAll(".spd").forEach(e=>{if(!e.valor)sigPad(e)})}
 async function formPage(){const a=$("#app");a.innerHTML=`<div class="wrap"><p class="mu">Cargando formulario…</p></div>`;
 try{FX=await api({a:"sgcForm",token:FTK})}catch(e){a.innerHTML=`<div class="nav"><img src="${L.ent}" alt=""><b>FORMULARIO EN LÍNEA</b></div><div class="wrap"><div class="cd" style="max-width:620px;margin:30px auto;text-align:center"><h3>${esc(e.message)}</h3><p class="mu">Si crees que es un error, comunícate con quien te envió el enlace.</p></div></div>`;return}
 const F=FX.form,m=FX.miembro;document.title=F.c+" · "+F.t;
@@ -603,11 +667,12 @@ a.innerHTML=`<div class="nav">${FX.logo?`<img src="${FX.logo}" alt="">`:`<img sr
 ${F.d?acc("📘","¿Qué es este formato?","Qué representa y para qué sirve",`<p style="margin:8px 0 0">${esc(F.d)}</p>`):""}
 ${F.i?acc("📝","Instrucciones de llenado",F.i.length+" pasos · léelas antes de empezar",`<ol class="fins">${F.i.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`,1):""}
 <div class="mu" id="fdr" style="font-size:12px;margin:4px 0 8px"></div>
-${F.s.map((b,i)=>`<section class="fs"><h4>${esc(b.t)}</h4>${b.n?`<p class="mu fn">${esc(b.n)}</p>`:""}
-${b.x?`<div class="fc1"><label>${esc(b.x)}</label><textarea data-k="s${i}.x" rows="4"></textarea></div>`:""}
+<div class="fsx"><button type="button" class="btn ghost sm" onclick="document.querySelectorAll('details.fsd').forEach(d=>d.open=true)">Abrir todas las secciones</button><button type="button" class="btn ghost sm" onclick="document.querySelectorAll('details.fsd').forEach(d=>d.open=false)">Cerrar todas</button></div>
+${F.s.map((b,i)=>`<details class="fs fsd"${i===0?" open":""}><summary><h4>${esc(b.t)}</h4><span class="fpg"></span></summary>${b.n?`<p class="mu fn">${esc(b.n)}</p>`:""}
+${b.x?`<div class="fc1"><label>${esc(b.x)}</label><small class="fh">💡 Escribe tu respuesta o declaración completa; incluye lo que se pide en el texto.</small><textarea data-k="s${i}.x" rows="4"></textarea></div>`:""}
 ${b.p?`<div class="g2">${b.p.map((l,j)=>fCampo("s"+i+".p"+j,l)).join("")}</div>`:""}
-${b.k?b.k.map((c,j)=>`<div class="fk"><span>${esc(c)}</span><div class="seg" data-k="s${i}.k${j}">${[["C","✓ Cumple"],["NC","✗ No cumple"],["NA","N/A"]].map(([v,t])=>`<button type="button" data-v="${v}">${t}</button>`).join("")}</div></div>`).join(""):""}
-${b.g?`<div id="fg${i}">${b.g.pre?b.g.pre.map((p,r)=>fFila(i,b.g,r,p)).join(""):b.g.ini?b.g.ini.map((v,r)=>fFila(i,b.g,r,null,v)).join(""):fFila(i,b.g,0)}</div>${b.g.pre?"":`<button type="button" class="btn ghost sm" onclick="fAgregar(${i})">+ Agregar fila</button>`}`:""}</section>`).join("")}
+${b.k?`<small class="fh">💡 Marca cada punto: ✓ Cumple, ✗ No cumple o N/A si no aplica.</small>`+b.k.map((c,j)=>`<div class="fk"><span>${esc(c)}</span><div class="seg" data-k="s${i}.k${j}">${[["C","✓ Cumple"],["NC","✗ No cumple"],["NA","N/A"]].map(([v,t])=>`<button type="button" data-v="${v}">${t}</button>`).join("")}</div></div>`).join(""):""}
+${b.g?`<div id="fg${i}">${b.g.pre?b.g.pre.map((p,r)=>fFila(i,b.g,r,p)).join(""):b.g.ini?b.g.ini.map((v,r)=>fFila(i,b.g,r,null,v)).join(""):fFila(i,b.g,0)}</div>${b.g.pre?"":`<button type="button" class="btn ghost sm" onclick="fAgregar(${i})">+ Agregar fila</button>`}`:""}</details>`).join("")}
 <section class="fs"><h4>Quién diligencia</h4><div class="g2"><div><label>Nombre completo *</label><input data-k="_nombre" autocomplete="name"></div><div><label>Documento de identidad *</label><input data-k="_doc"></div></div>
 <div class="fc1"><label>Firma *</label>${padH("_firma")}</div>
 <div class="g2"><div><label>Ubicación (opcional)</label><button type="button" class="btn ghost sm" id="fgps">📍 Registrar ubicación GPS</button><input type="hidden" data-k="_gps"><div class="mu" id="fgpsv" style="font-size:12px"></div></div>
@@ -616,12 +681,12 @@ ${b.g?`<div id="fg${i}">${b.g.pre?b.g.pre.map((p,r)=>fFila(i,b.g,r,p)).join(""):
 <div class="err" id="er"></div><div class="acts" style="justify-content:center;margin:18px 0 40px"><button class="btn" id="fsend" style="padding:14px 34px;font-size:16px">Enviar formulario</button></div></div>
 <div class="foot"><img src="${L.par}" alt=""><span>${esc(m.nombre)} · Sistema de gestión certificado · ENTALPIA LABS</span></div>`;
 document.querySelectorAll(".spd").forEach(sigPad);
-document.querySelectorAll(".seg").forEach(s=>s.onclick=e=>{const b=e.target.closest("button");if(!b)return;s.dataset.v=s.dataset.v===b.dataset.v?"":b.dataset.v;s.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.v===s.dataset.v));fGuarda()});
-a.querySelector(".ff").addEventListener("input",fGuarda);
+document.querySelectorAll(".seg").forEach(s=>s.onclick=e=>{const b=e.target.closest("button");if(!b)return;s.dataset.v=s.dataset.v===b.dataset.v?"":b.dataset.v;s.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.v===s.dataset.v));fGuarda();fProg()});
+a.querySelector(".ff").addEventListener("input",()=>{fGuarda();fProg()});
 let FOT=[];const pintaF=()=>{$("#ffv").innerHTML=FOT.map((f,i)=>`<div style="position:relative"><img src="${f}" alt=""><button type="button" class="btn ghost sm" style="position:absolute;top:4px;right:4px;padding:2px 7px" onclick="FOTX(${i})">✕</button></div>`).join("")};window.FOTX=i=>{FOT.splice(i,1);pintaF()};
 $("#ffo").onchange=async e=>{for(const f of e.target.files){if(FOT.length>=4)break;try{const r=await prep(f);FOT.push("data:"+r.m+";base64,"+r.b)}catch(x){$("#er").textContent=x.message}}e.target.value="";pintaF()};
 $("#fgps").onclick=()=>{if(!navigator.geolocation)return $("#fgpsv").textContent="Este dispositivo no permite ubicación.";$("#fgpsv").textContent="Obteniendo ubicación…";navigator.geolocation.getCurrentPosition(p=>{const v=p.coords.latitude.toFixed(6)+", "+p.coords.longitude.toFixed(6)+" (±"+Math.round(p.coords.accuracy)+" m)";$("[data-k=_gps]").value=v;$("#fgpsv").textContent=v;fGuarda()},er=>$("#fgpsv").textContent="No se pudo obtener la ubicación: "+er.message,{enableHighAccuracy:true,timeout:15000})};
-fCarga();
+fCarga();fProg();
 const go=$("#fsend");go.onclick=busy(go,async()=>{const d=fDatos();d._fotos=FOT;if(!String(d._nombre||"").trim()||!String(d._doc||"").trim())throw Error("Escribe tu nombre y documento.");if(!d._firma)throw Error("Falta tu firma.");if(!confirm("¿Enviar el formulario? Después no se podrá modificar."))return;
 const r=await api({a:"sgcForm",token:FTK,paso:"enviar",datos:d});try{localStorage.removeItem(fKey())}catch(e){}
 $("#app").innerHTML=`<div class="nav">${FX.logo?`<img src="${FX.logo}" alt="">`:`<img src="${L.ent}" alt="">`}<b>${esc(m.nombre.toUpperCase())}</b></div><div class="wrap"><div class="cd" style="max-width:620px;margin:30px auto;text-align:center"><div style="font-size:54px">✅</div><h3>Formulario enviado</h3><p>${esc(F.c)} · ${esc(F.t)}</p><p class="mu">Registro <b>${esc(r.registroId)}</b><br>Huella SHA-256: <code style="word-break:break-all">${esc(r.sha256)}</code></p><p class="mu">${esc(m.nombre)} recibió una copia en PDF. Ya puedes cerrar esta ventana.</p></div></div>`;scrollTo(0,0)})}
@@ -633,7 +698,7 @@ function fCarga(){let d=null;try{d=JSON.parse(localStorage.getItem(fKey())||"nul
 FX.form.s.forEach((b,i)=>{const g=d["s"+i+".g"];if(!b.g||!Array.isArray(g)||b.g.pre)return;while(R.querySelectorAll(`#fg${i} .fgr`).length<g.length)fAgregar(i);let fl=[...R.querySelectorAll(`#fg${i} .fgr`)];while(fl.length>Math.max(1,g.length))fl.pop().remove()});
 R.querySelectorAll("[data-k]").forEach(e=>{const v=d[e.dataset.k];if(v==null)return;if(e.classList.contains("spd"))e.carga(v);else if(e.classList.contains("seg")){e.dataset.v=v;e.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.v===v))}else e.value=v});
 if(d._gps)$("#fgpsv").textContent=d._gps;
-FX.form.s.forEach((b,i)=>{const g=d["s"+i+".g"];if(!Array.isArray(g))return;[...R.querySelectorAll(`#fg${i} .fgr`)].forEach((f,r)=>{const fila=b.g.pre?g.find(x=>x[0]===b.g.pre[r]):g[r];if(!fila)return;f.querySelectorAll("[data-c]").forEach(x=>{if(fila[+x.dataset.c]!=null&&x.type!=="hidden")x.value=fila[+x.dataset.c]});f.querySelectorAll(".spd").forEach(x=>x.carga(fila[+x.dataset.k.split(".").pop()]))})});
+FX.form.s.forEach((b,i)=>{const g=d["s"+i+".g"];if(!Array.isArray(g))return;[...R.querySelectorAll(`#fg${i} .fgr`)].forEach((f,r)=>{const fila=b.g.pre?g.find(x=>x[0]===b.g.pre[r]):g[r];if(!fila)return;f.querySelectorAll("[data-c]").forEach(x=>{if(fila[+x.dataset.c]!=null&&!x.classList.contains("fpre"))x.value=fila[+x.dataset.c]});f.querySelectorAll(".frt button").forEach(x=>{const h=f.querySelector(`.fhx[data-c="${x.dataset.k2}"]`);x.classList.toggle("on",!!(h&&h.value))});f.querySelectorAll(".spd").forEach(x=>x.carga(fila[+x.dataset.k.split(".").pop()]))})});
 const e=$("#fdr");if(e)e.textContent="💾 Se recuperó el borrador guardado en este dispositivo."}
 
 // ---------- Desde el portal: llenar en línea o enviar por correo ----------
