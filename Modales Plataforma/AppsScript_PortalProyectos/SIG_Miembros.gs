@@ -69,6 +69,8 @@ const SIG = {
   PLANTILLAS: ['FO', 'MZ', 'PL', 'PG'],
   REGISTRO_MAX_BYTES: 20 * 1024 * 1024,
   VIDEO_MAX_BYTES: 30 * 1024 * 1024,
+  // Definiciones de los formularios en línea (documento controlado, versionado en GitHub)
+  FORMS_URL: 'https://raw.githubusercontent.com/Ingenieria-iacol/ia/main/Modales%20Plataforma/AppsScript_PortalProyectos/formularios.json',
 };
 
 const HOJAS = {
@@ -78,6 +80,8 @@ const HOJAS = {
   BitacoraSIG: ['n', 'fecha', 'email', 'miembroId', 'accion', 'detalle', 'hashAnterior', 'hash'],
   Registros: ['registroId', 'miembroId', 'codigo', 'titulo', 'origen', 'fileId', 'creadoPor', 'fecha', 'estado', 'pdfId', 'sha256', 'cerradoPor', 'fechaCierre'],
   Auditorias: ['token', 'email', 'miembroId', 'expira', 'creadoPor', 'fecha', 'estado', 'motivo'],
+  Solicitudes: ['token', 'miembroId', 'codigo', 'email', 'proyecto', 'mensaje', 'expira', 'creadoPor', 'fecha', 'estado', 'registroId', 'fechaRespuesta'],
+  DocsMarca: ['miembroId', 'docId', 'clave', 'pdfId', 'fecha'],
 };
 
 // ---------- ROUTER ----------
@@ -117,6 +121,10 @@ function sigApi(b, u) {
       case 'sgcAuditoriaCrear':  return sigAuditoriaCrear(u, b);
       case 'sgcAuditorias':      return sigAuditorias(u);
       case 'sgcAuditoriaRevocar': return sigAuditoriaRevocar(u, b.token);
+      // ---- formularios en línea ----
+      case 'sgcFormEnviar':      return sigFormEnviar(u, b);
+      case 'sgcFormSolicitudes': return sigFormSolicitudes(u);
+      case 'sgcFormRevocar':     return sigFormRevocar(u, b.token);
     }
     return { error: 'Acción no permitida.' };
   } catch (e) {
@@ -511,6 +519,7 @@ function sigDocs(u) {
     docs: sigDocsVisibles_(n), tipos: SIG_TIPOS, nivel: n.nivel, estado: n.m ? n.m.estadoSIG : '',
     puedeDiligenciar: !!(n.m && SIG_EST_REG.indexOf(n.m.estadoSIG) >= 0),
     rolMiembro: n.v ? n.v.rolMiembro : '', miembroId: n.m ? n.m.miembroId : '',
+    formularios: (() => { try { return Object.keys(sigForms_()); } catch (e) { return []; } })(),
   };
 }
 function sigPdf_(fileId) {
@@ -524,7 +533,7 @@ function sigDocVer(u, id) {
   const n = sigNivel_(u), d = sigDocsVisibles_(n).find(x => x.id === id);
   if (!d) throw new Error('Documento no disponible para tu estado en el SIG.');
   sigBitacora_(u.email, n.m ? n.m.miembroId : '', 'documento_consultado', { codigo: d.codigo || d.nombre });
-  return sigPdf_(d.id);
+  return n.m ? sigPdfMarca_(d, n.m) : sigPdf_(d.id);
 }
 function sigCarpetaRegistros_(m) {
   const f = DriveApp.getFolderById(m.carpetaId), it = f.getFoldersByName('Registros SIG');
@@ -545,6 +554,7 @@ function sigDiligenciar(u, id) {
   const hoy = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
   const copia = DriveApp.getFileById(d.id).makeCopy(n.m.miembroId + ' · ' + d.nombre + ' · ' + hoy, sigCarpetaRegistros_(n.m));
   copia.setDescription('Registro ' + d.codigo + ' de ' + n.m.miembroId + ', creado desde la plantilla maestra del SIG por ' + u.email);
+  sigMarcarCopia_(copia.getId(), n.m);
   const sinAcceso = sigEditoresEquipo_(copia, n.m.miembroId);
   const rid = 'REG-' + Utilities.getUuid().slice(0, 8).toUpperCase();
   sigAgregar_('Registros', { registroId: rid, miembroId: n.m.miembroId, codigo: d.codigo, titulo: d.nombre, origen: 'plantilla', fileId: copia.getId(), creadoPor: u.email, fecha: sigAhora_(), estado: 'abierto' });
@@ -656,7 +666,7 @@ function sigAuditoriaPublica(q) {
     const mid = a.miembroId, quien = 'auditor:' + em, bm = mid === '*' ? '' : mid;
     if (q.paso === 'doc') {
       const d = sigDocsMaestros_().find(x => x.id === q.id); if (!d) return { error: 'Documento no encontrado.' };
-      sigBitacora_(quien, bm, 'auditoria_consulta', { codigo: d.codigo || d.nombre }); return sigPdf_(d.id);
+      sigBitacora_(quien, bm, 'auditoria_consulta', { codigo: d.codigo || d.nombre }); return mid === '*' ? sigPdf_(d.id) : sigPdfMarca_(d, sigMiembro_(mid));
     }
     if (q.paso === 'registro') {
       const r = sigLeer_('Registros').find(x => x.registroId === q.id && (mid === '*' || x.miembroId === mid)); if (!r) return { error: 'Registro no encontrado.' };
@@ -706,4 +716,179 @@ function sigVideo(u, miembroId, url) {
   sigActualizar_('Miembros', m._fila, { introVideo: '', actualizado: sigAhora_() });
   sigBitacora_(u.email, miembroId, 'video_intro', { accion: 'retirado' });
   return sigListaMiembros();
+}
+
+// =====================================================================================
+//  MARCA DEL MIEMBRO EN LOS DOCUMENTOS (reemplaza el texto [LOGO DEL MIEMBRO] por su logo)
+// =====================================================================================
+function sigMarcarCopia_(fileId, m) {
+  try {
+    if (DriveApp.getFileById(fileId).getMimeType() !== 'application/vnd.google-apps.document') return;
+    const doc = DocumentApp.openById(fileId), body = doc.getBody(), r = body.findText('\\[LOGO DEL MIEMBRO\\]');
+    if (!r) return;
+    const t = r.getElement().asText(), par = t.getParent();
+    t.deleteText(r.getStartOffset(), r.getEndOffsetInclusive());
+    let puesto = false;
+    if (m.logoFileId) {
+      try {
+        const img = par.asParagraph().insertInlineImage(0, DriveApp.getFileById(m.logoFileId).getBlob());
+        const h = 46, w = Math.round(img.getWidth() * h / Math.max(1, img.getHeight()));
+        if (w > 130) img.setWidth(130).setHeight(Math.round(img.getHeight() * 130 / Math.max(1, img.getWidth()))); else img.setHeight(h).setWidth(w);
+        puesto = true;
+      } catch (e) {}
+    }
+    if (!puesto) par.asParagraph().appendText(m.nombreComercial || m.razonSocial || m.miembroId);
+    par.asParagraph().appendText('\n' + m.miembroId).setFontSize(7);
+    doc.saveAndClose();
+  } catch (e) {}
+}
+function sigCarpetaMarca_(m) {
+  const f = DriveApp.getFolderById(m.carpetaId), it = f.getFoldersByName('Documentos SIG con marca');
+  return it.hasNext() ? it.next() : f.createFolder('Documentos SIG con marca');
+}
+/** PDF del documento maestro con el logo del miembro. Se genera una vez y se reutiliza hasta que cambie el logo o el documento. */
+function sigPdfMarca_(d, m) {
+  const f = DriveApp.getFileById(d.id);
+  if (!m || !m.logoFileId || f.getMimeType() !== 'application/vnd.google-apps.document') return sigPdf_(d.id);
+  const clave = String(m.logoSha256) + '|' + f.getLastUpdated().getTime(), nombre = m.miembroId + ' · ' + d.nombre + '.pdf';
+  const c = sigLeer_('DocsMarca').find(x => x.miembroId === m.miembroId && x.docId === d.id && String(x.clave) === clave);
+  if (c) { try { return { b64: Utilities.base64Encode(DriveApp.getFileById(c.pdfId).getBlob().getBytes()), mime: 'application/pdf', nombre: nombre }; } catch (e) {} }
+  const carpeta = sigCarpetaMarca_(m), tmp = f.makeCopy('temporal ' + nombre, carpeta);
+  sigMarcarCopia_(tmp.getId(), m);
+  const pdf = tmp.getAs('application/pdf').setName(nombre);
+  tmp.setTrashed(true);
+  const p = carpeta.createFile(pdf);
+  sigAgregar_('DocsMarca', { miembroId: m.miembroId, docId: d.id, clave: clave, pdfId: p.getId(), fecha: sigAhora_() });
+  return { b64: Utilities.base64Encode(pdf.getBytes()), mime: 'application/pdf', nombre: nombre };
+}
+
+// =====================================================================================
+//  FORMULARIOS EN LÍNEA: el miembro envía un formato por correo al personal de campo,
+//  que lo diligencia desde el celular sin cuenta. Al enviarlo se genera un PDF con el logo
+//  del miembro, su huella SHA-256 y un registro cerrado en "Registros SIG".
+// =====================================================================================
+function sigForms_() {
+  const C = CacheService.getScriptCache(), c = C.get('sig_forms_v1');
+  if (c) return JSON.parse(c);
+  const r = UrlFetchApp.fetch(SIG.FORMS_URL, { muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) throw new Error('No se pudieron cargar las definiciones de los formularios.');
+  const t = r.getContentText();
+  C.put('sig_forms_v1', t, 21600);
+  return JSON.parse(t);
+}
+const sigEsc_ = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const sigImg_ = v => /^data:image\/(png|jpeg);base64,[A-Za-z0-9+\/=]+$/.test(String(v || ''));
+function sigFormEnviar(u, b) {
+  const n = sigNivel_(u);
+  if (!n.m) throw new Error('Debes pertenecer a una empresa de la red.');
+  if (SIG_EST_REG.indexOf(n.m.estadoSIG) < 0) throw new Error('Los formularios se usan desde el estado Implementación.');
+  const F = sigForms_()[b.codigo]; if (!F) throw new Error('Ese formato no tiene formulario en línea.');
+  if (!/^https?:\/\//.test(b.base || '')) throw new Error('Enlace base inválido.');
+  const correos = String(b.emails || '').split(/[\s,;]+/).map(x => x.trim().toLowerCase()).filter(Boolean).filter((x, i, a) => a.indexOf(x) === i);
+  if (!correos.length) throw new Error('Escribe al menos un correo.');
+  if (correos.length > 20) throw new Error('Máximo 20 correos por envío.');
+  const malo = correos.find(x => !/^\S+@\S+\.\S+$/.test(x)); if (malo) throw new Error('Correo inválido: ' + malo);
+  const d = Math.max(1, Math.min(30, +b.dias || 7)), ex = new Date(Date.now() + d * 864e5).toISOString();
+  const proyecto = String(b.proyecto || '').slice(0, 120), msg = String(b.mensaje || '').slice(0, 500), m = n.m, nom = m.nombreComercial || m.razonSocial;
+  let logo = null; if (m.logoFileId && b.enviar !== false) { try { logo = DriveApp.getFileById(m.logoFileId).getBlob().setName('logo'); } catch (e) {} }
+  const out = [];
+  correos.forEach(em => {
+    const tk = 'F' + Utilities.getUuid().replace(/-/g, '');
+    sigAgregar_('Solicitudes', { token: tk, miembroId: m.miembroId, codigo: F.c, email: em, proyecto: proyecto, mensaje: msg, expira: ex, creadoPor: u.email, fecha: sigAhora_(), estado: 'pendiente' });
+    const link = b.base + '?f=' + tk; out.push({ email: em, link: link });
+    if (b.enviar === false) return;
+    const html = '<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;border:1px solid #dde3ee;border-radius:10px;overflow:hidden">' +
+      '<div style="background:#0a1a3d;color:#fff;padding:18px;text-align:center">' + (logo ? '<img src="cid:logo" style="max-height:60px;max-width:200px;background:#fff;border-radius:6px;padding:4px"><br>' : '') +
+      '<b style="font-size:18px">' + sigEsc_(nom) + '</b><br><span style="font-size:12px;color:#9fb3d9">' + sigEsc_(m.miembroId) + ' · Sistema Integrado de Gestión</span></div>' +
+      '<div style="padding:20px;color:#1f2937"><p>Hola,</p><p><b>' + sigEsc_(nom) + '</b> te solicita diligenciar en línea el formato:</p>' +
+      '<p style="font-size:17px;background:#eef4ff;border-radius:8px;padding:12px"><b>' + sigEsc_(F.c) + '</b> · ' + sigEsc_(F.t) + (proyecto ? '<br><span style="font-size:13px">Proyecto: ' + sigEsc_(proyecto) + '</span>' : '') + '</p>' +
+      (msg ? '<p style="border-left:3px solid #3d8bff;padding-left:10px;color:#374151">' + sigEsc_(msg) + '</p>' : '') +
+      '<p style="text-align:center;margin:26px 0"><a href="' + link + '" style="background:#1d5fd8;color:#fff;text-decoration:none;padding:14px 26px;border-radius:8px;font-weight:bold;font-size:16px">Diligenciar en línea</a></p>' +
+      '<p style="font-size:12px;color:#6b7280">Se abre en el navegador de tu celular o computador; no necesitas cuenta. El enlace es personal, sirve una sola vez y vence el ' + Utilities.formatDate(new Date(ex), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm') + '.</p></div>' +
+      '<div style="background:#f3f5f9;color:#6b7280;font-size:11px;padding:10px;text-align:center">SIG administrado por ' + sigEsc_(SIG.TITULAR) + ' · ' + sigEsc_(SIG.RED) + '</div></div>';
+    try { MailApp.sendEmail({ to: em, subject: F.c + ' · ' + F.t + ' — ' + nom, htmlBody: html, name: nom, noReply: true, inlineImages: logo ? { logo: logo } : {} }); } catch (e) { out[out.length - 1].error = 'No se pudo enviar el correo'; }
+  });
+  sigBitacora_(u.email, m.miembroId, 'formulario_enviado', { codigo: F.c, destinatarios: correos, proyecto: proyecto });
+  return { enviados: out };
+}
+function sigFormSolicitudes(u) {
+  let mid = '*';
+  if (u.rol !== 'admin') { const v = sigVinculo_(u.email); if (!v) return { solicitudes: [] }; mid = v.miembroId; }
+  return { solicitudes: sigLeer_('Solicitudes').filter(x => mid === '*' || x.miembroId === mid).slice(-200).reverse().map(x => ({
+    token: x.token, miembroId: x.miembroId, codigo: x.codigo, email: x.email, proyecto: x.proyecto, creadoPor: x.creadoPor, registroId: x.registroId,
+    fecha: x.fecha instanceof Date ? x.fecha.toISOString() : x.fecha, expira: x.expira instanceof Date ? x.expira.toISOString() : x.expira,
+    estado: x.estado, fechaRespuesta: x.fechaRespuesta instanceof Date ? x.fechaRespuesta.toISOString() : x.fechaRespuesta })) };
+}
+function sigFormRevocar(u, token) {
+  const x = sigLeer_('Solicitudes').find(r => r.token === token); if (!x) throw new Error('Solicitud no encontrada.');
+  if (u.rol !== 'admin') { const v = sigVinculo_(u.email); if (!v || v.miembroId !== x.miembroId || (x.creadoPor !== u.email && v.rolMiembro !== 'responsable')) throw new Error('No puedes revocar esta solicitud.'); }
+  if (x.estado !== 'pendiente') throw new Error('La solicitud ya no está pendiente.');
+  sigActualizar_('Solicitudes', x._fila, { estado: 'revocada' });
+  sigBitacora_(u.email, x.miembroId, 'formulario_revocado', { codigo: x.codigo, email: x.email });
+  return sigFormSolicitudes(u);
+}
+/** Pública (sin sesión): ver y enviar un formulario con su enlace personal. Llamar ANTES de validar la sesión. */
+function sigFormPublico(q) {
+  try {
+    const busca = () => sigLeer_('Solicitudes').find(x => x.token === String(q.token || ''));
+    let s = busca();
+    if (!s) return { error: 'Enlace no válido.' };
+    if (s.estado === 'revocada') return { error: 'Este enlace fue anulado por quien lo envió.' };
+    if (s.estado === 'diligenciada') return { error: 'Este formulario ya fue diligenciado (registro ' + s.registroId + '). Gracias.' };
+    if (new Date(s.expira) < new Date()) return { error: 'Este enlace venció. Pide uno nuevo a quien te lo envió.' };
+    const F = sigForms_()[s.codigo], m = sigMiembro_(s.miembroId);
+    if (!F || !m) return { error: 'El formulario ya no está disponible.' };
+    if (q.paso !== 'enviar') return {
+      form: F, email: s.email, proyecto: s.proyecto, mensaje: s.mensaje, expira: s.expira instanceof Date ? s.expira.toISOString() : s.expira,
+      miembro: { miembroId: m.miembroId, nombre: m.nombreComercial || m.razonSocial, estadoSIG: m.estadoSIG }, logo: sigLogoDataUrl_(m), titular: SIG.TITULAR, red: SIG.RED };
+    const datos = q.datos || {}, txt = JSON.stringify(datos);
+    if (txt.length > 6 * 1024 * 1024) return { error: 'El formulario es demasiado pesado. Reduce las fotos.' };
+    if (!String(datos._nombre || '').trim() || !String(datos._doc || '').trim()) return { error: 'Escribe tu nombre y documento.' };
+    if (!sigImg_(datos._firma)) return { error: 'Falta tu firma.' };
+    const lock = LockService.getScriptLock(); lock.waitLock(20000);
+    try {
+      delete SIG_RD_['Solicitudes']; s = busca();
+      if (s.estado !== 'pendiente') return { error: 'Este formulario ya fue diligenciado.' };
+      const rid = 'REG-' + Utilities.getUuid().slice(0, 8).toUpperCase(), ahora = sigAhora_(), shaDatos = sigSha_(txt);
+      const html = sigFormHtml_(F, m, sigLogoDataUrl_(m), datos, { rid: rid, fecha: ahora, email: s.email, proyecto: s.proyecto, sha: shaDatos });
+      const nom = m.miembroId + ' · ' + F.c + ' · ' + rid;
+      const pdf = Utilities.newBlob(html, 'text/html', nom + '.html').getAs('application/pdf').setName(nom + '.pdf');
+      const carpeta = sigCarpetaRegistros_(m), pf = carpeta.createFile(pdf), sha = sigShaBytes_(pdf.getBytes());
+      const jf = carpeta.createFile(Utilities.newBlob(txt, 'application/json', nom + '.json'));
+      pf.setDescription('Formulario en línea ' + rid + ' · SHA-256 PDF ' + sha + ' · datos ' + shaDatos + ' · ' + s.email);
+      sigAgregar_('Registros', { registroId: rid, miembroId: m.miembroId, codigo: F.c, titulo: F.c + ' ' + F.t + (s.proyecto ? ' · ' + s.proyecto : ''), origen: 'formulario', fileId: jf.getId(), creadoPor: s.email, fecha: ahora, estado: 'cerrado', pdfId: pf.getId(), sha256: sha, cerradoPor: s.email, fechaCierre: ahora });
+      sigActualizar_('Solicitudes', s._fila, { estado: 'diligenciada', registroId: rid, fechaRespuesta: ahora });
+      sigBitacora_('formulario:' + s.email, m.miembroId, 'formulario_recibido', { registroId: rid, codigo: F.c, nombre: String(datos._nombre).slice(0, 80), sha256: sha });
+      try { MailApp.sendEmail({ to: s.creadoPor, subject: 'Formulario diligenciado: ' + F.c + ' · ' + rid, noReply: true, attachments: [pdf],
+        body: String(datos._nombre) + ' (' + s.email + ') diligenció ' + F.c + ' ' + F.t + (s.proyecto ? ' para ' + s.proyecto : '') + '.\n\nRegistro: ' + rid + '\nSHA-256: ' + sha + '\n\nEl PDF quedó en Registros SIG de ' + (m.nombreComercial || m.razonSocial) + ' y se adjunta a este correo.' }); } catch (e) {}
+      return { ok: true, registroId: rid, sha256: sha };
+    } finally { lock.releaseLock(); }
+  } catch (e) { return { error: e.message }; }
+}
+function sigFormHtml_(F, m, logo, d, meta) {
+  const e = sigEsc_, val = v => sigImg_(v) ? '<img src="' + v + '" style="max-height:48px">' : e(v).replace(/\n/g, '<br>');
+  const td = 'border:1px solid #c9d2e3;padding:5px;font-size:9.5pt;vertical-align:top', th = td + ';background:#e8eef9;font-weight:bold';
+  let o = '<html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;color:#111">' +
+    '<table style="width:100%;border-collapse:collapse"><tr><td rowspan="2" style="' + td + ';width:22%;text-align:center">' + (logo ? '<img src="' + logo + '" style="max-height:52px;max-width:150px"><br>' : '') + '<span style="font-size:8pt">' + e(m.nombreComercial || m.razonSocial) + '<br>' + e(m.miembroId) + '</span></td>' +
+    '<td style="' + td + ';text-align:center"><b style="color:#12408f">SISTEMA INTEGRADO DE GESTIÓN</b><br>' + e(SIG.RED) + '</td><td style="' + td + ';width:26%"><b>Código: ' + e(F.c) + '</b><br>Versión ' + e(F.v) + '</td></tr>' +
+    '<tr><td style="' + td + ';text-align:center"><b>' + e(String(F.t).toUpperCase()) + '</b></td><td style="' + td + '">Registro <b>' + e(meta.rid) + '</b><br>' + e(meta.fecha.slice(0, 16).replace('T', ' ')) + ' UTC</td></tr></table>' +
+    (meta.proyecto ? '<p style="font-size:9.5pt"><b>Proyecto:</b> ' + e(meta.proyecto) + '</p>' : '');
+  F.s.forEach((b, i) => {
+    o += '<h4 style="color:#12408f;margin:12px 0 4px">' + e(b.t) + '</h4>';
+    if (b.n) o += '<p style="font-size:8.5pt;font-style:italic;margin:2px 0">' + e(b.n) + '</p>';
+    if (b.x) o += '<p style="font-size:8.5pt;color:#555;margin:2px 0">' + e(b.x) + '</p><div style="' + td + '">' + val(d['s' + i + '.x']) + '&nbsp;</div>';
+    if (b.p) { o += '<table style="width:100%;border-collapse:collapse">'; for (let j = 0; j < b.p.length; j += 2) o += '<tr><td style="' + th + ';width:22%">' + e(b.p[j]) + '</td><td style="' + td + ';width:28%">' + val(d['s' + i + '.p' + j]) + '</td><td style="' + th + ';width:22%">' + e(b.p[j + 1] || '') + '</td><td style="' + td + ';width:28%">' + (b.p[j + 1] ? val(d['s' + i + '.p' + (j + 1)]) : '') + '</td></tr>'; o += '</table>'; }
+    if (b.k) { o += '<table style="width:100%;border-collapse:collapse"><tr><td style="' + th + '">Verificación</td><td style="' + th + ';width:9%;text-align:center">Cumple</td><td style="' + th + ';width:9%;text-align:center">No cumple</td><td style="' + th + ';width:7%;text-align:center">N/A</td></tr>';
+      b.k.forEach((c, j) => { const r = d['s' + i + '.k' + j]; o += '<tr><td style="' + td + '">' + e(c) + '</td>' + ['C', 'NC', 'NA'].map(z => '<td style="' + td + ';text-align:center;font-weight:bold">' + (r === z ? 'X' : '') + '</td>').join('') + '</tr>'; }); o += '</table>'; }
+    if (b.g) { const filas = Array.isArray(d['s' + i + '.g']) ? d['s' + i + '.g'] : [];
+      o += '<table style="width:100%;border-collapse:collapse"><tr>' + b.g.h.map(h => '<td style="' + th + '">' + e(h) + '</td>').join('') + '</tr>';
+      (filas.length ? filas : [[]]).forEach(f => { o += '<tr>' + b.g.h.map((h, c) => '<td style="' + td + '">' + val((f || [])[c]) + '&nbsp;</td>').join('') + '</tr>'; }); o += '</table>'; }
+  });
+  o += '<h4 style="color:#12408f;margin:14px 0 4px">Diligenciado por</h4><table style="width:100%;border-collapse:collapse"><tr><td style="' + th + ';width:22%">Nombre</td><td style="' + td + '">' + e(d._nombre) + '</td><td style="' + th + ';width:18%">Documento</td><td style="' + td + '">' + e(d._doc) + '</td></tr>' +
+    '<tr><td style="' + th + '">Correo</td><td style="' + td + '">' + e(meta.email) + '</td><td style="' + th + '">Ubicación GPS</td><td style="' + td + '">' + e(d._gps || 'No registrada') + '</td></tr>' +
+    '<tr><td style="' + th + '">Firma</td><td style="' + td + '" colspan="3">' + val(d._firma) + '</td></tr></table>';
+  const fotos = (Array.isArray(d._fotos) ? d._fotos : []).filter(sigImg_).slice(0, 4);
+  if (fotos.length) o += '<h4 style="color:#12408f;margin:14px 0 4px">Registro fotográfico</h4>' + fotos.map(f => '<img src="' + f + '" style="width:48%;margin:0 1% 8px 0">').join('');
+  o += '<p style="font-size:7.5pt;color:#555;border-top:1px solid #c9d2e3;margin-top:14px;padding-top:6px">Registro generado en línea en la plataforma ENTALPIA LABS · SIG administrado por ' + e(SIG.TITULAR) + '. Huella SHA-256 de los datos: ' + e(meta.sha) + '. Documento cerrado: no admite modificaciones.</p></body></html>';
+  return o;
 }
