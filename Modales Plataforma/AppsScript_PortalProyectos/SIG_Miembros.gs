@@ -125,6 +125,7 @@ function sigApi(b, u) {
       case 'sgcEditarLegal':     if (!esAdmin) break; return sigEditarLegal(u, b.miembroId, b.campos);
       case 'sgcVerificarCadena': if (!esAdmin) break; return sigVerificarCadena();
       case 'sgcVideo':           if (!esAdmin) break; return sigVideo(u, b.miembroId, b.url);
+      case 'sgcVideoDatos':      return sigVideoDatos(u, b.miembroId);
       case 'sgcVideoSubir':      if (!esAdmin) break; return sigVideoSubir(u, b.miembroId, b.b64, b.nombre);
       case 'sgcRefrescarDocs':   if (!esAdmin) break; CacheService.getScriptCache().remove('sig_docs_v1'); return sigDocs(u);
       // ---- documentos, registros y auditorías ----
@@ -761,6 +762,17 @@ function sigVideoSubir(u, miembroId, b64, nombre) {
   return sigListaMiembros();
 }
 /** Solo para QUITAR el video (url vacía). Los videos se cargan como .mp4 con sigVideoSubir. */
+/** Entrega el video de bienvenida al portal (base64). Drive ya no sirve el .mp4 directo a un <video> de otra página.
+ *  El integrante solo recibe el de su organización; el administrador, el de cualquier miembro. El navegador lo guarda en caché. */
+function sigVideoDatos(u, miembroId) {
+  let m;
+  if (u.rol === 'admin' && miembroId) m = sigMiembro_(miembroId);
+  else { const v = sigVinculo_(u.email); m = v ? sigMiembro_(v.miembroId) : null; }
+  const id = m && (String(m.introVideo || '').match(/^drive:([\w-]+)$/) || [])[1];
+  if (!id) return { id: '' };
+  const f = DriveApp.getFileById(id), blob = f.getBlob();
+  return { id: id, mime: blob.getContentType() || 'video/mp4', b64: Utilities.base64Encode(blob.getBytes()) };
+}
 function sigVideo(u, miembroId, url) {
   const m = sigMiembro_(miembroId); if (!m) throw new Error('Miembro no encontrado.');
   if (String(url || '').trim()) throw new Error('El video de bienvenida se carga como archivo .mp4.');
