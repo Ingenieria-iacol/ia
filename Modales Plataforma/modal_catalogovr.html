@@ -96,8 +96,8 @@
 </style>
 <script type="importmap">
 { "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  "three": "./vendor/three-r160/build/three.module.min.js",
+  "three/addons/": "./vendor/three-r160/examples/jsm/"
 } }
 </script>
 </head>
@@ -126,9 +126,29 @@
     <div id="pm-body"></div>
   </div>
 </div>
-<div id="loading"><div class="spinner"></div><div style="color:var(--muted);font-size:.9rem">Cargando el mundo virtual…</div></div>
+<div id="loading" role="status" aria-live="polite"><div class="spinner"></div><div id="load-msg" style="color:var(--muted);font-size:.9rem;text-align:center;max-width:420px;padding:0 16px">Cargando el mundo virtual…</div><button class="btn btn-vr" id="load-retry" hidden onclick="location.reload()">↻ Reintentar</button></div>
+<script>
+/* Vigilante de arranque: si algo falla o tarda, se informa y se ofrece reintentar (nunca carga infinita). */
+window.__vrBoot = { ok: false, failed: false };
+function vrFail(msg, keep){
+  var b = window.__vrBoot; if (b.failed && !keep) return; b.failed = true;
+  var l = document.getElementById('loading'); if (!l) return;
+  l.classList.remove('hide');
+  l.querySelector('.spinner').style.display = 'none';
+  document.getElementById('load-msg').innerHTML = msg;
+  document.getElementById('load-retry').hidden = false;
+}
+function vrBusy(msg){
+  var l = document.getElementById('loading'); if (!l) return;
+  l.classList.remove('hide'); l.querySelector('.spinner').style.display = '';
+  document.getElementById('load-msg').textContent = msg; document.getElementById('load-retry').hidden = true;
+}
+addEventListener('error', function (e){ var isScript = e.target && e.target.tagName === 'SCRIPT'; if (!(e instanceof ErrorEvent) && !isScript) return; if (!window.__vrBoot.ok) vrFail('No se pudo iniciar el Mundo Virtual.<br><small style="opacity:.7">' + String(e.message || 'Error al cargar los componentes 3D').replace(/</g, '&lt;') + '</small>'); }, true);
+addEventListener('unhandledrejection', function (e){ if (!window.__vrBoot.ok) vrFail('No se pudo iniciar el Mundo Virtual.<br><small style="opacity:.7">' + String(e.reason && e.reason.message || e.reason || '').replace(/</g, '&lt;') + '</small>'); });
+setTimeout(function (){ if (!window.__vrBoot.ok) vrFail('La carga está tardando más de lo normal. Revisa tu conexión y vuelve a intentarlo.'); }, 20000);
+</script>
 
-<script type="module">
+<script type="module" onerror="vrFail('No se pudieron descargar los componentes 3D. Revisa tu conexión y vuelve a intentarlo.')">
 import * as THREE from 'three';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
@@ -198,8 +218,31 @@ function status(msg){ const s = $('#status'); s.textContent = msg; s.style.displ
 /* =====================================================================
    3. ESCENA BÁSICA
    ===================================================================== */
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+} catch (e){
+  vrFail('Tu navegador no pudo iniciar los gráficos 3D (WebGL).<br><small style="opacity:.7">Cierra otras pestañas con contenido 3D, activa la aceleración por hardware o prueba con Chrome / Edge actualizados.</small>');
+  throw e;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+/* Si la tarjeta gráfica pierde el contexto, se intenta recuperar; si no vuelve, se recarga sola una vez. */
+let ctxTimer = null;
+renderer.domElement.addEventListener('webglcontextlost', e => {
+  e.preventDefault();
+  vrBusy('Recuperando los gráficos 3D…');
+  clearTimeout(ctxTimer);
+  ctxTimer = setTimeout(() => {
+    let last = 0; try { last = +sessionStorage.getItem('vr_autoreload') || 0; } catch (_){}
+    if (Date.now() - last > 60000){ try { sessionStorage.setItem('vr_autoreload', String(Date.now())); } catch (_){} location.reload(); }
+    else vrFail('Los gráficos 3D se detuvieron y no se pudieron recuperar.<br><small style="opacity:.7">Cierra otras pestañas con contenido 3D y vuelve a intentarlo.</small>', true);
+  }, 4000);
+});
+renderer.domElement.addEventListener('webglcontextrestored', () => {
+  clearTimeout(ctxTimer);
+  $('#loading').classList.add('hide');
+});
+addEventListener('pagehide', () => { try { renderer.setAnimationLoop(null); video.pause(); renderer.dispose(); } catch (_){} });
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.xr.enabled = true;
@@ -1817,7 +1860,16 @@ const btnExit2D = $('#btn-exit');
 btnExit2D.addEventListener('click', () => closeViewer());
 let lastMode = null;
 const groupsIntro = [menu, screenView, modelView, sphereUI, planUI, browser];
+let loopErrors = 0;
 function loop(){
+  try { frame(); }
+  catch (e){
+    if (loopErrors++ < 3) console.error('Mundo Virtual:', e);
+    try { renderer.render(scene, camera); } catch (_){}
+  }
+  if (!window.__vrBoot.ok){ window.__vrBoot.ok = true; $('#loading').classList.add('hide'); }
+}
+function frame(){
   const dt = Math.min(clock.getDelta(), 0.05); elapsed += dt;
   if (mode !== lastMode){ lastMode = mode; btnExit2D.hidden = mode === 'menu'; }
   const inXR = renderer.xr.isPresenting;
@@ -1877,9 +1929,8 @@ function loop(){
 }
 
 recenter(menu, 0);
-arranquePlanos();
+try { arranquePlanos(); } catch (e){ console.error(e); }
 renderer.setAnimationLoop(loop);
-requestAnimationFrame(() => $('#loading').classList.add('hide'));
 </script>
 </body>
 </html>
