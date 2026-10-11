@@ -2517,6 +2517,11 @@ async function vista(v,o){o=o||{};if(window.closeAc)try{closeAc();}catch(e){}ov.
    g('sgl').innerHTML=`<p><b>${esc(m.nombre)}</b> · vigente v${m.version}</p>`+r.versiones.map(x=>`<div class="row"><div class="th" style="font-size:14px;font-weight:700">v${x.version}</div><div class="f"><b>${fch(x.fecha)} · ${esc(x.autor)}</b><span class="mu">${x.nota?esc(x.nota)+' · ':''}${kb(x.bytes)} · SHA-256 ${esc(String(x.sha256).slice(0,12))}…</span></div><button data-ab="${x.version}">${x.version===m.version?'Abrir':'Abrir esta versión'}</button></div>`).join('');
    g('sgl').onclick=e=>{const a=e.target.closest('[data-ab]');if(a)run(a,()=>abrirPlano(o.planoId,+a.dataset.ab))();};
   }catch(e){if(e.auth)return vista('login',{msg:'Tu sesión venció. Ingresa de nuevo.'});err(e.message);g('sgl').innerHTML='';}}}
+/* ---------- Ver en VR: entrega el dibujo al Mundo Virtual (misma página/dominio) ---------- */
+function verVR(){if(!hasWork()){alert('El dibujo está vacío: no hay nada para ver en VR.');return;}
+ const h={exp:Date.now()+10*60e3,nombre:(LINK&&LINK.nombre)||PJ.nombre||'Plano Isoflux',proyecto:(LINK&&LINK.proyecto)||PJ.cliente||'',planoId:(LINK&&LINK.planoId)||null,version:(LINK&&LINK.version)||0,ses:SES||null,plan:{nodes:S.nodes,pipes:S.pipes,proyecto:PJ}};
+ try{localStorage.setItem('vr_plano_handoff',JSON.stringify(h));}catch(e){alert('No se pudo preparar el plano para VR (memoria del navegador llena):\n'+e.message);return;}
+ window.open('../../Modales%20Plataforma/modal_catalogovr.html?desde=isoflux','_blank');}
 function salir(){SES=null;saveSes();LINK=null;saveLink();cerrar();toast('Sesión del portal cerrada. El dibujo sigue en pantalla.');}
 /* ---------- chip de estado (abajo al centro) ---------- */
 const cp=document.createElement('div');cp.id='sgcchip';document.body.appendChild(cp);
@@ -2527,9 +2532,10 @@ function chip(t){cp.innerHTML=t?esc(t):LINK&&LINK.proyectoId?`☁️ <b>${esc(LI
 {const arch=[...document.querySelectorAll('#tb>details.ac')].find(d=>d.querySelector('summary').textContent.replace(/[▾\s]+$/,'').trim()=='Archivo');
  const accs=arch&&arch.querySelector('.accs');
  if(accs){const d=document.createElement('details');d.className='acc';d.open=true;
-  d.innerHTML=`<summary><span>☁️</span><span>Proyecto del SGC</span><small>4</small></summary><div class="accb"><button id="bsg_sv" title="Guarda una versión nueva del plano dentro de su proyecto (Ctrl+S)">☁️ Guardar en el proyecto</button><button id="bsg_ab" title="Abre un plano guardado en uno de tus proyectos">☁️ Abrir de un proyecto</button><button id="bsg_as" title="Guarda el dibujo como un plano nuevo, en este u otro proyecto">☁️ Guardar como plano nuevo…</button><button id="bsg_vs" title="Ver y abrir versiones anteriores del plano">🕘 Versiones del plano</button></div>`;
+  d.innerHTML=`<summary><span>☁️</span><span>Proyecto del SGC</span><small>5</small></summary><div class="accb"><button id="bsg_vr" title="Abre este dibujo en 3D en el Mundo Virtual (gafas Meta Quest o vista 3D en el navegador)">🥽 Ver en VR (3D)</button><button id="bsg_sv" title="Guarda una versión nueva del plano dentro de su proyecto (Ctrl+S)">☁️ Guardar en el proyecto</button><button id="bsg_ab" title="Abre un plano guardado en uno de tus proyectos">☁️ Abrir de un proyecto</button><button id="bsg_as" title="Guarda el dibujo como un plano nuevo, en este u otro proyecto">☁️ Guardar como plano nuevo…</button><button id="bsg_vs" title="Ver y abrir versiones anteriores del plano">🕘 Versiones del plano</button></div>`;
   accs.insertBefore(d,accs.firstChild);
   g('bsg_sv').onclick=()=>{if(window.closeAc)try{closeAc();}catch(e){}guardar();};
+  g('bsg_vr').onclick=()=>{if(window.closeAc)try{closeAc();}catch(e){}verVR();};
   g('bsg_ab').onclick=()=>vista('proyectos');
   g('bsg_as').onclick=()=>vista('proyectos',{modo:'guardar'});
   g('bsg_vs').onclick=()=>LINK&&LINK.planoId?vista('versiones',{planoId:LINK.planoId,proyectoId:LINK.proyectoId,titulo:LINK.proyecto}):alert('Este dibujo todavía no está guardado en un proyecto.');}}

@@ -66,6 +66,30 @@
   #loading.hide{opacity:0;pointer-events:none}
   .spinner{width:46px;height:46px;border-radius:50%;border:3px solid rgba(255,255,255,.12);border-top-color:var(--accent);animation:spin 1s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
+  /* Modal "Mis planos" */
+  .pm{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+  .pm[hidden]{display:none}
+  .pm-box{width:min(640px,100%);max-height:min(86vh,760px);display:flex;flex-direction:column;background:#0e1016;border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden}
+  .pm-box header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .pm-box header b{flex:1;font-size:1.05rem}
+  .pm-x{background:none;border:0;color:#fff;font-size:1.2rem;cursor:pointer;width:36px;height:36px;border-radius:8px}
+  .pm-x:hover{background:rgba(255,255,255,.1)}
+  .pm-file{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line);font-size:.78rem;color:var(--muted)}
+  .pm-file label{cursor:pointer}
+  #pm-body{padding:14px 16px;overflow:auto;flex:1}
+  #pm-body label.f{display:block;font-size:.8rem;color:var(--muted);margin:10px 0 4px}
+  #pm-body input[type=email],#pm-body input[type=password],#pm-body input[type=search]{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:#161922;color:#fff;font-size:.95rem}
+  #pm-body input:focus{outline:2px solid var(--accent);outline-offset:0}
+  .pm-mu{color:var(--muted);font-size:.82rem;line-height:1.45}
+  .pm-mu a{color:#9fc4e8}
+  .pm-er{color:#ff6b72;font-size:.85rem;min-height:1.2em;margin:8px 0}
+  .pm-row{display:flex;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer;background:#12141b;transition:background .15s,border-color .15s}
+  .pm-row:hover,.pm-row:focus-visible{background:#1a1d27;border-color:rgba(229,9,20,.6);outline:none}
+  .pm-th{width:64px;height:44px;flex:none;border-radius:6px;background:#1d2130 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+  .pm-row .f{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .pm-row .f b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pm-tg{display:inline-block;font-size:.7rem;padding:1px 7px;border-radius:999px;background:rgba(255,255,255,.08);margin-right:4px}
+  .pm-go{margin-top:14px}
   @media (max-width:560px){ .logo{font-size:1.1rem} .btn .txt{display:none} #hint{font-size:.72rem} }
 </style>
 <script type="importmap">
@@ -80,6 +104,8 @@
 <nav>
   <a class="logo" href="../index.html" title="Volver a la plataforma">VR<span>ENTALPIA</span></a>
   <div class="actions">
+    <a class="btn" href="https://desarrollosdeia.org/" target="_top" title="Volver a la página de inicio">⌂ <span class="txt">Inicio</span></a>
+    <button class="btn" id="btn-planos" title="Ver tus planos de Isoflux en 3D">📐 <span class="txt">Mis planos</span></button>
     <button class="btn" id="btn-fs" title="Pantalla completa">⛶ <span class="txt">Pantalla completa</span></button>
     <button class="btn btn-vr" id="btn-vr" disabled>👓 <span class="txt">Entrar en VR</span></button>
   </div>
@@ -87,6 +113,16 @@
 <div id="status"></div>
 <div id="hint">Arrastra para mirar · Clic en una tarjeta para abrirla · Rueda del mouse sobre una fila para desplazarla · Esc para volver</div>
 <div id="toast"></div>
+<div class="pm" id="pm" hidden>
+  <div class="pm-box" role="dialog" aria-modal="true" aria-labelledby="pm-h">
+    <header><b id="pm-h">📐 Mis planos de Isoflux</b><button class="pm-x" id="pm-x" aria-label="Cerrar">✕</button></header>
+    <div class="pm-file">
+      <label class="btn">📂 Abrir archivo .json<input type="file" id="pm-file" accept=".json,application/json" hidden></label>
+      <span>Un dibujo guardado desde Isoflux. Se abre solo en este dispositivo; no se sube a ninguna parte.</span>
+    </div>
+    <div id="pm-body"></div>
+  </div>
+</div>
 <div id="loading"><div class="spinner"></div><div style="color:var(--muted);font-size:.9rem">Cargando el mundo virtual…</div></div>
 
 <script type="module">
@@ -94,6 +130,7 @@ import * as THREE from 'three';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 /* =====================================================================
    1. DATOS DEL CATÁLOGO
@@ -102,6 +139,12 @@ const DEMO_360 = 'https://threejs.org/examples/textures/MaryOculus.mp4';
 const DEMO_VIDEO = 'https://threejs.org/examples/textures/sintel.mp4';
 
 const database = [
+  {
+    category: "Mis planos", color: "#3d8bff", icon: "📐", dinamica: "planos",
+    items: [
+      { title: "Abrir plano", subtitle: "Proyectos del SGC · Isoflux", icon: "📂", tipo: "accion" }
+    ]
+  },
   {
     category: "Demostraciones VR", color: "#e50914", icon: "🥽",
     items: [
@@ -133,7 +176,8 @@ const database = [
     ]
   }
 ];
-const DESTACADO = database[0].items[0];
+const DEST_CAT = database.find(c => c.category === "Demostraciones VR");
+const DESTACADO = DEST_CAT.items[0];
 
 /* =====================================================================
    2. UTILIDADES DOM
@@ -162,7 +206,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x05060a);
 scene.fog = new THREE.Fog(0x05060a, 9, 30);
 
-const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.03, 200);
+const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.03, 2500);
 const EYE = 1.6;
 camera.position.set(0, EYE, 0);
 camera.layers.enable(1);               // ver esfera "ojo izquierdo" fuera de VR
@@ -272,7 +316,7 @@ const env = new THREE.Group(); scene.add(env);
 {
   const floor = new THREE.Mesh(new THREE.CircleGeometry(16, 64),
     new THREE.MeshStandardMaterial({ color: 0x0a0b10, roughness: 0.9, metalness: 0.1 }));
-  floor.rotation.x = -Math.PI / 2; env.add(floor);
+  floor.rotation.x = -Math.PI / 2; env.add(floor); env.userData.floor = floor;
 
   const grid = new THREE.GridHelper(32, 64, 0x5a0a10, 0x1b1d26);
   grid.material.transparent = true; grid.material.opacity = 0.55; grid.position.y = 0.002; env.add(grid);
@@ -323,8 +367,8 @@ const nRows = database.length;
 const rowTop = 1.42 + (nRows - 1) * ROW_GAP / 2;
 const rows = [];
 
-const isPending = it => !it.url && !it.modelo && !it.glb;
-const tipoBadge = it => isPending(it) ? 'PRÓXIMAMENTE' : ({ video: 'VIDEO', video360: '360°', modelo: '3D' }[it.tipo] || 'VIDEO');
+const isPending = it => !it.url && !it.modelo && !it.glb && !['accion', 'plano', 'plano-local'].includes(it.tipo);
+const tipoBadge = it => isPending(it) ? 'PRÓXIMAMENTE' : ({ video: 'VIDEO', video360: '360°', modelo: '3D', accion: 'ABRIR', plano: 'PLANO 3D', 'plano-local': 'PLANO 3D' }[it.tipo] || 'VIDEO');
 
 function drawCard(ctx, W, H, item, cat, img){
   ctx.clearRect(0, 0, W, H);
@@ -412,7 +456,7 @@ const header = panel(2.3, 0.52, (ctx, W, H) => {
 const headerY = rowTop + 0.62;
 header.position.set(-0.32, headerY, -R - 0.05);
 menu.add(header);
-const btnDest = makeButton('▶  Ver destacado', { w: 0.56, h: 0.13, primary: true }, () => openItem(DESTACADO, database[0]));
+const btnDest = makeButton('▶  Ver destacado', { w: 0.56, h: 0.13, primary: true }, () => openItem(DESTACADO, DEST_CAT));
 btnDest.position.set(1.18, headerY + 0.06, -R + 0.02);
 menu.add(btnDest);
 const btnInfo = makeButton('ℹ  Cómo usar', { w: 0.56, h: 0.1 }, () => toast('Apunta con el láser y pulsa el gatillo · Joystick izq.: desplazar fila · Joystick der.: girar'));
@@ -420,23 +464,35 @@ btnInfo.position.set(1.18, headerY - 0.1, -R + 0.02);
 menu.add(btnInfo);
 
 /* Filas */
-database.forEach((cat, ci) => {
-  const y = rowTop - ci * ROW_GAP;
-  const row = { cat, y, cards: [], offset: 0, target: 0, limit: 0 };
-  const n = cat.items.length, span = (n - 1) * STEP;
-  row.limit = Math.max(0, span / 2 - (HALF_VIS - STEP * 0.5));
-  row.offset = row.target = row.limit;
-  cat.items.forEach(it => { const card = makeCard(it, cat, row); row.cards.push(card); menu.add(card); });
-
-  row.label = panel(1.5, 0.09, (ctx, W, H) => {
+function unregisterUI(mesh){ const i = interactables.indexOf(mesh); if (i >= 0) interactables.splice(i, 1); }
+function drawRowLabel(row){
+  const cat = row.cat, dyn = cat.dinamica === 'planos', cnt = dyn ? cat.items.length - 1 : cat.items.length;
+  const word = dyn ? (cnt === 1 ? 'plano reciente' : 'planos recientes') : (cnt === 1 ? 'experiencia' : 'experiencias');
+  row.label.userData.redraw((ctx, W, H) => {
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.fillStyle = cat.color; ctx.fillRect(0, H * 0.18, 8, H * 0.64);
     ctx.font = `800 ${H * 0.56}px ${FONT}`; ctx.fillStyle = '#e8e9ef'; ctx.fillText(cat.category, 22, H / 2 + 2);
     const w = ctx.measureText(cat.category).width;
     ctx.font = `500 ${H * 0.42}px ${FONT}`; ctx.fillStyle = '#8d8f9b';
-    ctx.fillText(`· ${n} ${n === 1 ? 'experiencia' : 'experiencias'}`, 34 + w, H / 2 + 2);
-  }, 700);
+    ctx.fillText(`· ${cnt} ${word}`, 34 + w, H / 2 + 2);
+  });
+}
+function buildRowCards(row){
+  for (const c of row.cards){ unregisterUI(c.userData.face); menu.remove(c); c.userData.face.geometry.dispose(); c.userData.face.material.map.dispose(); c.userData.face.material.dispose(); }
+  row.cards = [];
+  const n = row.cat.items.length, span = (n - 1) * STEP;
+  row.limit = Math.max(0, span / 2 - (HALF_VIS - STEP * 0.5));
+  row.offset = row.target = row.limit;
+  row.cat.items.forEach(it => { const card = makeCard(it, row.cat, row); row.cards.push(card); menu.add(card); });
+  if (row.arrows) row.arrows.forEach(a => a.visible = row.limit > 0);
+  drawRowLabel(row);
+}
+database.forEach((cat, ci) => {
+  const y = rowTop - ci * ROW_GAP;
+  const row = { cat, y, cards: [], offset: 0, target: 0, limit: 0 };
+  row.label = panel(1.5, 0.09, () => {}, 700);
   menu.add(row.label);
+  buildRowCards(row);
 
   const mkArrow = (dir) => {
     const b = makeButton(dir < 0 ? '‹' : '›', { w: 0.09, h: 0.2 }, () => { row.target = THREE.MathUtils.clamp(row.target + dir * STEP * 2, -row.limit, row.limit); });
@@ -526,8 +582,15 @@ sideBtns.position.set(Math.sin(sideA) * 2.8, 1.12, -Math.cos(sideA) * 2.8);
 sideBtns.lookAt(0, 1.12, 0);
 const btnRecenter = makeButton('⌖  Recentrar', { w: 0.44, h: 0.1 }, () => recenter(menu, 0));
 const btnExitXR = makeButton('⏏  Salir de VR', { w: 0.44, h: 0.1 }, () => renderer.xr.getSession()?.end());
+const btnHome = makeButton('⌂  Inicio', { w: 0.44, h: 0.1 }, () => goHome());
 btnRecenter.position.x = -0.24; btnExitXR.position.x = 0.24;
-sideBtns.add(btnRecenter, btnExitXR); menu.add(sideBtns);
+btnHome.position.set(-0.24, -0.13, 0);
+sideBtns.add(btnRecenter, btnExitXR, btnHome); menu.add(sideBtns);
+function goHome(){
+  const go = () => { location.href = 'https://desarrollosdeia.org/'; };
+  const s = renderer.xr.getSession();
+  if (s){ s.end().then(go, go); } else go();
+}
 btnExitXR.visible = false;
 
 /* =====================================================================
@@ -790,6 +853,9 @@ function showMenu(on){ menu.visible = on; }
 
 async function openItem(item, cat){
   if (isPending(item)){ toast(`${cat.category}: experiencia en desarrollo · próximamente`); return; }
+  if (item.tipo === 'accion'){ abrirMisPlanos(); return; }
+  if (item.tipo === 'plano'){ abrirPlanoNube(item.planoId, item); return; }
+  if (item.tipo === 'plano-local'){ openPlan(item.data, item.meta); return; }
   currentItem = item; clearAllHovers();
   showMenu(false);
   if (item.tipo === 'modelo'){
@@ -834,8 +900,10 @@ async function openItem(item, cat){
 }
 function closeViewer(){
   if (mode === 'menu') return;
-  video.pause(); video.removeAttribute('src'); video.load();
   releaseGrab();
+  if (mode === 'plano') closePlan();
+  if (mode === 'browser') browser.visible = false;
+  video.pause(); video.removeAttribute('src'); video.load();
   screenView.visible = sphereView.visible = sphereUI.visible = modelView.visible = false;
   env.visible = true; env.userData.grid.material.opacity = 0.55;
   mode = 'menu'; currentItem = null; clearAllHovers();
@@ -865,10 +933,15 @@ function castPointer(p, origin, dir, haptic){
   return hit;
 }
 function select(p){ const h = p.hit; if (h && h.object.userData.ui?.onSelect) h.object.userData.ui.onSelect(h); }
+function grabTarget(){
+  if (mode === 'modelo' && modelRoot) return { obj: modelRoot, home: modelHolder };
+  if (mode === 'plano' && PLAN && PLAN.mode === 'maqueta') return { obj: planPivot, home: planView };
+  return null;
+}
 function hitModel(origin, dir){
-  if (mode !== 'modelo' || !modelRoot) return null;
+  const g = grabTarget(); if (!g) return null;
   raycaster.set(origin, dir);
-  return raycaster.intersectObject(modelRoot, true)[0] || null;
+  return raycaster.intersectObject(g.obj, true)[0] || null;
 }
 
 /* --- Mouse / táctil --- */
@@ -892,8 +965,9 @@ cv.addEventListener('pointermove', e => {
   if (!drag) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
   drag.moved += Math.abs(dx) + Math.abs(dy); drag.x = e.clientX; drag.y = e.clientY;
-  if (drag.model && modelRoot){
-    modelRoot.rotateOnWorldAxis(Y_AXIS, dx * 0.01);
+  const gt = drag.model && grabTarget();
+  if (gt){
+    gt.obj.rotateOnWorldAxis(Y_AXIS, dx * 0.01);
   } else {
     const k = e.pointerType === 'touch' ? 0.006 : 0.004;
     yaw += dx * k; pitch = THREE.MathUtils.clamp(pitch + dy * k, -1.3, 1.3);
@@ -909,13 +983,19 @@ cv.addEventListener('pointerleave', () => { if (!drag){ hasMouse = false; clearP
 cv.addEventListener('wheel', e => {
   const row = mouse.hovered?.userData.row;
   if (row && mode === 'menu'){ row.target = THREE.MathUtils.clamp(row.target + e.deltaY * 0.0025, -row.limit, row.limit); e.preventDefault(); }
-  else if (mode === 'modelo' && modelRoot){ modelRoot.scale.multiplyScalar(e.deltaY > 0 ? 0.92 : 1.08); e.preventDefault(); }
+  else if (grabTarget()){ grabTarget().obj.scale.multiplyScalar(e.deltaY > 0 ? 0.92 : 1.08); e.preventDefault(); }
 }, { passive: false });
 addEventListener('keydown', e => {
   if (e.key === 'Escape') closeViewer();
   if (e.key === ' ' && (mode === 'pantalla' || mode === '360')){ togglePlay(); e.preventDefault(); }
+  if (/^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) return;
   if (e.key === 'ArrowLeft') yaw += 0.2; if (e.key === 'ArrowRight') yaw -= 0.2;
+  keys.add(e.code);
+  if (e.code === 'KeyM' && mode === 'plano') placePlanUI(true);
 });
+const keys = new Set();
+addEventListener('keyup', e => keys.delete(e.code));
+addEventListener('blur', () => keys.clear());
 
 /* --- Controles XR + manos --- */
 const ctrlFactory = new XRControllerModelFactory();
@@ -955,10 +1035,12 @@ function pulse(c, s = 0.25, ms = 16){ try { c.userData.src?.gamepad?.hapticActua
 function tryGrab(c){
   const r = ctrlRay(c);
   if (!hitModel(r.o, r.d)) return false;
-  releaseGrab(); grabbedBy = c; autoRot = false; c.attach(modelRoot); c.userData.didGrab = true; pulse(c, 0.5, 40);
+  const g = grabTarget();
+  releaseGrab(); grabbedBy = c; grabbed = g; autoRot = false; c.attach(g.obj); c.userData.didGrab = true; pulse(c, 0.5, 40);
   return true;
 }
-function releaseGrab(){ if (grabbedBy && modelRoot){ modelHolder.attach(modelRoot); } grabbedBy = null; }
+let grabbed = null;
+function releaseGrab(){ if (grabbedBy && grabbed){ grabbed.home.attach(grabbed.obj); } grabbedBy = null; grabbed = null; }
 
 let turnLock = false;
 function snapTurn(a){
@@ -967,17 +1049,26 @@ function snapTurn(a){
   rig.rotation.y += a;
 }
 function handleSticks(dt){
+  const walking = mode === 'plano' && PLAN && PLAN.mode === 'real';
   for (const c of controllers){
     const src = c.userData.src; const gp = src?.gamepad; if (!gp || gp.axes.length < 4) continue;
     const x = gp.axes[2], y = gp.axes[3];
+    // botón A / X: traer el panel del plano al frente
+    const bA = !!gp.buttons[4]?.pressed;
+    if (bA && !c.userData.bA && mode === 'plano') placePlanUI(true);
+    c.userData.bA = bA;
+    const gt = grabTarget();
     if (src.handedness === 'right'){
-      if (mode === 'modelo' && modelRoot && grabbedBy !== c){
-        if (Math.abs(x) > 0.15){ modelRoot.rotateOnWorldAxis(Y_AXIS, x * dt * 2.5); autoRot = false; }
-        if (Math.abs(y) > 0.3) modelRoot.scale.multiplyScalar(1 - y * dt * 0.8);
+      if (gt && grabbedBy !== c){
+        if (Math.abs(x) > 0.15){ gt.obj.rotateOnWorldAxis(Y_AXIS, x * dt * 2.5); autoRot = false; }
+        if (Math.abs(y) > 0.3) gt.obj.scale.multiplyScalar(1 - y * dt * 0.8);
       } else {
+        if (walking && Math.abs(y) > 0.25) rig.position.y -= y * dt * 3 * walkBoost(gp);
         if (Math.abs(x) > 0.7 && !turnLock){ snapTurn(-Math.sign(x) * Math.PI / 6); turnLock = true; }
         if (Math.abs(x) < 0.3) turnLock = false;
       }
+    } else if (walking){
+      if (Math.abs(x) > 0.15 || Math.abs(y) > 0.15) walk(x, -y, dt * walkBoost(gp));
     } else if (Math.abs(x) > 0.2 && mode === 'menu'){
       const row = c.userData.ptr.hovered?.userData.row || controllers.map(k => k.userData.ptr.hovered?.userData.row).find(Boolean);
       if (row) row.target = THREE.MathUtils.clamp(row.target + x * dt * 1.6, -row.limit, row.limit);
@@ -999,6 +1090,645 @@ function toast3D(msg){
     ctx.fillText(msg, W / 2, H / 2 + 1);
   });
   toastMesh.visible = true; clearTimeout(toast3DTimer); toast3DTimer = setTimeout(() => toastMesh.visible = false, 2600);
+}
+
+/* =====================================================================
+   12. MIS PLANOS · dibujos de Isoflux en 3D (maqueta y recorrido 1:1)
+   ===================================================================== */
+const API = "https://script.google.com/macros/s/AKfycbzPsHZ7TjSHExWu3dEboPC1_WXl5KMfisX3DKo4SOtQM2PYa66HF7ba0Ary8eET5N08/exec";
+const SES_KEY = 'vr_sesion', REC_KEY = 'vr_planos_recientes';
+const lsGet = (k, d = null) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (_){ return d; } };
+const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (_){} };
+let SES = lsGet(SES_KEY);
+if (!SES){ try { const s = JSON.parse(sessionStorage.getItem('isoflux_sesion') || 'null'); if (s && s.t) SES = s; } catch (_){} }
+const saveSes = () => lsSet(SES_KEY, SES);
+
+async function api(o){
+  const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(Object.assign({ t: SES ? SES.t : null }, o)) });
+  const tx = await r.text(); let j;
+  try { j = JSON.parse(tx); } catch (_){ throw new Error(/<html|<!doctype/i.test(tx) ? 'El servidor del portal respondió con una página de error. Intenta de nuevo en un momento.' : 'Respuesta inválida del servidor.'); }
+  if (j && j.error){
+    const e = new Error(j.error);
+    if (/sesi[oó]n|token|autoriz|ingres|expir|vencid|inici/i.test(j.error) && !/^login/.test(o.a)){ e.auth = true; SES = null; saveSes(); }
+    throw e;
+  }
+  return j;
+}
+const b64u8 = b => { const s = atob(b), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
+async function gunz(b){
+  if (!window.DecompressionStream) throw new Error('Este navegador no puede abrir planos de la nube. Actualízalo.');
+  return new Response(new Blob([b64u8(b)]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+}
+
+/* --- Catálogos de Isoflux (mismos nombres y colores) --- */
+const DM = { '1/4': 6.35, '3/8': 9.53, '1/2': 12.7, '5/8': 15.88, '3/4': 19.05, '1': 25.4, '1 1/4': 31.75, '1 1/2': 38.1, '2': 50.8, '2 1/2': 63.5, '3': 76.2, '4': 101.6 };
+const MC = { 'PE-AL-PE': '#8fd0ff', 'Acero al carbón': '#9fb3c8', 'Acero galvanizado': '#3ee0d0', 'Polietileno': '#fdd835', 'Cobre rígido': '#c98a4b', 'Cobre flexible': '#e0b07a' };
+const TY = { te: 'Nodo / te', valvula: 'Válvula', regulador: 'Regulador', manometro: 'Manómetro', medidor: 'Medidor', consumo: 'Punto de consumo', tanque: 'Tanque', brida: 'Brida', union_u: 'Unión universal', union: 'Unión', reduccion: 'Reducción', ptopres: 'Punto de control de presión', transicion: 'Transición (elevador PE)', term_m: 'Terminal macho', term_h: 'Terminal hembra', flexible: 'Conector flexible' };
+const PALETA = ['#e50914', '#3d8bff', '#1fae6b', '#f2a516', '#a855f7', '#14b8a6', '#ec4899', '#f97316', '#84cc16', '#06b6d4', '#eab308', '#8b5cf6'];
+const OBRA_COL = { 'Nueva': '#34d17a', 'Existente': '#9aa3ad', 'Reparación': '#f2a516', 'Reparacion': '#f2a516', 'Retiro': '#e5484d', 'Desmonte': '#e5484d' };
+const nf = (v, d = 0) => Number(v).toLocaleString('es-CO', { minimumFractionDigits: d, maximumFractionDigits: d });
+function diaMM(d){
+  if (DM[d]) return DM[d];
+  const s = String(d || '').replace(/["”]/g, '').replace('½', ' 1/2').replace('¾', '3/4').replace('¼', '1/4').replace(/\s+/g, ' ').trim();
+  if (DM[s]) return DM[s];
+  const n = parseFloat(s); return isFinite(n) ? (n > 8 ? n : n * 25.4) : 25.4;
+}
+const hashCol = (k) => { let h = 0; for (const ch of String(k)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return PALETA[h % PALETA.length]; };
+
+/* --- Preparación: índice, sectores (redes conectadas), cajas --- */
+function bboxOf(nodes){
+  const b = new THREE.Box3();
+  for (const n of nodes) b.expandByPoint(tmpV.set(n.x, n.y, n.z));
+  if (b.isEmpty()) b.set(new THREE.Vector3(), new THREE.Vector3(1, 1, 1));
+  return b;
+}
+function preparePlan(d, meta){
+  const nodes = (d.nodes || []).filter(n => isFinite(n.x) && isFinite(n.y) && isFinite(n.z));
+  const byId = new Map(nodes.map(n => [String(n.id), n]));
+  const pipes = (d.pipes || []).filter(p => byId.has(String(p.a)) && byId.has(String(p.b)) && String(p.a) !== String(p.b));
+  const adj = new Map(nodes.map(n => [String(n.id), []]));
+  for (const p of pipes){
+    const A = byId.get(String(p.a)), B = byId.get(String(p.b));
+    p._len = Math.hypot(B.x - A.x, B.y - A.y, B.z - A.z);
+    adj.get(String(p.a)).push(p); adj.get(String(p.b)).push(p);
+  }
+  const seen = new Set(), sectors = [];
+  for (const n of nodes){
+    const id = String(n.id); if (seen.has(id)) continue;
+    const s = { nodes: [], pipes: new Set() }; const st = [id]; seen.add(id);
+    while (st.length){
+      const u = st.pop(); s.nodes.push(byId.get(u));
+      for (const p of adj.get(u)){ s.pipes.add(p); const v = String(p.a) === u ? String(p.b) : String(p.a); if (!seen.has(v)){ seen.add(v); st.push(v); } }
+    }
+    s.pipes = [...s.pipes]; sectors.push(s);
+  }
+  sectors.sort((a, b) => b.nodes.length - a.nodes.length);
+  sectors.forEach((s, i) => {
+    s.box = bboxOf(s.nodes); s.len = s.pipes.reduce((t, p) => t + p._len, 0); s.color = PALETA[i % PALETA.length];
+    const key = s.nodes.find(n => n.type === 'regulador') || s.nodes.find(n => n.type === 'medidor') || s.nodes.find(n => n.type !== 'te');
+    s.name = `Sector ${i + 1}` + (key ? ` · ${TY[key.type] || key.type} ${key.tag || key.id}` : '');
+    s.nodes.forEach(n => n._sec = i); s.pipes.forEach(p => p._sec = i);
+  });
+  const count = {}; nodes.forEach(n => count[n.type] = (count[n.type] || 0) + 1);
+  const pj = d.proyecto || {};
+  return {
+    meta: Object.assign({ nombre: pj.nombre || 'Plano Isoflux', proyecto: pj.cliente || '', codigo: pj.codigo || '' }, meta || {}),
+    nodes, pipes, byId, adj, sectors, count,
+    box: bboxOf(nodes), len: pipes.reduce((t, p) => t + p._len, 0),
+    cur: sectors.length > 1 ? -1 : 0, mode: 'maqueta', color: 'material'
+  };
+}
+
+/* --- Geometrías de componentes (unidad u = 1, eje del tubo = +Y, "arriba" = +Z) --- */
+const T = (g, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) => { if (rx) g.rotateX(rx); if (ry) g.rotateY(ry); if (rz) g.rotateZ(rz); g.translate(x, y, z); return g; };
+const mg = arr => mergeGeometries(arr.map(g => { g.deleteAttribute('uv'); return g; }));
+const H90 = Math.PI / 2;
+const COMP = {
+  valvula:    { color: 0xb8c0ca, geo: () => mg([new THREE.SphereGeometry(0.42, 16, 12), new THREE.CylinderGeometry(0.28, 0.28, 1.1, 14)]) },
+  regulador:  { color: 0x2563c9, geo: () => mg([new THREE.SphereGeometry(0.5, 16, 12), new THREE.CylinderGeometry(0.3, 0.3, 1.2, 14), T(new THREE.CylinderGeometry(0.75, 0.75, 0.32, 24), 0, 0, 0.8, H90), T(new THREE.SphereGeometry(0.75, 24, 8, 0, Math.PI * 2, 0, H90), 0, 0, 0.96, H90)]) },
+  medidor:    { color: 0x7d8792, geo: () => mg([T(new THREE.BoxGeometry(1.4, 1.2, 1.6), 0, 0, 0.45), T(new THREE.BoxGeometry(0.9, 0.5, 0.06), 0, 0, 0.45 + 0.0, 0)]) },
+  brida:      { color: 0xc7ced6, geo: () => new THREE.CylinderGeometry(0.55, 0.55, 0.14, 20) },
+  union_u:    { color: 0x8a939e, geo: () => mg([new THREE.CylinderGeometry(0.36, 0.36, 0.6, 14), new THREE.CylinderGeometry(0.46, 0.46, 0.22, 6)]) },
+  union:      { color: 0x9aa3ad, geo: () => new THREE.CylinderGeometry(0.34, 0.34, 0.42, 14) },
+  reduccion:  { color: 0xaab3bd, geo: () => new THREE.CylinderGeometry(0.22, 0.38, 0.6, 16) },
+  transicion: { color: 0x2bb673, geo: () => new THREE.CylinderGeometry(0.3, 0.3, 1.0, 14) },
+  term_m:     { color: 0xc9a227, geo: () => new THREE.CylinderGeometry(0.18, 0.32, 0.5, 14) },
+  term_h:     { color: 0xc9a227, geo: () => new THREE.CylinderGeometry(0.32, 0.18, 0.5, 14) },
+  flexible:   { color: 0x4b5160, geo: () => new THREE.CylinderGeometry(0.24, 0.24, 1.0, 10) },
+  ptopres:    { color: 0xf5a623, geo: () => mg([new THREE.SphereGeometry(0.34, 14, 10), T(new THREE.CylinderGeometry(0.08, 0.08, 0.5, 8), 0, 0, 0.35, H90)]) },
+  manometro:  { color: 0xf2f2f2, geo: () => mg([T(new THREE.CylinderGeometry(0.07, 0.07, 0.6, 8), 0, 0, 0.3, H90), T(new THREE.CylinderGeometry(0.4, 0.4, 0.16, 24), 0, 0, 0.75)]) },
+  consumo:    { color: 0xff7a1a, geo: () => mg([T(new THREE.BoxGeometry(1.6, 1.6, 1.6), 0, 0, 0.6), T(new THREE.ConeGeometry(0.35, 0.6, 12), 0, 0, 1.7, H90)]) },
+  tanque:     { color: 0xe8e8e8, geo: () => T(new THREE.CapsuleGeometry(1.2, 3, 8, 16), 0, 0, 1.4) }
+};
+const VALVE_HANDLE = () => mg([T(new THREE.CylinderGeometry(0.06, 0.06, 0.45, 8), 0, 0, 0.6, H90), T(new THREE.BoxGeometry(0.16, 1.1, 0.12), 0, 0.35, 0.85)]);
+const compGeoCache = {};
+const compGeo = t => compGeoCache[t] || (compGeoCache[t] = (t === '_mango' ? VALVE_HANDLE() : COMP[t].geo()));
+const unitCyl = new THREE.CylinderGeometry(1, 1, 1, 10, 1, true);
+const unitSph = new THREE.SphereGeometry(1, 10, 8);
+
+/* --- Escena del plano --- */
+const planView = new THREE.Group(); planView.visible = false; scene.add(planView);          // mesa (maqueta)
+const TABLE_H = 0.82, TABLE_R = 1.3;
+const table = new THREE.Mesh(new THREE.CylinderGeometry(TABLE_R, TABLE_R * 1.05, TABLE_H, 72),
+  new THREE.MeshStandardMaterial({ color: 0x12141b, metalness: 0.6, roughness: 0.35 }));
+table.position.y = TABLE_H / 2; planView.add(table);
+const tableRing = new THREE.Mesh(new THREE.TorusGeometry(TABLE_R, 0.01, 8, 128), new THREE.MeshBasicMaterial({ color: 0x3d8bff }));
+tableRing.rotation.x = H90; tableRing.position.y = TABLE_H + 0.002; planView.add(tableRing);
+const tableGrid = new THREE.GridHelper(TABLE_R * 2, 26, 0x2a5aa8, 0x1a2234);
+tableGrid.position.y = TABLE_H + 0.003; tableGrid.material.transparent = true; tableGrid.material.opacity = 0.5; planView.add(tableGrid);
+const planPivot = new THREE.Group();      // se agarra / gira
+const planScaler = new THREE.Group(); planPivot.add(planScaler);
+const planContent = new THREE.Group(); planScaler.add(planContent);
+planView.add(planPivot);
+const realGrid = new THREE.GridHelper(400, 400, 0x3d8bff, 0x1a2234);
+realGrid.material.transparent = true; realGrid.material.opacity = 0.35; realGrid.visible = false; scene.add(realGrid);
+
+let PLAN = null;
+const planPickables = [];
+const planHits = new Map();
+let planFrame = 0;
+
+function disposePlanMeshes(){
+  for (const m of [...planContent.children]){ planContent.remove(m); m.material.dispose?.(); m.dispose?.(); }
+  planPickables.length = 0;
+}
+function planSet(){
+  if (!PLAN) return { nodes: [], pipes: [], box: new THREE.Box3() };
+  if (PLAN.cur < 0) return { nodes: PLAN.nodes, pipes: PLAN.pipes, box: PLAN.box };
+  return PLAN.sectors[PLAN.cur];
+}
+function pipeColor(p){
+  switch (PLAN.color){
+    case 'obra': return OBRA_COL[p.obra] || hashCol(p.obra || '—');
+    case 'diametro': { const k = Object.keys(DM); const i = k.indexOf(String(p.dia)); return PALETA[(i >= 0 ? i : 0) % PALETA.length]; }
+    case 'sector': return PLAN.sectors[p._sec]?.color || '#888';
+    default: return MC[p.mat] || '#8fd0ff';
+  }
+}
+const _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _m = new THREE.Matrix4(), _c = new THREE.Color();
+const _bx = new THREE.Vector3(), _by = new THREE.Vector3(), _bz = new THREE.Vector3(), _bm = new THREE.Matrix4();
+function orientQuat(dir, out){
+  _by.copy(dir).normalize();
+  const up = Math.abs(_by.y) > 0.9 ? tmpV2.set(1, 0, 0) : tmpV2.set(0, 1, 0);
+  _bz.copy(up).addScaledVector(_by, -up.dot(_by)).normalize();
+  _bx.crossVectors(_by, _bz);
+  _bm.makeBasis(_bx, _by, _bz); return out.setFromRotationMatrix(_bm);
+}
+
+function buildPlan(){
+  disposePlanMeshes();
+  const set = planSet(); const nodes = set.nodes, pipes = set.pipes;
+  const size = set.box.getSize(new THREE.Vector3()), center = set.box.getCenter(new THREE.Vector3());
+  const ext = Math.max(size.x, size.z, size.y, 1);
+  const real = PLAN.mode === 'real';
+  const minR = real ? 0.025 : ext * 0.0024;
+  const U = real ? 0.16 : Math.max(ext * 0.0065, minR * 3);
+  const rOf = p => Math.max(diaMM(p.dia) / 2000, minR);
+
+  // tuberías
+  const pm = new THREE.InstancedMesh(unitCyl, new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.25, roughness: 0.5 }), Math.max(1, pipes.length));
+  pm.count = pipes.length; pm.userData.pick = [];
+  pipes.forEach((p, i) => {
+    const A = PLAN.byId.get(String(p.a)), B = PLAN.byId.get(String(p.b));
+    const dir = tmpV.set(B.x - A.x, B.y - A.y, B.z - A.z); const L = dir.length() || 1e-4;
+    _q.setFromUnitVectors(Y_AXIS, dir.divideScalar(L));
+    _p.set((A.x + B.x) / 2, (A.y + B.y) / 2, (A.z + B.z) / 2);
+    const r = rOf(p); _s.set(r, L, r);
+    pm.setMatrixAt(i, _m.compose(_p, _q, _s)); pm.setColorAt(i, _c.set(pipeColor(p)));
+    pm.userData.pick[i] = { k: 'p', o: p };
+  });
+  pm.instanceMatrix.needsUpdate = true; if (pm.instanceColor) pm.instanceColor.needsUpdate = true;
+  planContent.add(pm); planPickables.push(pm);
+
+  // uniones (esferas en nodos con 2+ tubos) para que la red se vea continua
+  const joints = nodes.filter(n => (PLAN.adj.get(String(n.id)) || []).length >= 2);
+  const jm = new THREE.InstancedMesh(unitSph, new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.25, roughness: 0.5 }), Math.max(1, joints.length));
+  jm.count = joints.length;
+  joints.forEach((n, i) => {
+    const ps = PLAN.adj.get(String(n.id)); const r = Math.max(...ps.map(rOf)) * 1.12;
+    jm.setMatrixAt(i, _m.compose(_p.set(n.x, n.y, n.z), _q.identity(), _s.set(r, r, r))); jm.setColorAt(i, _c.set(pipeColor(ps[0])));
+  });
+  jm.instanceMatrix.needsUpdate = true; if (jm.instanceColor) jm.instanceColor.needsUpdate = true;
+  planContent.add(jm);
+
+  // componentes por tipo
+  const groups = {};
+  for (const n of nodes){ if (COMP[n.type]) (groups[n.type] = groups[n.type] || []).push(n); }
+  for (const t in groups){
+    const list = groups[t];
+    const mk = (geo, color) => { const m = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color, metalness: 0.45, roughness: 0.4 }), list.length); m.userData.pick = []; return m; };
+    const im = mk(compGeo(t), COMP[t].color);
+    const handle = t === 'valvula' ? mk(compGeo('_mango'), 0xffffff) : null;
+    list.forEach((n, i) => {
+      const ps = PLAN.adj.get(String(n.id)) || [];
+      let dir;
+      if (t === 'tanque') dir = tmpV.set(1, 0, 0);
+      else if (ps.length){ const p = ps[0]; const o = PLAN.byId.get(String(p.a)) === n ? PLAN.byId.get(String(p.b)) : PLAN.byId.get(String(p.a)); dir = tmpV.set(o.x - n.x, o.y - n.y, o.z - n.z); if (dir.lengthSq() < 1e-9) dir.set(1, 0, 0); }
+      else dir = tmpV.set(1, 0, 0);
+      if (t === 'manometro' || t === 'consumo' || t === 'ptopres'){ // verticales: "arriba" del componente = +Y mundo
+        if (Math.abs(dir.y) / dir.length() > 0.9) dir.set(1, 0, 0); else dir.y = 0;
+      }
+      orientQuat(dir, _q);
+      const u = Math.max(U, (ps.length ? Math.max(...ps.map(rOf)) : minR) * 2.6);
+      _m.compose(_p.set(n.x, n.y, n.z), _q, _s.set(u, u, u));
+      im.setMatrixAt(i, _m); im.userData.pick[i] = { k: 'n', o: n };
+      if (handle){ handle.setMatrixAt(i, _m); handle.setColorAt(i, _c.set(/cerr/i.test(n.est || '') ? '#e5484d' : '#2fd36b')); handle.userData.pick[i] = { k: 'n', o: n }; }
+    });
+    im.instanceMatrix.needsUpdate = true; planContent.add(im); planPickables.push(im);
+    if (handle){ handle.instanceMatrix.needsUpdate = true; if (handle.instanceColor) handle.instanceColor.needsUpdate = true; planContent.add(handle); planPickables.push(handle); }
+  }
+
+  // encuadre
+  if (real){
+    planPivot.position.set(0, 0, 0); planPivot.quaternion.identity(); planPivot.scale.setScalar(1);
+    planScaler.scale.setScalar(1);
+    planContent.position.set(-center.x, 0, -center.z);
+  } else {
+    planPivot.position.set(0, TABLE_H + 0.01, 0); planPivot.quaternion.identity(); planPivot.scale.setScalar(1);
+    const k = (TABLE_R * 1.75) / Math.max(size.x, size.z, size.y * 1.4, 1e-3);
+    planScaler.scale.setScalar(k);
+    planContent.position.set(-center.x, -set.box.min.y, -center.z);
+  }
+  PLAN.ext = ext; PLAN.center = center;
+  drawPlanTitle(); drawLegend();
+}
+
+/* --- Panel de control del plano --- */
+const planUI = new THREE.Group(); planUI.visible = false; scene.add(planUI);
+const PW = 0.92;
+const planTitle = panel(PW, 0.3, () => {}, 900); planTitle.position.y = 0.42; planUI.add(planTitle);
+const planLegend = panel(PW, 0.13, () => {}, 900); planLegend.position.y = 0.2; planUI.add(planLegend);
+const pbtn = (t, w, x, y, fn, p) => { const b = makeButton(t, { w, h: 0.085, primary: !!p }, fn); b.position.set(x, y, 0); planUI.add(b); return b; };
+const bMaq = pbtn('🧊 Maqueta', 0.44, -0.235, 0.08, () => setPlanMode('maqueta'));
+const bReal = pbtn('🚶 Recorrer 1:1', 0.44, 0.235, 0.08, () => setPlanMode('real'));
+pbtn('◀', 0.12, -0.4, -0.025, () => stepSector(-1));
+const secLabel = panel(0.64, 0.075, () => {}, 900); secLabel.position.set(0, -0.025, 0); planUI.add(secLabel);
+pbtn('▶', 0.12, 0.4, -0.025, () => stepSector(1));
+pbtn('🗺 Toda la red', 0.44, -0.235, -0.13, () => { if (PLAN.cur !== -1){ PLAN.cur = -1; rebuildKeepMode(); } });
+const bColor = pbtn('🎨 Color: material', 0.44, 0.235, -0.13, () => cycleColor());
+pbtn('↺ Restablecer', 0.29, -0.315, -0.235, () => rebuildKeepMode());
+pbtn('📂 Otro plano', 0.29, 0, -0.235, () => abrirMisPlanos());
+pbtn('✕ Cerrar', 0.29, 0.315, -0.235, () => closeViewer(), true);
+const planHint = panel(PW, 0.06, () => {}, 900); planHint.position.y = -0.315; planUI.add(planHint);
+
+const COLOR_MODES = [['material', 'material'], ['obra', 'tipo de obra'], ['diametro', 'diámetro'], ['sector', 'sector']];
+function cycleColor(){
+  const i = COLOR_MODES.findIndex(c => c[0] === PLAN.color);
+  PLAN.color = COLOR_MODES[(i + 1) % COLOR_MODES.length][0];
+  bColor.userData.setText('🎨 Color: ' + COLOR_MODES.find(c => c[0] === PLAN.color)[1]);
+  buildPlan();
+}
+function stepSector(d){
+  const n = PLAN.sectors.length; if (n < 2) return;
+  let c = PLAN.cur + d; if (c < -1) c = n - 1; if (c >= n) c = -1;
+  PLAN.cur = c; rebuildKeepMode();
+}
+function rebuildKeepMode(){
+  releaseGrab(); buildPlan();
+  if (PLAN.mode === 'real') teleportStart();
+}
+function drawPlanTitle(){
+  const P = PLAN, c = P.count, set = planSet();
+  planTitle.userData.redraw((ctx, W, H) => {
+    glassBg(ctx, W, H, 30);
+    const m = 30; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#3d8bff'; ctx.font = `800 ${H * 0.085}px ${FONT}`;
+    ctx.fillText(('PLANO ISOFLUX' + (P.meta.proyecto ? ' · ' + P.meta.proyecto : '')).toUpperCase().slice(0, 70), m, H * 0.17);
+    ctx.fillStyle = '#fff'; ctx.font = `800 ${H * 0.15}px ${FONT}`;
+    let name = P.meta.nombre + (P.meta.version ? `  v${P.meta.version}` : '');
+    while (ctx.measureText(name).width > W - 2 * m && name.length > 8) name = name.slice(0, -2);
+    ctx.fillText(name, m, H * 0.37);
+    ctx.fillStyle = '#c9cad3'; ctx.font = `500 ${H * 0.085}px ${FONT}`;
+    ctx.fillText(`${nf(P.nodes.length)} nodos · ${nf(P.pipes.length)} tuberías · ${nf(P.len, 0)} m de red · ${P.sectors.length} sector(es)`, m, H * 0.55);
+    const comps = ['valvula', 'regulador', 'medidor', 'consumo', 'manometro', 'tanque'].filter(t => c[t]).map(t => `${nf(c[t])} ${TY[t].toLowerCase()}${c[t] > 1 ? (/[aeiou]$/.test(TY[t].toLowerCase()) ? 's' : 'es') : ''}`);
+    ctx.fillText(comps.join(' · ').slice(0, 110), m, H * 0.7);
+    ctx.fillStyle = '#9fc4e8'; ctx.font = `600 ${H * 0.08}px ${FONT}`;
+    ctx.fillText(`Vista: ${P.cur < 0 ? 'toda la red' : P.sectors[P.cur].name} · ${nf(set.pipes.length)} tuberías · ${nf(set.len ?? P.len, 0)} m`, m, H * 0.87);
+  });
+  secLabel.userData.redraw((ctx, W, H) => {
+    roundRect(ctx, 3, 3, W - 6, H - 6, (H - 6) / 2); ctx.fillStyle = 'rgba(30,32,40,.88)'; ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    let t = P.cur < 0 ? `Toda la red (${P.sectors.length} sectores)` : `${P.sectors[P.cur].name}  (${P.cur + 1}/${P.sectors.length})`;
+    let fs = H * 0.42; ctx.font = `700 ${fs}px ${FONT}`;
+    while (ctx.measureText(t).width > W * 0.92 && fs > 10){ fs -= 1; ctx.font = `700 ${fs}px ${FONT}`; }
+    ctx.fillText(t, W / 2, H / 2 + 1);
+  });
+  planHint.userData.redraw((ctx, W, H) => {
+    ctx.fillStyle = '#9a9ca8'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `500 ${H * 0.4}px ${FONT}`;
+    ctx.fillText(P.mode === 'real'
+      ? (renderer.xr.isPresenting ? 'Joystick izq.: caminar · der.: girar / subir-bajar · A/X: traer este panel' : 'W A S D: caminar · Q / E: bajar / subir · Shift: rápido · M: traer este panel')
+      : (renderer.xr.isPresenting ? 'Agarra la maqueta con el grip · joystick der.: girar y escalar · apunta para ver datos' : 'Arrastra la maqueta para girarla · rueda: escala · apunta para ver datos'), W / 2, H / 2);
+  });
+  bMaq.userData.setText((P.mode === 'maqueta' ? '● ' : '') + '🧊 Maqueta');
+  bReal.userData.setText((P.mode === 'real' ? '● ' : '') + '🚶 Recorrer 1:1');
+}
+function drawLegend(){
+  const set = planSet(); const items = new Map();
+  if (PLAN.color === 'sector'){
+    (PLAN.cur < 0 ? PLAN.sectors : [PLAN.sectors[PLAN.cur]]).slice(0, 8).forEach(s => items.set(s.name.split(' · ')[0], s.color));
+  } else set.pipes.forEach(p => {
+    const k = PLAN.color === 'obra' ? (p.obra || '—') : PLAN.color === 'diametro' ? `Ø ${p.dia}"` : (p.mat || '—');
+    if (!items.has(k)) items.set(k, pipeColor(p));
+  });
+  planLegend.userData.redraw((ctx, W, H) => {
+    glassBg(ctx, W, H, 24, 0.6);
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = `600 ${H * 0.2}px ${FONT}`;
+    let x = 26, y = H * 0.32;
+    for (const [k, col] of items){
+      const w = ctx.measureText(k).width + 56;
+      if (x + w > W - 20){ x = 26; y += H * 0.36; if (y > H * 0.85) break; }
+      ctx.fillStyle = col; roundRect(ctx, x, y - H * 0.09, 30, H * 0.18, 6); ctx.fill();
+      ctx.fillStyle = '#e6e7ee'; ctx.fillText(k, x + 40, y + 2); x += w;
+    }
+    ctx.fillStyle = '#2fd36b'; ctx.fillRect(W - 290, H * 0.78, 18, 18); ctx.fillStyle = '#e5484d'; ctx.fillRect(W - 168, H * 0.78, 18, 18);
+    ctx.fillStyle = '#9a9ca8'; ctx.font = `500 ${H * 0.15}px ${FONT}`;
+    ctx.fillText('V. abierta', W - 264, H * 0.78 + 10); ctx.fillText('V. cerrada', W - 142, H * 0.78 + 10);
+  });
+}
+function placePlanUI(front){
+  if (PLAN.mode === 'maqueta' && !front){
+    planView.updateMatrixWorld();
+    planUI.position.copy(planView.localToWorld(tmpV.set(1.75, 1.42, 0.55)));
+    planUI.rotation.set(0, planView.rotation.y - 0.62, 0);
+  } else {
+    const h = headPose();
+    planUI.position.set(h.pos.x + h.dir.x * 1.05, h.pos.y - 0.32, h.pos.z + h.dir.z * 1.05);
+    planUI.rotation.set(-0.3, h.yaw, 0, 'YXZ');
+  }
+  planUI.userData.intro = 0;
+}
+
+/* --- Modos: maqueta sobre mesa / recorrido a escala real --- */
+function setPlanMode(m){
+  if (!PLAN) return;
+  releaseGrab();
+  PLAN.mode = m;
+  rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0);
+  scene.fog.far = m === 'real' ? 400 : 30;
+  if (m === 'real'){
+    scene.add(planPivot); planView.visible = false;
+    env.userData.floor.visible = false; env.userData.grid.visible = false; realGrid.visible = true;
+    buildPlan(); teleportStart();
+  } else {
+    planView.add(planPivot); planView.visible = true;
+    env.userData.floor.visible = true; env.userData.grid.visible = true; realGrid.visible = false;
+    yaw = pitch = 0;
+    buildPlan(); recenter(planView, 2.0); placePlanUI(false);
+  }
+}
+function teleportStart(){
+  // usuario parado al borde del sector, mirando hacia su centro
+  const set = planSet(); const size = set.box.getSize(new THREE.Vector3());
+  const back = Math.min(Math.max(size.x, size.z) * 0.5 + 3, 40);
+  rig.rotation.set(0, 0, 0);
+  rig.position.set(0, Math.max(0, set.box.min.y), back);
+  realGrid.position.y = Math.min(0, set.box.min.y);
+  if (!renderer.xr.isPresenting){ yaw = 0; pitch = 0.25; }
+  setTimeout(() => placePlanUI(true), 50);
+  drawPlanTitle();
+}
+const _fw = new THREE.Vector3(), _rt = new THREE.Vector3();
+function walkBoost(gp){ return gp && gp.buttons[0]?.pressed ? 4 : 1; }    // gatillo sostenido = rápido
+function walk(sx, sy, k){
+  camera.getWorldDirection(_fw); _fw.y = 0; if (_fw.lengthSq() < 1e-6) _fw.set(0, 0, -1); _fw.normalize();
+  _rt.crossVectors(_fw, Y_AXIS).normalize();
+  const sp = 3.5 * k;
+  rig.position.addScaledVector(_fw, sy * sp).addScaledVector(_rt, sx * sp);
+}
+function desktopWalk(dt){
+  if (renderer.xr.isPresenting || !PLAN || PLAN.mode !== 'real' || mode !== 'plano') return;
+  const f = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0);
+  const s = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0);
+  const v = (keys.has('KeyE') ? 1 : 0) - (keys.has('KeyQ') ? 1 : 0);
+  const k = dt * (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 4 : 1);
+  if (f || s) walk(s, f, k);
+  if (v) rig.position.y += v * 3 * k;
+}
+
+/* --- Información al apuntar --- */
+const info = panel(0.62, 0.22, () => {}, 900);
+info.material.depthTest = false; info.renderOrder = 25; info.visible = false; scene.add(info);
+let infoKey = null;
+function planHitFor(src, r){
+  if ((planFrame + (src === mouse ? 0 : src === controllers[0] ? 1 : 2)) % 3 !== 0) return planHits.get(src) || null;
+  raycaster.set(r.o, r.d); raycaster.far = 400;
+  const h = raycaster.intersectObjects(planPickables, false)[0] || null;
+  planHits.set(src, h); return h;
+}
+function updateInfo(){
+  let best = null;
+  for (const [, h] of planHits) if (h && (!best || h.distance < best.distance)) best = h;
+  if (!best || best.instanceId == null){ info.visible = false; infoKey = null; return; }
+  const pk = best.object.userData.pick?.[best.instanceId]; if (!pk){ info.visible = false; return; }
+  const key = pk.k + (pk.o.id ?? '');
+  if (key !== infoKey){
+    infoKey = key; const o = pk.o;
+    const l1 = pk.k === 'p' ? `Tubería ${o.tag || o.id}` : `${TY[o.type] || o.type} · ${o.tag || o.id}`;
+    const l2 = `Ø ${o.dia || '—'}" (${nf(diaMM(o.dia), 1)} mm) · ${o.mat || '—'}`;
+    const parts = [];
+    if (pk.k === 'p') parts.push(`L = ${nf(o._len, 2)} m`);
+    if (o.est) parts.push(o.est); if (o.ori) parts.push(o.ori);
+    if (o.eq && o.eq.nombre && o.eq.nombre !== 'Ninguno') parts.push(`${o.eq.nombre}${o.eq.kw ? ' ' + o.eq.kw + ' kW' : ''}`);
+    if (o.press) parts.push(o.press); if (o.obra) parts.push(`Obra: ${o.obra}`);
+    if (pk.k === 'n') parts.push(`cota ${nf(o.y, 2)} m`);
+    const l3 = parts.join(' · '), l4 = String(o.notes || '').replace(/\s+/g, ' ').slice(0, 90);
+    info.userData.redraw((ctx, W, H) => {
+      roundRect(ctx, 3, 3, W - 6, H - 6, 24); ctx.fillStyle = 'rgba(8,10,16,.92)'; ctx.fill();
+      ctx.lineWidth = 4; ctx.strokeStyle = pk.k === 'p' ? '#3d8bff' : ACCENT; ctx.stroke();
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; const m = 28;
+      const fit = (t, f) => { let fs = f; ctx.font = `700 ${fs}px ${FONT}`; while (ctx.measureText(t).width > W - 2 * m && fs > 10){ fs--; ctx.font = `700 ${fs}px ${FONT}`; } };
+      ctx.fillStyle = '#fff'; fit(l1, H * 0.2); ctx.fillText(l1, m, H * 0.27);
+      ctx.fillStyle = '#c9cad3'; fit(l2, H * 0.13); ctx.font = ctx.font.replace('700', '500'); ctx.fillText(l2, m, H * 0.48);
+      ctx.fillStyle = '#9fc4e8'; fit(l3, H * 0.12); ctx.font = ctx.font.replace('700', '500'); ctx.fillText(l3, m, H * 0.68);
+      if (l4){ ctx.fillStyle = '#8d8f9b'; fit(l4, H * 0.11); ctx.font = ctx.font.replace('700', '400'); ctx.fillText(l4, m, H * 0.87); }
+    });
+  }
+  camera.getWorldPosition(tmpV);
+  const d = best.point.distanceTo(tmpV);
+  info.position.copy(best.point).lerp(tmpV, Math.min(0.25, 0.3 / Math.max(d, 0.01)));
+  info.position.y += 0.06 * Math.min(Math.max(d, 0.5), 6);
+  info.scale.setScalar(THREE.MathUtils.clamp(d * 0.45, 0.35, 8));
+  info.lookAt(tmpV); info.visible = true;
+}
+
+/* --- Abrir / cerrar plano --- */
+function openPlan(data, meta){
+  let P;
+  try { P = preparePlan(data, meta); } catch (e){ console.error(e); toast('El archivo no parece un plano de Isoflux válido'); return; }
+  if (!P.nodes.length){ toast('El plano está vacío: no tiene nodos ni tuberías'); return; }
+  if (mode !== 'menu') closeViewer();
+  PLAN = P; mode = 'plano'; clearAllHovers(); showMenu(false); closeModal();
+  bColor.userData.setText('🎨 Color: material');
+  planUI.visible = true;
+  setPlanMode('maqueta');
+  toast(`📐 ${P.meta.nombre}: ${nf(P.pipes.length)} tuberías en 3D`);
+}
+function closePlan(){
+  planView.visible = false; planUI.visible = false; info.visible = false; realGrid.visible = false;
+  planView.add(planPivot);
+  disposePlanMeshes(); planHits.clear();
+  env.userData.floor.visible = true; env.userData.grid.visible = true; scene.fog.far = 30;
+  rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0);
+  if (!renderer.xr.isPresenting){ yaw = 0; pitch = 0; }
+}
+
+/* --- Recientes (fila "Mis planos") --- */
+const planRow = () => rows.find(r => r.cat.dinamica === 'planos');
+function refreshPlanRow(){
+  const row = planRow(); if (!row) return;
+  const base = row.cat.items[0];
+  const rec = lsGet(REC_KEY, []).map(r => ({ title: r.nombre, subtitle: `${r.proyecto || 'Proyecto'} · v${r.version || 1}`, icon: '📐', img: r.miniatura || '', tipo: 'plano', planoId: r.planoId, miniatura: r.miniatura, proyecto: r.proyecto }));
+  const loc = LOCALES.map(l => ({ title: l.meta.nombre, subtitle: 'Archivo local · esta sesión', icon: '📄', tipo: 'plano-local', data: l.data, meta: l.meta }));
+  row.cat.items = [base, ...loc, ...rec];
+  buildRowCards(row);
+}
+function addRecent(r){
+  const L = lsGet(REC_KEY, []).filter(x => x.planoId !== r.planoId);
+  L.unshift(r); lsSet(REC_KEY, L.slice(0, 6)); refreshPlanRow();
+}
+const LOCALES = [];
+
+async function abrirPlanoNube(planoId, extra){
+  if (!SES){ PEND = () => abrirPlanoNube(planoId, extra); return abrirMisPlanos(); }
+  toast('☁️ Abriendo el plano del proyecto…');
+  try {
+    const r = await api({ a: 'sgcPlanoLeer', planoId });
+    const d = JSON.parse(await gunz(r.b64)); const m = r.plano || {};
+    delete d.fondos;
+    const proyecto = (extra && extra.proyecto) || '';
+    addRecent({ planoId: m.planoId || planoId, nombre: m.nombre || 'Plano', version: m.version, proyecto, miniatura: (extra && extra.miniatura) || '' });
+    openPlan(d, { nombre: m.nombre, version: r.versionLeida || m.version, proyecto });
+  } catch (e){
+    if (e.auth){ PEND = () => abrirPlanoNube(planoId, extra); toast('Tu sesión venció. Ingresa de nuevo.'); return abrirMisPlanos(); }
+    toast('No se pudo abrir el plano: ' + e.message);
+  }
+}
+let PEND = null;
+function abrirMisPlanos(){
+  if (renderer.xr.isPresenting){
+    if (SES) openBrowser3D();
+    else toast('Inicia sesión una vez fuera de VR con "📐 Mis planos" (arriba). Luego tus planos aparecen aquí.');
+    return;
+  }
+  openModal(SES ? 'proyectos' : 'login');
+}
+
+/* --- Modal 2D: login, proyectos, planos y archivo local --- */
+const pm = $('#pm'), pmBody = $('#pm-body');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fch = t => { const d = new Date(t); return isNaN(d) ? '—' : d.toLocaleString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }); };
+let lastFocus = null;
+function openModal(v, o){ lastFocus = document.activeElement; pm.hidden = false; vistaPM(v, o); }
+function closeModal(){ if (pm.hidden) return; pm.hidden = true; lastFocus?.focus?.(); }
+$('#pm-x').onclick = closeModal;
+pm.addEventListener('mousedown', e => { if (e.target === pm) closeModal(); });
+pm.addEventListener('keydown', e => { if (e.key === 'Escape'){ e.stopPropagation(); closeModal(); } });
+$('#btn-planos').onclick = () => openModal(SES ? 'proyectos' : 'login');
+$('#pm-file').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text()); delete d.fondos;
+    const meta = { nombre: (d.proyecto && d.proyecto.nombre) || f.name.replace(/\.json$/i, ''), proyecto: (d.proyecto && d.proyecto.cliente) || 'Archivo local' };
+    const i = LOCALES.findIndex(l => l.meta.nombre === meta.nombre); if (i >= 0) LOCALES.splice(i, 1);
+    LOCALES.unshift({ data: d, meta }); if (LOCALES.length > 3) LOCALES.pop();
+    refreshPlanRow(); openPlan(d, meta);
+  } catch (err){ toast('No se pudo leer el archivo: ' + err.message); }
+};
+const errPM = m => { const e = $('#pm-er'); if (e) e.textContent = m || ''; };
+async function vistaPM(v, o = {}){
+  if (v !== 'login' && !SES) v = 'login';
+  if (v === 'login'){
+    $('#pm-h').textContent = '📐 Ingreso al Portal de Proyectos';
+    pmBody.innerHTML = `<p class="pm-mu">${esc(o.msg || 'Ingresa con la misma cuenta del Portal de Proyectos para ver los planos de tus proyectos en 3D. En las gafas solo tienes que hacerlo una vez.')}</p>
+      <form id="pm-f" autocomplete="on"><div id="pm-l1"><label class="f" for="pm-u">Correo</label><input id="pm-u" type="email" autocomplete="username" required>
+      <label class="f" for="pm-p">Clave</label><input id="pm-p" type="password" autocomplete="current-password" required></div>
+      <div id="pm-l2" hidden><label class="f" for="pm-p2">Clave de seguridad (segunda validación)</label><input id="pm-p2" type="password"></div>
+      <div class="pm-er" id="pm-er" role="alert"></div><button class="btn btn-vr pm-go" id="pm-go" type="submit">Ingresar</button></form>`;
+    let paso = 1; const go = $('#pm-go');
+    $('#pm-f').onsubmit = async e => {
+      e.preventDefault(); go.disabled = true; errPM('');
+      try {
+        if (paso === 1){
+          const email = $('#pm-u').value.trim();
+          const r = await api({ a: 'login1', email, p: $('#pm-p').value });
+          SES = { t: r.t, email: r.email || email, nombre: r.nombre, rol: r.rol };
+          if (!r.ok){ paso = 2; $('#pm-l1').hidden = true; $('#pm-l2').hidden = false; $('#pm-p2').required = true; pmBody.querySelector('.pm-mu').textContent = 'Hola ' + (r.nombre || '') + '. Ingresa tu clave de seguridad.'; $('#pm-p2').focus(); go.disabled = false; return; }
+        } else {
+          const me = await api({ a: 'login2', t: SES.t, p: $('#pm-p2').value });
+          SES = Object.assign(SES, { email: me.email || SES.email, nombre: me.nombre || SES.nombre, rol: me.rol || SES.rol });
+        }
+        saveSes();
+        const f = PEND; PEND = null; if (f){ closeModal(); await f(); } else vistaPM('proyectos');
+      } catch (err){ errPM(err.message); go.disabled = false; }
+    };
+    setTimeout(() => $('#pm-u')?.focus(), 50); return;
+  }
+  if (v === 'proyectos'){
+    $('#pm-h').textContent = '📐 Elige un proyecto';
+    pmBody.innerHTML = `<p class="pm-mu">Sesión: <b>${esc(SES.nombre || SES.email)}</b> · <a href="#" id="pm-out">cerrar sesión</a></p>
+      <input id="pm-q" type="search" placeholder="Buscar proyecto, cliente o ubicación…" aria-label="Buscar proyecto"><div class="pm-er" id="pm-er" role="alert"></div><div id="pm-l"><p class="pm-mu">Cargando tus proyectos…</p></div>`;
+    $('#pm-out').onclick = e => { e.preventDefault(); SES = null; saveSes(); vistaPM('login', { msg: 'Sesión cerrada.' }); };
+    try {
+      const r = await api({ a: 'sgcPlanoProyectos' }); const P = r.proyectos || [];
+      const pinta = () => {
+        const q = ($('#pm-q').value || '').toLowerCase();
+        const L = P.filter(p => !q || [p.titulo, p.cliente, p.ubicacion, p.tipo].join(' ').toLowerCase().includes(q));
+        $('#pm-l').innerHTML = L.map(p => `<div class="pm-row" tabindex="0" role="button" data-p="${esc(p.id)}"><div class="pm-th">📁</div><div class="f"><b>${esc(p.titulo)}</b><span class="pm-mu">${esc(p.cliente || '')}${p.ubicacion ? ' · ' + esc(p.ubicacion) : ''}</span><div><span class="pm-tg">${esc(p.estado || '—')}</span><span class="pm-tg">📐 ${p.planos} plano(s)</span></div></div><span aria-hidden="true">›</span></div>`).join('') || '<p class="pm-mu">No hay proyectos que coincidan.</p>';
+      };
+      pinta(); $('#pm-q').oninput = pinta;
+      const pick = e => { const r0 = e.target.closest('[data-p]'); if (!r0) return; const p = P.find(x => x.id === r0.dataset.p); vistaPM('planos', { proyectoId: p.id, titulo: p.titulo }); };
+      $('#pm-l').onclick = pick; $('#pm-l').onkeydown = e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pick(e); } };
+    } catch (err){ if (err.auth) return vistaPM('login', { msg: 'Tu sesión venció. Ingresa de nuevo.' }); errPM(err.message); $('#pm-l').innerHTML = ''; }
+    return;
+  }
+  if (v === 'planos'){
+    $('#pm-h').textContent = '📁 ' + (o.titulo || 'Proyecto');
+    pmBody.innerHTML = `<p class="pm-mu"><a href="#" id="pm-bk">‹ Proyectos</a></p><div class="pm-er" id="pm-er" role="alert"></div><div id="pm-l"><p class="pm-mu">Cargando planos…</p></div>`;
+    $('#pm-bk').onclick = e => { e.preventDefault(); vistaPM('proyectos'); };
+    try {
+      const r = await api({ a: 'sgcPlanosListar', proyectoId: o.proyectoId }); const L = r.planos || [];
+      $('#pm-l').innerHTML = L.map(m => `<div class="pm-row" tabindex="0" role="button" data-ab="${esc(m.planoId)}"><div class="pm-th" style="${m.miniatura ? `background-image:url('${esc(m.miniatura)}')` : ''}">${m.miniatura ? '' : '📐'}</div><div class="f"><b>${esc(m.nombre)} <span class="pm-tg">v${m.version}</span></b><span class="pm-mu">${m.nodos} nodos · ${m.tuberias} tuberías · actualizado ${fch(m.actualizado)}</span></div><span class="btn btn-vr" aria-hidden="true">Ver en 3D</span></div>`).join('') || '<p class="pm-mu">Este proyecto todavía no tiene planos. Guárdalos desde Isoflux (☁️ Guardar en el proyecto).</p>';
+      const pick = e => { const a = e.target.closest('[data-ab]'); if (!a) return; const m = L.find(x => x.planoId === a.dataset.ab); closeModal(); abrirPlanoNube(m.planoId, { proyecto: o.titulo, miniatura: m.miniatura }); };
+      $('#pm-l').onclick = pick; $('#pm-l').onkeydown = e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pick(e); } };
+    } catch (err){ if (err.auth) return vistaPM('login', { msg: 'Tu sesión venció. Ingresa de nuevo.' }); errPM(err.message); $('#pm-l').innerHTML = ''; }
+  }
+}
+
+/* --- Navegador 3D de proyectos y planos (dentro de las gafas, con sesión iniciada) --- */
+const browser = new THREE.Group(); browser.visible = false; scene.add(browser);
+const brTitle = panel(1.2, 0.12, () => {}, 800); brTitle.position.y = 1.95; browser.add(brTitle);
+const brItems = [];
+for (let i = 0; i < 6; i++){ const b = makeButton('', { w: 1.2, h: 0.1 }, () => {}); b.position.y = 1.8 - i * 0.12; b.visible = false; browser.add(b); brItems.push(b); }
+const brPrev = makeButton('◀ Anterior', { w: 0.32, h: 0.09 }, () => brPage(-1)); brPrev.position.set(-0.44, 1.02, 0); browser.add(brPrev);
+const brBack = makeButton('‹ Volver', { w: 0.32, h: 0.09 }, () => brState.back && brState.back()); brBack.position.set(0, 1.02, 0); browser.add(brBack);
+const brNext = makeButton('Siguiente ▶', { w: 0.32, h: 0.09 }, () => brPage(1)); brNext.position.set(0.44, 1.02, 0); browser.add(brNext);
+const brClose = makeButton('✕ Cerrar', { w: 0.32, h: 0.09, primary: true }, () => closeViewer()); brClose.position.set(0, 0.9, 0); browser.add(brClose);
+const brState = { items: [], page: 0, back: null };
+function brSet(title, items, back){
+  brTitle.userData.redraw((ctx, W, H) => { ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.font = `800 ${H * 0.5}px ${FONT}`; ctx.fillText(title, W / 2, H / 2); });
+  Object.assign(brState, { items, page: 0, back }); brPage(0);
+}
+function brPage(d){
+  const n = Math.max(1, Math.ceil(brState.items.length / brItems.length));
+  brState.page = THREE.MathUtils.clamp(brState.page + d, 0, n - 1);
+  brItems.forEach((b, i) => {
+    const it = brState.items[brState.page * brItems.length + i];
+    b.visible = !!it; if (!it) return;
+    b.userData.setText(it.label); b.userData.ui.onSelect = it.onSelect;
+  });
+  brPrev.visible = brState.page > 0; brNext.visible = brState.page < n - 1; brBack.visible = !!brState.back;
+}
+async function openBrowser3D(){
+  if (mode !== 'menu') closeViewer();
+  mode = 'browser'; showMenu(false); recenter(browser, 1.6); browser.visible = true;
+  brSet('Cargando tus proyectos…', [], null);
+  try {
+    const r = await api({ a: 'sgcPlanoProyectos' }); const P = (r.proyectos || []).filter(p => p.planos > 0);
+    const proyectos = () => brSet('📁 Elige un proyecto', P.map(p => ({ label: `📁 ${p.titulo} · ${p.planos} plano(s)`, onSelect: () => planos(p) })), null);
+    const planos = async p => {
+      brSet('Cargando planos…', [], proyectos);
+      const x = await api({ a: 'sgcPlanosListar', proyectoId: p.id });
+      brSet('📐 ' + p.titulo, (x.planos || []).map(m => ({ label: `📐 ${m.nombre} v${m.version} · ${m.tuberias} tuberías`, onSelect: () => { closeViewer(); abrirPlanoNube(m.planoId, { proyecto: p.titulo, miniatura: m.miniatura }); } })), proyectos);
+    };
+    proyectos();
+    if (!P.length) brSet('No hay proyectos con planos guardados', [], null);
+  } catch (e){
+    brSet(e.auth ? 'Sesión vencida: ingresa de nuevo fuera de VR' : 'No se pudo cargar: ' + e.message, [], null);
+  }
+}
+
+/* --- Entrega desde Isoflux ("🥽 Ver en VR") y enlaces ?plano=ID --- */
+function arranquePlanos(){
+  refreshPlanRow();
+  const h = lsGet('vr_plano_handoff'); lsSet('vr_plano_handoff', null);
+  if (h && h.exp > Date.now()){
+    if (h.ses && h.ses.t){ SES = h.ses; saveSes(); }
+    if (h.plan) openPlan(h.plan, { nombre: h.nombre, proyecto: h.proyecto, version: h.version });
+    else if (h.planoId) abrirPlanoNube(h.planoId, { proyecto: h.proyecto });
+    return;
+  }
+  const id = new URLSearchParams(location.search).get('plano');
+  if (id) abrirPlanoNube(id, {});
 }
 
 /* =====================================================================
@@ -1029,19 +1759,24 @@ renderer.xr.addEventListener('sessionstart', () => {
   clearPointer(mouse); hasMouse = false;
   camera.layers.disable(1);             // cada ojo ve su esfera estéreo
   try { renderer.xr.setFoveation(1); } catch (_){}
-  rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0);
-  btnExitXR.visible = true; needRecenter = true;
+  const walkingNow = mode === 'plano' && PLAN && PLAN.mode === 'real';
+  if (!walkingNow){ rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); }
+  btnExitXR.visible = true; needRecenter = mode === 'menu';
+  if (mode === 'plano'){ drawPlanTitle(); setTimeout(() => PLAN.mode === 'real' ? placePlanUI(true) : (recenter(planView, 2.0), placePlanUI(false)), 400); }
 });
 renderer.xr.addEventListener('sessionend', () => {
   btnVR.querySelector('.txt').textContent = 'Entrar en VR';
   camera.layers.enable(1);
   controllers.forEach(c => { clearPointer(c.userData.ptr); c.userData.reticle.visible = false; });
   releaseGrab();
-  rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0);
   camera.position.set(0, EYE, 0); yaw = pitch = 0;
   btnExitXR.visible = false;
-  recenter(menu, 0);
-  if (mode !== 'menu') closeViewer();
+  if (mode === 'plano'){ setPlanMode(PLAN.mode); }
+  else {
+    rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0);
+    recenter(menu, 0);
+    if (mode !== 'menu') closeViewer();
+  }
 });
 setupXR();
 
@@ -1057,7 +1792,7 @@ addEventListener('resize', () => {
 /* =====================================================================
    11. BUCLE DE RENDER
    ===================================================================== */
-const groupsIntro = [menu, screenView, modelView, sphereUI];
+const groupsIntro = [menu, screenView, modelView, sphereUI, planUI, browser];
 function loop(){
   const dt = Math.min(clock.getDelta(), 0.05); elapsed += dt;
   const inXR = renderer.xr.isPresenting;
@@ -1066,10 +1801,11 @@ function loop(){
     if (needRecenter){ needRecenter = false; setTimeout(() => recenter(menu, 0), 300); }
     for (const c of controllers){
       const ud = c.userData;
-      if (!ud.active){ ud.reticle.visible = false; continue; }
+      if (!ud.active){ ud.reticle.visible = false; planHits.delete(c); continue; }
       const r = ctrlRay(c);
       const hit = castPointer(ud.ptr, r.o, r.d, () => pulse(c));
-      const mh = hit ? null : hitModel(r.o, r.d);
+      const mh = hit ? null : (mode === 'plano' ? planHitFor(c, r) : hitModel(r.o, r.d));
+      if (hit) planHits.delete(c);
       const h = hit || mh;
       ud.line.scale.z = h ? h.distance : 3;
       ud.line.material.color.set(hit ? 0xffffff : 0xff3b45);
@@ -1079,8 +1815,15 @@ function loop(){
     handleSticks(dt);
   } else {
     camera.rotation.set(-pitch, -yaw, 0, 'YXZ');
-    if (hasMouse && !drag){ const r = rayFromCamera(); castPointer(mouse, r.o, r.d); }
-    else if (!hasMouse) clearPointer(mouse);
+    if (hasMouse && !drag){
+      const r = rayFromCamera(); const h = castPointer(mouse, r.o, r.d);
+      if (mode === 'plano' && !h) planHitFor(mouse, r); else planHits.delete(mouse);
+    } else if (!hasMouse){ clearPointer(mouse); planHits.delete(mouse); }
+  }
+  planFrame++;
+  if (mode === 'plano'){
+    desktopWalk(dt); updateInfo();
+    if (realGrid.visible){ realGrid.position.x = Math.round(rig.position.x); realGrid.position.z = Math.round(rig.position.z); }
   }
 
   if (menu.visible) layoutRows(dt);
@@ -1109,6 +1852,7 @@ function loop(){
 }
 
 recenter(menu, 0);
+arranquePlanos();
 renderer.setAnimationLoop(loop);
 requestAnimationFrame(() => $('#loading').classList.add('hide'));
 </script>
