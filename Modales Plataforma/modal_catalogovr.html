@@ -108,6 +108,7 @@
     <a class="btn" href="https://desarrollosdeia.org/" target="_top" title="Volver a la página de inicio">⌂ <span class="txt">Inicio</span></a>
     <button class="btn" id="btn-planos" title="Ver tus planos de Isoflux en 3D">📐 <span class="txt">Mis planos</span></button>
     <button class="btn" id="btn-fs" title="Pantalla completa">⛶ <span class="txt">Pantalla completa</span></button>
+    <button class="btn btn-vr" id="btn-exit" hidden title="Salir y volver al catálogo (Esc)">✕ <span class="txt">Salir</span></button>
     <button class="btn btn-vr" id="btn-vr" disabled>👓 <span class="txt">Entrar en VR</span></button>
   </div>
 </nav>
@@ -458,7 +459,7 @@ const header = panel(2.3, 0.52, (ctx, W, H) => {
 const headerY = rowTop + 0.62;
 header.position.set(-0.32, headerY, -R - 0.05);
 menu.add(header);
-const btnDest = makeButton('▶  Ver destacado', { w: 0.56, h: 0.13, primary: true }, () => openItem(DESTACADO, DEST_CAT));
+const btnDest = makeButton('▶  Ver demo', { w: 0.56, h: 0.13, primary: true }, () => openItem(DESTACADO, DEST_CAT));
 btnDest.position.set(1.18, headerY + 0.06, -R + 0.02);
 menu.add(btnDest);
 const btnInfo = makeButton('ℹ  Cómo usar', { w: 0.56, h: 0.1 }, () => toast('Apunta con el láser y pulsa el gatillo · Joystick izq.: desplazar fila · Joystick der.: girar'));
@@ -549,7 +550,7 @@ const ctrlPanel = panel(0.95, 1.05, (ctx, W, H) => {
     ['🕹️', 'Joystick izquierdo', 'Desplazar la fila apuntada'],
     ['🔄', 'Joystick derecho', 'Girar 30° (snap turn)'],
     ['🖐️', 'Manos (hand tracking)', 'Apunta y pellizca'],
-    ['🖱️', 'En PC', 'Arrastra para mirar · clic']
+    ['⏏', 'Botón B / Y  ·  Esc en PC', 'Salir al catálogo']
   ];
   let y = 140;
   for (const [ic, a, b] of lines){
@@ -724,8 +725,11 @@ const sphereToggle = makeButton('▾ Ocultar controles', { w: 0.36, h: 0.07 }, (
   const show = !sphereBar.g.visible; sphereBar.g.visible = show;
   sphereToggle.userData.setText(show ? '▾ Ocultar controles' : '▴ Mostrar controles');
 });
-sphereToggle.position.set(0, 0.72, 0.12); sphereToggle.rotation.x = -0.75;
+sphereToggle.position.set(-0.2, 0.72, 0.12); sphereToggle.rotation.x = -0.75;
 sphereUI.add(sphereToggle);
+const sphereExit = makeButton('✕  Salir', { w: 0.3, h: 0.07, primary: true }, () => closeViewer());
+sphereExit.position.set(0.2, 0.72, 0.12); sphereExit.rotation.x = -0.75;
+sphereUI.add(sphereExit);
 
 /* --- Visor de modelos 3D --- */
 const modelView = new THREE.Group(); modelView.visible = false; scene.add(modelView);
@@ -1057,8 +1061,11 @@ function handleSticks(dt){
     const x = gp.axes[2], y = gp.axes[3];
     // botón A / X: traer el panel del plano al frente
     const bA = !!gp.buttons[4]?.pressed;
-    if (bA && !c.userData.bA && mode === 'plano') placePlanUI(true);
+    if (bA && !c.userData.bA){ if (mode === 'plano') placePlanUI(true); else if (mode === '360'){ recenter(sphereUI, 0.9); sphereBar.g.visible = true; } }
     c.userData.bA = bA;
+    const bB = !!gp.buttons[5]?.pressed;      // botón B / Y: salir al catálogo
+    if (bB && !c.userData.bB && mode !== 'menu') closeViewer();
+    c.userData.bB = bB;
     const gt = grabTarget();
     if (src.handedness === 'right'){
       if (gt && grabbedBy !== c){
@@ -1805,9 +1812,13 @@ addEventListener('resize', () => {
 /* =====================================================================
    11. BUCLE DE RENDER
    ===================================================================== */
+const btnExit2D = $('#btn-exit');
+btnExit2D.addEventListener('click', () => closeViewer());
+let lastMode = null;
 const groupsIntro = [menu, screenView, modelView, sphereUI, planUI, browser];
 function loop(){
   const dt = Math.min(clock.getDelta(), 0.05); elapsed += dt;
+  if (mode !== lastMode){ lastMode = mode; btnExit2D.hidden = mode === 'menu'; }
   const inXR = renderer.xr.isPresenting;
 
   if (inXR){
