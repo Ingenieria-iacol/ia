@@ -222,18 +222,36 @@ function status(msg){ const s = $('#status'); s.textContent = msg; s.style.displ
 /* =====================================================================
    3. ESCENA BÁSICA
    ===================================================================== */
+/* Equipos con poca memoria (p. ej. gráficos integrados y 4 GB de RAM): modo liviano */
+const IS_HEADSET = /OculusBrowser|Quest|Pico|Wolvic/i.test(navigator.userAgent);   // en las gafas se mantiene la calidad
+const LOW_MEM = !IS_HEADSET && (navigator.deviceMemory || 8) <= 4;
+async function createRenderer(){
+  const tries = [
+    { antialias: !LOW_MEM, powerPreference: 'high-performance' },
+    { antialias: false, powerPreference: 'default' },
+    { antialias: false, powerPreference: 'low-power', depth: true, stencil: false }
+  ];
+  let last;
+  for (let i = 0; i < tries.length; i++){
+    try { return new THREE.WebGLRenderer(tries[i]); }
+    catch (e){ last = e; console.warn('WebGL intento', i + 1, 'falló:', e.message); await new Promise(r => setTimeout(r, 700)); }
+  }
+  throw last;
+}
 let renderer;
 try {
-  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer = await createRenderer();
 } catch (e){
-  vrFail('Tu navegador no pudo iniciar los gráficos 3D (WebGL).<br><small style="opacity:.7">Cierra otras pestañas con contenido 3D, activa la aceleración por hardware o prueba con Chrome / Edge actualizados.</small>');
+  vrFail('Tu navegador bloqueó los gráficos 3D (WebGL) para este sitio.<br><small style="opacity:.75;line-height:1.6">Suele pasar tras varias caídas gráficas seguidas. Para desbloquearlo: <b>cierra por completo el navegador y ábrelo de nuevo</b>.<br>Si persiste: cierra otras pestañas con 3D o video, y en la configuración del navegador activa «Usar aceleración por hardware».</small>');
   throw e;
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setPixelRatio(LOW_MEM ? 1 : Math.min(devicePixelRatio, 1.5));
+window.__vr = { renderer, lowMem: LOW_MEM };
 /* Si la tarjeta gráfica pierde el contexto, se intenta recuperar; si no vuelve, se recarga sola una vez. */
 let ctxTimer = null;
 renderer.domElement.addEventListener('webglcontextlost', e => {
   e.preventDefault();
+  console.warn('[VR] contexto 3D perdido', { visible: document.visibilityState, t: Math.round(performance.now()), mem: renderer.info.memory });
   vrBusy('Recuperando los gráficos 3D…');
   clearTimeout(ctxTimer);
   armCtxTimer();
@@ -304,9 +322,12 @@ function wrapText(ctx, text, x, y, maxW, lh){
   return y + lh;
 }
 function makeCanvas(w, h){ const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
-function texFrom(canvas){
+function texFrom(canvas, mip = false){
   const t = new THREE.CanvasTexture(canvas);
-  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.generateMipmaps = true;
+  t.colorSpace = THREE.SRGBColorSpace;
+  // los paneles se ven casi a su tamaño real: sin mipmaps ahorran ~25 % de memoria gráfica
+  t.generateMipmaps = mip; t.minFilter = mip ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
+  t.anisotropy = mip ? (LOW_MEM ? 2 : 4) : 1;
   return t;
 }
 /* Panel con contenido dibujado; devuelve mesh con userData.redraw(fn) */
@@ -480,7 +501,7 @@ function makeCard(item, cat, row){
   const g = new THREE.Group();
   const c = makeCanvas(512, 320), ctx = c.getContext('2d');
   drawCard(ctx, 512, 320, item, cat, null);
-  const tex = texFrom(c);
+  const tex = texFrom(c, true);
   if (item.img){
     const im = new Image(); im.crossOrigin = 'anonymous';
     im.onload = () => { drawCard(ctx, 512, 320, item, cat, im); tex.needsUpdate = true; };
