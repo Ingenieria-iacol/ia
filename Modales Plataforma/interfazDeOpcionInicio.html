@@ -3,30 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal de Acceso V3 - Ingeniería</title>
-    
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    
+    <title>Portal de Acceso V4 - Ingeniería</title>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        netflix: {
-                            dark: '#141414',
-                            card: 'rgba(0, 0, 0, 0.75)',
-                            input: '#333333',
-                        },
-                        metal: {
-                            light: '#60a5fa', 
-                            DEFAULT: '#2563eb', 
-                            dark: '#1e3a8a',  
-                        }
+                        netflix: { dark: '#141414', card: 'rgba(0, 0, 0, 0.75)', input: '#333333' },
+                        metal: { light: '#60a5fa', DEFAULT: '#2563eb', dark: '#1e3a8a' }
                     },
                     boxShadow: {
                         'neon-blue': '0 0 20px rgba(37, 99, 235, 0.5)',
@@ -52,224 +42,457 @@
 
     <style>
         body {
-            /* CAMBIO: Se establece color negro puro y se elimina la imagen de fondo duplicada */
             background-color: #000;
-            /* background-image eliminado para permitir el mimetismo perfecto con la marca de agua */
-            
             color: #fff;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            overflow: hidden;
+            overflow-x: hidden;
         }
-        
+
+        /* Halo azul metalizado muy tenue detrás de la tarjeta */
+        .halo {
+            background:
+                radial-gradient(ellipse 60% 45% at 50% 55%, rgba(37, 99, 235, 0.16), transparent 70%),
+                radial-gradient(ellipse 35% 25% at 50% 100%, rgba(96, 165, 250, 0.08), transparent 70%);
+        }
+
+        /* Tarjeta original (panel streaming) con borde metálico */
         .streaming-panel {
+            position: relative;
             background-color: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
+        .streaming-panel::before {
+            content: "";
+            position: absolute; inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(150deg, rgba(147,197,253,.55), rgba(37,99,235,.15) 35%, rgba(255,255,255,.06) 60%, rgba(96,165,250,.45));
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor;
+                    mask-composite: exclude;
+            pointer-events: none;
+        }
+        .brillo-superior {
+            position: absolute; top: 0; left: 12%; right: 12%; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(147,197,253,.9), transparent);
+        }
+
+        /* Campos con etiqueta flotante */
+        .campo { position: relative; }
+        .campo input {
+            width: 100%;
+            padding: 1.45rem 3rem 0.55rem 2.9rem;
+            background: #333;
+            color: #fff;
+            border-radius: 0.375rem;
+            border-bottom: 2px solid transparent;
+            outline: none;
+            transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
+        }
+        .campo input:focus { background: #454545; border-bottom-color: #3b82f6; box-shadow: 0 6px 18px -10px rgba(37,99,235,.8); }
+        .campo input:disabled { opacity: .6; }
+        .campo label {
+            position: absolute; left: 2.9rem; top: 1.02rem;
+            color: #8c8c8c; font-size: 1rem;
+            pointer-events: none;
+            transition: all .15s ease;
+        }
+        .campo input:focus + label,
+        .campo input:not(:placeholder-shown) + label {
+            top: 0.45rem; font-size: 0.72rem; color: #93c5fd; letter-spacing: .02em;
+        }
+        .campo .ico { position: absolute; left: 1rem; top: 1.05rem; width: 1.1rem; height: 1.1rem; color: #6b7280; transition: color .2s; }
+        .campo:focus-within .ico { color: #60a5fa; }
+
+        /* Indicador de pasos */
+        .paso { transition: all .35s ease; }
 
         .modal-enter { animation: modalIn 0.3s ease-out forwards; }
         @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        
-        .input-transition { transition: all 0.2s ease-in-out; }
+        .desliza { animation: desliza .35s ease-out; }
+        @keyframes desliza { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
+        .sacude { animation: sacude .4s ease; }
+        @keyframes sacude { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
+        .girar { animation: girar .8s linear infinite; }
+        @keyframes girar { to { transform: rotate(360deg); } }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+        }
     </style>
 </head>
 <body>
-    <div id="root" class="w-full h-full flex items-center justify-center p-4"></div>
+    <div id="root" class="w-full min-h-screen flex items-center justify-center p-4"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
+
+        /* =====================================================================
+           ACCESO CON LA CUENTA DEL PORTAL DE PROYECTOS
+           - No hay claves en este archivo. El correo y la clave se validan en el
+             mismo servidor (Google Apps Script) del Portal de Proyectos, con las
+             mismas reglas: 1ª validación (correo + clave) y, si la cuenta la
+             requiere, 2ª validación (clave de seguridad).
+           - La clave nunca se guarda: solo viaja al servidor al pulsar "Iniciar".
+           - La sesión vive solo en esta pestaña (sessionStorage) y se cierra
+             a las 2 h de inactividad.
+           ===================================================================== */
+        const API = 'https://script.google.com/macros/s/AKfycbzPsHZ7TjSHExWu3dEboPC1_WXl5KMfisX3DKo4SOtQM2PYa66HF7ba0Ary8eET5N08/exec';
+        const PORTAL = 'ModalPortalProyectosClaude.html';
+        const DESTINO = '../AppsPlataforma/catalogo.html';
+        const DESTINOS_ESPECIALES = { 'comservicios@gmail.com': '../comservicios/interfaz_colgas.html' };
+        const CLAVE_SESION = 'entalpiaSesion';
+        const CLAVE_CORREO = 'entalpiaCorreoRecordado';
+        const MAX_INTENTOS = 5;          // intentos fallidos antes de la pausa
+        const PAUSA_SEG = 30;            // pausa tras demasiados intentos
+
+        const guardar = (k, v, almacen = sessionStorage) => { try { v == null ? almacen.removeItem(k) : almacen.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch (e) {} };
+        const leer = (k, almacen = sessionStorage) => { try { return almacen.getItem(k); } catch (e) { return null; } };
+
+        async function api(cuerpo) {
+            let r;
+            try {
+                r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(cuerpo) });
+            } catch (e) {
+                throw new Error('No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.');
+            }
+            const tx = await r.text();
+            let j;
+            try { j = JSON.parse(tx); }
+            catch (e) { throw new Error(/<html|<!doctype/i.test(tx) ? 'El servidor del portal respondió con una página de error. Intenta de nuevo en un momento.' : 'Respuesta inválida del servidor.'); }
+            if (j && j.error) throw new Error(j.error);
+            return j;
+        }
 
         const Icons = {
-            Lock: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
-            Shield: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
-            Eye: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
-            EyeOff: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>,
-            ArrowRight: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>,
-            Play: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
-            X: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-            CreditCard: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Lock: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+            Key: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>,
+            Mail: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>,
+            Shield: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+            ShieldCheck: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>,
+            Eye: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
+            EyeOff: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>,
+            ArrowRight: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>,
+            ArrowLeft: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
+            Play: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
+            X: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+            CreditCard: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+            Users: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+            Alert: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>,
+            Spinner: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg>
         };
 
-        const MOCK_USERS = [
-            { id: 1, email: 'juvamo78@gmail.com', password: '1511', name: 'Ing. Julian Valencia', plan: 'premium', verified: true, type: 'Ingeniero' },
-            { id: 2, email: 'comserviciosayg@gmail.com', password: '7840', name: 'Jefferson Flores', plan: 'pro', verified: true, type: 'personal' },
-            { id: 3, email: 'alexander221977@gmail.com', password: '90902', name: 'CEO Roberto Premium', plan: 'premium', verified: true, type: 'personal' },
-            { id: 4, email: 'josetangarife14@gmail.com', password: '1204', name: 'Jose Tangarife', plan: 'premium', verified: true, type: 'personal' }
-        ];
+        /* Campo de clave con ojo para ver/ocultar y aviso de Bloq Mayús */
+        const CampoClave = ({ id, etiqueta, valor, setValor, deshabilitado, autoFocus, autoComplete, icono: Icono }) => {
+            const [ver, setVer] = useState(false);
+            const [mayus, setMayus] = useState(false);
+            const detectar = (e) => { if (e.getModifierState) setMayus(e.getModifierState('CapsLock')); };
+            return (
+                <div>
+                    <div className="campo">
+                        <Icono className="ico" />
+                        <input
+                            id={id}
+                            type={ver ? 'text' : 'password'}
+                            required
+                            placeholder=" "
+                            value={valor}
+                            onChange={(e) => setValor(e.target.value)}
+                            onKeyUp={detectar}
+                            onKeyDown={detectar}
+                            onBlur={() => setMayus(false)}
+                            disabled={deshabilitado}
+                            autoFocus={autoFocus}
+                            autoComplete={autoComplete}
+                            spellCheck="false"
+                        />
+                        <label htmlFor={id}>{etiqueta}</label>
+                        <button
+                            type="button"
+                            onClick={() => setVer(!ver)}
+                            aria-label={ver ? 'Ocultar clave' : 'Ver clave'}
+                            title={ver ? 'Ocultar clave' : 'Ver clave'}
+                            className="absolute right-4 top-[1.05rem] text-gray-400 hover:text-gray-200 transition-colors"
+                        >
+                            {ver ? <Icons.EyeOff className="w-5 h-5" /> : <Icons.Eye className="w-5 h-5" />}
+                        </button>
+                    </div>
+                    {mayus && <p className="mt-1.5 text-xs text-amber-300/90 flex items-center gap-1.5"><Icons.Alert className="w-3.5 h-3.5" /> Bloq Mayús está activado</p>}
+                </div>
+            );
+        };
 
         const LoginApp = () => {
-            const [email, setEmail] = useState('');
+            const correoRecordado = leer(CLAVE_CORREO, localStorage) || '';
+            const [paso, setPaso] = useState(1);             // 1: correo + clave · 2: clave de seguridad · 3: ingreso correcto
+            const [email, setEmail] = useState(correoRecordado);
             const [password, setPassword] = useState('');
-            const [showPassword, setShowPassword] = useState(false);
+            const [clave2, setClave2] = useState('');
+            const [recordar, setRecordar] = useState(!!correoRecordado);
             const [error, setError] = useState('');
             const [sessionMessage, setSessionMessage] = useState('');
-            const [isRedirecting, setIsRedirecting] = useState(false);
-            const [loginSuccess, setLoginSuccess] = useState(false);
+            const [cargando, setCargando] = useState(false);
+            const [usuario, setUsuario] = useState(null);
+            const [intentos, setIntentos] = useState(0);
+            const [pausa, setPausa] = useState(0);
+            const [verAyuda, setVerAyuda] = useState(false);
             const [showVideoModal, setShowVideoModal] = useState(false);
+            const [sacudir, setSacudir] = useState(0);
+            const token = useRef(null);
 
             useEffect(() => {
                 if (window.location.hash === '#expired') {
                     setSessionMessage('Tu sesión ha expirado por inactividad (2h).');
                     history.replaceState(null, null, ' ');
                 }
-                localStorage.removeItem('mockSessionUser');
-                localStorage.removeItem('lastActivity');
+                // Siempre se exige digitar la clave: se descarta cualquier sesión previa.
+                guardar(CLAVE_SESION, null);
+                try { localStorage.removeItem('mockSessionUser'); localStorage.removeItem('lastActivity'); } catch (e) {}
             }, []);
 
-            const handleLogin = (e) => {
+            useEffect(() => {
+                if (pausa <= 0) return;
+                const t = setTimeout(() => setPausa(pausa - 1), 1000);
+                return () => clearTimeout(t);
+            }, [pausa]);
+
+            const fallo = (msg) => {
+                setError(msg);
+                setSacudir((n) => n + 1);
+                const n = intentos + 1;
+                if (n >= MAX_INTENTOS) { setIntentos(0); setPausa(PAUSA_SEG); }
+                else setIntentos(n);
+            };
+
+            const finalizar = (datos) => {
+                const u = {
+                    t: token.current,
+                    email: (datos.email || email).trim().toLowerCase(),
+                    nombre: datos.nombre || '',
+                    rol: datos.rol || '',
+                    inicio: Date.now(),
+                    ultimaActividad: Date.now()
+                };
+                guardar(CLAVE_SESION, u);
+                guardar(CLAVE_CORREO, recordar ? u.email : null, localStorage);
+                setPassword(''); setClave2('');
+                setUsuario(u);
+                setPaso(3);
+                setTimeout(() => { window.location.href = DESTINOS_ESPECIALES[u.email] || DESTINO; }, 1100);
+            };
+
+            const handleLogin = async (e) => {
                 e.preventDefault();
+                if (cargando || pausa > 0) return;
+                setError(''); setSessionMessage('');
+                setCargando(true);
+                try {
+                    const r = await api({ a: 'login1', email: email.trim(), p: password });
+                    token.current = r.t;
+                    setPassword('');
+                    setIntentos(0);
+                    if (r.ok) finalizar(r);
+                    else { setUsuario({ nombre: r.nombre || '' }); setPaso(2); }
+                } catch (err) {
+                    fallo(err.message || 'No fue posible validar tus datos.');
+                } finally { setCargando(false); }
+            };
+
+            const handleSegunda = async (e) => {
+                e.preventDefault();
+                if (cargando || pausa > 0) return;
                 setError('');
-                setSessionMessage('');
-
-                const user = MOCK_USERS.find(u => u.email === email);
-                
-                if (!user) { setError('Usuario no encontrado.'); return; }
-                if (user.password !== password) { setError('Contraseña incorrecta.'); return; }
-                if (!user.verified) { setError('Cuenta no verificada.'); return; }
-
-                setIsRedirecting(true);
-                setLoginSuccess(true);
-                
-                localStorage.setItem('mockSessionUser', JSON.stringify(user));
-                localStorage.setItem('lastActivity', Date.now().toString());
-
-                setTimeout(() => {
-                    try {
-                        const currentUrl = window.location.href;
-                        const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/') + 1);
-                        
-                        // --- LÓGICA DE REDIRECCIÓN ACTUALIZADA ---
-                        let targetPath = '../AppsPlataforma/catalogo.html'; // Ruta por defecto
-                        
-                        // Caso específico para Comservicios
-                        if (user.email === 'comservicios@gmail.com') {
-                            targetPath = 'comservicios/interfaz_colgas.html';
-                        }
-                        
-                        const targetUrl = baseUrl + targetPath;
-                        window.location.href = targetUrl;
-                        // -----------------------------------------
-                        
-                    } catch (err) {
-                        console.error("Error en la redirección:", err);
-                    }
-                }, 800); 
+                setCargando(true);
+                try {
+                    const me = await api({ a: 'login2', t: token.current, p: clave2 });
+                    setIntentos(0);
+                    finalizar(me || {});
+                } catch (err) {
+                    setClave2('');
+                    if (/sesi[oó]n|token|expir|vencid/i.test(err.message)) { volver(); setError('La validación expiró. Ingresa de nuevo tu correo y tu clave.'); }
+                    else fallo(err.message || 'Clave de seguridad incorrecta.');
+                } finally { setCargando(false); }
             };
 
-            const handlePlaceholderClick = (e, featureName) => {
-                e.preventDefault();
-                alert(`Funcionalidad "${featureName}" pendiente de implementación.`);
-            };
+            const volver = () => { token.current = null; setClave2(''); setError(''); setPaso(1); };
+
+            const bloqueado = cargando || pausa > 0;
+            const textoBoton = pausa > 0 ? `Espera ${pausa} s` : cargando ? 'Validando…' : (paso === 2 ? 'Confirmar' : 'Iniciar sesión');
+
+            const botonPrincipal = () => (
+                <button
+                    type="submit"
+                    disabled={bloqueado}
+                    className={`w-full py-3.5 rounded-md font-bold text-white text-lg transition-all duration-300 transform shadow-lg flex items-center justify-center gap-2 ${
+                        bloqueado
+                        ? 'bg-blue-900/80 cursor-wait opacity-80'
+                        : 'bg-gradient-to-r from-blue-700 to-blue-600 hover:from-blue-600 hover:to-blue-500 shadow-neon-blue hover:scale-[1.02]'
+                    }`}
+                >
+                    {cargando && <Icons.Spinner className="w-5 h-5 girar" />}
+                    {textoBoton}
+                </button>
+            );
+
+            const avisoError = () => error ? (
+                <div key={sacudir} role="alert" className="sacude flex items-start gap-2.5 rounded-md border border-orange-500/30 bg-orange-500/10 px-3.5 py-2.5 text-sm text-orange-300">
+                    <Icons.Lock className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{error}</span>
+                </div>
+            ) : null;
+
+            const pasos = () => (
+                <div className="flex items-center justify-center gap-2 mb-7 text-[11px] uppercase tracking-wider font-semibold">
+                    <span className={`paso flex items-center gap-1.5 ${paso === 1 ? 'text-blue-300' : 'text-gray-500'}`}>
+                        <span className={`paso w-5 h-5 rounded-full grid place-items-center text-[10px] ${paso === 1 ? 'bg-blue-600 text-white shadow-neon-blue' : 'bg-blue-900/60 text-blue-200'}`}>{paso > 1 ? '✓' : '1'}</span>
+                        Clave
+                    </span>
+                    <span className={`paso h-px w-8 ${paso > 1 ? 'bg-blue-500' : 'bg-gray-700'}`}></span>
+                    <span className={`paso flex items-center gap-1.5 ${paso === 2 ? 'text-blue-300' : 'text-gray-500'}`}>
+                        <span className={`paso w-5 h-5 rounded-full grid place-items-center text-[10px] ${paso === 2 ? 'bg-blue-600 text-white shadow-neon-blue' : paso > 2 ? 'bg-blue-900/60 text-blue-200' : 'bg-gray-800 text-gray-400'}`}>{paso > 2 ? '✓' : '2'}</span>
+                        Seguridad
+                    </span>
+                </div>
+            );
 
             return (
                 <>
                     {/* --- MARCA DE AGUA GLOBAL (FONDO) --- */}
                     <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none">
-                        <img 
-                            src="ImagenesPlataformas/logo_entalpia.png" 
-                            alt="" 
-                            /* CAMBIO: w-[100vw] h-[100vh] ocupa toda la pantalla */
+                        <img
+                            src="../ImagenesPlataformas/logo_entalpia.png"
+                            alt=""
                             className="w-[100vw] h-[100vh] object-contain opacity-0 animate-logo-entry"
-                            onError={(e) => {
-                                e.target.style.display = 'none';
-                            }}
+                            onError={(e) => { e.target.style.display = 'none'; }}
                         />
                     </div>
+                    <div className="fixed inset-0 z-0 halo pointer-events-none"></div>
 
                     {/* --- TARJETA DE LOGIN --- */}
-                    <div className="max-w-md w-full streaming-panel rounded-lg shadow-2xl p-10 md:p-14 border border-transparent opacity-0 animate-card-entry relative z-10 overflow-hidden">
-                        
+                    <div className="max-w-md w-full streaming-panel rounded-xl shadow-2xl p-8 sm:p-10 md:p-12 opacity-0 animate-card-entry relative z-10 overflow-hidden">
+                        <div className="brillo-superior"></div>
+
                         <div className="relative z-10">
-                            <div className="text-center mb-8">
+                            <div className="text-center mb-6">
                                 <h1 className="text-3xl font-bold text-white tracking-tight mb-2 drop-shadow-md">Portal de Ingeniería</h1>
                                 <div className="h-1 w-20 bg-blue-600 mx-auto rounded-full shadow-[0_0_10px_rgba(37,99,235,0.8)]"></div>
+                                {paso < 3 && (
+                                    <p className="mt-4 text-sm text-gray-400">
+                                        Ingresa con tu cuenta del <span className="text-blue-300/90">Portal de Proyectos</span>
+                                    </p>
+                                )}
                             </div>
 
-                            {!loginSuccess ? (
-                                <form onSubmit={handleLogin} className="space-y-6">
+                            {paso < 3 && pasos()}
+
+                            {paso === 1 && (
+                                <form onSubmit={handleLogin} className="space-y-5 desliza" noValidate={false}>
                                     <div className="space-y-4">
-                                        <div className="relative group">
-                                            <input 
-                                                type="email" 
-                                                required 
+                                        <div className="campo">
+                                            <Icons.Mail className="ico" />
+                                            <input
+                                                id="correo"
+                                                type="email"
+                                                required
+                                                placeholder=" "
                                                 value={email}
                                                 onChange={(e) => setEmail(e.target.value)}
-                                                className="w-full px-5 py-4 bg-[#333] text-white rounded-md placeholder-gray-500 focus:outline-none focus:bg-[#454545] border-b-2 border-transparent focus:border-blue-500 input-transition"
-                                                placeholder="Email o número de teléfono"
-                                                disabled={isRedirecting}
+                                                disabled={cargando}
+                                                autoComplete="username"
+                                                autoFocus={!email}
+                                                style={{ paddingRight: '1rem' }}
                                             />
+                                            <label htmlFor="correo">Correo electrónico</label>
                                         </div>
 
-                                        <div className="relative group">
-                                            <input 
-                                                type={showPassword ? "text" : "password"} 
-                                                required 
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                                className="w-full px-5 py-4 bg-[#333] text-white rounded-md placeholder-gray-500 focus:outline-none focus:bg-[#454545] border-b-2 border-transparent focus:border-blue-500 input-transition pr-12"
-                                                placeholder="Contraseña"
-                                                disabled={isRedirecting}
-                                            />
-                                            <button 
-                                                type="button" 
-                                                onClick={() => setShowPassword(!showPassword)}
-                                                className="absolute right-4 top-4 text-gray-400 hover:text-gray-200 transition-colors"
-                                            >
-                                                {showPassword ? <Icons.EyeOff className="w-5 h-5" /> : <Icons.Eye className="w-5 h-5" />}
-                                            </button>
-                                        </div>
+                                        <CampoClave
+                                            id="clave"
+                                            etiqueta="Clave"
+                                            valor={password}
+                                            setValor={setPassword}
+                                            deshabilitado={cargando}
+                                            autoFocus={!!email}
+                                            autoComplete="current-password"
+                                            icono={Icons.Lock}
+                                        />
                                     </div>
 
-                                    {error && (
-                                        <div className="text-orange-400 text-sm flex items-center gap-2 animate-pulse font-medium">
-                                            <Icons.Lock className="w-4 h-4 shrink-0" />
-                                            <span>{error}</span>
-                                        </div>
-                                    )}
+                                    {avisoError()}
+                                    {botonPrincipal()}
 
-                                    <button 
-                                        type="submit" 
-                                        disabled={isRedirecting}
-                                        className={`w-full py-3.5 rounded-md font-bold text-white text-lg transition-all duration-300 transform shadow-lg ${
-                                            isRedirecting 
-                                            ? 'bg-blue-800 cursor-wait opacity-80' 
-                                            : 'bg-gradient-to-r from-blue-700 to-blue-600 hover:from-blue-600 hover:to-blue-500 shadow-neon-blue hover:scale-[1.02]'
-                                        }`}
-                                    >
-                                        {isRedirecting ? 'Iniciando...' : 'Iniciar sesión'}
-                                    </button>
-                                    
-                                    <div className="flex justify-between items-center text-sm text-gray-400 pt-2">
-                                        <div className="flex items-center gap-1">
-                                            <input type="checkbox" id="remember" className="rounded bg-gray-700 border-none text-blue-600 focus:ring-0" />
-                                            <label htmlFor="remember" className="hover:text-gray-300 cursor-pointer">Recuérdame</label>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => handlePlaceholderClick(e, 'Recuperar Contraseña')}
-                                            className="hover:underline hover:text-white"
-                                        >
+                                    <div className="flex justify-between items-center text-sm text-gray-400 pt-1">
+                                        <label className="flex items-center gap-2 cursor-pointer hover:text-gray-300 select-none">
+                                            <input type="checkbox" checked={recordar} onChange={(e) => setRecordar(e.target.checked)} className="rounded bg-gray-700 border-none text-blue-600 focus:ring-0" />
+                                            Recordar mi correo
+                                        </label>
+                                        <button type="button" onClick={() => setVerAyuda(!verAyuda)} className="hover:underline hover:text-white" aria-expanded={verAyuda}>
                                             ¿Necesitas ayuda?
                                         </button>
                                     </div>
 
-                                    <div className="mt-8 text-gray-500 text-sm">
-                                        ¿Primera vez en Entalpía? <button onClick={(e) => handlePlaceholderClick(e, 'Crear Cuenta')} className="text-white hover:underline font-medium ml-1">Suscríbete ahora.</button>
+                                    {verAyuda && (
+                                        <div className="desliza rounded-md border border-blue-500/20 bg-blue-950/30 p-4 text-xs leading-relaxed text-gray-300 space-y-2">
+                                            <p>Usa el <b className="text-white">mismo correo y la misma clave</b> con los que te registraste en el Portal de Proyectos. No necesitas una clave nueva.</p>
+                                            <p>Si tu cuenta tiene clave de seguridad, te la pediremos en el paso 2.</p>
+                                            <p>¿Olvidaste tu clave o tu cuenta está bloqueada? Solicita al administrador del portal que la restablezca.</p>
+                                        </div>
+                                    )}
+
+                                    <div className="pt-2 text-gray-500 text-sm">
+                                        ¿Primera vez en Entalpía?
+                                        <a href={PORTAL} className="text-white hover:underline font-medium ml-1">Crea tu cuenta en el Portal.</a>
                                     </div>
                                 </form>
-                            ) : (
-                                <div className="text-center animate-pulse space-y-6 py-4">
-                                    <div className="w-16 h-16 mx-auto rounded-full bg-green-500/20 flex items-center justify-center border border-green-500/50">
-                                        <Icons.Shield className="w-8 h-8 text-green-400" />
+                            )}
+
+                            {paso === 2 && (
+                                <form onSubmit={handleSegunda} className="space-y-5 desliza">
+                                    <div className="flex items-center gap-3 rounded-md bg-white/[0.04] border border-white/10 px-4 py-3">
+                                        <div className="w-10 h-10 rounded-full bg-blue-600/20 border border-blue-500/40 grid place-items-center shrink-0">
+                                            <Icons.Shield className="w-5 h-5 text-blue-300" />
+                                        </div>
+                                        <div className="text-sm leading-snug">
+                                            <p className="text-white font-semibold">Hola{usuario && usuario.nombre ? `, ${usuario.nombre}` : ''}.</p>
+                                            <p className="text-gray-400">Ingresa tu clave de seguridad para continuar.</p>
+                                        </div>
                                     </div>
-                                    <h2 className="text-2xl font-bold text-white">Bienvenido de nuevo</h2>
-                                    
-                                    <a 
-                                        href="../AppsPlataforma/catalogo.html"
+
+                                    <CampoClave
+                                        id="clave2"
+                                        etiqueta="Clave de seguridad"
+                                        valor={clave2}
+                                        setValor={setClave2}
+                                        deshabilitado={cargando}
+                                        autoFocus
+                                        autoComplete="off"
+                                        icono={Icons.Key}
+                                    />
+
+                                    {avisoError()}
+                                    {botonPrincipal()}
+
+                                    <button type="button" onClick={volver} className="w-full flex items-center justify-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
+                                        <Icons.ArrowLeft className="w-4 h-4" /> Usar otra cuenta
+                                    </button>
+                                </form>
+                            )}
+
+                            {paso === 3 && (
+                                <div className="text-center space-y-6 py-4 desliza">
+                                    <div className="w-16 h-16 mx-auto rounded-full bg-green-500/20 flex items-center justify-center border border-green-500/50 shadow-[0_0_24px_rgba(34,197,94,.25)]">
+                                        <Icons.ShieldCheck className="w-8 h-8 text-green-400" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-white">Bienvenido de nuevo</h2>
+                                        {usuario && usuario.nombre && <p className="mt-1 text-gray-400">{usuario.nombre}</p>}
+                                    </div>
+                                    <a
+                                        href={(usuario && DESTINOS_ESPECIALES[usuario.email]) || DESTINO}
                                         className="inline-flex items-center gap-3 px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded font-bold transition-all hover:scale-105 shadow-neon-blue"
                                     >
                                         Entrar al Panel <Icons.ArrowRight className="w-5 h-5" />
@@ -277,7 +500,7 @@
                                 </div>
                             )}
 
-                            {sessionMessage && !loginSuccess && (
+                            {sessionMessage && paso === 1 && (
                                 <div className="mt-6 text-center">
                                     <span className="inline-block px-4 py-2 bg-black/60 border border-red-700 rounded text-xs font-bold text-red-400 uppercase tracking-wide">
                                         ⚠️ {sessionMessage}
@@ -285,45 +508,50 @@
                                 </div>
                             )}
 
-                            {!loginSuccess && (
-                                <div className="mt-8 pt-6 border-t border-gray-700/50 grid grid-cols-2 gap-4">
-                                    <button 
+                            {paso === 1 && (
+                                <div className="mt-8 pt-6 border-t border-gray-700/50 grid grid-cols-3 gap-2">
+                                    <button
                                         onClick={() => setShowVideoModal(true)}
-                                        className="col-span-1 group flex flex-col items-center justify-center gap-2 py-3 rounded bg-transparent hover:bg-white/10 transition-all duration-300"
+                                        className="group flex flex-col items-center justify-center gap-2 py-3 rounded bg-transparent hover:bg-white/10 transition-all duration-300"
                                     >
                                         <Icons.Play className="w-6 h-6 text-gray-400 group-hover:text-white transition-colors" />
-                                        <span className="text-xs font-semibold text-gray-400 group-hover:text-white uppercase tracking-wider">Saber más</span>
+                                        <span className="text-[11px] font-semibold text-gray-400 group-hover:text-white uppercase tracking-wider">Saber más</span>
                                     </button>
-
-                                    <a 
-                                        href="ModalPrecios.html"
-                                        className="col-span-1 group flex flex-col items-center justify-center gap-2 py-3 rounded bg-transparent hover:bg-white/10 transition-all duration-300"
+                                    <a
+                                        href="modal_precios.html"
+                                        className="group flex flex-col items-center justify-center gap-2 py-3 rounded bg-transparent hover:bg-white/10 transition-all duration-300"
                                     >
                                         <Icons.CreditCard className="w-6 h-6 text-gray-400 group-hover:text-white transition-colors" />
-                                        <span className="text-xs font-semibold text-gray-400 group-hover:text-white uppercase tracking-wider">Ver Planes</span>
+                                        <span className="text-[11px] font-semibold text-gray-400 group-hover:text-white uppercase tracking-wider">Ver Planes</span>
+                                    </a>
+                                    <a
+                                        href={PORTAL}
+                                        className="group flex flex-col items-center justify-center gap-2 py-3 rounded bg-transparent hover:bg-white/10 transition-all duration-300"
+                                    >
+                                        <Icons.Users className="w-6 h-6 text-gray-400 group-hover:text-white transition-colors" />
+                                        <span className="text-[11px] font-semibold text-gray-400 group-hover:text-white uppercase tracking-wider">Portal</span>
                                     </a>
                                 </div>
                             )}
+
+                            <p className="mt-6 text-center text-[10px] tracking-wider uppercase text-gray-600 flex items-center justify-center gap-1.5">
+                                <Icons.Lock className="w-3 h-3" /> Validación segura · ENTALPIA LABS
+                            </p>
                         </div>
                     </div>
 
                     {showVideoModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md fade-in">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md" onClick={(e) => { if (e.target === e.currentTarget) setShowVideoModal(false); }}>
                             <div className="relative w-full max-w-5xl bg-black rounded-lg shadow-2xl overflow-hidden modal-enter border border-gray-800">
-                                <button 
+                                <button
                                     onClick={() => setShowVideoModal(false)}
+                                    aria-label="Cerrar video"
                                     className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/50 hover:bg-white/20 text-white transition-colors"
                                 >
                                     <Icons.X className="w-8 h-8" />
                                 </button>
-                                
                                 <div className="aspect-video w-full bg-black flex items-center justify-center">
-                                    <video 
-                                        controls 
-                                        autoPlay 
-                                        className="w-full h-full object-contain"
-                                        src="./Videos Plataforma/Video_de_Bienvenida_IA_Sofia.mp4"
-                                    >
+                                    <video controls autoPlay className="w-full h-full object-contain" src="../Videos Plataforma/Video_de_Bienvenida_IA_Sofia.mp4">
                                         Tu navegador no soporta el elemento de video.
                                     </video>
                                 </div>
