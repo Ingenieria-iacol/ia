@@ -90,7 +90,8 @@
   .pm-row .f b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pm-tg{display:inline-block;font-size:.7rem;padding:1px 7px;border-radius:999px;background:rgba(255,255,255,.08);margin-right:4px}
   .pm-go{margin-top:14px}
-  @media (max-width:560px){ .logo{font-size:1.1rem} .btn .txt{display:none} #hint{font-size:.72rem} }
+  @media (max-width:820px){ .btn .txt{display:none} }
+  @media (max-width:560px){ .logo{font-size:1.1rem} #hint{font-size:.72rem} }
 </style>
 <script type="importmap">
 { "imports": {
@@ -334,7 +335,7 @@ const env = new THREE.Group(); scene.add(env);
   // arco holográfico detrás del catálogo
   const arc = new THREE.Mesh(new THREE.CylinderGeometry(4.6, 4.6, 4.2, 96, 1, true, Math.PI - 1.4, 2.8),
     new THREE.MeshBasicMaterial({ color: 0xe50914, wireframe: true, transparent: true, opacity: 0.05 }));
-  arc.position.y = 1.8; env.add(arc);
+  arc.position.y = 1.8; env.add(arc); env.userData.arc = arc;
 
   // estrellas / partículas
   const N = 1400, pos = new Float32Array(N * 3);
@@ -1261,8 +1262,8 @@ function buildPlan(){
   const size = set.box.getSize(new THREE.Vector3()), center = set.box.getCenter(new THREE.Vector3());
   const ext = Math.max(size.x, size.z, size.y, 1);
   const real = PLAN.mode === 'real';
-  const minR = real ? 0.025 : ext * 0.0024;
-  const U = real ? 0.16 : Math.max(ext * 0.0065, minR * 3);
+  const minR = real ? 0.025 : ext * 0.0035;
+  const U = real ? 0.16 : Math.max(ext * 0.009, minR * 3);
   const rOf = p => Math.max(diaMM(p.dia) / 2000, minR);
 
   // tuberías
@@ -1380,7 +1381,8 @@ function drawPlanTitle(){
     ctx.fillText(name, m, H * 0.37);
     ctx.fillStyle = '#c9cad3'; ctx.font = `500 ${H * 0.085}px ${FONT}`;
     ctx.fillText(`${nf(P.nodes.length)} nodos · ${nf(P.pipes.length)} tuberías · ${nf(P.len, 0)} m de red · ${P.sectors.length} sector(es)`, m, H * 0.55);
-    const comps = ['valvula', 'regulador', 'medidor', 'consumo', 'manometro', 'tanque'].filter(t => c[t]).map(t => `${nf(c[t])} ${TY[t].toLowerCase()}${c[t] > 1 ? (/[aeiou]$/.test(TY[t].toLowerCase()) ? 's' : 'es') : ''}`);
+    const PL = { valvula: ['válvula', 'válvulas'], regulador: ['regulador', 'reguladores'], medidor: ['medidor', 'medidores'], consumo: ['punto de consumo', 'puntos de consumo'], manometro: ['manómetro', 'manómetros'], tanque: ['tanque', 'tanques'] };
+    const comps = Object.keys(PL).filter(t => c[t]).map(t => `${nf(c[t])} ${PL[t][c[t] > 1 ? 1 : 0]}`);
     ctx.fillText(comps.join(' · ').slice(0, 110), m, H * 0.7);
     ctx.fillStyle = '#9fc4e8'; ctx.font = `600 ${H * 0.08}px ${FONT}`;
     ctx.fillText(`Vista: ${P.cur < 0 ? 'toda la red' : P.sectors[P.cur].name} · ${nf(set.pipes.length)} tuberías · ${nf(set.len ?? P.len, 0)} m`, m, H * 0.87);
@@ -1432,8 +1434,9 @@ function placePlanUI(front){
     planUI.rotation.set(0, planView.rotation.y - 0.62, 0);
   } else {
     const h = headPose();
-    planUI.position.set(h.pos.x + h.dir.x * 1.05, h.pos.y - 0.32, h.pos.z + h.dir.z * 1.05);
-    planUI.rotation.set(-0.3, h.yaw, 0, 'YXZ');
+    const dist = PLAN.mode === 'real' ? 1.25 : 1.05, dy = PLAN.mode === 'real' ? 0.62 : 0.32;
+    planUI.position.set(h.pos.x + h.dir.x * dist, h.pos.y - dy, h.pos.z + h.dir.z * dist);
+    planUI.rotation.set(PLAN.mode === 'real' ? -0.55 : -0.3, h.yaw, 0, 'YXZ');
   }
   planUI.userData.intro = 0;
 }
@@ -1448,22 +1451,30 @@ function setPlanMode(m){
   if (m === 'real'){
     scene.add(planPivot); planView.visible = false;
     env.userData.floor.visible = false; env.userData.grid.visible = false; realGrid.visible = true;
+    env.userData.arc.visible = false; env.userData.dust.visible = false;
     buildPlan(); teleportStart();
   } else {
     planView.add(planPivot); planView.visible = true;
     env.userData.floor.visible = true; env.userData.grid.visible = true; realGrid.visible = false;
-    yaw = pitch = 0;
-    buildPlan(); recenter(planView, 2.0); placePlanUI(false);
+    env.userData.arc.visible = true; env.userData.dust.visible = true;
+    if (!renderer.xr.isPresenting){ yaw = 0; pitch = 0.32; }
+    buildPlan(); placeTable(); placePlanUI(false);
   }
+}
+function placeTable(){
+  // mesa a 2 m, corrida un poco a la izquierda para que el panel quede a la vista
+  recenter(planView, 2.0);
+  const h = headPose(); _rt.crossVectors(h.dir, Y_AXIS).normalize();
+  planView.position.addScaledVector(_rt, -0.55);
 }
 function teleportStart(){
   // usuario parado al borde del sector, mirando hacia su centro
   const set = planSet(); const size = set.box.getSize(new THREE.Vector3());
-  const back = Math.min(Math.max(size.x, size.z) * 0.5 + 3, 40);
+  const back = Math.min(Math.max(size.x, size.z) * 0.35 + 4, 25);
   rig.rotation.set(0, 0, 0);
   rig.position.set(0, Math.max(0, set.box.min.y), back);
   realGrid.position.y = Math.min(0, set.box.min.y);
-  if (!renderer.xr.isPresenting){ yaw = 0; pitch = 0.25; }
+  if (!renderer.xr.isPresenting){ yaw = 0; pitch = 0.12; }
   setTimeout(() => placePlanUI(true), 50);
   drawPlanTitle();
 }
@@ -1527,7 +1538,7 @@ function updateInfo(){
   const d = best.point.distanceTo(tmpV);
   info.position.copy(best.point).lerp(tmpV, Math.min(0.25, 0.3 / Math.max(d, 0.01)));
   info.position.y += 0.06 * Math.min(Math.max(d, 0.5), 6);
-  info.scale.setScalar(THREE.MathUtils.clamp(d * 0.45, 0.35, 8));
+  info.scale.setScalar(THREE.MathUtils.clamp(d * 0.6, 0.35, 14));
   info.lookAt(tmpV); info.visible = true;
 }
 
@@ -1548,6 +1559,7 @@ function closePlan(){
   planView.add(planPivot);
   disposePlanMeshes(); planHits.clear();
   env.userData.floor.visible = true; env.userData.grid.visible = true; scene.fog.far = 30;
+  env.userData.arc.visible = true; env.userData.dust.visible = true;
   rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0);
   if (!renderer.xr.isPresenting){ yaw = 0; pitch = 0; }
 }
@@ -1762,7 +1774,7 @@ renderer.xr.addEventListener('sessionstart', () => {
   const walkingNow = mode === 'plano' && PLAN && PLAN.mode === 'real';
   if (!walkingNow){ rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); }
   btnExitXR.visible = true; needRecenter = mode === 'menu';
-  if (mode === 'plano'){ drawPlanTitle(); setTimeout(() => PLAN.mode === 'real' ? placePlanUI(true) : (recenter(planView, 2.0), placePlanUI(false)), 400); }
+  if (mode === 'plano'){ drawPlanTitle(); setTimeout(() => PLAN.mode === 'real' ? placePlanUI(true) : (placeTable(), placePlanUI(false)), 400); }
 });
 renderer.xr.addEventListener('sessionend', () => {
   btnVR.querySelector('.txt').textContent = 'Entrar en VR';
