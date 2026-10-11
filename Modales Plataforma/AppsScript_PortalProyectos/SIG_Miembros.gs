@@ -730,26 +730,38 @@ function sigVideo(u, miembroId, url) {
 // =====================================================================================
 //  MARCA DEL MIEMBRO EN LOS DOCUMENTOS (reemplaza el texto [LOGO DEL MIEMBRO] por su logo)
 // =====================================================================================
+/** Logo del miembro en un formato que Google Docs y el conversor de PDF aceptan (PNG/JPEG). WEBP/SVG → miniatura PNG de Drive. */
+function sigLogoBlobDoc_(m) {
+  if (!m || !m.logoFileId) return null;
+  try {
+    const f = DriveApp.getFileById(m.logoFileId), b = f.getBlob(), t = b.getContentType();
+    if (t === 'image/png' || t === 'image/jpeg' || t === 'image/gif') return b;
+    const th = f.getThumbnail();
+    return th && /^image\/(png|jpeg)$/.test(th.getContentType()) ? th : null;
+  } catch (e) { return null; }
+}
+/** Reemplaza [LOGO DEL MIEMBRO] por el logo (o el nombre si no hay logo). Devuelve '' si todo salió bien o el texto del error. */
 function sigMarcarCopia_(fileId, m) {
   try {
-    if (DriveApp.getFileById(fileId).getMimeType() !== 'application/vnd.google-apps.document') return;
+    if (DriveApp.getFileById(fileId).getMimeType() !== 'application/vnd.google-apps.document') return '';
     const doc = DocumentApp.openById(fileId), body = doc.getBody(), r = body.findText('\\[LOGO DEL MIEMBRO\\]');
-    if (!r) return;
-    const t = r.getElement().asText(), par = t.getParent();
+    if (!r) { doc.saveAndClose(); return 'sin marcador'; }
+    const t = r.getElement().asText(), par = t.getParent().asParagraph();
     t.deleteText(r.getStartOffset(), r.getEndOffsetInclusive());
-    let puesto = false;
-    if (m.logoFileId) {
+    let puesto = false, err = '';
+    const blob = sigLogoBlobDoc_(m);
+    if (blob) {
       try {
-        const img = par.asParagraph().insertInlineImage(0, DriveApp.getFileById(m.logoFileId).getBlob());
-        const h = 46, w = Math.round(img.getWidth() * h / Math.max(1, img.getHeight()));
-        if (w > 130) img.setWidth(130).setHeight(Math.round(img.getHeight() * 130 / Math.max(1, img.getWidth()))); else img.setHeight(h).setWidth(w);
-        puesto = true;
-      } catch (e) {}
+        const img = par.insertInlineImage(0, blob), w0 = Math.max(1, img.getWidth()), h0 = Math.max(1, img.getHeight());
+        let h = 46, w = Math.round(w0 * h / h0); if (w > 130) { w = 130; h = Math.round(h0 * w / w0); }
+        img.setWidth(w).setHeight(h); puesto = true;
+      } catch (e) { err = 'imagen: ' + e.message; }
     }
-    if (!puesto) par.asParagraph().appendText(m.nombreComercial || m.razonSocial || m.miembroId);
-    par.asParagraph().appendText('\n' + m.miembroId).setFontSize(7);
+    if (!puesto) par.appendText(m.nombreComercial || m.razonSocial || m.miembroId);
+    par.appendText('\n' + m.miembroId).setFontSize(7);
     doc.saveAndClose();
-  } catch (e) {}
+    return err;
+  } catch (e) { return e.message; }
 }
 function sigCarpetaMarca_(m) {
   const f = DriveApp.getFolderById(m.carpetaId), it = f.getFoldersByName('Documentos SIG con marca');
@@ -759,13 +771,14 @@ function sigCarpetaMarca_(m) {
 function sigPdfMarca_(d, m) {
   const f = DriveApp.getFileById(d.id);
   if (!m || !m.logoFileId || f.getMimeType() !== 'application/vnd.google-apps.document') return sigPdf_(d.id);
-  const clave = String(m.logoSha256) + '|' + f.getLastUpdated().getTime(), nombre = m.miembroId + ' · ' + d.nombre + '.pdf';
+  const clave = 'v2|' + String(m.logoSha256) + '|' + f.getLastUpdated().getTime(), nombre = m.miembroId + ' · ' + d.nombre + '.pdf';
   const c = sigLeer_('DocsMarca').find(x => x.miembroId === m.miembroId && x.docId === d.id && String(x.clave) === clave);
   if (c) { try { return { b64: Utilities.base64Encode(DriveApp.getFileById(c.pdfId).getBlob().getBytes()), mime: 'application/pdf', nombre: nombre }; } catch (e) {} }
-  const carpeta = sigCarpetaMarca_(m), tmp = f.makeCopy('temporal ' + nombre, carpeta);
-  sigMarcarCopia_(tmp.getId(), m);
+  const carpeta = sigCarpetaMarca_(m), tmp = f.makeCopy(nombre.replace(/\.pdf$/, ''), carpeta);
+  const err = sigMarcarCopia_(tmp.getId(), m);
   const pdf = tmp.getAs('application/pdf').setName(nombre);
   tmp.setTrashed(true);
+  if (err) { sigBitacora_('sistema', m.miembroId, 'marca_error', { documento: d.codigo || d.nombre, error: err }); return { b64: Utilities.base64Encode(pdf.getBytes()), mime: 'application/pdf', nombre: nombre }; }
   const p = carpeta.createFile(pdf);
   sigAgregar_('DocsMarca', { miembroId: m.miembroId, docId: d.id, clave: clave, pdfId: p.getId(), fecha: sigAhora_() });
   return { b64: Utilities.base64Encode(pdf.getBytes()), mime: 'application/pdf', nombre: nombre };
@@ -790,7 +803,7 @@ function sigForms_() {
 const sigEsc_ = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const sigImg_ = v => /^data:image\/(png|jpeg);base64,[A-Za-z0-9+\/=]+$/.test(String(v || ''));
 // Logo para el PDF: solo PNG/JPEG (el conversor de PDF no lee WEBP); si no, se usa el nombre de la empresa.
-const sigLogoPdf_ = m => { const l = sigLogoDataUrl_(m); return /^data:image\/(png|jpeg);base64,/.test(l) ? l : ''; };
+const sigLogoPdf_ = m => { const b = sigLogoBlobDoc_(m); return b && /^image\/(png|jpeg)$/.test(b.getContentType()) ? 'data:' + b.getContentType() + ';base64,' + Utilities.base64Encode(b.getBytes()) : ''; };
 function sigFormEnviar(u, b) {
   const n = sigNivel_(u);
   if (!n.m) throw new Error('Debes pertenecer a una empresa de la red.');
