@@ -50,6 +50,7 @@ iframe.pdf{width:100%;height:72vh;border:1px solid var(--ln);border-radius:8px;m
 .vb{position:relative;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;border:1px solid var(--ln)}.vb iframe,.vb video{position:absolute;inset:0;width:100%;height:100%;border:0}.intro .if{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}.sp{flex:1}
 .hh{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.hp{display:grid;grid-template-columns:210px 1fr;gap:18px;align-items:start}.hpi{position:sticky;top:0;display:flex;flex-direction:column;gap:4px}.hpi a{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:8px;text-decoration:none;color:var(--tx);font-size:14px;border:1px solid transparent}.hpi a:hover{background:#3d8bff1a;border-color:var(--ln)}.hpi a small{margin-left:auto;color:var(--mu);font-size:11px}
 .hps{max-height:62vh;overflow:auto;padding-right:6px}.hcat h4{display:flex;gap:8px;align-items:center;font-size:18px;margin:6px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--ln)}.hit{background:linear-gradient(160deg,#1b2a4a,#0e1424);border:1px solid var(--ln);border-radius:10px;padding:12px 14px;margin:0 0 10px}.hit b{display:flex;gap:10px;align-items:center}.hit i{font-style:normal;min-width:24px;height:24px;border-radius:50%;background:var(--m);display:grid;place-items:center;font-size:12px;color:#fff}.hit p{margin:6px 0 0 34px;color:var(--mu);font-size:14px}
+#pg{position:fixed;top:0;left:0;height:3px;width:0;z-index:99;background:var(--m);box-shadow:0 0 10px var(--b2);opacity:0;transition:opacity .3s}#pg.on{opacity:1;width:100%;animation:pgx 1.2s ease-in-out infinite}@keyframes pgx{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 @media(max-width:760px){.hp{grid-template-columns:1fr}.hpi{position:static;flex-direction:row;flex-wrap:wrap}.hps{max-height:none}.dr{grid-template-columns:1fr}.da{justify-content:flex-start}.hit p{margin-left:0}}
 </style></head><body><div id="app"></div><div id="m"></div>
 <script>
@@ -61,7 +62,7 @@ let tok=null,me=null,D={p:[],c:[],f:[],u:[]},setupNeeded=false,idle;
 const INV=new URLSearchParams(location.search).get("inv");let G=null,GE="",live=null,ver="";
 const modal=h=>{clearInterval(live);$("#m").innerHTML=h?`<div class="mod"><div class="box ${h.w?"w":""}">${h.h||h}</div></div>`:"";eyes()},cerrar=()=>modal("");
 function eyes(){document.querySelectorAll("#m input[type=password]").forEach(i=>{const w=document.createElement("div");w.className="pw";i.replaceWith(w);w.append(i);const b=document.createElement("button");b.type="button";b.textContent="👁";b.title="Ver / ocultar";b.onclick=()=>{i.type=i.type==="password"?"text":"password"};w.append(b)})}
-async function api(o){const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({t:tok,...o})});const j=await r.json();if(j.error)throw Error(j.error);return j}
+async function api(o){const q=!/pulso$/.test(o.a||"");if(q){NAPI++;prog()}try{if(/^sgc/.test(o.a||"")&&o.a!=="sgcAud")o={logoSha:logoCache().sha||"",...o};const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({t:tok,...o})});const j=await r.json();if(j.error)throw Error(j.error);if(j&&j.miembro&&typeof j.logo==="string"&&o.a!=="sgcAud")j.logo=logoFix(j);return j}finally{if(q){NAPI--;prog()}}}
 const busy=(b,f)=>async()=>{b.disabled=true;$("#er")&&($("#er").textContent="");try{await f()}catch(e){$("#er")&&($("#er").textContent=e.message)}b.disabled=false};
 function bump(){clearTimeout(idle);if(me)idle=setTimeout(()=>{if(me){me=null;ask1("Sesión cerrada por inactividad.")}},600000)}
 ["click","keydown","touchstart"].forEach(e=>addEventListener(e,bump));
@@ -73,7 +74,7 @@ const P=D.p,adm=me.rol==="admin",ent=P.filter(p=>p.estado==="Entregado").length,
 a.innerHTML=`<div class="nav">${navMarca()}<span class="sp"></span><span class="mu">${esc(me.nombre)}${adm?" · Administrador":""}</span>${adm?`<button class="btn ghost sm" onclick="users()">Usuarios</button><button class="btn ghost sm" onclick="miembros()">Miembros SIG</button>`:""}<button class="btn ghost sm" onclick="empresa()">Mi empresa</button><button class="btn ghost sm" onclick="documentos()">Documentos SIG</button><button class="btn ghost sm" onclick="help()">Instrucciones</button><button class="btn ghost sm" onclick="claves('')">Mis claves</button><button class="btn ghost sm" onclick="rep()">Reporte CSV</button><button class="btn sm" onclick="newP()">+ Nuevo proyecto</button><button class="btn ghost sm" onclick="out()">Salir</button></div>
 <div class="wrap">${sigBanda()}<div class="kp"><div class="k"><span class="mu">Proyectos</span><b>${P.length}</b></div><div class="k"><span class="mu">En proceso</span><b>${P.length-ent}</b></div><div class="k"><span class="mu">Entregados</span><b>${ent}</b></div><div class="k"><span class="mu">Avance promedio</span><b>${av}%</b></div></div>
 <div class="grid">${P.map(p=>`<div class="pc" onclick="det('${p.id}')"><span class="tag">${esc(p.estado)}</span> <span class="tag">${esc(p.tipo)}</span> ${sigTag(p)}<h3 style="margin:8px 0 2px;font-size:17px">${esc(p.titulo)}</h3><span class="mu">${esc(p.cliente||"")}${p.ubicacion?" · "+esc(p.ubicacion):""}</span><div class="bar"><i style="width:${+p.avance||0}%"></i></div><small class="mu">${+p.avance||0}% de avance${adm?" · "+esc(p.owner):""}</small></div>`).join("")||`<p class="mu">Aún no hay proyectos. Crea el primero con "+ Nuevo proyecto".</p>`}</div></div><div class="foot"><img src="${L.par}" alt=""><span>Industrias I.A. Col · ENTALPIA LABS</span></div>`}
-async function load(){D=await api({a:"lista"});await sigLoad();render()}
+async function load(){const r=await Promise.all([api({a:"lista"}),sigLoad()]);D=r[0];render()}
 function out(){me=null;tok=null;S=null;MM=null;DOCS=null;render()}
 const gate=(n,t,s,f)=>`<img class="l" src="${L.pio}" alt=""><h3>${t}</h3><span class="mu">${s}</span>${f}<div class="err" id="er"></div><div class="acts"><button class="btn" id="go">Continuar</button><button class="btn ghost" onclick="out();cerrar()">Cancelar</button></div>`;
 async function ask1(msg){let st=null;try{st=await api({a:"estado"})}catch(e){}
@@ -170,7 +171,7 @@ const GUIA=[
 {ic:"🛡️",t:"Administrador",s:[
 ["Usuarios","El botón Usuarios muestra todas las cuentas: editar nombre, cambiar claves, bloquear, desbloquear o eliminar. Al eliminar una cuenta sus proyectos se conservan. La cuenta de administrador no se puede bloquear ni eliminar."],
 ["Miembros del SIG","En Miembros SIG cambias el estado de cada empresa (con motivo obligatorio y alcance al adscribir), corriges datos legales con soporte y consultas su bitácora. Verificar integridad comprueba que nadie haya alterado la bitácora."],
-["Video de bienvenida","En cada miembro pulsa Video de bienvenida y pega el enlace (YouTube, Vimeo, Google Drive compartido con enlace, o .mp4). Sus usuarios lo verán al ingresar junto con su logo."],
+["Video de bienvenida","En cada miembro pulsa Video de bienvenida y carga un archivo .mp4 de máximo 30 MB (recomendado 720p y menos de 2 minutos). Sus usuarios lo verán al ingresar junto con su logo. Cada carga queda como versión nueva en la carpeta del miembro."],
 ["Documentos y auditorías de la red","En Documentos SIG ves los registros de toda la red o de una empresa y abres auditorías con alcance de una empresa o de toda la red. Si agregas documentos a la carpeta maestra de Drive, pulsa Actualizar lista."],
 ["Avance y entrega","En el detalle de cada proyecto actualizas estado, avance y fechas. Paquetizar y entregar agrupa archivos, resumen y comentarios en un ZIP, lo guarda en Drive y marca el proyecto como Entregado."]]},
 {ic:"💡",t:"Recomendaciones",s:[
@@ -214,6 +215,11 @@ const iniM=m=>esc(nomM(m).slice(0,2).toUpperCase()||"?");
 const acc=(ic,t,sub,body,open)=>`<details class="acc"${open?" open":""}><summary><span class="ic">${ic}</span><span>${t}${sub?`<small>${sub}</small>`:""}</span></summary><div class="in">${body}</div></details>`;
 const fch=s=>s?new Date(s).toLocaleString("es-CO",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"—";
 async function sigLoad(){try{S=await api({a:"sgcPerfil"})}catch(e){S=null}}
+// El logo se guarda en este navegador; el servidor solo lo reenvía cuando cambia su huella SHA-256.
+function logoCache(){try{return JSON.parse(localStorage.getItem("sig_logo")||"{}")}catch(e){return {}}}
+function logoFix(j){const m=j.miembro;if(j.logo==="=")return logoCache().data||"";if(j.logo&&m&&m.logoSha256){try{localStorage.setItem("sig_logo",JSON.stringify({sha:m.logoSha256,data:j.logo}))}catch(e){}}return j.logo}
+// Barra de actividad: confirma de inmediato que el clic se recibió mientras responde el servidor
+let NAPI=0;function prog(){let b=$("#pg");if(!b){b=document.createElement("div");b.id="pg";document.body.append(b)}b.className=NAPI>0?"on":""}
 function sigTag(p){return p.bajoSIG==="sí"?`<span class="tag" title="Sello ${esc(p.selloSIG)}" style="background:#3ddc9722;color:var(--ok)">SIG · ${esc(p.miembroId)}</span>`:p.miembroId?`<span class="tag" title="Creado antes de la adscripción o fuera del alcance: no está bajo el SIG">${esc(p.miembroId)} · fuera del SIG</span>`:""}
 function navMarca(){const m=S?.miembro;return m?`<img src="${S.logo||L.ent}" alt="Logo ${esc(nomM(m))}"><b>${esc(nomM(m).toUpperCase())}</b>`:`<img src="${L.ent}" alt=""><b>PORTAL DE PROYECTOS</b>`}
 function sigBanda(){if(!S||me.rol==="admin"&&!S.miembro)return "";const m=S.miembro;
@@ -226,7 +232,7 @@ const r=new FileReader();r.onerror=()=>no(Error("No se pudo leer la imagen."));r
 const s=Math.min(1,512/Math.max(i.width||512,i.height||512)),c=document.createElement("canvas");c.width=Math.max(1,Math.round((i.width||512)*s));c.height=Math.max(1,Math.round((i.height||512)*s));c.getContext("2d").drawImage(i,0,0,c.width,c.height);
 const tam=d=>Math.ceil(d.split(",")[1].length*3/4);let d=c.toDataURL("image/png");if(tam(d)>450e3)d=c.toDataURL("image/webp",.9);if(!/^data:image\/webp/.test(d)||tam(d)>450e3)d=c.toDataURL("image/jpeg",.85);
 if(tam(d)>450e3)return no(Error("No se pudo reducir el logo por debajo de 450 KB."));ok(d)};i.src=r.result};r.readAsDataURL(f)})}
-function b64De(f){return new Promise((ok,no)=>{if(f.size>20e6)return no(Error("El archivo supera 20 MB."));const r=new FileReader();r.onload=()=>ok(r.result.split(",")[1]);r.onerror=()=>no(Error("No se pudo leer el archivo."));r.readAsDataURL(f)})}
+function b64De(f,max){max=max||20e6;return new Promise((ok,no)=>{if(f.size>max)return no(Error("El archivo supera "+Math.round(max/1048576)+" MB."));const r=new FileReader();r.onload=()=>ok(r.result.split(",")[1]);r.onerror=()=>no(Error("No se pudo leer el archivo."));r.readAsDataURL(f)})}
 function b64Blob(b,m){const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return new Blob([u],{type:m})}
 // Visor de solo lectura (capa propia, no cierra el modal de abajo)
 function visor(r,t){const u=URL.createObjectURL(b64Blob(r.b64,r.mime)),pdf=r.mime==="application/pdf",img=/^image\//.test(r.mime);let d=$("#vw");if(!d){d=document.createElement("div");d.id="vw";document.body.append(d)}
@@ -239,7 +245,9 @@ const srvV=()=>[...document.querySelectorAll("#m input[name=srv]:checked")].map(
 const v=id=>($("#"+id)?.value||"").trim();
 
 // ---------- VIDEO DE BIENVENIDA ----------
-function vidEmbed(u){let m;u=String(u||"");
+const vidFrame=id=>`<iframe src="https://drive.google.com/file/d/${id}/preview" title="Video de bienvenida" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+function vidEmbed(u,auto){let m;u=String(u||"");
+if(m=u.match(/^drive:([\w-]+)$/))return `<video src="https://drive.google.com/uc?export=download&id=${m[1]}" controls ${auto===false?"":"autoplay"} playsinline preload="metadata" onerror="this.outerHTML=vidFrame('${m[1]}')"></video>`;
 if(m=u.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{6,})/))return `<iframe src="https://www.youtube-nocookie.com/embed/${m[1]}?autoplay=1&rel=0&modestbranding=1" title="Video de bienvenida" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
 if(m=u.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]+)/))return `<iframe src="https://drive.google.com/file/d/${m[1]}/preview" title="Video de bienvenida" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
 if(m=u.match(/vimeo\.com\/(?:video\/)?(\d+)/))return `<iframe src="https://player.vimeo.com/video/${m[1]}?autoplay=1" title="Video de bienvenida" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
@@ -377,12 +385,14 @@ modal(`<h3>Estado de ${esc(m.miembroId)}</h3><span class="mu">${esc(m.razonSocia
 const al=()=>$("#alc").style.display=$("#ne").value==="Adscrito"?"":"none";$("#ne").onchange=al;al();
 const go=$("#go");go.onclick=busy(go,async()=>{await api({a:"sgcEstado",miembroId:m.miembroId,estado:$("#ne").value,motivo:$("#mo").value,alcance:srvV()});miembros()})}
 function mVideo(i){const m=MM.miembros[i];
-modal({w:1,h:`<h3>Video de bienvenida · ${esc(m.miembroId)}</h3><span class="mu">${esc(m.razonSocial)}. Es lo primero que verán sus usuarios al ingresar, junto con su logo. Acepta enlaces de YouTube, Vimeo, Google Drive (compartido como "cualquier persona con el enlace") o un archivo .mp4 / .webm.</span>
-<label>Enlace del video</label><input id="vu" value="${esc(m.introVideo||"")}" placeholder="https://www.youtube.com/watch?v=…"><div class="vb" id="vp" style="margin-top:10px"></div>
-<div class="err" id="er"></div><div class="acts"><button class="btn" id="go">Guardar</button>${m.introVideo?`<button class="btn ghost" id="qt">Quitar video</button>`:""}<button class="btn ghost" onclick="miembros()">Volver</button></div>`});
-const pv=()=>{const e=vidEmbed($("#vu").value.trim()).replace("autoplay=1","autoplay=0").replace(" autoplay ","");$("#vp").innerHTML=e||`<span class="mu" style="padding:20px;display:block">Vista previa del video</span>`};$("#vu").oninput=pv;pv();
-const sv=async u=>{MM=await api({a:"sgcVideo",miembroId:m.miembroId,url:u});await sigLoad();render();miembros()};
-const go=$("#go");go.onclick=busy(go,()=>sv($("#vu").value.trim()));const qt=$("#qt");if(qt)qt.onclick=busy(qt,()=>sv(""))}
+modal({w:1,h:`<h3>Video de bienvenida · ${esc(m.miembroId)}</h3><span class="mu">${esc(m.razonSocial)}. Es lo primero que verán sus usuarios al ingresar, junto con su logo. Carga un archivo <b>.mp4</b> de máximo 30 MB (recomendado: 720p y menos de 2 minutos). Cada carga queda como versión nueva en la carpeta del miembro, con su huella SHA-256.</span>
+<div class="vb" id="vp" style="margin-top:12px">${m.introVideo?vidEmbed(m.introVideo,false):`<span class="mu" style="padding:20px;display:block">Sin video de bienvenida</span>`}</div>
+<label>Archivo de video (.mp4)</label><input type="file" id="vf" accept="video/mp4,.mp4"><div class="mu" id="vm"></div>
+<div class="err" id="er"></div><div class="acts"><button class="btn" id="go">Cargar video</button>${m.introVideo?`<button class="btn ghost" id="qt">Quitar video</button>`:""}<button class="btn ghost" onclick="miembros()">Volver</button></div>`});
+$("#vf").onchange=e=>{const f=e.target.files[0];if(!f)return;if(!/\.mp4$/i.test(f.name)&&f.type!=="video/mp4"){$("#er").textContent="Solo se aceptan archivos .mp4.";e.target.value="";return}if(f.size>30*1024*1024){$("#er").textContent="El video pesa "+(f.size/1048576).toFixed(1)+" MB; el máximo es 30 MB.";e.target.value="";return}$("#er").textContent="";$("#vm").textContent=f.name+" · "+(f.size/1048576).toFixed(1)+" MB";$("#vp").innerHTML=`<video src="${URL.createObjectURL(f)}" controls playsinline></video>`};
+const fin=async()=>{await sigLoad();render();miembros()};
+const go=$("#go");go.onclick=busy(go,async()=>{const f=$("#vf").files[0];if(!f)throw Error("Selecciona el archivo .mp4.");$("#vm").textContent="Subiendo video… puede tardar un minuto según el tamaño.";MM=await api({a:"sgcVideoSubir",miembroId:m.miembroId,b64:await b64De(f,30*1024*1024),nombre:f.name});await fin()});
+const qt=$("#qt");if(qt)qt.onclick=busy(qt,async()=>{if(!confirm("¿Quitar el video de bienvenida? El archivo se conserva en la carpeta del miembro."))return;MM=await api({a:"sgcVideo",miembroId:m.miembroId,url:""});await fin()})}
 function mLegal(i){const m=MM.miembros[i];modal(`<h3>Corregir datos legales · ${esc(m.miembroId)}</h3><span class="mu">Úsalo solo con soporte documental (RUT, cámara de comercio). El valor anterior queda en la bitácora.</span>
 <label>Tipo de persona</label><select id="lt">${["Natural","Jurídica"].map(x=>`<option ${m.tipoPersona===x?"selected":""}>${x}</option>`).join("")}</select><label>Razón social</label><input id="lr" value="${esc(m.razonSocial)}"><label>NIT / cédula</label><input id="ln" value="${esc(m.nit)}">
 <div class="err" id="er"></div><div class="acts"><button class="btn" id="go">Guardar corrección</button><button class="btn ghost" onclick="miembros()">Volver</button></div>`);

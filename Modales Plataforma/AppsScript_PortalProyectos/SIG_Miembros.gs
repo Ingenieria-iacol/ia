@@ -68,6 +68,7 @@ const SIG = {
   // Tipos documentales que cada miembro diligencia en su propia copia
   PLANTILLAS: ['FO', 'MZ', 'PL', 'PG'],
   REGISTRO_MAX_BYTES: 20 * 1024 * 1024,
+  VIDEO_MAX_BYTES: 30 * 1024 * 1024,
 };
 
 const HOJAS = {
@@ -85,6 +86,7 @@ function sigApi(b, u) {
   if (!b || !b.a || String(b.a).indexOf('sgc') !== 0) return null;
   if (!u || !u.email) return { error: 'Sesión no válida.' };
   const esAdmin = u.rol === 'admin';
+  SIG_LOGO_SHA_ = String(b.logoSha || '');
   try {
     switch (b.a) {
       case 'sgcPerfil':          return sigPerfil(u);
@@ -102,6 +104,7 @@ function sigApi(b, u) {
       case 'sgcEditarLegal':     if (!esAdmin) break; return sigEditarLegal(u, b.miembroId, b.campos);
       case 'sgcVerificarCadena': if (!esAdmin) break; return sigVerificarCadena();
       case 'sgcVideo':           if (!esAdmin) break; return sigVideo(u, b.miembroId, b.url);
+      case 'sgcVideoSubir':      if (!esAdmin) break; return sigVideoSubir(u, b.miembroId, b.b64, b.nombre);
       case 'sgcRefrescarDocs':   if (!esAdmin) break; CacheService.getScriptCache().remove('sig_docs_v1'); return sigDocs(u);
       // ---- documentos, registros y auditorías ----
       case 'sgcDocs':            return sigDocs(u);
@@ -122,8 +125,12 @@ function sigApi(b, u) {
 }
 
 // ---------- HOJAS ----------
+// Rendimiento: el libro se abre UNA vez por petición y cada hoja se lee una sola vez
+// (las escrituras invalidan la lectura memorizada de esa hoja).
+let SIG_SS_ = null, SIG_SH_ = {}, SIG_RD_ = {}, SIG_LOGO_SHA_ = '';
 function sigHoja_(nombre) {
-  const ss = SpreadsheetApp.openById(SIG.SHEET_ID);
+  if (SIG_SH_[nombre]) return SIG_SH_[nombre];
+  const ss = SIG_SS_ || (SIG_SS_ = SpreadsheetApp.openById(SIG.SHEET_ID));
   let sh = ss.getSheetByName(nombre);
   if (!sh) {
     sh = ss.insertSheet(nombre);
@@ -134,17 +141,22 @@ function sigHoja_(nombre) {
     // Columnas nuevas del módulo: se agregan al final sin mover las existentes
     sh.getRange(1, 1, 1, HOJAS[nombre].length).setValues([HOJAS[nombre]]).setFontWeight('bold');
   }
+  SIG_SH_[nombre] = sh;
   return sh;
 }
 function sigLeer_(nombre) {
+  if (SIG_RD_[nombre]) return SIG_RD_[nombre].map(o => Object.assign({}, o));
   const sh = sigHoja_(nombre), v = sh.getDataRange().getValues(), h = v.shift();
-  return v.map((r, i) => { const o = { _fila: i + 2 }; h.forEach((k, j) => o[k] = r[j]); return o; });
+  SIG_RD_[nombre] = v.map((r, i) => { const o = { _fila: i + 2 }; h.forEach((k, j) => o[k] = r[j]); return o; });
+  return SIG_RD_[nombre].map(o => Object.assign({}, o));
 }
 function sigAgregar_(nombre, obj) {
+  delete SIG_RD_[nombre];
   const sh = sigHoja_(nombre);
   sh.appendRow(HOJAS[nombre].map(k => obj[k] === undefined ? '' : obj[k]));
 }
 function sigActualizar_(nombre, fila, cambios) {
+  delete SIG_RD_[nombre];
   const sh = sigHoja_(nombre), h = HOJAS[nombre];
   Object.keys(cambios).forEach(k => {
     const c = h.indexOf(k);
@@ -178,6 +190,7 @@ function sigBitacora_(email, miembroId, accion, detalle) {
     const det = typeof detalle === 'string' ? detalle : JSON.stringify(detalle);
     const hash = sigSha_([n, fecha, email, miembroId, accion, det, prev].join('|'));
     sh.appendRow([n, fecha, email, miembroId, accion, det, prev, hash]);
+    delete SIG_RD_['BitacoraSIG'];
   } finally { lock.releaseLock(); }
 }
 function sigVerificarCadena() {
@@ -400,7 +413,7 @@ function sigPerfil(u) {
   HOJAS.Miembros.forEach(k => { if (['carpetaId', 'logoFileId'].indexOf(k) < 0) pub[k] = m[k] instanceof Date ? m[k].toISOString() : m[k]; });
   return {
     miembro: pub, rolMiembro: v.rolMiembro, equipo: v.rolMiembro === 'responsable' ? equipo : [],
-    logo: sigLogoDataUrl_(m), servicios: SIG.SERVICIOS, titular: SIG.TITULAR, red: SIG.RED,
+    logo: m.logoSha256 && SIG_LOGO_SHA_ === String(m.logoSha256) ? '=' : sigLogoDataUrl_(m), servicios: SIG.SERVICIOS, titular: SIG.TITULAR, red: SIG.RED,
     legalesBloqueados: ['Evaluación', 'Adscrito', 'Suspendido', 'Retirado'].indexOf(m.estadoSIG) >= 0,
   };
 }
@@ -667,13 +680,30 @@ function sigAuditoriaPublica(q) {
   } catch (e) { return { error: e.message }; }
 }
 
-// ---------- VIDEO DE BIENVENIDA (lo define la función central para cada miembro) ----------
+// ---------- VIDEO DE BIENVENIDA (archivo .mp4 que carga la función central para cada miembro) ----------
+//  Se guarda en la carpeta del miembro como versión nueva (nunca se sobrescribe), se comparte
+//  "cualquier persona con el enlace" solo en lectura y se referencia como drive:ID.
+function sigVideoSubir(u, miembroId, b64, nombre) {
+  const m = sigMiembro_(miembroId); if (!m) throw new Error('Miembro no encontrado.');
+  const bytes = Utilities.base64Decode(String(b64 || ''));
+  if (!bytes.length) throw new Error('No llegó el video.');
+  if (bytes.length > SIG.VIDEO_MAX_BYTES) throw new Error('El video supera 30 MB. Comprímelo (por ejemplo a 720p) e inténtalo de nuevo.');
+  const tipo = String.fromCharCode(bytes[4] & 0xff, bytes[5] & 0xff, bytes[6] & 0xff, bytes[7] & 0xff);
+  if (tipo !== 'ftyp') throw new Error('El archivo no es un video .mp4 válido.');
+  const sha = sigShaBytes_(bytes);
+  const previos = sigLeer_('BitacoraSIG').filter(r => r.miembroId === m.miembroId && r.accion === 'video_intro').length;
+  const f = DriveApp.getFolderById(m.carpetaId).createFile(Utilities.newBlob(bytes, 'video/mp4', m.miembroId + '_video_bienvenida_v' + ('0' + (previos + 1)).slice(-2) + '.mp4'));
+  f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  f.setDescription('Video de bienvenida ' + m.miembroId + ' · SHA-256 ' + sha + ' · cargado por ' + u.email + ' · original: ' + String(nombre || '').slice(0, 80));
+  sigActualizar_('Miembros', m._fila, { introVideo: 'drive:' + f.getId(), actualizado: sigAhora_() });
+  sigBitacora_(u.email, miembroId, 'video_intro', { archivo: f.getName(), sha256: sha, bytes: bytes.length });
+  return sigListaMiembros();
+}
+/** Solo para QUITAR el video (url vacía). Los videos se cargan como .mp4 con sigVideoSubir. */
 function sigVideo(u, miembroId, url) {
   const m = sigMiembro_(miembroId); if (!m) throw new Error('Miembro no encontrado.');
-  url = String(url || '').trim();
-  const ok = !url || /^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be|drive\.google\.com|vimeo\.com|player\.vimeo\.com)\//i.test(url) || /^https:\/\/\S+\.(mp4|webm)(\?\S*)?$/i.test(url);
-  if (!ok) throw new Error('Usa un enlace https de YouTube, Vimeo, Google Drive o un archivo .mp4 / .webm.');
-  sigActualizar_('Miembros', m._fila, { introVideo: url, actualizado: sigAhora_() });
-  sigBitacora_(u.email, miembroId, 'video_intro', { url: url });
+  if (String(url || '').trim()) throw new Error('El video de bienvenida se carga como archivo .mp4.');
+  sigActualizar_('Miembros', m._fila, { introVideo: '', actualizado: sigAhora_() });
+  sigBitacora_(u.email, miembroId, 'video_intro', { accion: 'retirado' });
   return sigListaMiembros();
 }
