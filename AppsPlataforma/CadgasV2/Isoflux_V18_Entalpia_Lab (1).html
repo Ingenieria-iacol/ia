@@ -2367,6 +2367,185 @@ setTimeout(()=>{const m=rd();if(m.length&&!hasWork()){const x=m[0];const bn=docu
  document.body.appendChild(bn);g('bn_r').onclick=()=>{bn.remove();restore(x.slot);};g('bn_o').onclick=()=>{bn.remove();openRec();};g('bn_x').onclick=()=>bn.remove();}
  upd();},1500);
 upd();
-window.V18auto={auto,restore,rd};
+window.V18auto={auto,restore,rd,mark:()=>{lastSaved=cur();lastSaveT=Date.now();upd();}};
 })();
-</script></body></html>
+</script>
+<style>
+/* V19 · planos en proyectos del SGC */
+#sgcov .pbx{width:min(720px,96vw)}
+#sgcov .docmeta{display:none}
+#sgcov .sb,#sgcov .sb *{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#sgcov .sb{padding:12px 14px 16px;overflow:auto}
+#sgcov label{display:block;font-size:11.5px;opacity:.8;margin:10px 0 3px}
+#sgcov input[type=text],#sgcov input[type=email],#sgcov input[type=password],#sgcov input[type=search]{width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--bd);background:#0b131f;color:inherit;font-size:13px}
+#sgcov .er{color:#ff8a80;font-size:12px;min-height:16px;margin-top:8px}
+#sgcov .mu{opacity:.72;font-size:12px}
+#sgcov .row{display:flex;gap:10px;align-items:center;padding:9px 8px;border-bottom:1px solid var(--bd);border-radius:8px}
+#sgcov .row.ck{cursor:pointer}#sgcov .row.ck:hover{background:#ffffff0d}
+#sgcov .row .f{flex:1;min-width:0}#sgcov .row b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sgcov .th{width:96px;height:60px;border-radius:6px;border:1px solid var(--bd);background:#0b131f center/cover no-repeat;flex:none;display:flex;align-items:center;justify-content:center;font-size:22px;opacity:.95}
+#sgcov .tg{display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:9px;border:1px solid #3d8bff66;color:#9fc4e8;margin-right:4px}
+#sgcov .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+#sgcov .cur{border:1px solid #6ab7ff;background:#6ab7ff14}
+#sgcchip{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:20;font-size:11.5px;padding:4px 12px;border-radius:14px;background:rgba(10,16,26,.9);border:1px solid #3d8bff88;color:#cfe4ff;cursor:pointer;max-width:70vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sgcchip:hover{border-color:#6ab7ff;background:#13233a}
+</style>
+<script>
+/* ===================== V19 · PLANOS ASIGNADOS A PROYECTOS DEL SGC (PORTAL DE PROYECTOS) =====================
+   Cada dibujo se guarda en la nube dentro de un proyecto del portal (con versiones) y se abre desde
+   la ficha del proyecto o desde aquí, sin depender de cargar archivos .json. */
+(function(){
+if(RO)return;
+const API="https://script.google.com/macros/s/AKfycbzPsHZ7TjSHExWu3dEboPC1_WXl5KMfisX3DKo4SOtQM2PYa66HF7ba0Ary8eET5N08/exec";
+const PORTAL="../../Modales%20Plataforma/ModalPortalProyectosClaude.html";
+const g=id=>document.getElementById(id),esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const SK='isoflux_sesion',LK='isoflux_vinculo',META_KEYS=['version','caj','fecha','proyecto','calculo','axo','fondos'];
+const fch=t=>{const d=new Date(t);return isNaN(d)?'—':d.toLocaleString('es-CO',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});};
+const kb=n=>n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
+const toast=m=>{try{bgToast(m);}catch(e){}};
+let SES=null,LINK=null,PEND=null,BUSY=false;
+/* ---------- sesión (la del portal se recibe al abrir desde la ficha del proyecto) ---------- */
+try{SES=JSON.parse(sessionStorage.getItem(SK)||'null');}catch(e){}
+try{LINK=JSON.parse(sessionStorage.getItem(LK)||'null');}catch(e){}
+try{const h=JSON.parse(localStorage.getItem('isoflux_handoff')||'null');localStorage.removeItem('isoflux_handoff');
+ if(h&&h.t&&h.exp>Date.now()){SES={t:h.t,email:h.email,nombre:h.nombre,rol:h.rol};}}catch(e){}
+const saveSes=()=>{try{SES?sessionStorage.setItem(SK,JSON.stringify(SES)):sessionStorage.removeItem(SK);}catch(e){}};
+const saveLink=()=>{try{LINK?sessionStorage.setItem(LK,JSON.stringify(LINK)):sessionStorage.removeItem(LK);}catch(e){}
+ try{const u=new URL(location.href);['proyecto','plano','v'].forEach(k=>u.searchParams.delete(k));if(LINK&&LINK.proyectoId){u.searchParams.set('proyecto',LINK.proyectoId);if(LINK.planoId)u.searchParams.set('plano',LINK.planoId);}history.replaceState(null,'',u.toString());}catch(e){}
+ chip();};
+saveSes();
+async function api(o){
+ const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(Object.assign({t:SES?SES.t:null},o))});
+ const tx=await r.text();let j;try{j=JSON.parse(tx);}catch(e){throw new Error(/<html|<!doctype/i.test(tx)?'El servidor del portal respondió con una página de error. Intenta de nuevo en un momento.':'Respuesta inválida del servidor.');}
+ if(j&&j.error){const e=new Error(j.error);if(/sesi[oó]n|token|autoriz|ingres|expir|vencid|inici/i.test(j.error)&&!/^login/.test(o.a)){e.auth=true;SES=null;saveSes();}throw e;}
+ return j;}
+/* ---------- compresión (gzip + base64) ---------- */
+const u8b64=u=>{let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s);};
+const b64u8=b=>{const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u;};
+async function gz(str){if(!window.CompressionStream)return null;const st=new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'));return u8b64(new Uint8Array(await new Response(st).arrayBuffer()));}
+async function gunz(b){if(!window.DecompressionStream)throw new Error('Este navegador no puede abrir planos de la nube. Actualízalo (Chrome, Edge, Firefox o Safari recientes).');return new Response(new Blob([b64u8(b)]).stream().pipeThrough(new DecompressionStream('gzip'))).text();}
+/* ---------- dibujo ---------- */
+const hasWork=()=>S.nodes.length||S.pipes.length||(S.anns&&S.anns.length);
+async function snapshot(withBG){const o=Object.assign({version:7,caj:cajOn,fecha:new Date().toISOString(),proyecto:PJ,calculo:CF,axo:window.axoData?axoData():undefined},S);if(withBG&&BG.length)o.fondos=await bgPack();return JSON.stringify(o);}
+function miniatura(){try{const src=g('cv');if(!src||!src.width)return'';for(const [w,q] of [[360,.72],[300,.6],[240,.5]]){const h=Math.round(src.height*w/src.width),c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#0b131f';x.fillRect(0,0,w,h);x.drawImage(src,0,0,w,h);const d=c.toDataURL('image/jpeg',q);if(d.length<47000)return d;}}catch(e){}return'';}
+function aplicar(d){hs();const ns={nodes:[],pipes:[],anns:[],prices:{}};Object.keys(d).forEach(k=>{if(!META_KEYS.includes(k))ns[k]=d[k];});ns.nodes=ns.nodes||[];ns.pipes=ns.pipes||[];ns.anns=ns.anns||[];ns.prices=ns.prices||{};ns.seq=d.seq||1000;S=ns;loadPJ(d);
+ try{bgSaved(Array.isArray(d.fondos)?d.fondos:[]);}catch(e){}cajOn=!!d.caj;const bc=g('bcaj');if(bc)bc.classList.toggle('on',cajOn);sel=null;ms=[];panel();draw();
+ setTimeout(()=>{try{const bf=g('bfit');if(bf)bf.click();}catch(e){}},60);
+ const bn=g('bn_r');if(bn&&bn.parentNode)bn.parentNode.remove();
+ if(window.V18auto&&V18auto.mark)V18auto.mark();}
+/* ---------- abrir y guardar ---------- */
+async function abrirPlano(planoId,version,silencioso){
+ if(!silencioso&&hasWork()&&!confirm('Se reemplazará el dibujo que está en pantalla. Si no lo has guardado, guárdalo antes.\n\n¿Abrir el plano?'))return;
+ toast('☁️ Abriendo el plano del proyecto…');
+ const r=await api({a:'sgcPlanoLeer',planoId,version:version||undefined});const d=JSON.parse(await gunz(r.b64));
+ aplicar(d);const m=r.plano;LINK={proyectoId:m.proyectoId,proyecto:(LINK&&LINK.proyectoId===m.proyectoId&&LINK.proyecto)||'',planoId:m.planoId,nombre:m.nombre,version:m.version,fondos:m.fondos>0||!!(LINK&&LINK.fondos)};
+ if(!LINK.proyecto){try{const x=await api({a:'sgcPlanosListar',proyectoId:m.proyectoId});LINK.proyecto=x.proyecto.titulo;}catch(e){}}
+ saveLink();cerrar();
+ toast(r.versionLeida!==m.version?`☁️ Abierta la versión v${r.versionLeida} de «${m.nombre}». Al guardar quedará como v${m.version+1}.`:`☁️ «${m.nombre}» v${m.version} abierto desde el proyecto.`);}
+async function guardar(o){o=o||{};if(BUSY)return;
+ if(!SES){PEND=()=>guardar(o);return vista('login');}
+ if(!LINK||!LINK.proyectoId){return vista('proyectos',{modo:'guardar'});}
+ if(!hasWork()){alert('El dibujo está vacío: no hay nada que guardar.');return;}
+ const nuevo=!LINK.planoId||o.nuevo;let nombre=o.nombre||(nuevo?'':LINK.nombre);
+ if(nuevo&&!nombre){nombre=prompt('Nombre del plano dentro del proyecto «'+(LINK.proyecto||'')+'»:',PJ.nombre||LINK.proyecto||'Plano isométrico');if(nombre==null)return;nombre=nombre.trim()||'Plano isométrico';}
+ const conFondos=o.fondos!=null?o.fondos:(LINK.fondos!==false);
+ BUSY=true;toast('☁️ Guardando en el proyecto…');chip('☁️ Guardando…');
+ try{const js=await snapshot(conFondos&&BG.length),z=await gz(js);
+  const body={a:'sgcPlanoGuardar',proyectoId:LINK.proyectoId,planoId:nuevo?undefined:LINK.planoId,baseVersion:nuevo?0:LINK.version,nombre,nota:o.nota||'',
+   nodos:S.nodes.length,tuberias:S.pipes.length,fondos:conFondos?BG.length:0,miniatura:miniatura(),forzar:!!o.forzar};
+  if(z){body.z=1;body.b64=z;}else body.json=js;
+  const r=await api(body);
+  if(r.conflicto){BUSY=false;chip();
+   if(confirm(`Otra persona guardó la versión v${r.version} de este plano (${r.por||'—'}, ${fch(r.fecha)}) mientras lo editabas.\n\nAceptar: guardar tu dibujo como versión nueva de todas formas (la de ${r.por||'la otra persona'} queda en el historial).\nCancelar: no guardar (puedes usar «Guardar como plano nuevo»).`))return guardar(Object.assign({},o,{forzar:true}));return;}
+  const m=r.plano;LINK.planoId=m.planoId;LINK.nombre=m.nombre;LINK.version=m.version;LINK.fondos=conFondos;saveLink();
+  if(window.V18auto&&V18auto.mark)V18auto.mark();
+  toast(r.sinCambios?`☁️ Sin cambios: «${m.nombre}» sigue en v${m.version}.`:`☁️ Guardado en «${LINK.proyecto||'el proyecto'}» como «${m.nombre}» v${m.version}.`);
+  if(g('sgcov').classList.contains('on'))vista('planos',{proyectoId:LINK.proyectoId,titulo:LINK.proyecto});
+ }catch(e){if(e.auth){PEND=()=>guardar(o);vista('login',{msg:'Tu sesión del portal venció. Ingresa de nuevo para guardar.'});}else alert('No se pudo guardar en el proyecto:\n\n'+e.message);}
+ finally{BUSY=false;chip();}}
+/* ---------- ventana ---------- */
+const ov=document.createElement('div');ov.className='ov';ov.id='sgcov';
+ov.innerHTML=`<div class="pbx"><header><b style="flex:1" id="sgch">☁️ Proyectos del SGC</b><a href="${PORTAL}" target="_blank" rel="noopener" style="font-size:12px;color:#9fc4e8;margin-right:6px">Ir al portal ↗</a><button id="sgcx">Cerrar</button></header><div class="sb" id="sgcb"></div></div>`;
+document.body.appendChild(ov);g('sgcx').onclick=()=>cerrar();ov.addEventListener('mousedown',e=>{if(e.target===ov)cerrar();});
+function cerrar(){ov.classList.remove('on');}
+const B=()=>g('sgcb'),H=t=>g('sgch').textContent=t,err=m=>{const e=g('sgcer');if(e)e.textContent=m||'';};
+const run=(btn,f)=>async()=>{if(btn)btn.disabled=true;err('');try{await f();}catch(e){if(e.auth)vista('login',{msg:'Tu sesión venció. Ingresa de nuevo.'});else err(e.message);}if(btn)btn.disabled=false;};
+async function vista(v,o){o=o||{};if(window.closeAc)try{closeAc();}catch(e){}ov.classList.add('on');
+ if(v!=='login'&&!SES){const v0=v,o0=o;PEND=()=>vista(v0,o0);v='login';o={};}
+ if(v==='login'){H('☁️ Ingreso al Portal de Proyectos');
+  B().innerHTML=`<p class="mu">${esc(o.msg||'Ingresa con la misma cuenta del Portal de Proyectos para guardar y abrir los planos dentro de tus proyectos.')}</p><div id="sgl1"><label>Correo</label><input id="sgu" type="email" autocomplete="username"><label>Clave</label><input id="sgp" type="password" autocomplete="current-password"></div><div id="sgl2" style="display:none"><label>Clave de seguridad (segunda validación)</label><input id="sgp2" type="password"></div><div class="er" id="sgcer"></div><div class="acts"><button id="sggo">Ingresar</button><button onclick="window.open('${PORTAL}','_blank')">Crear cuenta en el portal ↗</button></div>`;
+  let paso=1;const go=g('sggo');
+  go.onclick=run(go,async()=>{
+   if(paso===1){const r=await api({a:'login1',email:g('sgu').value.trim(),p:g('sgp').value});SES={t:r.t,email:r.email||g('sgu').value.trim(),nombre:r.nombre,rol:r.rol};
+    if(!r.ok){paso=2;saveSes();g('sgl1').style.display='none';g('sgl2').style.display='';err('');B().querySelector('.mu').textContent='Hola '+(r.nombre||'')+'. Ingresa tu clave de seguridad.';g('sgp2').focus();return;}}
+   else{const me=await api({a:'login2',t:SES.t,p:g('sgp2').value});SES=Object.assign(SES,{email:me.email||SES.email,nombre:me.nombre||SES.nombre,rol:me.rol||SES.rol});}
+   saveSes();chip();const f=PEND;PEND=null;if(f)await f();else vista('proyectos');});
+  ['sgp','sgp2'].forEach(id=>g(id).onkeydown=e=>{if(e.key==='Enter')go.click();});setTimeout(()=>{const u=g('sgu');if(u)u.focus();},50);return;}
+ if(v==='proyectos'){H(o.modo==='guardar'?'☁️ ¿En qué proyecto guardas este plano?':'☁️ Elige un proyecto');
+  B().innerHTML=`<p class="mu">Sesión: <b>${esc(SES.nombre||SES.email)}</b> · <a href="#" id="sgout" style="color:#9fc4e8">cerrar sesión</a></p><input id="sgq" type="search" placeholder="Buscar proyecto, cliente o ubicación…"><div class="er" id="sgcer"></div><div id="sgl"><p class="mu">Cargando tus proyectos…</p></div>`;
+  g('sgout').onclick=e=>{e.preventDefault();salir();};
+  try{const r=await api({a:'sgcPlanoProyectos'});const P=r.proyectos||[];
+   const pinta=()=>{const q=(g('sgq').value||'').toLowerCase();const L=P.filter(p=>!q||[p.titulo,p.cliente,p.ubicacion,p.tipo].join(' ').toLowerCase().includes(q));
+    g('sgl').innerHTML=L.map(p=>`<div class="row ck ${LINK&&LINK.proyectoId===p.id?'cur':''}" data-p="${esc(p.id)}"><div class="th">📁</div><div class="f"><b>${esc(p.titulo)}</b><span class="mu">${esc(p.cliente)}${p.ubicacion?' · '+esc(p.ubicacion):''}</span><div><span class="tg">${esc(p.estado||'—')}</span><span class="tg">${esc(p.tipo||'Proyecto')}</span><span class="tg">📐 ${p.planos} plano(s)</span></div></div><span style="font-size:18px;opacity:.6">›</span></div>`).join('')||`<p class="mu">${P.length?'Ningún proyecto coincide con la búsqueda.':'No tienes proyectos en el portal. Créalo primero en el Portal de Proyectos y vuelve aquí.'}</p>`;};
+   pinta();g('sgq').oninput=pinta;
+   g('sgl').onclick=e=>{const r0=e.target.closest('[data-p]');if(!r0)return;const p=P.find(x=>x.id===r0.dataset.p);vista('planos',{proyectoId:p.id,titulo:p.titulo,modo:o.modo});};
+  }catch(e){if(e.auth)return vista('login',{msg:'Tu sesión venció. Ingresa de nuevo.'});err(e.message);g('sgl').innerHTML='';}
+  return;}
+ if(v==='planos'){H('📁 '+(o.titulo||'Proyecto'));
+  const enEste=LINK&&LINK.proyectoId===o.proyectoId&&LINK.planoId;
+  B().innerHTML=`<p class="mu"><a href="#" id="sgbk" style="color:#9fc4e8">‹ Proyectos</a></p>
+  <div class="row" style="border:1px dashed #3d8bff88;margin-bottom:8px"><div class="th">✚</div><div class="f"><b>Guardar el dibujo en pantalla aquí</b><span class="mu">${hasWork()?`${S.nodes.length} nodos · ${S.pipes.length} tuberías${BG.length?' · '+BG.length+' fondo(s)':''}`:'El lienzo está vacío: dibuja primero o abre un plano.'}</span>
+  <label>Nombre del plano</label><input id="sgn" type="text" value="${esc(PJ.nombre||o.titulo||'Plano isométrico')}"><label>Nota del cambio (opcional)</label><input id="sgnt" type="text" placeholder="Ej.: Trazado inicial de la red interna"><label style="display:flex;gap:6px;align-items:center;margin-top:8px"><input id="sgf" type="checkbox" ${BG.length?'checked':''} ${BG.length?'':'disabled'} style="width:auto"> Incluir imágenes de fondo</label>
+  <div class="acts"><button id="sgsv" ${hasWork()?'':'disabled'}>☁️ Guardar como plano nuevo</button>${enEste?`<button id="sgsv2">☁️ Guardar versión nueva de «${esc(LINK.nombre)}»</button>`:''}<button id="sgnw">🆕 Empezar un dibujo nuevo para este proyecto</button></div></div></div>
+  <div class="er" id="sgcer"></div><h4 style="margin:12px 0 4px">Planos del proyecto</h4><div id="sgl"><p class="mu">Cargando planos…</p></div>`;
+  g('sgbk').onclick=e=>{e.preventDefault();vista('proyectos',{modo:o.modo});};
+  const fijar=()=>{LINK={proyectoId:o.proyectoId,proyecto:o.titulo,planoId:null,nombre:'',version:0,fondos:g('sgf').checked};};
+  const sv=g('sgsv');sv.onclick=run(sv,async()=>{fijar();saveLink();await guardar({nuevo:true,nombre:g('sgn').value.trim()||'Plano isométrico',nota:g('sgnt').value,fondos:g('sgf').checked});});
+  const sv2=g('sgsv2');if(sv2)sv2.onclick=run(sv2,async()=>{await guardar({nota:g('sgnt').value,fondos:g('sgf').checked});});
+  g('sgnw').onclick=()=>{if(hasWork()&&!confirm('Se limpiará el lienzo para empezar un dibujo nuevo de este proyecto (puedes recuperarlo con Deshacer). ¿Continuar?'))return;
+   hs();S={nodes:[],pipes:[],anns:[],seq:1,prices:{}};sel=null;ms=[];start=null;end=null;LINK={proyectoId:o.proyectoId,proyecto:o.titulo,planoId:null,nombre:'',version:0,fondos:true};
+   if(!PJ.nombre)PJ.nombre=o.titulo;try{pjBrand();}catch(e){}panel();draw();saveLink();cerrar();toast('🆕 Dibujo nuevo vinculado a «'+o.titulo+'». Usa ☁️ Guardar en el proyecto (o Ctrl+S) cuando quieras guardarlo.');};
+  try{const r=await api({a:'sgcPlanosListar',proyectoId:o.proyectoId});const L=r.planos||[];
+   g('sgl').innerHTML=L.map(m=>`<div class="row ${LINK&&LINK.planoId===m.planoId?'cur':''}"><div class="th" style="${m.miniatura?`background-image:url('${m.miniatura}')`:''}">${m.miniatura?'':'📐'}</div><div class="f"><b>${esc(m.nombre)} <span class="tg">v${m.version}</span></b><span class="mu">${m.nodos} nodos · ${m.tuberias} tuberías${m.fondos?' · '+m.fondos+' fondo(s)':''} · ${kb(m.bytes)}</span><div class="mu">Actualizado ${fch(m.actualizado)} por ${esc(m.actualizadoPor||m.autor)}</div></div><div style="display:flex;flex-direction:column;gap:4px"><button data-ab="${esc(m.planoId)}">Abrir</button><button data-vs="${esc(m.planoId)}" title="Historial de versiones">🕘 Versiones</button></div></div>`).join('')||'<p class="mu">Este proyecto aún no tiene planos. Guarda aquí el dibujo en pantalla o empieza uno nuevo.</p>';
+   g('sgl').onclick=e=>{const a=e.target.closest('[data-ab]'),s=e.target.closest('[data-vs]');
+    if(a)run(a,()=>abrirPlano(a.dataset.ab))();if(s)vista('versiones',{planoId:s.dataset.vs,proyectoId:o.proyectoId,titulo:o.titulo});};
+  }catch(e){if(e.auth)return vista('login',{msg:'Tu sesión venció. Ingresa de nuevo.'});err(e.message);g('sgl').innerHTML='';}
+  return;}
+ if(v==='versiones'){H('🕘 Historial de versiones');B().innerHTML=`<p class="mu"><a href="#" id="sgbk" style="color:#9fc4e8">‹ Planos del proyecto</a></p><div class="er" id="sgcer"></div><div id="sgl"><p class="mu">Cargando…</p></div>`;
+  g('sgbk').onclick=e=>{e.preventDefault();vista('planos',{proyectoId:o.proyectoId,titulo:o.titulo});};
+  try{const r=await api({a:'sgcPlanoVersiones',planoId:o.planoId}),m=r.plano;
+   g('sgl').innerHTML=`<p><b>${esc(m.nombre)}</b> · vigente v${m.version}</p>`+r.versiones.map(x=>`<div class="row"><div class="th" style="font-size:14px;font-weight:700">v${x.version}</div><div class="f"><b>${fch(x.fecha)} · ${esc(x.autor)}</b><span class="mu">${x.nota?esc(x.nota)+' · ':''}${kb(x.bytes)} · SHA-256 ${esc(String(x.sha256).slice(0,12))}…</span></div><button data-ab="${x.version}">${x.version===m.version?'Abrir':'Abrir esta versión'}</button></div>`).join('');
+   g('sgl').onclick=e=>{const a=e.target.closest('[data-ab]');if(a)run(a,()=>abrirPlano(o.planoId,+a.dataset.ab))();};
+  }catch(e){if(e.auth)return vista('login',{msg:'Tu sesión venció. Ingresa de nuevo.'});err(e.message);g('sgl').innerHTML='';}}}
+function salir(){SES=null;saveSes();LINK=null;saveLink();cerrar();toast('Sesión del portal cerrada. El dibujo sigue en pantalla.');}
+/* ---------- chip de estado (abajo al centro) ---------- */
+const cp=document.createElement('div');cp.id='sgcchip';document.body.appendChild(cp);
+cp.onclick=()=>LINK&&LINK.proyectoId?vista('planos',{proyectoId:LINK.proyectoId,titulo:LINK.proyecto}):vista('proyectos',{modo:'guardar'});
+function chip(t){cp.innerHTML=t?esc(t):LINK&&LINK.proyectoId?`☁️ <b>${esc(LINK.proyecto||'Proyecto')}</b> · ${LINK.planoId?esc(LINK.nombre)+' v'+LINK.version:'plano sin guardar'}`:'☁️ Sin proyecto · <u>asignar a un proyecto del SGC</u>';
+ cp.title=LINK&&LINK.proyectoId?'Plano vinculado a un proyecto del portal. Ctrl+S guarda una versión nueva en el proyecto.':'Guarda este dibujo dentro de un proyecto del Portal de Proyectos';}
+/* ---------- menú Archivo ---------- */
+{const arch=[...document.querySelectorAll('#tb>details.ac')].find(d=>d.querySelector('summary').textContent.replace(/[▾\s]+$/,'').trim()=='Archivo');
+ const accs=arch&&arch.querySelector('.accs');
+ if(accs){const d=document.createElement('details');d.className='acc';d.open=true;
+  d.innerHTML=`<summary><span>☁️</span><span>Proyecto del SGC</span><small>4</small></summary><div class="accb"><button id="bsg_sv" title="Guarda una versión nueva del plano dentro de su proyecto (Ctrl+S)">☁️ Guardar en el proyecto</button><button id="bsg_ab" title="Abre un plano guardado en uno de tus proyectos">☁️ Abrir de un proyecto</button><button id="bsg_as" title="Guarda el dibujo como un plano nuevo, en este u otro proyecto">☁️ Guardar como plano nuevo…</button><button id="bsg_vs" title="Ver y abrir versiones anteriores del plano">🕘 Versiones del plano</button></div>`;
+  accs.insertBefore(d,accs.firstChild);
+  g('bsg_sv').onclick=()=>{if(window.closeAc)try{closeAc();}catch(e){}guardar();};
+  g('bsg_ab').onclick=()=>vista('proyectos');
+  g('bsg_as').onclick=()=>vista('proyectos',{modo:'guardar'});
+  g('bsg_vs').onclick=()=>LINK&&LINK.planoId?vista('versiones',{planoId:LINK.planoId,proyectoId:LINK.proyectoId,titulo:LINK.proyecto}):alert('Este dibujo todavía no está guardado en un proyecto.');}}
+/* Ctrl+S: si el plano está vinculado a un proyecto, guarda en la nube en lugar de descargar el .json */
+addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&(e.key=='s'||e.key=='S')&&LINK&&LINK.proyectoId){e.preventDefault();e.stopImmediatePropagation();guardar();}},true);
+/* ---------- al abrir: ?proyecto=ID&plano=ID[&v=N] (desde la ficha del proyecto en el portal) ---------- */
+chip();
+(function inicio(){const q=new URLSearchParams(location.search),pid=q.get('proyecto'),pl=q.get('plano'),ver=+q.get('v')||0;if(!pid){if(LINK){LINK=null;saveLink();}return;}
+ const go=async()=>{try{
+   if(pl){await abrirPlano(pl,ver,true);}
+   else{const r=await api({a:'sgcPlanosListar',proyectoId:pid});LINK={proyectoId:pid,proyecto:r.proyecto.titulo,planoId:null,nombre:'',version:0,fondos:true};
+    if(!hasWork()){if(!PJ.nombre)PJ.nombre=r.proyecto.titulo;if(!PJ.cliente&&r.proyecto.cliente)PJ.cliente=r.proyecto.cliente;if(!PJ.ubic&&r.proyecto.ubicacion)PJ.ubic=r.proyecto.ubicacion;try{pjBrand();}catch(e){}}
+    saveLink();toast('📁 Dibujo vinculado a «'+r.proyecto.titulo+'». Ctrl+S o ☁️ Guardar en el proyecto lo guarda allí.');}
+  }catch(e){if(e.auth){PEND=go;vista('login',{msg:'Ingresa con tu cuenta del portal para abrir el plano del proyecto.'});}else alert('No se pudo abrir el proyecto:\n\n'+e.message);}};
+ if(!SES){PEND=go;setTimeout(()=>vista('login',{msg:'Ingresa con tu cuenta del portal para abrir el plano del proyecto.'}),400);}else setTimeout(go,300);})();
+window.V19sgc={vista,guardar,abrirPlano,link:()=>LINK};
+})();
+</script>
+</body></html>

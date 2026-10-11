@@ -84,6 +84,9 @@ const HOJAS = {
   DocsMarca: ['miembroId', 'docId', 'clave', 'pdfId', 'fecha'],
   Campo: ['id', 'proyectoId', 'fecha', 'tipo', 'texto', 'autor', 'email', 'origen', 'gps', 'archivos'],
   EnlacesCampo: ['token', 'proyectoId', 'email', 'expira', 'creadoPor', 'fecha', 'estado', 'mensaje'],
+  // Planos de Isoflux asignados a proyectos (módulo Isoflux_Planos.gs)
+  Planos: ['planoId', 'proyectoId', 'nombre', 'version', 'fileId', 'bytes', 'nodos', 'tuberias', 'fondos', 'sha256', 'autor', 'email', 'creado', 'actualizado', 'actualizadoPor', 'estado', 'miniatura', 'nota'],
+  PlanosVersiones: ['planoId', 'version', 'fileId', 'bytes', 'sha256', 'autor', 'email', 'fecha', 'nota'],
 };
 
 // ---------- ROUTER ----------
@@ -108,6 +111,8 @@ function sigApi(b, u) {
   const esAdmin = u.rol === 'admin';
   SIG_LOGO_SHA_ = String(b.logoSha || '');
   try {
+    // ---- planos de Isoflux dentro de los proyectos (Isoflux_Planos.gs) ----
+    if (String(b.a).indexOf('sgcPlano') === 0) return isoApi_(u, b);
     switch (b.a) {
       case 'sgcPerfil':          return sigPerfil(u);
       case 'sgcCompromiso':      return sigCompromiso(u, b);
@@ -1018,6 +1023,8 @@ function sigBlobsProyecto_(proyectoId) {
   const camp = sigLeer_('Campo').filter(e => String(e.proyectoId) === String(proyectoId));
   if (camp.length) out.push(Utilities.newBlob(camp.map(e => sigFechaTxt_(e.fecha) + ' | ' + e.tipo + ' | ' + e.autor + ' <' + e.email + '>' + (e.gps ? ' | GPS ' + e.gps : '') + '\n' + e.texto +
     (String(e.archivos || '') ? '\nArchivos: ' + JSON.parse(e.archivos || '[]').map(a => a.n).join(', ') : '')).join('\n\n----------------\n\n'), 'text/plain', 'Bitacora de campo.txt'));
+  // Planos de Isoflux del proyecto (versión vigente de cada uno)
+  if (typeof isoBlobsProyecto_ === 'function') { const pl = isoBlobsProyecto_(proyectoId); pl.blobs.forEach(x => out.push(x)); pl.lista.forEach(x => lista.push(x)); }
   return { blobs: out, lista: lista };
 }
 const sigFechaTxt_ = f => Utilities.formatDate(f instanceof Date ? f : new Date(f), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
