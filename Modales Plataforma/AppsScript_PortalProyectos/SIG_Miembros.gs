@@ -118,6 +118,9 @@ function sigApi(b, u) {
       case 'sgcCompromiso':      return sigCompromiso(u, b);
       case 'sgcDeclaracion':     return sigDeclaracion(u, b);
       case 'sgcDeclaraciones':   return sigDeclaraciones(u);
+      case 'sgcAuditoriaAuto':   return sigAuditoriaAuto(u, b);
+      case 'sgcAuditoriasAuto':  return sigAuditoriasAuto(u);
+      case 'sgcTitular':         if (!esAdmin) break; return sigTitular(u, b);
       case 'sgcCrearMiembro':    return sigCrearMiembro(u, b);
       case 'sgcGuardarPerfil':   return sigGuardarPerfil(u, b);
       case 'sgcLogo':            return sigCargarLogo(u, b);
@@ -1379,4 +1382,190 @@ function proyCiclo_(q, u, adm, can, own) {
     }
   }
   throw Error('Acción desconocida');
+}
+
+// =====================================================================================
+//  PREAUDITORÍA AUTOMÁTICA (EM-PR-01 · informe EM-FO-03)
+//  Cualquier organización puede auditar su propia preparación; el administrador audita una
+//  organización, la función central o toda la red. Cada verificación cita su requisito y la
+//  evidencia que encontró en la plataforma; el resultado se clasifica como en EM-FO-04.
+//  El informe queda como registro EM-FO-03 con huella SHA-256 y en la bitácora; no reemplaza
+//  la firma de un auditor interno competente e independiente.
+// =====================================================================================
+const SIG_AUD = { MAYOR: 'NC mayor', MENOR: 'NC menor', OBS: 'Observación', OM: 'OM', C: 'Conforme' };
+function sigAudRegs_(mid) { return sigLeer_('Registros').filter(r => !mid || r.miembroId === mid); }
+function sigAudCerrados_(mid, pref) { return sigAudRegs_(mid).filter(r => r.estado === 'cerrado' && String(r.codigo).indexOf(pref) === 0); }
+/** Verificaciones de la función central (aplican a toda la red). */
+function sigAudCentral_() {
+  const out = [], add = (id, req, q, res, ev) => out.push({ id: id, ambito: 'Función central', requisito: req, verificacion: q, resultado: res, evidencia: ev });
+  // Entidad legal de la función central
+  const P = PropertiesService.getScriptProperties(), nit = P.getProperty('TITULAR_NIT'), conv = P.getProperty('TITULAR_CAMARA');
+  add('G1', 'IAF MD 1 · ISO 9001 4.3', '¿La función central está identificada como entidad legal?', nit && conv ? SIG_AUD.C : SIG_AUD.MAYOR,
+    nit && conv ? 'NIT ' + nit + ' · certificado de cámara de comercio ' + conv : 'La plataforma no tiene NIT ni certificado de existencia de ' + SIG.TITULAR + ' (propiedades TITULAR_NIT y TITULAR_CAMARA).');
+  // Documentos aprobados
+  let lm = []; try { lm = sigDecHoja_('GI-MZ-08'); } catch (e) {}
+  const bor = lm.filter(r => /borrador/i.test(r['Estado'] || '')).length;
+  add('G2', 'ISO 9001 5.2 y 7.5.2 · ISO 14001 5.2 · ISO 45001 5.2', '¿La política y los documentos del sistema están aprobados y vigentes?', !lm.length ? SIG_AUD.MAYOR : bor ? SIG_AUD.MAYOR : SIG_AUD.C,
+    !lm.length ? 'No se pudo leer el listado maestro GI-MZ-08.' : bor ? bor + ' de ' + lm.length + ' documentos en Borrador según GI-MZ-08.' : 'Los ' + lm.length + ' documentos del listado maestro están vigentes.');
+  // Cumplimiento legal
+  let ng = []; try { ng = sigDecHoja_('GI-MZ-01'); } catch (e) {}
+  const pv = ng.filter(r => /por verificar|brecha|pendiente/i.test(r['Estado'] || '')).length, sinF = ng.filter(r => !r['Fecha de verificación']).length;
+  add('G3', 'ISO 14001 9.1.2 · ISO 45001 9.1.2 · ISO 9001 6.1', '¿Se evaluó el cumplimiento de los requisitos legales del normograma?', !ng.length ? SIG_AUD.MENOR : pv || sinF ? SIG_AUD.MENOR : SIG_AUD.C,
+    ng.length ? ng.length + ' requisitos: ' + pv + ' por verificar, en brecha o pendientes; ' + sinF + ' sin fecha de verificación (GI-MZ-01).' : 'No se pudo leer el normograma GI-MZ-01.');
+  // Auditoría interna y revisión por la dirección (últimos 12 meses)
+  const hace = new Date(Date.now() - 365 * 864e5), rec = r => new Date(r.fechaCierre || r.fecha) >= hace;
+  const ai = sigLeer_('Registros').filter(r => r.estado === 'cerrado' && r.codigo === 'EM-FO-03' && r.origen !== 'auditoria_auto' && rec(r));
+  add('G4', 'ISO 9001 9.2 · ISO 14001 9.2 · ISO 45001 9.2 · IAF MD 1', '¿Hay una auditoría interna cerrada (EM-FO-03) en los últimos 12 meses?', ai.length ? SIG_AUD.C : SIG_AUD.MAYOR,
+    ai.length ? ai.length + ' informe(s) de auditoría interna cerrados: ' + ai.map(r => r.registroId).join(', ') : 'No hay informes EM-FO-03 cerrados por un auditor (las preauditorías automáticas no cuentan).');
+  const rd = sigAudCerrados_('', 'EM-FO-05').filter(rec);
+  add('G5', 'ISO 9001 9.3 · ISO 14001 9.3 · ISO 45001 9.3', '¿Hay una revisión por la dirección (EM-FO-05) en los últimos 12 meses?', rd.length ? SIG_AUD.C : SIG_AUD.MAYOR,
+    rd.length ? rd.map(r => r.registroId).join(', ') : 'No hay actas EM-FO-05 cerradas.');
+  // Integridad de la bitácora
+  let cad = { ok: false, mensaje: 'No se pudo verificar.' }; try { cad = sigVerificarCadena(); } catch (e) {}
+  add('G6', 'ISO 9001 7.5.3 · TI-PR-01', '¿La bitácora del SIG está íntegra (cadena SHA-256)?', cad.ok ? SIG_AUD.C : SIG_AUD.MAYOR, cad.mensaje);
+  // Respaldos
+  const resp = sigLeer_('BitacoraSIG').filter(r => r.accion === 'respaldo').pop();
+  add('G7', 'TI-PR-02 · ISO 9001 7.5.3.2', '¿Hay evidencia de copias de respaldo de la información?', resp ? SIG_AUD.C : SIG_AUD.OBS, resp ? 'Último respaldo registrado: ' + resp.fecha : 'No hay respaldos registrados en la bitácora.');
+  // Programa de auditorías
+  let pg = []; try { pg = sigDecHoja_('EM-PG-01'); } catch (e) {}
+  const sinAud = pg.filter(r => !String(r['Auditor líder'] || '').trim()).length;
+  add('G8', 'ISO 9001 9.2.2 · ISO 19011', '¿El programa de auditorías tiene auditores asignados e independientes?', !pg.length ? SIG_AUD.OBS : sinAud ? SIG_AUD.OBS : SIG_AUD.C,
+    pg.length ? pg.length + ' auditorías programadas; ' + sinAud + ' sin auditor líder asignado (EM-PG-01).' : 'No se pudo leer EM-PG-01.');
+  return out;
+}
+/** Verificaciones de una organización adscrita o en proceso. */
+function sigAudMiembro_(m) {
+  const out = [], mid = m.miembroId, org = m.nombreComercial || m.razonSocial, amb = mid + ' · ' + org;
+  const add = (id, req, q, res, ev) => out.push({ id: id + '-' + mid.replace('MBR-', ''), ambito: amb, requisito: req, verificacion: q, resultado: res, evidencia: ev });
+  const bit = sigLeer_('BitacoraSIG').filter(r => r.miembroId === mid), regs = sigAudRegs_(mid), cerr = p => regs.filter(r => r.estado === 'cerrado' && String(r.codigo).indexOf(p) === 0);
+  const est = m.estadoSIG, avanzado = ['Evaluación', 'Adscrito'].indexOf(est) >= 0;
+  // Secuencia de admisión
+  const tr = bit.filter(r => r.accion === 'estado_cambiado').map(r => { try { return JSON.parse(r.detalle); } catch (e) { return {}; } });
+  const paso = e => tr.some(t => t.a === e);
+  const salto = est === 'Adscrito' && !(paso('Implementación') && paso('Evaluación'));
+  add('M1', 'GI-PR-09 A · IAF MD 1', '¿La organización siguió la secuencia Aspirante → Implementación → Evaluación → Adscrito?', salto ? SIG_AUD.MAYOR : SIG_AUD.C,
+    tr.length ? 'Cambios de estado: ' + tr.map(t => (t.de || '?') + ' → ' + t.a).join('; ') + '. Estado actual: ' + est + '.' : 'Estado actual: ' + est + ' (sin cambios registrados).');
+  // Convenio y lista de admisión
+  const conv = cerr('CE-CO-01');
+  add('M2', 'GI-PR-09 paso 2 · IAF MD 1 (vínculo contractual)', '¿Hay convenio de adhesión firmado (CE-CO-01)?', conv.length ? SIG_AUD.C : est === 'Aspirante' ? SIG_AUD.OBS : SIG_AUD.MAYOR,
+    conv.length ? 'Convenio ' + conv[0].registroId : 'No hay convenio CE-CO-01 cargado como registro cerrado.' + (m.motivoEstado ? ' Motivo del estado: "' + m.motivoEstado + '".' : ''));
+  if (avanzado) {
+    const adm = cerr('GI-FO-09');
+    add('M3', 'GI-PR-09 pasos 6 a 8', '¿Hay lista de admisión (GI-FO-09) con decisión documentada?', adm.length ? SIG_AUD.C : est === 'Adscrito' ? SIG_AUD.MAYOR : SIG_AUD.MENOR,
+      adm.length ? adm.map(r => r.registroId).join(', ') : 'No hay GI-FO-09 cerrado.');
+  }
+  // Compromiso
+  const comp = bit.filter(r => r.accion === 'compromiso_sgc');
+  add('M4', 'ISO 9001 5.1 y 7.3', '¿El equipo aceptó el compromiso con el SGC?', comp.length ? SIG_AUD.C : SIG_AUD.OBS, comp.length ? comp.length + ' aceptación(es) en la bitácora.' : 'Nadie de la organización ha aceptado el compromiso.');
+  // SG-SST
+  const sst = regs.filter(r => r.estado === 'cerrado' && (/^GI-PL-02/.test(r.codigo) || /0312|autoevaluaci/i.test(r.titulo)));
+  add('M5', 'Decreto 1072 de 2015 · Res. 0312 de 2019 · ISO 45001 9.1.2', '¿Hay evidencia de los estándares mínimos del SG-SST (autoevaluación y plan anual)?', sst.length ? SIG_AUD.C : SIG_AUD.MAYOR,
+    sst.length ? sst.map(r => r.registroId + ' ' + r.titulo).join('; ') : 'No hay autoevaluación de la Res. 0312 ni plan GI-PL-02 cargados como registros cerrados.');
+  // Alcance
+  const pp = sigDecProcesos_(m), fuera = regs.filter(r => { const p = String(r.codigo).split('-')[0]; return ['DI', 'CN', 'MT', 'IV', 'ID'].indexOf(p) >= 0 && pp.proc.indexOf(p) < 0; });
+  const proys = rows('Proyectos').filter(p => p.miembroId === mid && p.bajoSIG === 'sí' && !p.ciclo);
+  const sosp = pp.proc.indexOf('CN') < 0 ? proys.filter(p => /construcci|montaje|instalaci[oó]n de red|propanoducto/i.test(p.titulo + ' ' + p.descripcion)) : [];
+  add('M6', 'ISO 9001 4.3 y 8.2.3 · GI-PR-09', '¿Los servicios prestados bajo el SIG están dentro del alcance aprobado?', fuera.length ? SIG_AUD.MENOR : sosp.length ? SIG_AUD.OBS : SIG_AUD.C,
+    'Alcance: ' + (pp.serv.join(', ') || '—') + '.' + (fuera.length ? ' Registros de procesos fuera del alcance: ' + fuera.map(r => r.codigo + ' (' + r.registroId + ')').join(', ') + '.' : '') + (sosp.length ? ' Proyectos que parecen de construcción sin tener CN en el alcance: ' + sosp.map(p => p.titulo).join('; ') + '.' : ''));
+  // Registros de los proyectos
+  const sinReg = proys.filter(p => !regs.some(r => r.estado === 'cerrado' && String(r.proyectoId) === String(p.id)));
+  add('M7', 'ISO 9001 7.5.3 y 8.5.1 · GI-PR-09 lista B', '¿Los proyectos bajo el SIG tienen registros cerrados de su ejecución?', !proys.length ? SIG_AUD.OBS : sinReg.length ? SIG_AUD.MENOR : SIG_AUD.C,
+    !proys.length ? 'No hay proyectos activos bajo el SIG.' : (proys.length - sinReg.length) + ' de ' + proys.length + ' proyectos con registros cerrados.' + (sinReg.length ? ' Sin registros: ' + sinReg.map(p => p.titulo).join('; ') + '.' : ''));
+  // No retroactividad
+  const ing = m.fechaIngresoSIG ? new Date(m.fechaIngresoSIG) : null, previos = ing ? proys.filter(p => p.inicio && new Date(p.inicio) < ing) : [];
+  if (previos.length) add('M8', 'SIG-LE-00 (no retroactividad)', '¿Los proyectos bajo el SIG empezaron después del ingreso al SIG?', SIG_AUD.OBS, 'Iniciaron antes del ' + sigDecFecha_(ing) + ': ' + previos.map(p => p.titulo + ' (' + String(p.inicio).slice(0, 10) + ')').join('; ') + '. El auditor externo pedirá evidencia de las fases ya ejecutadas.');
+  // Formularios y copias pendientes
+  const sol = sigLeer_('Solicitudes').filter(s => s.miembroId === mid && s.estado === 'pendiente'), venc = sol.filter(s => new Date(s.expira) < new Date());
+  const abiertos = regs.filter(r => r.estado !== 'cerrado' && new Date(r.fecha) < new Date(Date.now() - 30 * 864e5));
+  if (sol.length || abiertos.length) add('M9', 'ISO 9001 7.5.3', '¿Los formularios enviados y las copias de trabajo se cierran a tiempo?', venc.length || abiertos.length ? SIG_AUD.OBS : SIG_AUD.C,
+    sol.length + ' formulario(s) pendiente(s), ' + venc.length + ' vencido(s); ' + abiertos.length + ' copia(s) abiertas hace más de 30 días.');
+  // Competencia y calibración
+  const comp2 = regs.filter(r => r.estado === 'cerrado' && /^(TH-FO|TH-MZ)/.test(r.codigo)), cal = cerr('MI-FO-01');
+  const gas = pp.proc.some(p => ['DI', 'CN', 'MT', 'IV'].indexOf(p) >= 0);
+  if (gas) {
+    add('M10', 'Res. 90902 de 2013 · ISO 9001 7.2 · Ley 842 de 2003', '¿Hay evidencia de la competencia del personal (certificados, SIC, matrículas)?', comp2.length ? SIG_AUD.C : SIG_AUD.MENOR, comp2.length ? comp2.length + ' registro(s) de talento humano.' : 'No hay registros TH-FO ni certificados de competencia cargados.');
+    add('M11', 'ISO 9001 7.1.5 · MI-PR-01', '¿Los equipos de medición tienen hoja de vida y calibración vigente?', cal.length ? SIG_AUD.C : SIG_AUD.MENOR, cal.length ? cal.length + ' hoja(s) de vida MI-FO-01.' : 'No hay MI-FO-01 ni certificados de calibración cargados.');
+  }
+  // Datos de prueba
+  const prueba = rows('Proyectos').filter(p => p.miembroId === mid && !p.ciclo && /\b(prueba|test|demo)\b/i.test(p.titulo));
+  if (prueba.length) add('M12', 'ISO 9001 7.5.3', '¿Los registros del SIG están libres de datos de prueba?', SIG_AUD.OBS, 'Proyectos de prueba bajo el SIG: ' + prueba.map(p => p.titulo).join('; ') + '. Archivarlos o enviarlos a la papelera.');
+  // Datos legales
+  if (!m.nit || !m.representante) add('M13', 'GI-PR-09 lista B (existencia legal)', '¿Los datos legales de la organización están completos?', SIG_AUD.MENOR, 'Falta ' + [!m.nit ? 'NIT' : '', !m.representante ? 'representante' : ''].filter(String).join(' y ') + '.');
+  return out;
+}
+function sigAudConclusion_(H) {
+  const n = k => H.filter(h => h.resultado === k).length, my = n(SIG_AUD.MAYOR), mn = n(SIG_AUD.MENOR);
+  return { mayores: my, menores: mn, obs: n(SIG_AUD.OBS), conformes: n(SIG_AUD.C), total: H.length,
+    veredicto: my ? 'No está listo para la auditoría de certificación' : mn ? 'Listo con acciones: corregir las no conformidades menores antes de la auditoría' : 'Preparado: sin no conformidades detectadas por la preauditoría' };
+}
+function sigAudHtml_(x) {
+  const h = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const AZ = '#0A3A95', C = 'border:1px solid #9CA3AF;padding:4px 6px;vertical-align:top', T = 'border-collapse:collapse;width:100%;font-size:9pt';
+  const th = (t, w) => '<td bgcolor="' + AZ + '" style="' + C + ';background:' + AZ + (w ? ';width:' + w : '') + '"><font color="#ffffff"><b>' + t + '</b></font></td>';
+  const col = { 'NC mayor': '#FDE2E2', 'NC menor': '#FEF3C7', 'Observación': '#E0F2FE', 'OM': '#EDE9FE', 'Conforme': '#DCFCE7' };
+  const fila = r => '<tr><td style="' + C + '">' + h(r.id) + '</td><td style="' + C + '">' + h(r.verificacion) + '<br><font size="1" color="#4B5563">' + h(r.requisito) + '</font></td><td bgcolor="' + (col[r.resultado] || '#fff') + '" style="' + C + ';background:' + (col[r.resultado] || '#fff') + '"><b>' + h(r.resultado) + '</b></td><td style="' + C + '">' + h(r.evidencia) + '</td></tr>';
+  const tabla = L => '<table style="' + T + '"><tr>' + th('N.º', '9%') + th('Verificación y requisito', '36%') + th('Resultado', '12%') + th('Evidencia') + '</tr>' + L.map(fila).join('') + '</table>';
+  const hall = x.H.filter(r => r.resultado !== SIG_AUD.C), c = x.c;
+  return '<html><head><meta charset="utf-8"></head><body style="font-family:Arial,Helvetica,sans-serif;font-size:10pt;color:#111827">' +
+    '<table style="' + T + '"><tr><td rowspan="2" style="' + C + ';width:22%;text-align:center">' + (x.logo || '<b>' + h(x.org) + '</b>') + '</td><td style="' + C + ';text-align:center"><b><font color="' + AZ + '">SISTEMA INTEGRADO DE GESTIÓN</font></b><br>' + h(x.org) + '</td><td style="' + C + ';width:26%"><b>Código: EM-FO-03</b><br>N.º ' + h(x.codigo) + '</td></tr>' +
+    '<tr><td style="' + C + ';text-align:center"><b>INFORME DE PREAUDITORÍA INTERNA</b></td><td style="' + C + '">Versión 01<br>Fecha: ' + h(x.fecha) + '</td></tr></table>' +
+    '<h3 style="color:' + AZ + ';font-size:11pt;margin:14px 0 6px">1. Datos de la auditoría</h3><table style="' + T + '">' +
+    [['Tipo', 'Preauditoría automática de preparación para la certificación (EM-PR-01)'], ['Solicitada por', x.solicitante], ['Auditor', 'Función central · ' + SIG.TITULAR + ' (verificación automática de la plataforma ENTALPIA LABS)'], ['Alcance', x.alcance], ['Criterios', 'ISO 9001, ISO 14001, ISO 45001, ISO 56001, Decreto 1072 de 2015 y Res. 0312 de 2019, IAF MD 1, Res. 90902 de 2013, Ley 1581 de 2012 y documentos del SIG (GI-PR-09, SIG-LE-00, EM-PR-01)'], ['Método', 'Verificación de ' + c.total + ' requisitos contra la evidencia registrada en la plataforma: miembros, proyectos, registros, formularios, bitácora encadenada, listado maestro y normograma']]
+      .map(r => '<tr><td style="' + C + ';width:22%;background:#F3F4F6" bgcolor="#F3F4F6"><b>' + r[0] + '</b></td><td style="' + C + '">' + h(r[1]) + '</td></tr>').join('') + '</table>' +
+    '<h3 style="color:' + AZ + ';font-size:11pt;margin:14px 0 6px">2. Conclusión</h3><p><b>' + h(c.veredicto) + '.</b></p><p>No conformidades mayores: <b>' + c.mayores + '</b> · menores: <b>' + c.menores + '</b> · observaciones: <b>' + c.obs + '</b> · requisitos conformes: <b>' + c.conformes + '</b> de ' + c.total + '.</p>' +
+    '<h3 style="color:' + AZ + ';font-size:11pt;margin:14px 0 6px">3. Hallazgos</h3>' + (hall.length ? tabla(hall) : '<p>No se encontraron hallazgos.</p>') +
+    '<p style="font-size:9pt">Cada no conformidad se registra en EM-FO-04 con análisis de causa dentro de los 15 días hábiles siguientes (EM-PR-04) y se sigue en EM-FO-07.</p>' +
+    '<h3 style="color:' + AZ + ';font-size:11pt;margin:14px 0 6px">4. Lista de verificación completa (EM-FO-02)</h3>' + tabla(x.H) +
+    '<h3 style="color:' + AZ + ';font-size:11pt;margin:14px 0 6px">5. Limitaciones</h3><p style="font-size:9pt;text-align:justify">La preauditoría verifica solo la evidencia registrada en la plataforma; no incluye visita a obra, entrevistas ni observación de trabajos. Un documento que exista fuera de la plataforma no se considera hasta que se cargue como registro. Este informe sirve para preparar la auditoría; para valer como auditoría interna del SIG debe revisarlo y firmarlo un auditor interno competente e independiente del proceso auditado.</p>' +
+    '<h3 style="color:' + AZ + ';font-size:11pt;margin:14px 0 6px">6. Aprobación</h3><table style="' + T + '"><tr>' + th('Rol') + th('Nombre') + th('Firma y fecha') + '</tr><tr><td style="' + C + '">Auditor interno</td><td style="' + C + '">&nbsp;</td><td style="' + C + '">&nbsp;</td></tr><tr><td style="' + C + '">Responsable del proceso auditado</td><td style="' + C + '">&nbsp;</td><td style="' + C + '">&nbsp;</td></tr></table>' +
+    '<p style="font-size:8pt;color:#6B7280">Generado en el Software ENTALPIA LABS el ' + h(x.fecha) + ' · huella del contenido verificable en la bitácora del SIG.</p></body></html>';
+}
+/** b.miembroId: el administrador elige una organización, 'central' o '*' (toda la red); un miembro audita la suya. */
+function sigAuditoriaAuto(u, b) {
+  const adm = u.rol === 'admin', C = CacheService.getScriptCache();
+  let ms = [], central = false, mPropio = null;
+  if (adm) {
+    const sel = String(b.miembroId || '*');
+    if (sel === '*') { central = true; ms = sigLeer_('Miembros').filter(m => ['Retirado'].indexOf(m.estadoSIG) < 0); }
+    else if (sel === 'central') central = true;
+    else { const m = sigMiembro_(sel); if (!m) throw new Error('Organización no encontrada.'); ms = [m]; mPropio = m; }
+  } else {
+    const m = sigMiembroDe(u.email); if (!m) throw new Error('Debes pertenecer a una organización de la red.');
+    const k = 'audauto_' + m.miembroId; if (C.get(k)) throw new Error('Ya se generó una preauditoría hace menos de 10 minutos. Revisa el informe en la pestaña Auditorías.');
+    C.put(k, '1', 600); ms = [m]; mPropio = m; central = true; // el miembro también ve el estado de la función central, del que depende su certificación
+  }
+  const H = [].concat(central ? sigAudCentral_() : [], ...ms.map(sigAudMiembro_));
+  const c = sigAudConclusion_(H), fecha = sigDecFecha_(new Date());
+  const codigo = 'AI-AUTO-' + Utilities.formatDate(new Date(), 'America/Bogota', 'yyyyMMdd') + '-' + Utilities.getUuid().slice(0, 4).toUpperCase();
+  let logo = ''; try { const bl = mPropio && sigLogoBlobDoc_(mPropio); if (bl) logo = '<img src="data:' + bl.getContentType() + ';base64,' + Utilities.base64Encode(bl.getBytes()) + '" style="max-width:130px;max-height:70px">'; } catch (e) {}
+  const org = mPropio ? (mPropio.nombreComercial || mPropio.razonSocial) : 'Red del Hub de Ingeniería Pioneer\'s';
+  const alcance = (central ? 'Función central (' + SIG.TITULAR + ')' : '') + (ms.length ? (central ? ' y ' : '') + ms.map(m => m.miembroId + ' ' + (m.nombreComercial || m.razonSocial) + ' (' + m.estadoSIG + ')').join(', ') : '');
+  const html = sigAudHtml_({ H: H, c: c, fecha: fecha, codigo: codigo, logo: logo, org: org, alcance: alcance, solicitante: (u.nombre ? u.nombre + ' · ' : '') + u.email + (adm ? ' (administrador)' : '') });
+  const nombre = (mPropio ? mPropio.miembroId + ' · ' : '') + 'EM-FO-03 Preauditoría ' + codigo + '.pdf';
+  const pdf = Utilities.newBlob(html, 'text/html', 'auditoria.html').getAs('application/pdf').setName(nombre), bytes = pdf.getBytes(), sha = sigShaBytes_(bytes);
+  let carpeta;
+  if (mPropio) carpeta = sigCarpetaRegistros_(mPropio);
+  else { const raiz = DriveApp.getFolderById(SIG.CARPETA_RAIZ_ID), it = raiz.getFoldersByName('Auditorías internas'); carpeta = it.hasNext() ? it.next() : raiz.createFolder('Auditorías internas'); }
+  const f = carpeta.createFile(pdf); f.setDescription('Preauditoría ' + codigo + ' · SHA-256 ' + sha + ' · solicitada por ' + u.email);
+  const rid = 'REG-' + Utilities.getUuid().slice(0, 8).toUpperCase();
+  sigAgregar_('Registros', { registroId: rid, miembroId: mPropio ? mPropio.miembroId : '', codigo: 'EM-FO-03', titulo: 'Preauditoría ' + codigo + ' · ' + c.veredicto, origen: 'auditoria_auto', fileId: f.getId(), creadoPor: u.email, fecha: sigAhora_(), estado: 'cerrado', pdfId: f.getId(), sha256: sha, cerradoPor: u.email, fechaCierre: sigAhora_(), proyectoId: '' });
+  sigBitacora_(u.email, mPropio ? mPropio.miembroId : '*', 'auditoria_automatica', { codigo: codigo, registroId: rid, alcance: alcance, mayores: c.mayores, menores: c.menores, observaciones: c.obs, conformes: c.conformes, total: c.total, sha256: sha });
+  return { codigo: codigo, registroId: rid, conclusion: c, hallazgos: H.filter(x => x.resultado !== SIG_AUD.C), b64: Utilities.base64Encode(bytes), mime: 'application/pdf', nombre: nombre };
+}
+function sigAuditoriasAuto(u) {
+  const adm = u.rol === 'admin', m = adm ? null : sigMiembroDe(u.email);
+  if (!adm && !m) return { lista: [] };
+  return { lista: sigLeer_('BitacoraSIG').filter(r => r.accion === 'auditoria_automatica' && (adm || r.miembroId === m.miembroId)).reverse().slice(0, 50)
+    .map(r => { let d = {}; try { d = JSON.parse(r.detalle); } catch (e) {} return { fecha: r.fecha instanceof Date ? r.fecha.toISOString() : String(r.fecha), email: r.email, miembroId: r.miembroId, codigo: d.codigo, registroId: d.registroId, alcance: d.alcance, mayores: d.mayores, menores: d.menores, observaciones: d.observaciones, conformes: d.conformes, total: d.total }; }) };
+}
+
+/** Datos legales de la función central (evidencia para G1 de la preauditoría). Sin argumentos devuelve los actuales. */
+function sigTitular(u, b) {
+  const P = PropertiesService.getScriptProperties(), k = ['TITULAR_RAZON', 'TITULAR_NIT', 'TITULAR_CAMARA'];
+  if (b.guardar) {
+    const antes = {}, despues = {};
+    k.forEach(x => { const v = String(b[x] || '').trim().slice(0, 200); antes[x] = P.getProperty(x) || ''; if (v) P.setProperty(x, v); else P.deleteProperty(x); despues[x] = v; });
+    sigBitacora_(u.email, '*', 'titular_actualizado', { antes: antes, despues: despues });
+  }
+  const o = {}; k.forEach(x => o[x] = P.getProperty(x) || ''); return o;
 }
