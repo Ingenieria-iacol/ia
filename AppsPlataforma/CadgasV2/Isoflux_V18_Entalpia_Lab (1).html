@@ -144,7 +144,7 @@ const mx=(A[0]+B[0])/2,my=(A[1]+B[1])/2;fArrow(p,A,B);
 if((labs&&(p.lab!==false||snapF)&&inFoc('p',p.id))||isH('p',p.id)){(LO='p'+p.id,LA=[mx,my],LK='tag',lab)(`${p.tag} Ø${p.dia}" ${p.press}`,mx+8,my-8);}});
 S.pipes.forEach(p=>{if(isH('p',p.id))dimP(p,true);else if(cotas&&inFoc('p',p.id))dimP(p);});
 S.nodes.forEach(n=>{if(n.y!=e){const a0=P(n.x,e,n.z),b0=P(n.x,n.y,n.z);ctx.strokeStyle='rgba(60,120,200,.55)';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(a0[0],a0[1]);ctx.lineTo(b0[0],b0[1]);ctx.stroke();ctx.setLineDash([]);}});
-S.nodes.forEach(n=>{const[X0,Y0]=P(n.x,n.y,n.z),x=0,y=0,on=isS('n',n.id),kk=compK();ctx.save();ctx.translate(X0,Y0);ctx.scale(kk,kk);ctx.lineWidth=1.5/Math.max(kk,.6);ctx.strokeStyle='#cfe9ff';
+S.nodes.forEach(n=>{const[X0,Y0]=P(n.x,n.y,n.z),x=0,y=0,on=isS('n',n.id),kk=(CURK=nodeK(n));ctx.save();ctx.translate(X0,Y0);ctx.scale(kk,kk);ctx.lineWidth=1.5/Math.max(kk,.6);ctx.strokeStyle='#cfe9ff';
 const f=(c)=>{ctx.fillStyle=c;};
 if(n.type=='te'){f('#607d8b');ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fill();}
 else if(n.type=='valvula'){const c=n.est=='Cerrada';ctx.save();if(n.ori=='Vertical')ctx.rotate(Math.PI/2);f(c?'#16253f':'#3b82f6');ctx.beginPath();ctx.moveTo(-9,-7);ctx.lineTo(9,7);ctx.lineTo(9,-7);ctx.lineTo(-9,7);ctx.closePath();ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-12);ctx.moveTo(-5,-12);ctx.lineTo(5,-12);ctx.stroke();if(c){ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-5,-5);ctx.lineTo(5,5);ctx.moveTo(5,-5);ctx.lineTo(-5,5);ctx.stroke();}ctx.restore();}
@@ -416,7 +416,23 @@ doc.setDrawColor(30,95,191);doc.line(24,556,818,556);doc.setTextColor(70);doc.se
 doc.save(FNP('Memoria_calculo_'+id+'.pdf'));};
 
 /* ===================== V6 (conservado en V7) ===================== */
-const compK=()=>Math.min(1.35,Math.max(.3,V.s/34));
+/* Escala de símbolos anclada al DIBUJO (como los bloques de un CAD): cada componente mide una
+   longitud fija en metros, así crece y se encoge con el zoom igual que las tuberías.
+   · tamaño base según la extensión de la red (redes grandes → símbolos proporcionalmente mayores)
+   · nunca más grande que el espacio hasta su vecino más cercano (no se amontonan al alejar)
+   · nunca más delgado que la tubería que lo atraviesa (no quedan "dentro" del tubo al acercar) */
+let SYM=null,CURK=1;
+function symData(){let h=S.nodes.length*7919+S.pipes.length;for(const n of S.nodes)h=(h*31+(n.x*97+n.y*13+n.z*41)*1000|0)|0;
+ if(SYM&&SYM.h===h)return SYM;const C=S.nodes.filter(n=>n.type!='te');let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9,z0=1e9,z1=-1e9;
+ S.nodes.forEach(n=>{x0=Math.min(x0,n.x);x1=Math.max(x1,n.x);y0=Math.min(y0,n.y);y1=Math.max(y1,n.y);z0=Math.min(z0,n.z);z1=Math.max(z1,n.z);});
+ const ext=S.nodes.length?Math.max(x1-x0,y1-y0,z1-z0,1):10,base=Math.min(8,Math.max(.53,ext*.031)),per={};
+ for(const n of C){let d=1e9;for(const m of C){if(m===n)continue;const q=Math.hypot(m.x-n.x,m.y-n.y,m.z-n.z);if(q<d)d=q;}per[n.id]=Math.max(base*.3,Math.min(base,d*.8));}
+ return SYM={h,base,per};}
+const compK=()=>{const k=symData().base*V.s/18;return Math.min(1.6,Math.max(.3,k));};   // flechas y marcas sobre tubos
+function nodeK(n){let pwm=0;S.pipes.forEach(p=>{if(p.a==n.id||p.b==n.id){const v=pw(p);if(v>pwm)pwm=v;}});
+ if(n.type=='te')return Math.max(pwm*.56,2.2)/4;   // la te es la junta: un poco más ancha que el tubo, a cualquier zoom
+ const D=symData(),w=(D.per[n.id]||D.base)*V.s/18;return Math.max(w,pwm*1.9/18,.12);}
+const curK=()=>CURK;
 const isS=(k,id)=>(sel&&sel.k==k&&sel.id==id)||ms.some(m=>m.k==k&&m.id==id);
 const getO=m=>m.k=='n'?N(m.id):m.k=='p'?Pi(m.id):(S.anns||[]).find(a=>a.id==m.id);
 function setMs(all){if(all.length>1){ms=all;sel=null;}else if(all.length==1){sel=all[0];ms=[];}else{sel=null;ms=[];}panel();draw();}
@@ -485,7 +501,7 @@ function drawCaj(){if(!cajOn)return;const W=340,H=100,x=cv.width-W-12,y=cv.heigh
  ctx.font='9px Arial';ctx.fillStyle='#6f93ba';ctx.fillText("ENTALPÍA LAB · Isoflux · Doc. "+docId(),x+6,y+H-6);if(!logoP){logoP=new Image();logoP.onload=()=>draw();logoP.src=LOGOP;}if(logoP.complete&&logoP.naturalWidth){try{ctx.drawImage(logoP,x+W-24,y+H-23,18,17);}catch(e){}}ctx.font='8px Arial';ctx.textAlign='right';ctx.fillText("Hub de Ingeniería Pioneer's · Industrias I.A. Col",x+W-28,y+H-6);ctx.textAlign='left';ctx.restore();}
 /* ---- elementos nuevos: brida, unión universal, unión ---- */
 function nAng(n){const p=S.pipes.find(q=>q.a==n.id||q.b==n.id);if(!p)return 0;const o=N(p.a==n.id?p.b:p.a);if(!o)return 0;const A=P(n.x,n.y,n.z),B=P(o.x,o.y,o.z);return Math.atan2(B[1]-A[1],B[0]-A[0]);}
-function fit6(n){ctx.save();ctx.rotate(nAng(n));ctx.lineWidth=1.3/Math.max(compK(),.6);ctx.strokeStyle='#cfe9ff';
+function fit6(n){ctx.save();ctx.rotate(nAng(n));ctx.lineWidth=1.3/Math.max(curK(),.6);ctx.strokeStyle='#cfe9ff';
  if(n.type=='brida'){ctx.fillStyle='#b0bec5';[-5.5,2].forEach(o=>{ctx.beginPath();ctx.rect(o,-10,3.5,20);ctx.fill();ctx.stroke();});ctx.beginPath();ctx.moveTo(-5.5,-6);ctx.lineTo(5.5,-6);ctx.moveTo(-5.5,6);ctx.lineTo(5.5,6);ctx.stroke();}
  else if(n.type=='union_u'){ctx.fillStyle='#ffa726';ctx.beginPath();ctx.rect(-10,-6,6,12);ctx.rect(4,-6,6,12);ctx.fill();ctx.stroke();ctx.fillStyle='#ffe0b2';ctx.beginPath();ctx.rect(-4,-8,8,16);ctx.fill();ctx.stroke();}
  else{ctx.fillStyle='#9ccc65';ctx.beginPath();ctx.rect(-8,-5,16,10);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(-3,-5);ctx.lineTo(-3,5);ctx.moveTo(3,-5);ctx.lineTo(3,5);ctx.stroke();}
@@ -496,7 +512,7 @@ const spUn=s=>OPT('s_tipo','Tipo de unión',s.tipo||'Roscada (niple)',['Roscada 
 /* ---- V12: reducciones, punto de control de presión, transición PE, terminales y conector flexible ---- */
 const FT7={reduccion:1,ptopres:1,transicion:1,term_m:1,term_h:1,flexible:1},SPXT=FT7;
 function bigAng(n){const ps=S.pipes.filter(q=>q.a==n.id||q.b==n.id).sort((a,b)=>dmm(b.dia)-dmm(a.dia));if(!ps.length)return 0;const p=ps[0],o=N(p.a==n.id?p.b:p.a);if(!o)return 0;const A=P(n.x,n.y,n.z),B=P(o.x,o.y,o.z);return Math.atan2(B[1]-A[1],B[0]-A[0]);}
-function fit7(n){const t=n.type;ctx.save();if(t!='ptopres')ctx.rotate(t=='reduccion'?bigAng(n):nAng(n));ctx.lineWidth=1.3/Math.max(compK(),.6);ctx.strokeStyle='#cfe9ff';const R=(x,y,w,h)=>{ctx.beginPath();ctx.rect(x,y,w,h);ctx.fill();ctx.stroke();},TL=(xs,y)=>{ctx.beginPath();xs.forEach(x=>{ctx.moveTo(x,-y);ctx.lineTo(x,y);});ctx.stroke();};
+function fit7(n){const t=n.type;ctx.save();if(t!='ptopres')ctx.rotate(t=='reduccion'?bigAng(n):nAng(n));ctx.lineWidth=1.3/Math.max(curK(),.6);ctx.strokeStyle='#cfe9ff';const R=(x,y,w,h)=>{ctx.beginPath();ctx.rect(x,y,w,h);ctx.fill();ctx.stroke();},TL=(xs,y)=>{ctx.beginPath();xs.forEach(x=>{ctx.moveTo(x,-y);ctx.lineTo(x,y);});ctx.stroke();};
 if(t=='reduccion'){ctx.fillStyle='#26c6da';ctx.beginPath();ctx.moveTo(-9,-3);ctx.lineTo(9,-9);ctx.lineTo(9,9);ctx.lineTo(-9,3);ctx.closePath();ctx.fill();ctx.stroke();}
 else if(t=='ptopres'){ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-8);ctx.stroke();ctx.fillStyle='#ffb300';ctx.beginPath();ctx.moveTo(0,-8);ctx.lineTo(6,-14);ctx.lineTo(0,-20);ctx.lineTo(-6,-14);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#202020';ctx.font='bold 8px Arial';ctx.fillText('P',-2.6,-11.4);}
 else if(t=='transicion'){ctx.fillStyle='#fdd835';R(-11,-5,10,10);ctx.fillStyle='#9fb3c8';R(1,-5,10,10);ctx.fillStyle='#ffa726';R(-2,-7,4,14);}
