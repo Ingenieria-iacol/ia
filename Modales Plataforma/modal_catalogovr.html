@@ -50,6 +50,16 @@
   .btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
   .btn-vr{background:var(--accent);border-color:var(--accent)}
   .btn-vr:hover{background:var(--accent-2)}
+  #cb-ov{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.72);padding:12px}
+  #cb-ov.on{display:flex}
+  .cb-box{background:#11141c;border:1px solid var(--line);border-radius:16px;max-width:520px;width:100%;max-height:92vh;overflow:auto;padding:18px 18px 14px;color:#e6e7ee;font-size:.88rem;line-height:1.45}
+  .cb-box h3{margin:0 0 8px;font-size:1.05rem}.cb-box label{display:block;margin:10px 0 0;font-size:.84rem;color:#c9cad3}
+  .cb-box input[type=range],.cb-box select{width:100%;margin-top:4px;accent-color:#3d8bff}
+  .cb-box select{background:#1a1e29;color:#fff;border:1px solid var(--line);border-radius:8px;padding:7px}
+  .cb-n{color:#9a9ca8;font-size:.78rem}.cb-acts{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+  #cb-x{position:fixed;top:4px;left:50%;transform:translateX(-50%);z-index:55;display:none;opacity:.45;padding:3px 12px;font-size:.72rem}
+  body.cb nav,body.cb #status,body.cb #toast,body.cb #hint,body.cb #pm{display:none!important}
+  body.cb #cb-x{display:block}
   .btn[hidden]{display:none}
   .btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
 
@@ -110,12 +120,14 @@
     <button class="btn" id="btn-planos" title="Ver tus planos de Isoflux en 3D">📐 <span class="txt">Mis planos</span></button>
     <button class="btn" id="btn-fs" title="Pantalla completa">⛶ <span class="txt">Pantalla completa</span></button>
     <button class="btn btn-vr" id="btn-exit" hidden title="Salir y volver al catálogo (Esc)">✕ <span class="txt">Salir</span></button>
+    <button class="btn" id="btn-cb" title="Usar un visor de celular (VR Box, Cardboard) con las mismas funciones de Meta Quest">📱 <span class="txt">Visor celular</span></button>
     <button class="btn btn-vr" id="btn-vr" disabled>👓 <span class="txt">Entrar en VR</span></button>
   </div>
 </nav>
 <div id="status"></div>
 <div id="hint">Arrastra para mirar · Clic en una tarjeta para abrirla · Rueda del mouse sobre una fila para desplazarla · Esc para volver</div>
 <div id="toast"></div>
+<button class="btn" id="cb-x" title="Salir del visor celular">✕ Salir del visor</button>
 <div class="pm" id="pm" hidden>
   <div class="pm-box" role="dialog" aria-modal="true" aria-labelledby="pm-h">
     <header><b id="pm-h">📐 Mis planos de Isoflux</b><button class="pm-x" id="pm-x" aria-label="Cerrar">✕</button></header>
@@ -386,7 +398,7 @@ function makeButton(text, { w = 0.32, h = 0.1, primary = false } = {}, onSelect)
     onSelect,
     onHover(on){ hover = on; draw(); mesh.scale.setScalar(on ? 1.07 : 1); }
   });
-  mesh.userData.setText = t => { label = t; draw(); };
+  mesh.userData.setText = t => { label = t; draw(); }; mesh.userData.label = () => label;
   return mesh;
 }
 
@@ -1693,7 +1705,7 @@ function buildPlan(){
     const g = new THREE.PlaneGeometry(o.w, o.h);
     const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: fondoTex(o.f, o.i), transparent: true, opacity: Math.min(1, (o.f.op == null ? 1 : +o.f.op) * 0.92), depthWrite: false, toneMapped: false, side: THREE.DoubleSide }));
     g.rotateX(-H90); m.rotation.y = o.yaw;   // derecha de la imagen → (cos, 0, −sen); abajo → (sen, 0, cos), igual que la vista en planta
-    m.position.set(o.cx, FL + 0.002, o.cz); m.renderOrder = 1; m.userData.ownGeo = true; m.userData.ownMat = true; planContent.add(m);
+    m.position.set(o.cx, FL + 0.002, o.cz); m.renderOrder = 1; m.userData.ownGeo = true; m.userData.ownMat = true; m.userData.piso = true; planContent.add(m);
   }
   if (!LOW_MEM){
     const sh = new THREE.Mesh(new THREE.PlaneGeometry(size.x * 1.6 + 2 / (real ? 1 : k), size.z * 1.6 + 2 / (real ? 1 : k)), new THREE.ShadowMaterial({ opacity: 0.42, depthWrite: false }));
@@ -2275,6 +2287,255 @@ addEventListener('resize', () => {
 });
 
 /* =====================================================================
+   10b. VISOR CELULAR (VR Box / Cardboard): pantalla dividida con corrección de lente,
+        giroscopio del teléfono, selección con la mirada y control Bluetooth opcional.
+        Replica las funciones de Meta Quest sin controles: mirar = apuntar,
+        sostener la mirada = gatillo, mirar al piso = caminar, mirar a los pies = menú.
+   ===================================================================== */
+const CB_KEY = 'vr_visor_celular';
+const CB = {
+  on: false, have: false, q: new THREE.Quaternion(), qs: new THREE.Quaternion(), yaw0: new THREE.Quaternion(), oriT: 0,
+  dwell: 0, dwellObj: null, cool: 0, tp: null, tpT: 0, feetOn: false, gp: {}, rt: null, cfg: null
+};
+CB.cfg = Object.assign({ ipd: 63, lente: 'suave', fov: 92, dwell: 1.3, calidad: 0.85 }, lsGet(CB_KEY, {}) || {});
+const gaze = makePointer();
+const LENTES = { no: [0, 0], suave: [0.22, 0.12], media: [0.34, 0.2], fuerte: [0.46, 0.28] };   // k1, k2 (barril)
+
+/* --- giroscopio → cuaternión de la cabeza (método DeviceOrientation estándar) --- */
+const _zee = new THREE.Vector3(0, 0, 1), _eul = new THREE.Euler(), _q0 = new THREE.Quaternion(), _q1 = new THREE.Quaternion(-Math.SQRT1_2, 0, 0, Math.SQRT1_2);
+const angPantalla = () => (screen.orientation && isFinite(screen.orientation.angle) ? screen.orientation.angle : (window.orientation || 0));
+function onOri(e){
+  if (e.alpha == null && e.beta == null) return;
+  const D = THREE.MathUtils.degToRad;
+  _eul.set(D(e.beta || 0), D(e.alpha || 0), -D(e.gamma || 0), 'YXZ');
+  CB.q.setFromEuler(_eul).multiply(_q1).multiply(_q0.setFromAxisAngle(_zee, -D(angPantalla())));
+  if (!CB.have){ CB.have = true; CB.qs.copy(CB.q); }
+  CB.oriT = performance.now();
+}
+function cbRecentrar(){
+  const f = new THREE.Vector3(0, 0, -1).applyQuaternion(CB.have ? CB.q : new THREE.Quaternion());
+  CB.yaw0.setFromAxisAngle(Y_AXIS, -Math.atan2(-f.x, -f.z));
+}
+
+/* --- cámaras de cada ojo y malla de corrección de lente --- */
+const camL = new THREE.PerspectiveCamera(90, 1, 0.03, 2500), camR = new THREE.PerspectiveCamera(90, 1, 0.03, 2500);
+camL.layers.enable(1); camR.layers.enable(2);                        // video 360 estéreo: cada ojo su esfera
+const cbScene = new THREE.Scene(), cbOrtho = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 2);
+const cbEyes = [0, 1].map(() => { const m = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ vertexColors: true })); m.frustumCulled = false; cbScene.add(m); return m; });
+function cbMalla(){
+  const W = innerWidth, H = innerHeight, mm = 0.1587;                 // 1 px CSS ≈ 0,159 mm en teléfonos
+  const ipdPx = CB.cfg.ipd / mm, [k1, k2] = LENTES[CB.cfg.lente] || LENTES.suave, R0 = H / 2, aspect = (W / 2) / H;
+  const N = 36;
+  cbEyes.forEach((mesh, eye) => {
+    const pos = [], uv = [], col = [], idx = [];
+    const x0 = eye * W / 2, lcx = W / 2 + (eye ? 1 : -1) * Math.min(ipdPx / 2, W / 2 - 4), lcy = H / 2;
+    const norm = 1 + k1 + k2;
+    for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++){
+      const sx = x0 + i / N * W / 2, sy = j / N * H;
+      const rx = (sx - lcx) / R0, ry = (sy - lcy) / R0, r2 = rx * rx + ry * ry, f = (1 + k1 * r2 + k2 * r2 * r2) / norm;
+      const u = 0.5 + rx * f / (2 * aspect), v = 0.5 - ry * f / 2;
+      pos.push(sx / W * 2 - 1, 1 - sy / H * 2, 0); uv.push(u, v);
+      const out = Math.max(0, Math.max(-u, u - 1, -v, v - 1)) * 40, k = THREE.MathUtils.clamp(1 - out, 0, 1);   // fuera de la imagen → negro
+      col.push(k, k, k);
+    }
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++){ const a = j * (N + 1) + i, b = a + 1, c = a + N + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx);
+    mesh.geometry.dispose(); mesh.geometry = g;
+  });
+  // destinos de render por ojo (HDR + antialias); se recrean si cambia el tamaño
+  const pr = Math.min(devicePixelRatio, 2) * CB.cfg.calidad, w = Math.min(1600, Math.round(W / 2 * pr)), h = Math.min(1800, Math.round(H * pr));
+  if (!CB.rt || CB.rt[0].width !== w || CB.rt[0].height !== h){
+    CB.rt?.forEach(t => t.dispose());
+    const half = renderer.capabilities.isWebGL2 && (renderer.extensions.has('EXT_color_buffer_half_float') || renderer.extensions.has('EXT_color_buffer_float'));
+    CB.rt = [0, 1].map(() => new THREE.WebGLRenderTarget(w, h, { type: half ? THREE.HalfFloatType : THREE.UnsignedByteType, samples: renderer.capabilities.isWebGL2 && !LOW_MEM ? 4 : 0 }));
+  }
+  cbEyes.forEach((m, i) => { m.material.map = CB.rt[i].texture; m.material.needsUpdate = true; });
+}
+
+/* --- retícula de mirada con anillo de carga --- */
+const retGrp = new THREE.Group(); retGrp.visible = false; camera.add(retGrp);
+const retDot = new THREE.Mesh(new THREE.RingGeometry(0.004, 0.0075, 28), new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, transparent: true, opacity: 0.95, toneMapped: false }));
+const retArc = new THREE.Mesh(new THREE.RingGeometry(0.0095, 0.0135, 40, 1, Math.PI / 2, 0.001), new THREE.MeshBasicMaterial({ color: 0xffaa3c, depthTest: false, transparent: true, toneMapped: false }));
+retDot.renderOrder = retArc.renderOrder = 60; retGrp.add(retDot, retArc);
+function retArco(p){ retArc.geometry.dispose(); retArc.geometry = new THREE.RingGeometry(0.0095, 0.0135, 40, 1, Math.PI / 2, -Math.max(0.001, p) * Math.PI * 2); }
+/* marcador de destino al caminar con la mirada */
+const tpMark = new THREE.Group(); tpMark.visible = false; scene.add(tpMark);
+const tpRing = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.27, 48), new THREE.MeshBasicMaterial({ color: 0x3d8bff, transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false, side: THREE.DoubleSide }));
+const tpFill = new THREE.Mesh(new THREE.CircleGeometry(0.22, 48), new THREE.MeshBasicMaterial({ color: 0xffaa3c, transparent: true, opacity: 0.55, depthWrite: false, toneMapped: false, side: THREE.DoubleSide }));
+tpRing.rotation.x = tpFill.rotation.x = -Math.PI / 2; tpMark.add(tpRing, tpFill);
+
+/* --- menú de los pies (equivale a los botones y joysticks de Quest) --- */
+const feet = new THREE.Group(); feet.visible = false; rig.add(feet);
+const feetBg = panel(1.06, 0.5, (ctx, W, H) => { glassBg(ctx, W, H, 40, 0.86); ctx.fillStyle = '#9fc4e8'; ctx.textAlign = 'center'; ctx.font = `600 ${H * 0.07}px ${FONT}`; ctx.fillText('Mira un botón para activarlo · sube la mirada para cerrar', W / 2, H * 0.93); }, 500);
+feetBg.position.z = -0.002; feet.add(feetBg);
+const FB = [];
+const fb = (t, x, y, fn, w = 0.32) => { const b = makeButton(t, { w, h: 0.095 }, fn); b.position.set(x, y, 0); feet.add(b); FB.push(b); return b; };
+const fbPanel = fb('📋 Traer panel', -0.345, 0.17, () => { if (mode === 'plano') placePlanUI(true); else if (mode === '360'){ recenter(sphereUI, 0.9); sphereBar.g.visible = true; } else recenter(menu, 0); });
+fb('🎯 Centrar vista', 0, 0.17, () => { cbRecentrar(); if (mode === 'menu') setTimeout(() => recenter(menu, 0), 50); });
+fb('⌂ Catálogo', 0.345, 0.17, () => { if (mode !== 'menu') closeViewer(); });
+const fbA = fb('⟲ Girar', -0.39, 0.05, () => cbAccion('izq'), 0.24), fbB = fb('⟳ Girar', -0.13, 0.05, () => cbAccion('der'), 0.24);
+const fbC = fb('＋ Acercar', 0.13, 0.05, () => cbAccion('mas'), 0.24), fbD = fb('－ Alejar', 0.39, 0.05, () => cbAccion('menos'), 0.24);
+fb('✕ Salir del visor', 0, -0.07, () => cbSalir(), 0.5);
+function cbAccion(a){
+  const real = mode === 'plano' && PLAN && PLAN.mode === 'real', gt = grabTarget();
+  if (real){ if (a === 'mas') rig.position.y += 1; else if (a === 'menos') rig.position.y = Math.max(rig.position.y - 1, -50); else snapTurn((a === 'izq' ? 1 : -1) * Math.PI / 4); return; }
+  if (gt){ if (a === 'izq' || a === 'der') gt.obj.rotateOnWorldAxis(Y_AXIS, (a === 'izq' ? 1 : -1) * Math.PI / 6); else gt.obj.scale.multiplyScalar(a === 'mas' ? 1.25 : 0.8); autoRot = false; if (PLAN) PLAN.spin = false; return; }
+  snapTurn((a === 'izq' ? 1 : -1) * Math.PI / 4);
+}
+function etiquetasPies(){
+  const real = mode === 'plano' && PLAN && PLAN.mode === 'real', gt = grabTarget();
+  fbA.userData.setText(gt && !real ? '⟲ Girar' : '⟲ Voltear'); fbB.userData.setText(gt && !real ? '⟳ Girar' : '⟳ Voltear');
+  fbC.userData.setText(real ? '⬆ Subir 1 m' : gt ? '＋ Agrandar' : '＋ —'); fbD.userData.setText(real ? '⬇ Bajar 1 m' : gt ? '－ Achicar' : '－ —');
+  fbPanel.userData.setText(mode === 'plano' ? '📋 Traer panel' : mode === '360' ? '📋 Controles' : '📋 Catálogo al frente');
+}
+
+/* --- piso para caminar con la mirada (modo 1:1 y alrededor de la maqueta) --- */
+const _gr = new THREE.Raycaster(), _go = new THREE.Vector3(), _gd = new THREE.Vector3(), _gq = new THREE.Quaternion();
+function pisoMirado(){
+  if (mode !== 'plano' && mode !== 'menu') return null;
+  if (_gd.y > -0.42) return null;                                   // hay que mirar claramente hacia abajo (≈ 25°)
+  const y0 = mode === 'plano' && PLAN && PLAN.mode === 'real' ? rig.position.y : 0;
+  const t = (y0 - _go.y) / _gd.y; if (!(t > 1.0 && t < 25)) return null;
+  // si la mirada toca la mesa, la maqueta o un tubo/componente antes que el piso, no se camina
+  _gr.set(_go, _gd); _gr.far = t; _gr.camera = camera;
+  const obst = mode === 'plano' ? (PLAN && PLAN.mode === 'maqueta' ? [planView] : [planContent]) : [];
+  if (obst.length && _gr.intersectObjects(obst, true).some(h => h.object.visible && !h.object.isSprite && !h.object.userData.piso && !(h.object.material && (h.object.material.isShadowMaterial || h.object.material.isLineDashedMaterial)))) return null;
+  return new THREE.Vector3(_go.x + _gd.x * t, y0, _go.z + _gd.z * t);
+}
+
+/* --- actualización por cuadro --- */
+function cbUpdate(dt){
+  // orientación de la cabeza: giroscopio (o arrastre si el equipo no tiene sensores, para probar en PC)
+  const sinSensor = !CB.have || performance.now() - CB.oriT > 1500;
+  if (sinSensor) camera.rotation.set(-pitch, -yaw, 0, 'YXZ');
+  else { CB.qs.slerp(CB.q, 0.6); camera.quaternion.copy(CB.yaw0).multiply(CB.qs); }
+  camera.updateMatrixWorld();
+  camera.getWorldPosition(_go); camera.getWorldQuaternion(_gq); _gd.set(0, 0, -1).applyQuaternion(_gq);
+  const pitchW = Math.asin(THREE.MathUtils.clamp(_gd.y, -1, 1));
+
+  // menú de los pies
+  if (!CB.feetOn && pitchW < -0.95){
+    CB.feetOn = true; etiquetasPies();
+    let hx = _gd.x, hz = _gd.z; const l = Math.hypot(hx, hz); if (l < 0.05){ const f = new THREE.Vector3(0, 1, 0).applyQuaternion(_gq); hx = -f.x; hz = -f.z; } const l2 = Math.hypot(hx, hz) || 1; hx /= l2; hz /= l2;
+    feet.position.copy(rig.worldToLocal(new THREE.Vector3(_go.x + hx * 0.42, _go.y - 0.95, _go.z + hz * 0.42)));
+    feet.rotation.set(-1.0, Math.atan2(-hx, -hz) - rig.rotation.y, 0, 'YXZ'); feet.visible = true;
+  } else if (CB.feetOn && pitchW > -0.5){ CB.feetOn = false; feet.visible = false; }
+
+  // mirada = puntero
+  const hit = castPointer(gaze, _go, _gd);
+  if (!hit && mode === 'plano') planHitFor(gaze, { o: _go, d: _gd }); else planHits.delete(gaze);
+  const ui = hit && hit.object.userData.ui && hit.object.userData.ui.onSelect ? hit.object : null;
+  retGrp.visible = true; const dist = hit ? Math.min(hit.distance, 12) : 3; retGrp.position.set(0, 0, -dist); retGrp.scale.setScalar(dist);
+  const now = performance.now() / 1000;                              // tiempo real (no depende de los cuadros por segundo)
+  if (ui && now >= CB.cool){
+    if (CB.dwellObj !== ui){ CB.dwellObj = ui; CB.dwell = now; }
+    const p = (now - CB.dwell) / CB.cfg.dwell; retArco(p);
+    if (p >= 1){ select(gaze); CB.cool = now + 0.7; CB.dwellObj = null; retArco(0); }
+  } else if (!ui || now < CB.cool){ if (CB.dwellObj){ CB.dwellObj = null; retArco(0); } }
+
+  // caminar con la mirada: sostener la vista sobre el piso → ir allí (sin mareo: salto corto)
+  const piso = !ui && !CB.feetOn ? pisoMirado() : null;
+  if (piso && (mode === 'plano')){
+    if (!CB.tp || CB.tp.distanceTo(piso) > 0.35){ CB.tp = piso; CB.tpT = now; }
+    const p = Math.min(1, (now - CB.tpT) / 1.6);
+    tpMark.visible = true; tpMark.position.copy(piso).add(tmpV.set(0, 0.01, 0)); tpFill.scale.setScalar(Math.max(0.01, p));
+    if (p >= 1){ const d = piso.clone().sub(tmpV.set(_go.x, piso.y, _go.z)); rig.position.add(d); CB.tp = null; tpMark.visible = false; CB.cool = now + 0.4; }
+  } else { tpMark.visible = false; CB.tp = null; CB.tpT = 0; }
+
+  // control Bluetooth (si hay): A = seleccionar / caminar ya, B = catálogo, joystick = caminar o girar
+  const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
+  for (const gp of pads){
+    const st = CB.gp[gp.index] || (CB.gp[gp.index] = {});
+    const a = !!(gp.buttons[0]?.pressed), b = !!(gp.buttons[1]?.pressed);
+    if (a && !st.a){ if (ui) select(gaze); else if (CB.tp){ CB.tpT = -99; } }
+    if (b && !st.b && mode !== 'menu') closeViewer();
+    st.a = a; st.b = b;
+    const x = gp.axes[0] || 0, y = gp.axes[1] || 0;
+    if (mode === 'plano' && PLAN && PLAN.mode === 'real'){ if (Math.abs(x) > 0.2 || Math.abs(y) > 0.2) walk(x, -y, dt); }
+    else { const gt = grabTarget(); if (gt && Math.abs(x) > 0.2){ gt.obj.rotateOnWorldAxis(Y_AXIS, x * dt * 2); autoRot = false; } if (gt && Math.abs(y) > 0.3) gt.obj.scale.multiplyScalar(1 - y * dt * 0.8); }
+  }
+}
+const _ex = new THREE.Vector3();
+function cbRender(){
+  const W = innerWidth, H = innerHeight;
+  if (!CB.rt) cbMalla();
+  camera.updateMatrixWorld(); _ex.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
+  const sh = renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate = false; renderer.shadowMap.needsUpdate = true;
+  [camL, camR].forEach((c, i) => {
+    c.position.setFromMatrixPosition(camera.matrixWorld).addScaledVector(_ex, (i ? 1 : -1) * CB.cfg.ipd / 2000);
+    c.quaternion.copy(_gq); c.fov = CB.cfg.fov; c.aspect = (W / 2) / H; c.near = camera.near; c.far = camera.far; c.updateProjectionMatrix(); c.updateMatrixWorld();
+    if (CB.cfg.lente === 'no'){
+      renderer.setRenderTarget(null); renderer.setScissorTest(true);
+      renderer.setViewport(i * W / 2, 0, W / 2, H); renderer.setScissor(i * W / 2, 0, W / 2, H); renderer.render(scene, c);
+    } else { renderer.setRenderTarget(CB.rt[i]); renderer.render(scene, c); }
+  });
+  renderer.shadowMap.autoUpdate = sh;
+  if (CB.cfg.lente === 'no'){ renderer.setScissorTest(false); renderer.setViewport(0, 0, W, H); return; }
+  renderer.setRenderTarget(null); renderer.setViewport(0, 0, W, H); renderer.render(cbScene, cbOrtho);
+}
+
+/* --- entrar / salir --- */
+const cbOv = document.createElement('div'); cbOv.id = 'cb-ov'; document.body.appendChild(cbOv);
+function cbAjustes(){
+  const c = CB.cfg;
+  cbOv.innerHTML = `<div class="cb-box"><h3>👓 Visor celular (VR Box / Cardboard)</h3>
+  <p>Funciona como unas gafas Meta Quest pero con tu teléfono. <b>Para apuntar mira</b>; <b>para hacer clic sostén la mirada</b> sobre el botón hasta que se llene el anillo; <b>para caminar mira un punto del piso</b> hasta que se llene el círculo; <b>mira hacia tus pies</b> para el menú (girar, escalar, traer panel, salir).</p>
+  <label>Distancia entre tus ojos / lentes <b id="cb-ipdv">${c.ipd} mm</b><input type="range" id="cb-ipd" min="54" max="74" step="1" value="${c.ipd}"></label>
+  <label>Corrección de lente<select id="cb-lente"><option value="no">Sin corrección</option><option value="suave">Suave (VR Box, Cardboard)</option><option value="media">Media</option><option value="fuerte">Fuerte (lentes grandes)</option></select></label>
+  <label>Campo de visión <b id="cb-fovv">${c.fov}°</b><input type="range" id="cb-fov" min="70" max="115" step="1" value="${c.fov}"></label>
+  <label>Tiempo para seleccionar con la mirada<select id="cb-dw"><option value="0.9">Rápido (0,9 s)</option><option value="1.3">Normal (1,3 s)</option><option value="1.8">Lento (1,8 s)</option></select></label>
+  <label>Calidad de imagen<select id="cb-q"><option value="0.65">Ahorro de batería</option><option value="0.85">Equilibrada</option><option value="1">Máxima</option></select></label>
+  <p class="cb-n">Gira el teléfono en horizontal, con el borde de carga a la derecha. Si tienes un control Bluetooth, el botón A selecciona, B vuelve al catálogo y el joystick camina.</p>
+  <div class="cb-acts"><button class="btn" id="cb-no">Cancelar</button><button class="btn btn-vr" id="cb-go">👓 Entrar al visor</button></div></div>`;
+  cbOv.className = 'on';
+  $('#cb-lente').value = c.lente; $('#cb-dw').value = String(c.dwell); $('#cb-q').value = String(c.calidad);
+  $('#cb-ipd').oninput = e => { $('#cb-ipdv').textContent = e.target.value + ' mm'; };
+  $('#cb-fov').oninput = e => { $('#cb-fovv').textContent = e.target.value + '°'; };
+  $('#cb-no').onclick = () => { cbOv.className = ''; };
+  $('#cb-go').onclick = () => {
+    Object.assign(CB.cfg, { ipd: +$('#cb-ipd').value, lente: $('#cb-lente').value, fov: +$('#cb-fov').value, dwell: +$('#cb-dw').value, calidad: +$('#cb-q').value });
+    lsSet(CB_KEY, CB.cfg); cbEntrar();
+  };
+}
+let wakeLock = null;
+async function cbEntrar(){
+  // permisos de sensores (iPhone) y pantalla completa horizontal (Android): deben pedirse en el toque del usuario
+  try { if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function'){ const r = await DeviceOrientationEvent.requestPermission(); if (r !== 'granted') toast('Sin permiso de movimiento: arrastra el dedo para mirar.'); } } catch (_){}
+  try { await (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)?.call(document.documentElement, { navigationUI: 'hide' }); } catch (_){}
+  try { await screen.orientation?.lock?.('landscape'); } catch (_){}
+  try { wakeLock = await navigator.wakeLock?.request('screen'); } catch (_){}
+  addEventListener('deviceorientation', onOri, true);
+  CB.on = true; CB.rt = null; document.body.classList.add('cb'); cbOv.className = '';
+  clearPointer(mouse); hasMouse = false; camera.layers.disable(1);
+  setTimeout(() => { cbMalla(); }, 200);
+  // cuenta regresiva para poner el teléfono en el visor y centrar la vista
+  let n = 4; const tick = () => { if (!CB.on) return; if (--n > 0){ toast3D(`Coloca el teléfono en el visor… ${n}`); setTimeout(tick, 1000); } else { cbRecentrar(); if (mode === 'menu') recenter(menu, 0); else if (mode === 'plano') placePlanUI(true); toast3D('Mira un botón para seleccionarlo · mira a tus pies para el menú'); } };
+  tick();
+}
+function cbSalir(){
+  if (!CB.on) return;
+  CB.on = false; removeEventListener('deviceorientation', onOri, true); CB.have = false;
+  document.body.classList.remove('cb'); retGrp.visible = false; feet.visible = false; CB.feetOn = false; tpMark.visible = false; clearPointer(gaze); planHits.delete(gaze);
+  camera.layers.enable(1); camera.quaternion.identity(); yaw = pitch = 0;
+  try { wakeLock?.release?.(); } catch (_){} wakeLock = null;
+  try { screen.orientation?.unlock?.(); } catch (_){}
+  try { if (document.fullscreenElement) document.exitFullscreen?.(); } catch (_){}
+  renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight); renderer.setRenderTarget(null);
+  CB.rt?.forEach(t => t.dispose()); CB.rt = null;
+}
+addEventListener('resize', () => { if (CB.on) setTimeout(cbMalla, 120); });
+document.addEventListener('fullscreenchange', () => { if (CB.on && !document.fullscreenElement && /Android/i.test(navigator.userAgent)) toast3D('Pantalla completa desactivada'); });
+// tocar la pantalla (si el visor lo permite) también selecciona lo que se mira
+cv.addEventListener('pointerup', e => { if (!CB.on) return; e.stopImmediatePropagation(); const tap = !drag || drag.moved < 8; drag = null; cv.classList.remove('dragging'); if (tap && gaze.hit && gaze.hit.object.userData.ui?.onSelect){ select(gaze); CB.cool = performance.now() / 1000 + 0.6; } }, true);
+$('#btn-cb').addEventListener('click', () => CB.on ? cbSalir() : cbAjustes());
+$('#cb-x').addEventListener('click', () => cbSalir());
+window.__vrCB = { CB, entrar: cbEntrar, salir: cbSalir, ajustes: cbAjustes,
+  mirar: (y, p) => { yaw = y; pitch = p; },
+  rayo: () => { camera.updateMatrixWorld(); const o = camera.getWorldPosition(new THREE.Vector3()), q = camera.getWorldQuaternion(new THREE.Quaternion()), d = new THREE.Vector3(0, 0, -1).applyQuaternion(q); raycaster.set(o, d); raycaster.far = 40; const t = interactables.filter(m => visibleDeep(m)); const h = raycaster.intersectObjects(t, false); return { n: t.length, hits: h.slice(0, 3).map(x => [x.object.userData.label ? x.object.userData.label() : '?', +x.distance.toFixed(2)]), o: o.toArray(), d: d.toArray(), go: _go.toArray(), gd: _gd.toArray() }; },
+  estado: () => ({ hit: gaze.hit ? (gaze.hit.object.userData.label ? gaze.hit.object.userData.label() : gaze.hit.object.type) : null, yaw, pitch, cam: camera.getWorldDirection(new THREE.Vector3()).toArray().map(v => +v.toFixed(3)), modo: mode }),
+  apuntarA: t => { const o = interactables.find(m => visibleDeep(m) && m.userData.label && m.userData.label().includes(t)); if (!o) return false; camera.updateMatrixWorld(); const c = camera.getWorldPosition(new THREE.Vector3()), p = o.getWorldPosition(new THREE.Vector3()).sub(c).normalize(); const ry = rig.rotation.y; const d = p.clone().applyAxisAngle(Y_AXIS, -ry); yaw = -Math.atan2(-d.x, -d.z); pitch = -Math.asin(d.y); return true; } };
+
+/* =====================================================================
    11. BUCLE DE RENDER
    ===================================================================== */
 const btnExit2D = $('#btn-exit');
@@ -2311,6 +2572,8 @@ function frame(){
       if (hit){ ud.reticle.position.copy(hit.point); ud.reticle.lookAt(r.o); }
     }
     handleSticks(dt);
+  } else if (CB.on){
+    cbUpdate(dt);
   } else {
     camera.rotation.set(-pitch, -yaw, 0, 'YXZ');
     if (hasMouse && !drag){
@@ -2348,7 +2611,7 @@ function frame(){
     holo.material.opacity = 0.05 + 0.03 * Math.sin(elapsed * 3);
     if (modelLabels.length && labelsOn){ camera.getWorldPosition(tmpV); modelLabels.forEach(l => l.lookAt(tmpV)); }
   }
-  renderer.render(scene, camera);
+  if (CB.on) cbRender(); else renderer.render(scene, camera);
 }
 
 recenter(menu, 0);
