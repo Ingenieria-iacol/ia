@@ -86,7 +86,7 @@ body.ro details.acc:not(:has(.accb>:not(.ed))){display:none}.pl.wide{width:340px
 <div class="sg">Polietileno (PE)</div><button data-t="transicion" title="Transición PE-acero / elevador de polietileno">Transición (elevador PE)</button>
 <div class="sg">Terminales</div><button data-t="term_m" title="Terminal macho roscado">Terminal macho</button><button data-t="term_h" title="Terminal hembra roscado">Terminal hembra</button><div class="sg">Tapones y cierres</div><button data-t="tapon_m" title="Tapón macho roscado: cierra un extremo hembra">Tapón macho</button><button data-t="tapon_h" title="Tapón hembra (capuchón): cierra un extremo macho o el tubo">Tapón hembra</button><button data-t="con_ciego" title="Conector ciego: cierre de una salida o conexión de equipo">Conector ciego</button><button data-t="brida_ciega" title="Brida ciega: cierre de una línea bridada">Brida ciega</button>
 <div class="sg">Conexiones flexibles</div><button data-t="flexible" title="Conector flexible para equipos">Conector flexible</button>
-<div class="sg">Consumo y almacenamiento</div><button data-t="consumo">Consumo</button><button data-t="tanque">Tanque</button>
+<div class="sg">Consumo y almacenamiento</div><button data-t="consumo">Consumo</button><button data-t="tanque">Tanque</button><div class="sg">Filtración y alta presión</div><button data-t="filtro_y" title="Filtro en Y (strainer): malla removible y purga">Filtro en Y</button><button data-t="filtro_cart" title="Filtro de cartucho (tipo Tartarini FA/FAG): tapa de apertura rápida, manómetro diferencial y purga">Filtro de cartucho</button><button data-t="filtro_sep" title="Filtro separador coalescente de dos etapas (horizontal) o depurador vertical (scrubber): bota de líquidos, visor de nivel y purga">Filtro separador</button><button data-t="alivio" title="Válvula de alivio de presión (PSV): en un ramal o al final de una línea">Válvula de alivio</button><div class="sg">GLP y vaporización</div><button data-t="vaporizador" title="Vaporizador de GLP: fuego directo, eléctrico seco, baño de agua o vapor / agua caliente">Vaporizador GLP</button><div class="sg">Sistemas integrados</div><button data-t="sis_erm" title="Inserta una ERM en skid: filtro de cartucho, válvulas, regulador monitor + activo, alivio, medidor y manómetros">ERM en skid</button><button data-t="sis_glp" title="Inserta una estación de GLP: tanque, válvula, filtro en Y, vaporizador, regulador y válvula de salida">Estación GLP con vaporizador</button><button data-t="sis_byp" title="Inserta una filtración con by-pass: válvulas de bloqueo, filtro de cartucho y línea de by-pass">Filtración con by-pass</button>
 <div class="sg">Sensores</div><button data-t="sen_temp" title="Sensor de temperatura: clic sobre una tubería o un punto">Temperatura</button><button data-t="sen_cau" title="Sensor de caudal">Caudal</button><button data-t="sen_pre" title="Sensor de presión">Presión</button><button data-t="sen_vel" title="Sensor de velocidad">Velocidad</button><button data-t="sen_otro" title="Sensor de otra magnitud (nivel, humedad, etc.)">Otro sensor</button>
 </div></details>
 <details class="ac ed"><summary>Anotar ▾</summary><div class="pl"><button data-t="etq" title="Etiqueta con línea guía: clic sobre un elemento o un punto">Etiqueta</button><button data-t="rotulo" title="Rótulo / placa de texto">Rótulo</button><button data-t="texto" title="Texto libre">Texto</button><button id="bcaj" title="Cajetín con los datos del proyecto sobre el dibujo">Cajetín</button></div></details>
@@ -117,7 +117,7 @@ body.ro details.acc:not(:has(.accb>:not(.ed))){display:none}.pl.wide{width:340px
 const SRC0='<!DOCTYPE html>'+document.documentElement.outerHTML.replace(/<script id="entman"[\s\S]*?<\/script>/,'<script id="entman" type="application/octet-stream"><\/script>'),RO=!!window.ISODESPIECE_RO,$=id=>document.getElementById(id),cv=$('cv'),ctx=cv.getContext('2d');
 const DM={'1/4':6.35,'3/8':9.53,'1/2':12.7,'5/8':15.88,'3/4':19.05,'1':25.4,'1 1/4':31.75,'1 1/2':38.1,'2':50.8,'2 1/2':63.5,'3':76.2,'4':101.6},DIA=Object.keys(DM),MAT=['PE-AL-PE','Acero al carbón','Acero galvanizado','Polietileno','Cobre rígido','Cobre flexible'],MC={'PE-AL-PE':'#8fd0ff','Acero al carbón':'#9fb3c8','Acero galvanizado':'#3ee0d0','Polietileno':'#fdd835','Cobre rígido':'#c98a4b','Cobre flexible':'#e0b07a'};
 const pw=p=>$("gk").value=="c"?3+dmm(p.dia)/101.6*6:Math.max(1.5,dmm(p.dia)/1000*V.s*gk()),dmm=d=>DM[d]||(parseFloat(d)*25.4)||25.4,gk=()=>+$('gk').value||10;
-const TY={te:'Nodo / te',valvula:'Válvula',regulador:'Regulador',manometro:'Manómetro',medidor:'Medidor',consumo:'Punto de consumo',tanque:'Tanque',brida:'Brida',union_u:'Unión universal',union:'Unión',reduccion:'Reducción',ptopres:'Punto de control de presión',transicion:'Transición (elevador PE)',term_m:'Terminal macho',term_h:'Terminal hembra',coupling:'Coupling (copla)',tapon_m:'Tapón macho',tapon_h:'Tapón hembra',con_ciego:'Conector ciego',brida_ciega:'Brida ciega',flexible:'Conector flexible'};
+const TY={te:'Nodo / te',valvula:'Válvula',regulador:'Regulador',manometro:'Manómetro',medidor:'Medidor',consumo:'Punto de consumo',tanque:'Tanque',brida:'Brida',union_u:'Unión universal',union:'Unión',reduccion:'Reducción',ptopres:'Punto de control de presión',transicion:'Transición (elevador PE)',term_m:'Terminal macho',term_h:'Terminal hembra',coupling:'Coupling (copla)',filtro_y:'Filtro en Y',filtro_cart:'Filtro de cartucho',filtro_sep:'Filtro separador',alivio:'Válvula de alivio (PSV)',vaporizador:'Vaporizador GLP',tapon_m:'Tapón macho',tapon_h:'Tapón hembra',con_ciego:'Conector ciego',brida_ciega:'Brida ciega',flexible:'Conector flexible'};
 const AX=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]],DG=[[1,0,1],[-1,0,-1],[1,0,-1],[-1,0,1]];
 $('dd').innerHTML=DIA.map(d=>`<option value="${d}" ${d=='1'?'selected':''}>${d}" · ${DM[d]} mm</option>`).join('');$('dmt').innerHTML=MAT.map(m=>`<option>${m}</option>`).join('');
 const C=Math.cos(Math.PI/6),SN=.5;let ms=[],bnd=null,adrag=null,tourOn=false,cajOn=false,ANR=[],S={nodes:[],pipes:[],anns:[],seq:1,prices:{}},V={ox:400,oy:300,s:24},tool='sel',sel=null,start=null,mp=[0,0],end=null,hist=[],labs=false,img=null,pan=null,rot=null,mag=null,mode='lvl',yaw=Math.PI/4,pit=.6155;
@@ -170,7 +170,7 @@ if(tool=='bg'&&bgDown(e,mx,my))return;if(e.button==1||tool=='hand'||e.shiftKey){
 
 if(tool=='etq'||tool=='rotulo'||tool=='texto'){const an=annAt(mx,my);if(an){sel={k:'a',id:an.id};ms=[];adrag={x:e.clientX,y:e.clientY,id:an.id,h:0};panel();draw();return;}addAnn(tool,mx,my);annEdit();return;}if(tool=='sel'){selDown(e,mx,my);return;}
 if(tool=='draw'){if(!start){hs();const m=magnet(mx,my);if(m)start=m.node||splitAt(m);else{const g=ground(mx,my,+$('el').value||0);start=addNode(g[0],g[1],g[2]);}}else if(end){commitEnd();}draw();return;}
-hs();if((tool=='consumo'||tool=='flexible'||/^(tapon_m|tapon_h|con_ciego|brida_ciega)$/.test(tool))&&window.placeEnd){const r=placeEnd(tool,mx,my);if(r){if(r!==true)sel={k:'n',id:r.id};panel();draw();return;}}
+hs();if(/^sis_/.test(tool)&&window.insertSistema){insertSistema(tool,mx,my);return;}if((tool=='consumo'||tool=='flexible'||/^(tapon_m|tapon_h|con_ciego|brida_ciega)$/.test(tool))&&window.placeEnd){const r=placeEnd(tool,mx,my);if(r){if(r!==true)sel={k:'n',id:r.id};panel();draw();return;}}
 const h=pipeAt(mx,my),nd=nodeAt(mx,my);let n;
 if(nd){nd.type=tool;n=nd;}else if(h){const p=h.p,a=N(p.a),b=N(p.b),x=snap(a.x+(b.x-a.x)*h.t),y=snap(a.y+(b.y-a.y)*h.t),z=snap(a.z+(b.z-a.z)*h.t);n=addNode(x,y,z,tool);if(n.id!=a.id&&n.id!=b.id&&!S.pipes.some(q=>q.a==n.id||q.b==n.id)){S.pipes=S.pipes.filter(q=>q.id!=p.id);addPipe(a,n,p);addPipe(n,b,p);}}
 else{const g=ground(mx,my,+$('el').value||0);n=addNode(g[0],g[1],g[2],tool);}
@@ -431,7 +431,7 @@ doc.save(FNP('Memoria_calculo_'+id+'.pdf'));};
    Al acercar crecen igual que la tubería; al alejar se mantienen legibles con un tamaño mínimo en pantalla
    que nunca invade el espacio del componente vecino. Opción «tamaño fijo»: símbolo constante en pantalla. */
 let SYM=null,CURK=1,SYMM='real';try{SYMM=localStorage.getItem('isoflux_sym')||'real';}catch(e){}
-const SYM_REAL={valvula:[3.6,.065],regulador:[7,.16],medidor:[0,.30],manometro:[0,.11],consumo:[0,.55],tanque:[0,1.1],flexible:[5,.14],brida:[3,.06],union_u:[2.6,.05],union:[2.2,.04],reduccion:[2.4,.05],ptopres:[2.4,.05],transicion:[3,.06],term_m:[2.2,.04],term_h:[2.2,.04],coupling:[2.2,.045],tapon_m:[1.8,.035],tapon_h:[2,.04],con_ciego:[2,.04],brida_ciega:[2.4,.05]};
+const SYM_REAL={valvula:[3.6,.065],regulador:[7,.16],medidor:[0,.30],manometro:[0,.11],consumo:[0,.55],tanque:[0,1.1],flexible:[5,.14],brida:[3,.06],union_u:[2.6,.05],union:[2.2,.04],reduccion:[2.4,.05],ptopres:[2.4,.05],transicion:[3,.06],term_m:[2.2,.04],term_h:[2.2,.04],coupling:[2.2,.045],filtro_y:[4.5,.11],filtro_cart:[0,.42],filtro_sep:[0,1.6],alivio:[3.2,.13],vaporizador:[0,1.05],tapon_m:[1.8,.035],tapon_h:[2,.04],con_ciego:[2,.04],brida_ciega:[2.4,.05]};
 /* conector flexible: largo real (propiedad Longitud cm; si no se indica, el de catálogo) y largo proyectado en pantalla */
 function flexL(n){const s=n.sp||{};return +s.long>0?+s.long/100:Math.max(.14,5*symDia(n));}
 function flexPx(n){const L=flexL(n),p=S.pipes.find(q=>q.a==n.id||q.b==n.id),o=p&&N(p.a==n.id?p.b:p.a);if(!o)return L*V.s;const l=Math.hypot(o.x-n.x,o.y-n.y,o.z-n.z)||1,A=P(n.x,n.y,n.z),B=P(o.x,o.y,o.z);return L*Math.hypot(B[0]-A[0],B[1]-A[1])/l;}
@@ -454,7 +454,7 @@ function nodeK(n){let pwm=0;S.pipes.forEach(p=>{if(p.a==n.id||p.b==n.id){const v
  px=Math.min(px,gap*.85);
  px=Math.max(px,Math.min(pwm*1.6,gap*.9),3);
  /* grosor coherente con el tubo: el cuerpo de la pieza no supera ~2,6 veces el ancho de la tubería (3,6 en piezas grandes) */
- const cap=Math.max(pwm,2.2)*({regulador:3.6,medidor:3.6,tanque:6,manometro:3.6,ptopres:3.6}[n.type]||2.6)*18/11;if(pwm>0&&px>cap)px=Math.max(cap,6);
+ const cap=Math.max(pwm,2.2)*({regulador:3.6,medidor:3.6,tanque:6,manometro:3.6,ptopres:3.6,filtro_cart:5,filtro_sep:8,vaporizador:7,alivio:3.6,filtro_y:3.2}[n.type]||2.6)*18/11;if(pwm>0&&px>cap)px=Math.max(cap,6);
  return px/18;}
 /* ---------- MODELO DE PUERTOS: cada pieza se acopla por sus extremos ----------
    Válvulas, reguladores, uniones, medidores…: 2 puertos en sus caras (a ± medio largo del centro).
@@ -665,6 +665,74 @@ const SYMB=(()=>{
   c.beginPath();c.rect(-2.4,-4.2,1.2,8.4);c.fillStyle='#c62828';c.fill();c.stroke();
   if(D){c.save();c.strokeStyle='rgba(70,45,5,.75)';c.lineWidth*=.9;c.beginPath();c.moveTo(-6.6,-1.6);c.lineTo(-3.6,1.6);c.moveTo(-3.6,-1.6);c.lineTo(-6.6,1.6);c.stroke();c.restore();}}
  function bridaCiega(c,n,D){c.save();c.scale(-1,1);flange(c,{sp:Object.assign({},n.sp||{},{conf:'Brida ciega'})},D);c.restore();}
+ /* ---- filtración y alta presión ---- */
+ const dial=(c,x,y,r)=>{c.beginPath();c.arc(x,y,r,0,7);FS(c,G(c,y-r,y+r,M.acero));c.beginPath();c.arc(x,y,r*.74,0,7);c.fillStyle='#f4f7fa';c.fill();c.save();c.lineWidth=r*.18;c.strokeStyle='#2fbf62';c.beginPath();c.arc(x,y,r*.55,Math.PI*.8,Math.PI*1.6);c.stroke();c.strokeStyle='#ff4d40';c.beginPath();c.arc(x,y,r*.55,Math.PI*1.75,Math.PI*2.2);c.stroke();c.strokeStyle='#c62828';c.lineWidth=r*.12;c.beginPath();c.moveTo(x,y);c.lineTo(x+r*.5,y-r*.32);c.stroke();c.restore();};
+ const bridaE=(c,x0,x1,r)=>{c.beginPath();c.rect(x0,-r,x1-x0,2*r);FS(c,G(c,-r,r,M.acero));};
+ function filtroY(c,n,D){const s=n.sp||{},fl=/Bridada/.test(s.conx||'Bridada');
+  c.save();c.translate(-1.2,1.6);c.rotate(Math.PI/4);rr(c,0,-3,10.6,6,1);FS(c,G(c,-3,3,M.hierro));
+  if(D){c.save();c.lineWidth*=.45;c.strokeStyle='rgba(255,255,255,.28)';c.beginPath();for(let x=2;x<10;x+=1.1){c.moveTo(x,-2.2);c.lineTo(x,2.2);}c.stroke();c.restore();}
+  hexN(c,10.6,13.2,3.8,M.hierro,D);c.beginPath();c.rect(13.2,-.9,1.6,1.8);FS(c,'#9aa8b5');c.restore();
+  cyl(c,-6.6,6.6,3.9,M.hierro,.8);
+  if(fl){bridaE(c,-9,-6.6,6);bridaE(c,6.6,9,6);if(D){c.fillStyle='#1b232b';[-7.8,7.8].forEach(x=>[-4.4,4.4].forEach(y=>{c.beginPath();c.arc(x,y,.55,0,7);c.fill();}));}}else{hexN(c,-9,-6.6,4.7,M.hierro,D);hexN(c,6.6,9,4.7,M.hierro,D);}
+  if(D){c.save();c.strokeStyle='rgba(255,255,255,.55)';c.lineWidth*=.8;c.beginPath();c.moveTo(-3.2,-1.6);c.lineTo(2.4,-1.6);c.stroke();c.fillStyle='rgba(255,255,255,.55)';c.beginPath();c.moveTo(3.4,-1.6);c.lineTo(1.8,-2.6);c.lineTo(1.8,-.6);c.closePath();c.fill();c.restore();}}
+ function filtroCart(c,n,D){const s=n.sp||{},a=n._ang||0;
+  cyl(c,-7.4,7.4,3.3,M.acero,.4);bridaE(c,-9,-7.4,5.4);bridaE(c,7.4,9,5.4);
+  c.save();c.rotate(-a);
+  rr(c,-6.6,-6.8,13.2,11.6,3.4);FS(c,G(c,-6.6,6.6,M.hierro,1));
+  c.beginPath();c.rect(-.9,4.8,1.8,2.4);FS(c,'#9aa8b5');c.beginPath();c.moveTo(-1.8,7.2);c.lineTo(1.8,8.6);c.lineTo(1.8,7.2);c.lineTo(-1.8,8.6);c.closePath();FS(c,G(c,7.2,8.6,M.laton));
+  rr(c,-5.4,-19.5,10.8,13.4,1.4);FS(c,G(c,-5.4,5.4,M.azul,1));
+  c.beginPath();c.rect(-6.6,-7.6,13.2,1.9);FS(c,G(c,-6.6,6.6,M.acero,1));
+  if(D){c.save();c.fillStyle='rgba(255,255,255,.85)';c.font='bold 2.3px Arial';c.textAlign='center';c.textBaseline='middle';c.fillText(String(s.grado||'5 µm'),0,-12.5);c.restore();}
+  rr(c,-6.4,-22,12.8,2.9,1);FS(c,G(c,-6.4,6.4,M.acero,1));
+  if((s.tapa||'Apertura rápida')=='Apertura rápida'){c.beginPath();c.rect(-.6,-24.2,1.2,2.2);FS(c,'#9aa8b5');rr(c,-4,-25.2,8,1.3,.6);FS(c,G(c,-4,4,M.rojo,1));}
+  else if(D){c.fillStyle='#1b232b';for(let x=-5;x<=5;x+=2.5){c.beginPath();c.arc(x,-20.6,.45,0,7);c.fill();}}
+  if((s.dp||'Sí')!=='No'){c.save();c.strokeStyle='#c9a144';c.lineWidth*=1.2;c.beginPath();c.moveTo(5.4,-17);c.lineTo(8.4,-17);c.lineTo(8.4,-15.6);c.moveTo(5.4,-8.6);c.lineTo(8.4,-8.6);c.lineTo(8.4,-10.2);c.stroke();c.restore();dial(c,8.4,-12.9,2.7);}
+  c.restore();}
+ function filtroSep(c,n,D){const s=n.sp||{},t=s.tipo||'Coalescente horizontal de dos etapas',a=n._ang||0;
+  if(/vertical|Multicicl/i.test(t)){cyl(c,-9,-4,2.9,M.acero,.4);cyl(c,4,9,2.9,M.acero,.4);c.save();c.rotate(-a);
+   [-3.6,3.6].forEach(x=>{c.beginPath();c.moveTo(x-1.2,7);c.lineTo(x+1.2,7);c.lineTo(x+2,10);c.lineTo(x-2,10);c.closePath();FS(c,G(c,x-2,x+2,M.hierro,1));});
+   rr(c,-5.4,-22,10.8,31,5.4);FS(c,G(c,-5.4,5.4,M.blanco,1));
+   if(D){c.save();c.strokeStyle='rgba(60,70,80,.45)';c.lineWidth*=.6;c.beginPath();c.moveTo(-5.2,-14);c.lineTo(5.2,-14);c.moveTo(-5.2,1);c.lineTo(5.2,1);c.stroke();c.restore();
+    c.fillStyle='rgba(40,50,60,.75)';c.font='bold 2.6px Arial';c.textAlign='center';c.textBaseline='middle';c.fillText(/Multicicl/.test(t)?'MC':'SCR',0,-7);}
+   c.beginPath();c.rect(5.4,-3,1,7);c.fillStyle='rgba(120,200,255,.75)';c.fill();c.stroke();
+   c.beginPath();c.rect(-.7,-25,1.4,3);FS(c,'#9aa8b5');dial(c,0,-26.6,2.4);c.restore();return;}
+  [-5.6,6.4].forEach(x=>{c.beginPath();c.moveTo(x-1.4,5.2);c.lineTo(x+1.4,5.2);c.lineTo(x+2.3,8.6);c.lineTo(x-2.3,8.6);c.closePath();FS(c,G(c,x-2.3,x+2.3,M.hierro,1));});
+  rr(c,1.2,4,4.2,6.2,1);FS(c,G(c,1.2,5.4,M.blanco,1));c.beginPath();c.rect(5.6,4.8,.9,4.4);c.fillStyle='rgba(120,200,255,.8)';c.fill();c.stroke();
+  c.beginPath();c.rect(2.7,10.2,1.2,1.4);FS(c,'#9aa8b5');c.beginPath();c.moveTo(1.6,11.6);c.lineTo(5,13);c.lineTo(5,11.6);c.lineTo(1.6,13);c.closePath();FS(c,G(c,11.6,13,M.laton));
+  rr(c,-9,-6,18,12,5.6);FS(c,G(c,-6,6,M.blanco));
+  if(D){c.save();c.strokeStyle='rgba(60,70,80,.45)';c.lineWidth*=.6;c.beginPath();c.moveTo(-4,-5.9);c.lineTo(-4,5.9);c.moveTo(4,-5.9);c.lineTo(4,5.9);c.stroke();c.setLineDash([1,.8]);c.strokeStyle='rgba(40,50,60,.55)';c.beginPath();c.moveTo(.4,-5);c.lineTo(.4,5);c.stroke();c.restore();
+   c.fillStyle='rgba(40,50,60,.7)';c.font='bold 2.2px Arial';c.textAlign='center';c.textBaseline='middle';c.fillText('1ª',-2,1.2);c.fillText('2ª',2.6,1.2);}
+  c.beginPath();c.rect(-8.6,-6.4,1.7,12.8);FS(c,G(c,-6.4,6.4,M.acero));if(D){c.beginPath();c.rect(-9.4,-4.2,.9,2.2);FS(c,'#5d6b77');}
+  c.beginPath();c.rect(-.7,-8.6,1.4,2.6);FS(c,'#9aa8b5');dial(c,0,-10.8,2.5);}
+ function alivio(c,n,D){const s=n.sp||{};
+  bridaE(c,6.6,9,4.6);cyl(c,3,6.6,3,M.rojo,.4);
+  rr(c,-1.6,-4.4,5.4,8.8,1.4);FS(c,G(c,-4.4,4.4,M.rojo));
+  c.beginPath();c.rect(-.2,4.4,3.4,3.2);FS(c,G(c,-.2,3.2,M.rojo,1));c.beginPath();c.rect(-.8,7.4,4.6,1.4);FS(c,G(c,-.8,3.8,M.acero,1));
+  c.beginPath();c.moveTo(-1.6,-2.6);c.lineTo(-7.6,-1.8);c.lineTo(-7.6,1.8);c.lineTo(-1.6,2.6);c.closePath();FS(c,G(c,-2.6,2.6,M.rojo));
+  if(D){c.save();c.strokeStyle='rgba(60,10,10,.55)';c.lineWidth*=.6;c.beginPath();for(let x=-6.8;x<-2;x+=1){c.moveTo(x,-2);c.lineTo(x+.5,2);}c.stroke();c.restore();}
+  c.beginPath();c.rect(-9,-1.2,1.4,2.4);FS(c,'#9aa8b5');if(D){c.save();c.strokeStyle='#9aa8b5';c.lineWidth*=1.4;c.beginPath();c.moveTo(-8.3,-1.2);c.lineTo(-6.2,-4.6);c.stroke();c.restore();}}
+ /* ---- vaporizadores de GLP ---- */
+ function vaporizador(c,n,D){const s=n.sp||{},t=s.tipo||'Fuego directo',a=n._ang||0;
+  cyl(c,-9,-5,2.5,M.acero,.4);cyl(c,5,9,2.5,M.acero,.4);
+  c.save();c.rotate(-a);
+  const louv=(x0,x1,y0,y1)=>{if(!D)return;c.save();c.strokeStyle='rgba(30,40,50,.5)';c.lineWidth*=.7;c.beginPath();for(let y=y0;y<y1;y+=1.4){c.moveTo(x0,y);c.lineTo(x1,y);}c.stroke();c.restore();};
+  if(/Baño|Vapor/.test(t)){[-4,4].forEach(x=>{c.beginPath();c.rect(x-1,4,2,3.5);FS(c,G(c,x-1,x+1,M.hierro,1));});
+   rr(c,-6.4,-19,12.8,24,6);FS(c,G(c,-6.4,6.4,/Vapor/.test(t)?M.acero:M.azul,1));
+   c.beginPath();c.rect(-6.9,-12,13.8,1.4);FS(c,G(c,-6.9,6.9,M.acero,1));
+   if(/Vapor/.test(t)){if(D){c.save();c.strokeStyle='#ff8f1f';c.lineWidth*=1.2;c.beginPath();c.moveTo(-3.6,-8);for(let i=0;i<6;i++)c.lineTo(i%2?3.6:-3.6,-6.6+i*1.6);c.stroke();c.restore();}
+    c.beginPath();c.rect(6.4,-6,2.4,1.6);FS(c,'#ff8f1f');c.beginPath();c.rect(6.4,-1.6,2.4,1.6);FS(c,'#5d6b77');}
+   else{c.beginPath();c.rect(-5.2,-9,1,7);c.fillStyle='rgba(120,200,255,.85)';c.fill();c.stroke();rr(c,2,-4,4.4,4.4,.6);FS(c,G(c,2,6.4,M.negro,1));
+    if(D){c.fillStyle='#ffcc1a';c.beginPath();c.moveTo(4.4,-3.4);c.lineTo(3.2,-1.6);c.lineTo(4.2,-1.6);c.lineTo(3.6,.2);c.lineTo(5.2,-2);c.lineTo(4.2,-2);c.closePath();c.fill();}}
+   dial(c,0,-15.4,2.2);}
+  else{rr(c,-7.2,-17.5,14.4,22,1.4);FS(c,G(c,-7.2,7.2,/Fuego/.test(t)?M.blanco:M.blanco,1));
+   c.beginPath();c.rect(-7.2,-17.5,14.4,2.4);FS(c,G(c,-7.2,7.2,M.rojo,1));louv(-5.6,5.6,-13.2,-6.6);
+   if(/Fuego/.test(t)){c.beginPath();c.rect(-1.6,-23,3.2,5.5);FS(c,G(c,-1.6,1.6,M.acero,1));rr(c,-3.2,-24.4,6.4,1.6,.5);FS(c,G(c,-3.2,3.2,M.hierro,1));
+    rr(c,-3.6,-4.6,7.2,4.4,1);c.fillStyle='#120a05';c.fill();c.stroke();const g=c.createLinearGradient(0,-.6,0,-4.2);g.addColorStop(0,'#ff6a00');g.addColorStop(1,'rgba(255,220,120,.2)');c.fillStyle=g;c.beginPath();c.moveTo(-2.4,-.8);c.quadraticCurveTo(0,-5.4,2.4,-.8);c.closePath();c.fill();}
+   else{rr(c,1.6,-5.4,4.4,4.6,.6);FS(c,G(c,1.6,6,M.negro,1));if(D){c.fillStyle='#ffcc1a';c.beginPath();c.moveTo(4,-4.8);c.lineTo(2.8,-3);c.lineTo(3.8,-3);c.lineTo(3.2,-1.2);c.lineTo(4.8,-3.4);c.lineTo(3.8,-3.4);c.closePath();c.fill();}}}
+  c.beginPath();c.rect(3.2,-21,1.8,3.5);FS(c,G(c,3.2,5,M.rojo,1));
+  if(D){const bw=/Baño|Vapor/.test(t);c.fillStyle=bw?'rgba(255,255,255,.9)':'#fff';c.font='bold 2.6px Arial';c.textAlign='center';c.textBaseline='middle';c.fillText('GLP',bw?1.2:0,bw?-8.6:-16.2);
+   c.fillStyle='#1d5fd8';c.font='bold 2px Arial';c.fillText('L',-7.6,-2.6);c.fillStyle='#c62828';c.fillText('V',7.6,-2.6);}
+  c.restore();}
  function equip(c,D){rr(c,-9,-9,18,18,2.4);FS(c,G(c,-9,9,M.blanco,1));
   rr(c,-9,-9,18,4,2.4);FS(c,G(c,-9,-5,M.negro));
   if(D){[-5,0,5].forEach(x=>{c.beginPath();c.arc(x,-7,1.1,0,7);c.fillStyle=RG(c,x,-7,1.1,'#ffffff','#7d8893');c.fill();});}
@@ -677,8 +745,8 @@ const SYMB=(()=>{
   if(D){c.save();c.strokeStyle='rgba(60,70,80,.45)';c.lineWidth*=.6;c.beginPath();c.moveTo(-5,-6.4);c.lineTo(-5,6.4);c.moveTo(5,-6.4);c.lineTo(5,6.4);c.stroke();c.restore();
    c.fillStyle='#c62828';c.fillRect(-11,1.6,22,1.3);c.fillStyle='#3a4550';c.font='bold 3.6px Arial';c.textAlign='center';c.textBaseline='middle';c.fillText('GLP',0,-1.6);}
   rr(c,-3.2,-10.4,6.4,4.2,1);FS(c,G(c,-3.2,3.2,M.blanco,1));rr(c,-3.8,-11.2,7.6,1.4,.5);FS(c,G(c,-11.2,-9.8,M.acero));}
- const DRAW={valvula:valve,regulador:(c,n,D)=>regulator(c,D),medidor:(c,n,D)=>meter(c,D),manometro:(c,n,D)=>gauge(c,D),brida:flange,union_u:(c,n,D)=>union_u(c,D),union:union,reduccion:reducer,ptopres:testpt,transicion:(c,n,D)=>transition(c,D),term_m:(c,n,D)=>termM(c,D),term_h:(c,n,D)=>termH(c,D),flexible:flex,consumo:(c,n,D)=>equip(c,D),tanque:(c,n,D)=>tank(c,D),coupling:coupling,tapon_m:tapM,tapon_h:tapH,con_ciego:conCiego,brida_ciega:bridaCiega};
- return function(c,n,kk,ang,ext){const t=n.type;if(!(t in DRAW))return false;const D=18*kk>=15;
+ const DRAW={valvula:valve,regulador:(c,n,D)=>regulator(c,D),medidor:(c,n,D)=>meter(c,D),manometro:(c,n,D)=>gauge(c,D),brida:flange,union_u:(c,n,D)=>union_u(c,D),union:union,reduccion:reducer,ptopres:testpt,transicion:(c,n,D)=>transition(c,D),term_m:(c,n,D)=>termM(c,D),term_h:(c,n,D)=>termH(c,D),flexible:flex,consumo:(c,n,D)=>equip(c,D),tanque:(c,n,D)=>tank(c,D),coupling:coupling,filtro_y:filtroY,filtro_cart:filtroCart,filtro_sep:filtroSep,alivio:alivio,vaporizador:vaporizador,tapon_m:tapM,tapon_h:tapH,con_ciego:conCiego,brida_ciega:bridaCiega};
+ return function(c,n,kk,ang,ext){const t=n.type;if(!(t in DRAW))return false;n._ang=ang||0;const D=18*kk>=15;
   c.save();c.rotate(ang||0);if(n.type=='valvula'&&n.ori=='Vertical'&&n._con)c.scale(1,-1);
   c.lineWidth=Math.min(.9/kk,1.25);c.strokeStyle=OL;c.lineJoin='round';c.setLineDash([]);
   if(D){c.shadowColor='rgba(0,0,0,.5)';c.shadowBlur=3;c.shadowOffsetY=1.2;}
@@ -687,7 +755,7 @@ const SYMB=(()=>{
 const SYM_UP={manometro:1,medidor:1,consumo:1,tanque:1,ptopres:1};
 function symAng(n){const t=n.type;if(SYM_UP[t])return 0;const con=S.pipes.some(q=>q.a==n.id||q.b==n.id);n._con=con;
  if(!con)return t=='valvula'&&n.ori=='Vertical'?Math.PI/2:0;
- if(t=='reduccion')return bigAng(n);let a=nAng(n);if(t=='term_m'||t=='term_h'||t=='tapon_m'||t=='tapon_h'||t=='con_ciego'||t=='brida_ciega')return a;
+ if(t=='reduccion')return bigAng(n);let a=nAng(n);if(t=='term_m'||t=='term_h'||t=='tapon_m'||t=='tapon_h'||t=='con_ciego'||t=='brida_ciega'||t=='alivio')return a;
  while(a>Math.PI/2+1e-6)a-=Math.PI;while(a<=-Math.PI/2+1e-6)a+=Math.PI;return a;}
 {const sm=document.getElementById('symm');if(sm){sm.value=SYMM;sm.onchange=()=>{SYMM=sm.value;try{localStorage.setItem('isoflux_sym',SYMM);}catch(e){}draw();};}}
 const isS=(k,id)=>(sel&&sel.k==k&&sel.id==id)||ms.some(m=>m.k==k&&m.id==id);
@@ -767,7 +835,7 @@ const spBrida=s=>OPT('s_conf','Configuración',s.conf||'Par de bridas',['Par de 
 const spUU=s=>OPT('s_conx','Conexión',s.conx||'Roscada',['Roscada','Soldada (socket weld)','Bridada'])+OPT('s_cuerpo','Material del cuerpo',s.cuerpo||'Hierro maleable galvanizado',['Hierro maleable galvanizado','Acero forjado','Bronce','Acero inoxidable'])+OPT('s_pu','Unidad de presión',s.pu||'psi',['psi','bar','mbar','kPa'])+`<label>Presión máx. de trabajo</label><input data-k="s_pmax" type="number" step="any" value="${s.pmax||''}">`+OPT('s_norma','Norma',s.norma||'ASME B16.39',['ASME B16.39','ISO 49','Otra'])+TX(s,'marca','Marca / modelo');
 const spUn=s=>OPT('s_tipo','Tipo de unión',s.tipo||'Roscada (niple)',['Roscada (niple)','Soldada (a tope / socket)','Electrofusión (PE)','Compresión (PE-AL-PE)','Mecánica'])+OPT('s_norma','Norma',s.norma||'ASME B16.11',['ASME B16.11','ISO 8085 (PE)','Otra'])+TX(s,'marca','Marca / modelo');
 /* ---- V12: reducciones, punto de control de presión, transición PE, terminales y conector flexible ---- */
-const FT7={reduccion:1,ptopres:1,transicion:1,term_m:1,term_h:1,flexible:1,coupling:1,tapon_m:1,tapon_h:1,con_ciego:1,brida_ciega:1},SPXT=FT7;
+const FT7={reduccion:1,ptopres:1,transicion:1,term_m:1,term_h:1,flexible:1,coupling:1,tapon_m:1,tapon_h:1,con_ciego:1,brida_ciega:1,filtro_y:1,filtro_cart:1,filtro_sep:1,alivio:1,vaporizador:1},SPXT=FT7;
 function bigAng(n){const ps=S.pipes.filter(q=>q.a==n.id||q.b==n.id).sort((a,b)=>dmm(b.dia)-dmm(a.dia));if(!ps.length)return 0;const p=ps[0],o=N(p.a==n.id?p.b:p.a);if(!o)return 0;const A=P(n.x,n.y,n.z),B=P(o.x,o.y,o.z);return Math.atan2(B[1]-A[1],B[0]-A[0]);}
 function fit7(n){const t=n.type;ctx.save();if(t!='ptopres')ctx.rotate(t=='reduccion'?bigAng(n):nAng(n));ctx.lineWidth=1.3/Math.max(curK(),.6);ctx.strokeStyle='#cfe9ff';const R=(x,y,w,h)=>{ctx.beginPath();ctx.rect(x,y,w,h);ctx.fill();ctx.stroke();},TL=(xs,y)=>{ctx.beginPath();xs.forEach(x=>{ctx.moveTo(x,-y);ctx.lineTo(x,y);});ctx.stroke();};
 if(t=='reduccion'){ctx.fillStyle='#26c6da';ctx.beginPath();ctx.moveTo(-9,-3);ctx.lineTo(9,-9);ctx.lineTo(9,9);ctx.lineTo(-9,3);ctx.closePath();ctx.fill();ctx.stroke();}
@@ -790,9 +858,14 @@ NSP.coupling=s=>OPT('s_tipo','Tipo de coupling',s.tipo||'Roscado (NPT)',['Roscad
 NSP.tapon_m=s=>OPT('s_rosca','Rosca',s.rosca||'NPT',['NPT','BSP (ISO 7)'])+OPT('s_cabeza','Cabeza',s.cabeza||'Hexagonal',['Hexagonal','Cuadrada','Hexagonal interior (Allen)'])+OPT('s_cuerpo','Material',s.cuerpo||'Acero galvanizado',['Acero galvanizado','Acero al carbón','Latón','Bronce','Acero inoxidable'])+TX(s,'marca','Marca / modelo');
 NSP.tapon_h=s=>OPT('s_rosca','Rosca / conexión',s.rosca||'NPT',['NPT','BSP (ISO 7)','Soldable (socket)','Electrofusión (PE)'])+OPT('s_cuerpo','Material',s.cuerpo||'Acero galvanizado',['Acero galvanizado','Acero al carbón','Latón','Bronce','Acero inoxidable','PE 100','Cobre'])+TX(s,'marca','Marca / modelo');
 NSP.con_ciego=s=>OPT('s_tipo','Tipo de cierre',s.tipo||'Tapa ciega roscada (flare)',['Tapa ciega roscada (flare)','Tapa ciega de compresión','Acople rápido con tapa','Niple con tapa (salida a futuro)'])+OPT('s_cuerpo','Material',s.cuerpo||'Latón',['Latón','Bronce','Acero inoxidable'])+TX(s,'marca','Marca / modelo');
+NSP.filtro_y=s=>OPT('s_conx','Conexión',s.conx||'Bridada ANSI 150',['Roscada NPT','Bridada ANSI 150','Bridada ANSI 300','Bridada ANSI 600','Soldable (socket weld)'])+OPT('s_malla','Malla',s.malla||'Malla 40 (420 µm)',['Malla 20 (840 µm)','Malla 40 (420 µm)','Malla 60 (250 µm)','Malla 100 (150 µm)'])+OPT('s_cuerpo','Cuerpo',s.cuerpo||'Acero al carbón (WCB)',['Hierro dúctil','Acero al carbón (WCB)','Acero inoxidable','Bronce'])+`<label>Presión máx. de trabajo (psi)</label><input data-k="s_pmax" type="number" step="any" value="${s.pmax||''}">`+TX(s,'marca','Marca / modelo');
+NSP.filtro_cart=s=>OPT('s_tipo','Configuración',s.tipo||'En línea (conexiones axiales)',['En línea (conexiones axiales)','En ángulo (90°)'])+OPT('s_grado','Grado de filtración',s.grado||'5 µm',['3 µm','5 µm','10 µm','20 µm','50 µm'])+OPT('s_tapa','Tapa',s.tapa||'Apertura rápida',['Apertura rápida','Bridada con pernos'])+OPT('s_dp','Manómetro diferencial',s.dp||'Sí',['Sí','No'])+OPT('s_clase','Clase / presión',s.clase||'ANSI 300',['ANSI 150','ANSI 300','ANSI 600','PN16'])+`<label>Caudal de diseño (Sm³/h)</label><input data-k="s_q" type="number" step="any" value="${s.q||''}">`+TX(s,'marca','Marca / modelo (ej. Tartarini FA)');
+NSP.filtro_sep=s=>OPT('s_tipo','Tipo',s.tipo||'Coalescente horizontal de dos etapas',['Coalescente horizontal de dos etapas','Depurador vertical (scrubber)','Multiciclón'])+OPT('s_grado','Eficiencia',s.grado||'99,9 % ≥ 1 µm',['99,9 % ≥ 1 µm','99,5 % ≥ 3 µm','98 % ≥ 10 µm'])+OPT('s_tapa','Cierre',s.tapa||'Apertura rápida',['Apertura rápida','Bridado con pernos'])+OPT('s_dren','Purga de líquidos',s.dren||'Automática (controlador de nivel)',['Automática (controlador de nivel)','Manual'])+OPT('s_clase','Clase / presión',s.clase||'ANSI 600',['ANSI 300','ANSI 600','ANSI 900'])+`<label>Caudal de diseño (Sm³/h)</label><input data-k="s_q" type="number" step="any" value="${s.q||''}">`+TX(s,'marca','Marca / modelo');
+NSP.alivio=s=>OPT('s_tipo','Tipo',s.tipo||'Resorte (PSV)',['Resorte (PSV)','Piloto operada','Alivio interno del regulador (token)'])+`<label>Presión de ajuste (set)</label><input data-k="s_set" value="${s.set||''}" placeholder="ej. 25 psi">`+OPT('s_desc','Descarga',s.desc||'Venteo a sitio seguro',['Venteo a sitio seguro','Al ambiente (con malla)','A cabezal de venteo'])+TX(s,'marca','Marca / modelo');
+NSP.vaporizador=s=>OPT('s_tipo','Tipo',s.tipo||'Fuego directo',['Fuego directo','Eléctrico seco','Baño de agua (eléctrico)','Vapor / agua caliente'])+`<label>Capacidad</label><div style="display:flex;gap:4px"><input data-k="s_cap" type="number" step="any" value="${s.cap||''}" placeholder="ej. 80"><select data-k="s_capu">${['gal/h','kg/h','lb/h'].map(u=>`<option ${u==(s.capu||'gal/h')?'selected':''}>${u}</option>`).join('')}</select></div>`+OPT('s_ent','Entrada',s.ent||'Fase líquida',['Fase líquida'])+`<label>Presión de salida del regulador integrado</label><input data-k="s_pout" value="${s.pout||''}" placeholder="ej. 10 psi">`+OPT('s_seg','Seguridades',s.seg||'Válvula de alivio + corte por arrastre de líquido',['Válvula de alivio + corte por arrastre de líquido','Válvula de alivio','Corte por baja temperatura'])+TX(s,'marca','Marca / modelo (ej. Algas-SDI, Ransome)');
 NSP.brida_ciega=s=>OPT('s_clase','Clase / presión nominal',s.clase||'150#',['150#','300#','600#','PN10','PN16','PN25'])+OPT('s_norma','Norma',s.norma||'ASME B16.5',['ASME B16.5','EN 1092-1','ASME B16.47','Otra'])+OPT('s_cara','Cara',s.cara||'RF (cara realzada)',['RF (cara realzada)','FF (cara plana)'])+OPT('s_emp','Empaque',s.emp||'Grafito',['Grafito','NBR','PTFE','Fibra comprimida'])+TX(s,'marca','Marca / modelo');
 const NST={reduccion:(n,s)=>[s.tipo||'Concéntrica',s.conx,s.marca],ptopres:(n,s)=>[s.tipo||'Niple 1/4" NPT con tapón',s.mano&&s.mano!='Sin manómetro'&&'Manómetro '+s.mano,s.marca],transicion:(n,s)=>[s.sdr||'SDR 11',s.ext||'Rosca NPT',s.prot,s.alt&&'H '+s.alt+' m',s.marca],term_m:(n,s)=>[s.rosca||'NPT',s.cuerpo||'Bronce',s.marca],flexible:(n,s)=>[s.ext||'Macho – Hembra',s.long&&'L '+s.long+' cm',s.marca]};
-NST.term_h=NST.term_m;NST.coupling=(n,s)=>[s.tipo||'Roscado (NPT)',s.cuerpo,s.marca];NST.tapon_m=(n,s)=>[s.rosca||'NPT',s.cuerpo||'Acero galvanizado',s.marca];NST.tapon_h=NST.tapon_m;NST.con_ciego=(n,s)=>[s.tipo||'Tapa ciega roscada (flare)',s.marca];NST.brida_ciega=(n,s)=>[s.clase||'150#',s.norma||'ASME B16.5',s.marca];
+NST.term_h=NST.term_m;NST.coupling=(n,s)=>[s.tipo||'Roscado (NPT)',s.cuerpo,s.marca];NST.tapon_m=(n,s)=>[s.rosca||'NPT',s.cuerpo||'Acero galvanizado',s.marca];NST.tapon_h=NST.tapon_m;NST.con_ciego=(n,s)=>[s.tipo||'Tapa ciega roscada (flare)',s.marca];NST.filtro_y=(n,s)=>[s.conx||'Bridada ANSI 150',s.malla||'Malla 40',s.marca];NST.filtro_cart=(n,s)=>[s.tipo||'En línea',s.grado||'5 µm',s.clase||'ANSI 300',s.marca];NST.filtro_sep=(n,s)=>[s.tipo||'Coalescente horizontal',s.grado,s.clase||'ANSI 600',s.marca];NST.alivio=(n,s)=>[s.tipo||'Resorte (PSV)',s.set&&'Set '+s.set,s.marca];NST.vaporizador=(n,s)=>[s.tipo||'Fuego directo',s.cap&&s.cap+' '+(s.capu||'gal/h'),s.marca];NST.brida_ciega=(n,s)=>[s.clase||'150#',s.norma||'ASME B16.5',s.marca];
 /* ---- inspector: cámara automática ---- */
 let TOUR=null,tsim0=false;
 const ease=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
@@ -962,7 +1035,7 @@ addEventListener('keydown',e=>{if(RO||tool!='bg'||!bgSel.length||/INPUT|TEXTAREA
 $('bs').onclick=()=>bgSave(true);$('bs2').onclick=()=>bgSave(false);
 /* --- exportación a AutoCAD (DXF R12, ASCII) --- */
 const DXAC={'PE-AL-PE':5,'Acero al carbón':9,'Acero galvanizado':4,'Polietileno':2,'Cobre rígido':30,'Cobre flexible':40},
- DXCC={te:8,valvula:5,regulador:4,manometro:3,medidor:6,consumo:4,tanque:140,brida:9,union_u:30,union:82,reduccion:134,ptopres:50,transicion:42,term_m:34,term_h:36,flexible:150,coupling:82,tapon_m:34,tapon_h:36,con_ciego:34,brida_ciega:9,sen_temp:10,sen_cau:140,sen_pre:50,sen_vel:94,sen_otro:200};
+ DXCC={te:8,valvula:5,regulador:4,manometro:3,medidor:6,consumo:4,tanque:140,brida:9,union_u:30,union:82,reduccion:134,ptopres:50,transicion:42,term_m:34,term_h:36,flexible:150,coupling:82,filtro_y:5,filtro_cart:4,filtro_sep:4,alivio:1,vaporizador:30,tapon_m:34,tapon_h:36,con_ciego:34,brida_ciega:9,sen_temp:10,sen_cau:140,sen_pre:50,sen_vel:94,sen_otro:200};
 function dxfBuild(o){
  const f=o.unit=='mm'?1000:1,mode=o.mode,c=Math.cos(yaw),q=Math.sin(yaw),sp=Math.sin(pit),cp=Math.cos(pit),m=PM();
  const pr=(x,y,z)=>mode=='3d'?[x*f,-z*f,y*f]:mode=='plan'?[x*f,-z*f,0]:[(x*m[0]+y*m[2]+z*m[4])*f,-(x*m[1]+y*m[3]+z*m[5])*f,0];
@@ -1011,6 +1084,11 @@ function dxfBuild(o){
    else if(n.type=='transicion'){rect(-11,-5,-1,5);rect(1,-5,11,5);rect(-2,-7,2,7);}
    else if(n.type=='term_m'){rect(-9,-5,-1,5);rect(-1,-3,9,3);ln(2,-3,2,3);ln(5,-3,5,3);}
    else if(n.type=='term_h'){rect(-9,-5,-1,5);rect(-1,-5,9,5);ln(2,-3,2,3);ln(5,-3,5,3);}
+   else if(n.type=='filtro_y'){rect(-7,-4,7,4);ln(0,4,6,10);ln(3,2,9,8);}
+   else if(n.type=='filtro_cart'){rect(-6,-4,6,4);rect(-5,-18,5,-4);}
+   else if(n.type=='filtro_sep'){rect(-9,-6,9,6);rect(3,6,6,10);}
+   else if(n.type=='alivio'){rect(2,-3,9,3);rect(-9,-2.5,2,2.5);ln(4,3,4,9);}
+   else if(n.type=='vaporizador'){rect(-7,-17,7,5);ln(-9,0,-7,0);ln(7,0,9,0);}
    else if(n.type=='coupling'){rect(-6,-5,6,5);ln(-4.5,-5,-4.5,5);ln(4.5,-5,4.5,5);}
    else if(n.type=='tapon_m'){rect(-9,-5,-3,5);rect(-3,-3.5,9,3.5);}
    else if(n.type=='tapon_h'){rect(-9,-5,8,5);ln(-9,-5,-9,5);}
@@ -1326,7 +1404,7 @@ const DXC=[
 ['Eliminar','','b',0,'','Sí = elimina la ficha indicada en Ficha_ID.']];
 /* ===== V11: especificación de columnas del archivo de datos ===== */
 const DXL={dia:DIA,mat:MAT,obra:['Nueva','Existente'],anc:['Ninguno','Aéreo','Adosado','Sky'],sup:['Pared','Cercha','Columna','Viga','Otro'],asc:['Manlift','Andamio','Escalera'],est:['Abierta','Cerrada'],ori:['Horizontal','Vertical'],eq:['Ninguno',...EQ],gas:['Gas natural','GLP'],red:['Baja presión','Media presión'],pu:PU};
-const DXT='valvula,medidor,regulador,brida,union_u,union,reduccion,ptopres,transicion,term_m,term_h,flexible,coupling,tapon_m,tapon_h,con_ciego,brida_ciega',DXSP=['tipo','marca','g','pmax','pu','qmin','qmax','pemin','pemax','psmin','psmax'];
+const DXT='valvula,medidor,regulador,brida,union_u,union,reduccion,ptopres,transicion,term_m,term_h,flexible,coupling,tapon_m,tapon_h,con_ciego,brida_ciega,filtro_y,filtro_cart,filtro_sep,alivio,vaporizador',DXSP=['tipo','marca','g','pmax','pu','qmin','qmax','pemin','pemax','psmin','psmax'];
 /* [columna, ruta, tipo(k=informativa,s=texto,n=número,b=Sí/No,x=extra), lista, aplica a, descripción] */
 const DXP=[
 ['ID','id','k',0,'','Identificador del tramo. NO modificar: es la llave de cruce con el dibujo.'],
@@ -1788,7 +1866,7 @@ sen_otro:'<circle cx="12" cy="12" r="8.5" fill="#ce93d8"/><path d="M9.6 9.6a2.5 
 window.icoSvg=(k,s)=>ICON[k]?SV(ICON[k]).replace('width="28" height="28"',`width="${s||28}" height="${s||28}"`):'';
 const TAB={Archivo:['📁',10],Vista:['👁️',11],Dibujo:['✏️',20],'Parámetros':['⚙️',21],Anotar:['🏷️',22],'Selección':['🖱️',23],Fondos:['🖼️',30],Inspector:['🎥',31],'Iteraciones':['🧮',40],'Gestión':['📋',41]};
 const GR={
-Dibujo:[['Tubería y red','📏',['[data-t=draw]'],1],['Control y maniobra','🎚️',['[data-t=valvula]','[data-t=regulador]','[data-t=ptopres]'],1],['Medición y presión','⏱️',['[data-t=medidor]','[data-t=manometro]'],1],['Reducciones','🔻',['[data-t=reduccion]'],1],['Uniones y acoples','🔩',['[data-t=brida]','[data-t=union_u]','[data-t=union]','[data-t=coupling]'],1],['Polietileno (PE)','🟡',['[data-t=transicion]'],1],['Terminales','🔌',['[data-t=term_m]','[data-t=term_h]'],1],['Tapones y cierres','⛔',['[data-t=tapon_m]','[data-t=tapon_h]','[data-t=con_ciego]','[data-t=brida_ciega]'],1],['Conexiones flexibles','〰️',['[data-t=flexible]'],1],['Consumo y almacenamiento','🔥',['[data-t=consumo]','[data-t=tanque]'],1],['Sensores','📡',['[data-t=sen_temp]','[data-t=sen_cau]','[data-t=sen_pre]','[data-t=sen_vel]','[data-t=sen_otro]'],1]],
+Dibujo:[['Tubería y red','📏',['[data-t=draw]'],1],['Control y maniobra','🎚️',['[data-t=valvula]','[data-t=regulador]','[data-t=ptopres]'],1],['Medición y presión','⏱️',['[data-t=medidor]','[data-t=manometro]'],1],['Reducciones','🔻',['[data-t=reduccion]'],1],['Uniones y acoples','🔩',['[data-t=brida]','[data-t=union_u]','[data-t=union]','[data-t=coupling]'],1],['Polietileno (PE)','🟡',['[data-t=transicion]'],1],['Terminales','🔌',['[data-t=term_m]','[data-t=term_h]'],1],['Tapones y cierres','⛔',['[data-t=tapon_m]','[data-t=tapon_h]','[data-t=con_ciego]','[data-t=brida_ciega]'],1],['Conexiones flexibles','〰️',['[data-t=flexible]'],1],['Consumo y almacenamiento','🔥',['[data-t=consumo]','[data-t=tanque]'],1],['Filtración y alta presión','🧯',['[data-t=filtro_y]','[data-t=filtro_cart]','[data-t=filtro_sep]','[data-t=alivio]'],1],['GLP y vaporización','♨️',['[data-t=vaporizador]'],1],['Sistemas integrados','🏗️',['[data-t=sis_erm]','[data-t=sis_glp]','[data-t=sis_byp]'],1],['Sensores','📡',['[data-t=sen_temp]','[data-t=sen_cau]','[data-t=sen_pre]','[data-t=sen_vel]','[data-t=sen_otro]'],1]],
 'Parámetros':[['Tubería','📏',['#dd','#dmt','#dp']],['Dirección y paso','🧭',['#dm','#st','#el','[data-m]']],['Elementos nuevos','🆕',['#do','#vo']]],
 Anotar:[['Etiquetas y textos','🏷️',['[data-t=etq]','[data-t=rotulo]','[data-t=texto]'],1],['Cajetín del proyecto','🗂️',['#bcaj']]],
 Vista:[['Navegación','🧭',['[data-t=orbit]','[data-t=hand]','#bi','#bpl','#bfit']],['Capas y apariencia','🎨',['#bl','#bk','#bg','#gk','#fo','#ldn']],['Isométrico ajustable','📐',['#axon','.axr','#axg']],['Foco y secuencia de etiquetas','🔎',['#foc','#seqv']]],
@@ -3333,7 +3411,7 @@ if(!RO){const ENT=/<script id="entman"[\s\S]*?<\/script>/,ENT0='<script id="entm
 })();
 </script>
 <script>/* V20: iconos (paleta y panel) dibujados con la misma biblioteca de símbolos del plano */
-(function(){const TYP=['valvula','regulador','medidor','manometro','brida','union_u','union','reduccion','ptopres','transicion','term_m','term_h','flexible','consumo','tanque','coupling','tapon_m','tapon_h','con_ciego','brida_ciega'];
+(function(){const TYP=['valvula','regulador','medidor','manometro','brida','union_u','union','reduccion','ptopres','transicion','term_m','term_h','flexible','consumo','tanque','coupling','tapon_m','tapon_h','con_ciego','brida_ciega','filtro_y','filtro_cart','filtro_sep','alivio','vaporizador'];
  const OFF={manometro:10,ptopres:7.5,regulador:3.5,valvula:3.5,tanque:-.5,medidor:1.2},CACHE={};
  const ok=t=>TYP.includes(t)||(window.SENT&&SENT[t]);
  function url(t,px,tp){const k=t+'|'+px+'|'+(tp||'');if(CACHE[k])return CACHE[k];const R=Math.ceil(px*Math.max(2,window.devicePixelRatio||1)),cv=document.createElement('canvas');cv.width=cv.height=R;const c=cv.getContext('2d');
@@ -3531,6 +3609,52 @@ $('pp').addEventListener('change',e=>{const k=e.target.dataset.k,o=so();if(o&&o.
   const ang=Math.atan2(B2[1]-A2[1],B2[0]-A2[0]),k=Math.max(5,Math.min(9,Math.hypot(B2[0]-A2[0],B2[1]-A2[1])*.04));[[A2,ang],[B2,ang+Math.PI]].forEach(([p,g])=>{ctx.strokeStyle='#ffd24a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p[0]-Math.sin(g)*k,p[1]+Math.cos(g)*k);ctx.lineTo(p[0]+Math.sin(g)*k,p[1]-Math.cos(g)*k);ctx.stroke();});
   ctx.restore();lab('L = '+f3(L)+' m','ΔH '+f3(H)+' · ΔV '+f3(Vv)+' · ΔX '+f3(Math.abs(d[0]))+' · ΔZ '+f3(Math.abs(d[2])),(A2[0]+B2[0])/2,(A2[1]+B2[1])/2-6);}
  const _d=draw;draw=function(){_d.apply(this,arguments);try{OCC=[];MED.forEach(m=>one(m.a,m.b,false));if(tool=='medir'){if(A&&Hv)one(A.p,Hv.p,true);if(Hv){const q=P(...Hv.p);ctx.save();ctx.strokeStyle=Hv.k=='g'?'rgba(255,210,74,.6)':'#4cd964';ctx.lineWidth=2;ctx.beginPath();ctx.arc(q[0],q[1],Hv.k=='g'?5:8,0,7);ctx.stroke();ctx.restore();}}}catch(e){}};
+})();
+</script>
+<script>/* V25: sistemas integrados (se insertan como conjunto de piezas reales, agrupadas en un bloque) y menús que se abren al pasar el puntero */
+(function(){
+const say=m=>{try{bgToast(m);}catch(e){}},r4=v=>Math.round(v*1e4)/1e4;
+function half(t,dm){if(!t||t==='te')return 0;const r=SYM_REAL[t]||[3,.07];return Math.max(r[1],r[0]*dm)/2;}
+window.insertSistema=function(tool,mx,my){
+ const deg=id=>S.pipes.filter(q=>q.a==id||q.b==id);
+ let X=null;const nd=nodeAt(mx,my);if(nd&&deg(nd.id).length<=1&&!/^(consumo|tanque)$/.test(nd.type))X=nd;
+ if(!X&&!nd&&!pipeAt(mx,my)){let bd=70;S.nodes.forEach(n=>{if(deg(n.id).length!==1||/^(consumo|tanque)$/.test(n.type))return;const p=P(n.x,n.y,n.z),d=Math.hypot(p[0]-mx,p[1]-my);if(d<bd){bd=d;X=n;}});}
+ if(!X&&(nd||pipeAt(mx,my))){say('Los sistemas integrados se insertan en un extremo libre de la red o en un espacio vacío del plano.');return;}
+ let u=[1,0,0],q0=X?deg(X.id)[0]:null;const fresh=!X;
+ if(q0){const o=N(q0.a==X.id?q0.b:q0.a);const v=[X.x-o.x,X.y-o.y,X.z-o.z],l=Math.hypot(...v)||1;u=v.map(k=>k/l);}
+ if(!X){const g=ground(mx,my,+(document.getElementById('el')||{}).value||0);X=addNode(g[0],g[1],g[2]);}
+ const dia=q0?q0.dia:$('dd').value,mat=q0?q0.mat:$('dmt').value,dm=dmm(dia)/1000;
+ const bid='B'+(S.bseq=(S.bseq||0)+1),NOM={sis_erm:'ERM en skid',sis_glp:'Estación GLP con vaporizador',sis_byp:'Filtración con by-pass'}[tool];
+ S.blocks=S.blocks||[];S.blocks.push({id:bid,name:NOM+' '+S.bseq,color:'#ffd24a'});
+ const mkN=(p,t,o)=>{const id='N'+S.seq++,n=Object.assign({id,x:r4(p[0]),y:r4(p[1]),z:r4(p[2]),type:t||'te',tag:id,dia,mat,press:'',notes:'',obra:$('do').value,blk:bid},o||{});S.nodes.push(n);return n;};
+ const mkP=(a,b)=>{const p=addPipe(a,b);if(p){p.dia=dia;p.mat=mat;p.blk=bid;}return p;};
+ const along=(a,d)=>[a.x+u[0]*d,a.y+u[1]*d,a.z+u[2]*d];
+ /* coloca la secuencia sobre la dirección u, cada pieza separada de la anterior por sus medios largos reales + un niple corto */
+ function cadena(desde,items){let cur=desde,out=[];items.forEach(it=>{const d=half(cur.type,dm)+half(it.t,dm)+(it.gap!=null?it.gap:.12);const n=mkN(along(cur,d),it.t,it.o);mkP(cur,n);out.push(n);cur=n;});return out;}
+ const off=Math.abs(u[1])<.7?[0,1,0]:[0,0,1];
+ let first=X,ch=[];
+ if(tool==='sis_glp'){
+  if(fresh){X.type='tanque';X.tag='TK-GLP';X.blk=bid;}
+  ch=cadena(X,[{t:'valvula',o:{tag:'V-TK',est:'Abierta',ori:'Horizontal',sp:{tipo:'Bola'}}},{t:'filtro_y',o:{tag:'FY-1',sp:{conx:'Roscada NPT',malla:'Malla 60 (250 µm)'}}},{t:'vaporizador',o:{tag:'VAP-1',sp:{tipo:'Fuego directo',cap:80,capu:'gal/h',pout:'10 psi'}},gap:.25},{t:'regulador',o:{tag:'REG-2E',notes:'Regulador de segunda etapa'},gap:.2},{t:'manometro',o:{tag:'PI-1'}},{t:'valvula',o:{tag:'V-SAL',est:'Abierta',ori:'Horizontal',sp:{tipo:'Bola'}}},{t:'te',gap:.25}]);}
+ else if(tool==='sis_erm'){
+  ch=cadena(X,[{t:'valvula',o:{tag:'V-ENT',est:'Abierta',ori:'Horizontal',sp:{tipo:'Bola'}}},{t:'manometro',o:{tag:'PI-ENT'}},{t:'filtro_cart',o:{tag:'F-1',sp:{grado:'5 µm',tapa:'Apertura rápida',dp:'Sí'}},gap:.2},{t:'regulador',o:{tag:'REG-MON',notes:'Regulador monitor'},gap:.2},{t:'regulador',o:{tag:'REG-ACT',notes:'Regulador activo'}},{t:'manometro',o:{tag:'PI-SAL'}},{t:'te',o:{tag:'T-PSV'}},{t:'medidor',o:{tag:'MED-1'},gap:.2},{t:'valvula',o:{tag:'V-SAL',est:'Abierta',ori:'Horizontal',sp:{tipo:'Bola'}}},{t:'te',gap:.25}]);
+  const t=ch.find(n=>n.tag==='T-PSV');if(t){const ps=mkN([t.x+off[0]*.35,t.y+off[1]*.35,t.z+off[2]*.35],'alivio',{tag:'PSV-1',sp:{tipo:'Resorte (PSV)',set:''}});mkP(t,ps);}}
+ else{
+  const T1=X;ch=cadena(X,[{t:'valvula',o:{tag:'V-1',est:'Abierta',ori:'Horizontal',sp:{tipo:'Bola'}},gap:.25},{t:'filtro_cart',o:{tag:'F-1'},gap:.2},{t:'valvula',o:{tag:'V-2',est:'Abierta',ori:'Horizontal',sp:{tipo:'Bola'}},gap:.2},{t:'te',gap:.25}]);
+  const T2=ch[ch.length-1],h=.6,U1=mkN([T1.x+off[0]*h,T1.y+off[1]*h,T1.z+off[2]*h]),U2=mkN([T2.x+off[0]*h,T2.y+off[1]*h,T2.z+off[2]*h]);
+  const VB=mkN([(U1.x+U2.x)/2,(U1.y+U2.y)/2,(U1.z+U2.z)/2],'valvula',{tag:'V-BYP',est:'Cerrada',ori:'Horizontal',sp:{tipo:'Bola'},notes:'By-pass normalmente cerrado'});
+  mkP(T1,U1);mkP(U1,VB);mkP(VB,U2);mkP(U2,T2);}
+ if(first&&!first.blk)first.blk=bid;
+ const last=ch[ch.length-1];sel=last?{k:'n',id:last.id}:null;ms=[];panel();draw();
+ say('🏗️ '+NOM+' insertado como bloque ('+ch.length+' piezas). Cada pieza tiene su ficha; con ✥ Mover se desplaza completo.');};
+/* ---- menús y acordeones: se abren al pasar el puntero ---- */
+const mouse=e=>!e.pointerType||e.pointerType==='mouse';
+document.querySelectorAll('details.ac').forEach(d=>{let tIn=0,tOut=0;const sm=d.querySelector(':scope>summary');if(!sm)return;
+ sm.addEventListener('pointerenter',e=>{if(!mouse(e))return;clearTimeout(tOut);tIn=setTimeout(()=>{document.querySelectorAll('details.ac[open]').forEach(o=>{if(o!==d&&!o.dataset.pin)o.open=false;});if(!d.open)d.open=true;},140);});
+ sm.addEventListener('pointerleave',()=>clearTimeout(tIn));
+ d.addEventListener('pointerenter',e=>{if(mouse(e))clearTimeout(tOut);});
+ d.addEventListener('pointerleave',e=>{if(!mouse(e))return;clearTimeout(tIn);if(d.dataset.pin)return;tOut=setTimeout(()=>{if(d.open&&!d.dataset.pin&&!d.matches(':hover')&&!(document.activeElement&&d.contains(document.activeElement)&&/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)))d.open=false;},450);});});
+document.addEventListener('pointerover',e=>{if(!mouse(e))return;const sm=e.target.closest&&e.target.closest('details.acc>summary');if(!sm)return;const a=sm.parentNode;if(a.open)return;clearTimeout(a._hv);a._hv=setTimeout(()=>{if(sm.matches(':hover'))a.open=true;},160);});
 })();
 </script>
 </body></html>
