@@ -129,6 +129,7 @@ function sigApi(b, u) {
       case 'sgcSolicitarAdmision': return sigSolicitarAdmision(u);
       case 'sgcLeyenda':         return sigLeyenda(u);
       case 'sgcBitacora':        return sigBitacoraDe(u, b.miembroId);
+      case 'sgcCompartir':       return sigCompartir(u, b);
       // ---- solo administrador (función central) ----
       case 'sgcMiembros':        if (!esAdmin) break; return sigListaMiembros();
       case 'sgcEstado':          if (!esAdmin) break; return sigCambiarEstado(u, b.miembroId, b.estado, b.motivo, b.alcance);
@@ -1569,3 +1570,81 @@ function sigTitular(u, b) {
   }
   const o = {}; k.forEach(x => o[x] = P.getProperty(x) || ''); return o;
 }
+
+// ---------- COMPARTIR PROYECTOS: correo al invitado y registro en la bitácora del SGC ----------
+/* Control de información documentada y confidencialidad: cada vez que el dueño (o el administrador)
+   comparte un proyecto, agrega o retira un participante o revoca un enlace, queda una entrada en la
+   bitácora encadenada (BitacoraSIG) con quién, a quién, qué alcance y hasta cuándo. El invitado recibe
+   un correo con el enlace, el alcance (solo lectura y descarga), la vigencia y el aviso de confidencialidad. */
+function sigBuscarInvitacion_(token) {
+  if (!/^[\w-]{8,}$/.test(String(token || ''))) return null;
+  const ss = SpreadsheetApp.openById(SIG.SHEET_ID);
+  for (const sh of ss.getSheets()) {
+    if (/^(Auditorias|Solicitudes|BitacoraSIG)$/.test(sh.getName())) continue;
+    const lc = sh.getLastColumn(); if (lc < 2 || sh.getLastRow() < 2) continue;
+    const h = sh.getRange(1, 1, 1, lc).getValues()[0].map(x => String(x).trim());
+    const it = h.indexOf('token'); if (it < 0 || h.indexOf('expira') < 0 || h.indexOf('email') < 0) continue;
+    const f = sh.createTextFinder(String(token)).matchEntireCell(true).findNext();
+    if (f && f.getColumn() === it + 1) { const v = sh.getRange(f.getRow(), 1, 1, lc).getValues()[0], o = {}; h.forEach((k, i) => { o[k] = v[i]; }); return o; }
+  }
+  return null;
+}
+function sigCorreoProyecto_(m, nom, titulo, cuerpoHtml, boton, link, pie) {
+  return '<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;border:1px solid #dde3ee;border-radius:10px;overflow:hidden">' +
+    '<div style="background:#0a1a3d;color:#fff;padding:18px;text-align:center">' + (m && m.__logo ? '<img src="cid:logo" style="max-height:60px;max-width:200px;background:#fff;border-radius:6px;padding:4px"><br>' : '') +
+    '<b style="font-size:18px">' + sigEsc_(nom) + '</b><br><span style="font-size:12px;color:#9fb3d9">' + sigEsc_(titulo) + '</span></div>' +
+    '<div style="padding:20px;color:#1f2937">' + cuerpoHtml +
+    (link ? '<p style="text-align:center;margin:26px 0"><a href="' + sigEsc_(link) + '" style="background:#1d5fd8;color:#fff;text-decoration:none;padding:14px 26px;border-radius:8px;font-weight:bold;font-size:16px">' + sigEsc_(boton) + '</a></p>' +
+      '<p style="font-size:11px;color:#6b7280;word-break:break-all">Si el botón no abre, copia este enlace: ' + sigEsc_(link) + '</p>' : '') +
+    '<p style="font-size:11.5px;color:#6b7280;border-top:1px solid #e5e7eb;padding-top:10px">' + pie + '</p></div>' +
+    '<div style="background:#f3f5f9;color:#6b7280;font-size:11px;padding:10px;text-align:center">SGC administrado por ' + sigEsc_(SIG.TITULAR) + ' · ' + sigEsc_(SIG.RED) + '</div></div>';
+}
+function sigCompartir(u, b) {
+  const p = rows('Proyectos').find(x => String(x.id) === String(b.id));
+  if (!p) throw new Error('Proyecto no encontrado.');
+  if (u.rol !== 'admin' && p.owner !== u.email) throw new Error('Solo el dueño del proyecto o el administrador pueden compartirlo.');
+  const tipo = String(b.tipo || ''), em = String(b.email || '').trim().toLowerCase();
+  if (tipo !== 'revocacion' && !/^\S+@\S+\.\S+$/.test(em)) throw new Error('Correo inválido.');
+  const mid = p.miembroId || '', m = mid ? sigMiembro_(mid) : null, nom = m ? (m.nombreComercial || m.razonSocial || SIG.TITULAR) : SIG.TITULAR;
+  let logo = null; if (m && m.logoFileId) { try { logo = DriveApp.getFileById(m.logoFileId).getBlob().setName('logo'); } catch (e) {} }
+  const mm = { __logo: !!logo }, quien = (u.nombre ? u.nombre + ' · ' : '') + u.email, tz = Session.getScriptTimeZone();
+  const det = { proyectoId: String(p.id), proyecto: p.titulo || '', cliente: p.cliente || '' };
+  const fichaHtml = '<p style="font-size:16px;background:#eef4ff;border-radius:8px;padding:12px"><b>' + sigEsc_(p.titulo || 'Proyecto') + '</b>' +
+    (p.cliente ? '<br><span style="font-size:13px">Cliente: ' + sigEsc_(p.cliente) + '</span>' : '') + (p.ubicacion ? '<br><span style="font-size:13px">Ubicación: ' + sigEsc_(p.ubicacion) + '</span>' : '') + '</p>';
+  const confid = 'Información confidencial de uso exclusivo para el destinatario. El acceso es personal e intransferible y cada consulta queda registrada en la bitácora del Sistema de Gestión de Calidad. Si recibiste este mensaje por error, ignóralo e infórmalo a ' + sigEsc_(p.owner) + '.';
+  const enviar = (asunto, html) => { try { MailApp.sendEmail({ to: em, subject: asunto, htmlBody: html, name: nom, noReply: true, replyTo: p.owner || u.email, inlineImages: logo ? { logo: logo } : {} }); return true; } catch (e) { return false; } };
+
+  if (tipo === 'invitacion') {
+    const tk = String(b.token || ''), inv = sigBuscarInvitacion_(tk);
+    if (!inv) throw new Error('No se encontró la invitación en el portal.');
+    if (String(inv.email || '').trim().toLowerCase() !== em) throw new Error('La invitación no corresponde a ese correo.');
+    const pid = [inv.proyecto, inv.proyectoId, inv.id].find(v => v !== undefined && v !== null && v !== '');
+    if (pid !== undefined && String(pid) !== String(p.id)) throw new Error('La invitación no corresponde a este proyecto.');
+    const base = String(b.base || '').split('?')[0];
+    if (!/^https:\/\/[^\s"'<>]+$/.test(base)) throw new Error('Dirección del portal inválida.');
+    const ex = inv.expira instanceof Date ? inv.expira : new Date(inv.expira), link = base + '?inv=' + encodeURIComponent(tk);
+    const vence = isNaN(ex) ? '' : Utilities.formatDate(ex, tz, 'dd/MM/yyyy HH:mm');
+    const html = sigCorreoProyecto_(mm, nom, 'Proyecto compartido · acceso de invitado', '<p>Hola,</p><p><b>' + sigEsc_(quien) + '</b> compartió contigo el proyecto:</p>' + fichaHtml +
+      '<p style="font-size:13.5px"><b>Alcance:</b> solo lectura y descarga de planos, documentos y entregables.<br><b>Vigencia:</b> hasta el ' + sigEsc_(vence) + '.</p>' +
+      '<p style="font-size:13px;color:#4b5563">Al abrir el enlace escribe este mismo correo (' + sigEsc_(em) + ') para validar tu acceso. No necesitas cuenta.</p>',
+      'Ver el proyecto', link, confid);
+    const ok = enviar('Proyecto compartido: ' + (p.titulo || '') + ' — ' + nom, html);
+    sigBitacora_(u.email, mid, 'proyecto_compartido', Object.assign(det, { invitado: em, alcance: 'solo lectura y descarga', expira: isNaN(ex) ? '' : ex.toISOString(), correo: ok ? 'enviado' : 'no enviado', enlace: tk.slice(0, 6) + '…' }));
+    return { enviado: ok, expira: isNaN(ex) ? '' : ex.toISOString(), registro: 'proyecto_compartido' };
+  }
+  if (tipo === 'participante') {
+    const quitar = !!b.quitar;
+    let ok = false;
+    if (!quitar) ok = enviar('Te agregaron al proyecto: ' + (p.titulo || '') + ' — ' + nom, sigCorreoProyecto_(mm, nom, 'Participante del proyecto',
+      '<p>Hola,</p><p><b>' + sigEsc_(quien) + '</b> te agregó como participante del proyecto:</p>' + fichaHtml +
+      '<p style="font-size:13.5px"><b>Alcance:</b> ver el proyecto, comentar y subir archivos con tu cuenta del portal.</p>', 'Abrir el portal', /^https:\/\//.test(String(b.base || '')) ? String(b.base).split('?')[0] : '', confid));
+    sigBitacora_(u.email, mid, quitar ? 'participante_retirado' : 'participante_agregado', Object.assign(det, { participante: em, alcance: 'ver, comentar y subir archivos', correo: quitar ? '' : (ok ? 'enviado' : 'no enviado') }));
+    return { enviado: ok, registro: quitar ? 'participante_retirado' : 'participante_agregado' };
+  }
+  if (tipo === 'revocacion') {
+    sigBitacora_(u.email, mid, 'invitacion_revocada', Object.assign(det, { invitado: em, enlace: String(b.token || '').slice(0, 6) + '…' }));
+    return { registro: 'invitacion_revocada' };
+  }
+  throw new Error('Acción no permitida.');
+}
+

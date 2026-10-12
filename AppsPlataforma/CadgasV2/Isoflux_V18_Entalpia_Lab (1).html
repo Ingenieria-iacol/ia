@@ -3503,4 +3503,34 @@ $('pp').addEventListener('change',e=>{const k=e.target.dataset.k,o=so();if(o&&o.
  const st=document.createElement('style');st.textContent='#v14z .v22sep{height:1px;margin:3px 4px;background:var(--bd,#2a3a4d)}#v14z button.v22n{display:flex;align-items:center;justify-content:center;color:#cfe3f5}#v14z button.v22n.on{background:linear-gradient(135deg,#2b80e6,#174f91);color:#fff;border-color:#4fc3f7;box-shadow:0 0 0 1px rgba(79,195,247,.5)}';document.head.appendChild(st);
 })();
 </script>
+<script>/* V23: herramienta Medir (distancia real entre dos puntos, con ΔH, ΔV y ΔX/ΔY/ΔZ) */
+(function(){const z=document.getElementById('v14z');if(!z)return;
+ const MED=[];let A=null,Hv=null;window.MEDIDAS=MED;
+ const b=document.createElement('button');b.dataset.t='medir';b.className='v22n';b.title='Medir: clic en el punto inicial y clic en el final (se imanta a nodos y tuberías). Esc borra las medidas.';
+ b.innerHTML='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.5L16.5 3 21 7.5 7.5 21z"/><path d="M7 12.5l1.8 1.8M9.8 9.7l2.5 2.5M12.6 6.9l1.8 1.8M15.4 4.1l2.5 2.5"/></svg>';
+ const sep=z.querySelector('.v22sep');z.appendChild(b);
+ b.onclick=()=>{tool='medir';start=null;end=null;A=null;document.querySelectorAll('[data-t]').forEach(x=>x.classList.toggle('on',x==b));cv.style.cursor='crosshair';try{bgToast('Medir: clic en el punto inicial y luego en el final. Se imanta a nodos y tuberías; Esc borra.');}catch(e){}draw();};
+ /* punto 3D bajo el cursor: nodo, punto exacto sobre una tubería o el piso a la elevación de trabajo */
+ function pt(mx,my){const n=nodeAt(mx,my);if(n)return{p:[n.x,n.y,n.z],k:'n',lab:n.tag};const h=pipeAt(mx,my);
+  if(h){const a=N(h.p.a),c=N(h.p.b),t=h.t;return{p:[a.x+(c.x-a.x)*t,a.y+(c.y-a.y)*t,a.z+(c.z-a.z)*t],k:'p',lab:h.p.tag};}
+  const y=A?A.p[1]:(+(document.getElementById('el')||{}).value||0);return{p:ground(mx,my,y,true),k:'g'};}
+ const f3=v=>(Math.round(v*1000)/1000).toFixed(3);
+ cv.addEventListener('pointerdown',e=>{if(tool!='medir'||e.button!==0)return;e.preventDefault();e.stopImmediatePropagation();const[mx,my]=pos(e),q=pt(mx,my);
+  if(!A){A=q;}else{const d=q.p.map((v,i)=>v-A.p[i]),L=Math.hypot(...d);if(L>1e-6){MED.push({a:A.p,b:q.p,la:A.lab,lb:q.lab});if(MED.length>12)MED.shift();
+    try{bgToast('Longitud: '+f3(L)+' m · horizontal '+f3(Math.hypot(d[0],d[2]))+' m · vertical '+f3(Math.abs(d[1]))+' m');}catch(_){}}A=null;}
+  draw();},true);
+ cv.addEventListener('pointermove',e=>{if(tool!='medir')return;const[mx,my]=pos(e);Hv=pt(mx,my);draw();});
+ addEventListener('keydown',e=>{if(e.key=='Escape'&&(MED.length||A)&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)){MED.length=0;A=null;draw();}});
+ let OCC=[];function lab(t1,t2,x,y){ctx.save();ctx.font='bold 12px Arial';const w=Math.max(ctx.measureText(t1).width,(ctx.font='11px Arial',ctx.measureText(t2).width))+14;
+  for(let i=0;i<14&&OCC.some(r=>Math.abs(r[0]-x)<(r[2]+w)/2&&Math.abs(r[1]-y)<36);i++)y-=38;OCC.push([x,y,w]);ctx.fillStyle='rgba(10,16,26,.92)';ctx.strokeStyle='#ffd24a';ctx.lineWidth=1;
+  ctx.beginPath();ctx.roundRect?ctx.roundRect(x-w/2,y-31,w,34,6):ctx.rect(x-w/2,y-31,w,34);ctx.fill();ctx.stroke();ctx.textAlign='center';ctx.fillStyle='#ffd24a';ctx.font='bold 12px Arial';ctx.fillText(t1,x,y-16);ctx.fillStyle='#c9d6e3';ctx.font='11px Arial';ctx.fillText(t2,x,y-2);ctx.restore();}
+ function one(a,c,live){const A2=P(...a),B2=P(...c),C=P(c[0],a[1],c[2]),d=c.map((v,i)=>v-a[i]),L=Math.hypot(...d),H=Math.hypot(d[0],d[2]),Vv=Math.abs(d[1]);
+  ctx.save();ctx.setLineDash([2,4]);ctx.strokeStyle='rgba(255,210,74,.45)';ctx.lineWidth=1;if(H>1e-4&&Vv>1e-4){ctx.beginPath();ctx.moveTo(A2[0],A2[1]);ctx.lineTo(C[0],C[1]);ctx.lineTo(B2[0],B2[1]);ctx.stroke();}
+  ctx.setLineDash(live?[6,4]:[]);ctx.strokeStyle='#ffd24a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(A2[0],A2[1]);ctx.lineTo(B2[0],B2[1]);ctx.stroke();ctx.setLineDash([]);
+  [A2,B2].forEach(p=>{ctx.fillStyle='#ffd24a';ctx.strokeStyle='#0b111a';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p[0],p[1],4,0,7);ctx.fill();ctx.stroke();});
+  const ang=Math.atan2(B2[1]-A2[1],B2[0]-A2[0]),k=Math.max(5,Math.min(9,Math.hypot(B2[0]-A2[0],B2[1]-A2[1])*.04));[[A2,ang],[B2,ang+Math.PI]].forEach(([p,g])=>{ctx.strokeStyle='#ffd24a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p[0]-Math.sin(g)*k,p[1]+Math.cos(g)*k);ctx.lineTo(p[0]+Math.sin(g)*k,p[1]-Math.cos(g)*k);ctx.stroke();});
+  ctx.restore();lab('L = '+f3(L)+' m','ΔH '+f3(H)+' · ΔV '+f3(Vv)+' · ΔX '+f3(Math.abs(d[0]))+' · ΔZ '+f3(Math.abs(d[2])),(A2[0]+B2[0])/2,(A2[1]+B2[1])/2-6);}
+ const _d=draw;draw=function(){_d.apply(this,arguments);try{OCC=[];MED.forEach(m=>one(m.a,m.b,false));if(tool=='medir'){if(A&&Hv)one(A.p,Hv.p,true);if(Hv){const q=P(...Hv.p);ctx.save();ctx.strokeStyle=Hv.k=='g'?'rgba(255,210,74,.6)':'#4cd964';ctx.lineWidth=2;ctx.beginPath();ctx.arc(q[0],q[1],Hv.k=='g'?5:8,0,7);ctx.stroke();ctx.restore();}}}catch(e){}};
+})();
+</script>
 </body></html>
