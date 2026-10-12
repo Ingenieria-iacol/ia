@@ -1291,3 +1291,92 @@ function sigDecVerificar_(codigo) {
     destinatario: d.destinatario || '', fase: d.fase, emitida: r.fecha instanceof Date ? r.fecha.toISOString() : String(r.fecha), sha256: d.sha256, alcance: m ? String(m.alcanceAprobado || m.serviciosSolicitados || '').split('|') : [],
     titular: SIG.TITULAR, mensaje: vig ? 'Declaración auténtica. La organización mantiene su sistema de gestión (estado actual: ' + m.estadoSIG + ').' : 'La declaración fue emitida, pero la organización ya no está vigente en el sistema' + (m ? ' (' + m.estadoSIG + ')' : '') + '.' };
 }
+
+// =====================================================================================
+//  CICLO DE VIDA DE LOS PROYECTOS: modificar, archivar, solicitar eliminación, papelera,
+//  restaurar y eliminación definitiva. Nada se borra por error:
+//  · El dueño solicita la eliminación con un motivo; el administrador la aprueba o la rechaza.
+//  · Aprobada, el proyecto pasa a la Papelera (oculto para el equipo, intacto en datos y Drive).
+//  · Solo el administrador restaura o elimina definitivamente, escribiendo el título exacto.
+//  · Aun así, la eliminación definitiva guarda una copia completa en "ProyectosEliminados"
+//    y mueve la carpeta de Drive a "Proyectos eliminados (archivo)", sin enviarla a la papelera.
+//  Todo queda en la bitácora del SIG cuando el proyecto pertenece a una organización.
+// =====================================================================================
+function proyCiclo_(q, u, adm, can, own) {
+  const p = can(q.id), C = CacheService.getScriptCache(), ahora = new Date().toISOString(), ciclo = String(p.ciclo || '');
+  const bit = (acc, det) => { try { if (p.miembroId) sigBitacora_(u.email, p.miembroId, acc, Object.assign({ proyectoId: p.id, titulo: p.titulo }, det || {})); } catch (e) {} };
+  const set = o => { Object.keys(o).forEach(k => setCell('Proyectos', p.id, k, o[k])); C.put('v_' + p.id, String(Date.now()), 21600); };
+  const fase = (c, motivo) => set({ ciclo: c, cicloPor: u.email, cicloFecha: ahora, cicloMotivo: String(motivo || '').slice(0, 500) });
+  const correo = (to, asunto, texto) => { try { if (to.length) MailApp.sendEmail({ to: to[0], bcc: to.slice(1).join(','), subject: asunto, body: texto + '\n\nPortal de Proyectos · ENTALPIA LABS', noReply: true }); } catch (e) {} };
+  const admins = () => rows('Usuarios').filter(x => x.rol === 'admin').map(x => x.email).filter(e => e && e !== u.email);
+  switch (q.a) {
+    case 'editar': {
+      own(q.id); if (ciclo === 'papelera') throw Error('El proyecto está en la papelera. El administrador debe restaurarlo primero.');
+      const campos = ['titulo', 'tipo', 'cliente', 'ubicacion', 'descripcion', 'inicio', 'fin'], antes = {}, despues = {};
+      campos.forEach(k => { if (q[k] === undefined) return; const v = String(q[k]).trim().slice(0, k === 'descripcion' ? 3000 : 200); if (String(p[k] == null ? '' : p[k]) !== v) { antes[k] = p[k]; despues[k] = v; } });
+      if ('titulo' in despues && !despues.titulo) throw Error('El título no puede quedar vacío.');
+      const n = Object.keys(despues).length; if (!n) return { ok: 1, cambios: 0 };
+      despues.modificado = ahora; set(despues);
+      if (despues.titulo) { try { DriveApp.getFolderById(p.carpeta).setName(p.id + ' - ' + despues.titulo); } catch (e) {} }
+      bit('proyecto_modificado', { antes: antes, despues: despues });
+      return { ok: 1, cambios: n };
+    }
+    case 'archivar': {
+      own(q.id); if (ciclo === 'papelera' || ciclo === 'eliminacion_solicitada') throw Error('Este proyecto tiene una eliminación en curso.');
+      const a = !!q.archivar; fase(a ? 'archivado' : '', a ? 'Archivado' : 'Reactivado'); bit(a ? 'proyecto_archivado' : 'proyecto_reactivado');
+      return { ok: 1 };
+    }
+    case 'solEliminar': {
+      own(q.id); if (ciclo === 'papelera') throw Error('El proyecto ya está en la papelera.');
+      if (q.cancelar) { if (ciclo !== 'eliminacion_solicitada') throw Error('No hay una solicitud de eliminación pendiente.'); fase('', 'Solicitud cancelada por ' + u.email); bit('eliminacion_cancelada'); return { ok: 1 }; }
+      const motivo = String(q.motivo || '').trim();
+      if (adm) { fase('papelera', motivo || 'Enviado a la papelera por el administrador'); bit('proyecto_a_papelera', { motivo: motivo }); return { ok: 1, papelera: 1 }; }
+      if (motivo.length < 5) throw Error('Escribe el motivo de la eliminación.');
+      if (ciclo === 'eliminacion_solicitada') throw Error('Ya hay una solicitud pendiente para este proyecto.');
+      fase('eliminacion_solicitada', motivo); bit('eliminacion_solicitada', { motivo: motivo });
+      correo(admins(), 'Solicitud de eliminación: ' + p.titulo, u.nombre + ' (' + u.email + ') solicitó eliminar el proyecto "' + p.titulo + '" (' + p.id + ').\nMotivo: ' + motivo + '\n\nIngresa al portal como administrador para aprobarla o rechazarla. Mientras tanto el proyecto sigue intacto.');
+      return { ok: 1 };
+    }
+    case 'resolverEliminar': {
+      if (!adm) throw Error('Solo el administrador resuelve las solicitudes de eliminación.');
+      if (ciclo !== 'eliminacion_solicitada') throw Error('Este proyecto no tiene una solicitud pendiente.');
+      const sol = p.cicloPor;
+      if (q.aprobar) { fase('papelera', 'Solicitud aprobada · ' + (p.cicloMotivo || '')); bit('eliminacion_aprobada', { solicitante: sol }); }
+      else { const m = String(q.motivo || '').trim(); fase('', 'Solicitud rechazada' + (m ? ': ' + m : '')); bit('eliminacion_rechazada', { solicitante: sol, motivo: m }); }
+      correo([sol, p.owner].filter((e, i, a) => e && a.indexOf(e) === i && e !== u.email), (q.aprobar ? 'Eliminación aprobada: ' : 'Eliminación rechazada: ') + p.titulo,
+        q.aprobar ? 'El administrador aprobó la eliminación del proyecto "' + p.titulo + '". Quedó en la papelera del portal; solo el administrador puede restaurarlo.' : 'El administrador rechazó la eliminación del proyecto "' + p.titulo + '". El proyecto sigue activo.' + (q.motivo ? '\nObservación: ' + q.motivo : ''));
+      return { ok: 1 };
+    }
+    case 'restaurar': {
+      if (!adm) throw Error('Solo el administrador restaura proyectos.');
+      if (!ciclo) return { ok: 1 };
+      fase('', 'Restaurado por el administrador'); bit('proyecto_restaurado', { desde: ciclo });
+      return { ok: 1 };
+    }
+    case 'borrar': { // compatibilidad: el antiguo "Eliminar" del administrador ahora envía a la papelera
+      if (!adm) throw Error('Solo administrador');
+      fase('papelera', String(q.motivo || 'Enviado a la papelera por el administrador')); bit('proyecto_a_papelera', { motivo: q.motivo || '' });
+      return { ok: 1, papelera: 1 };
+    }
+    case 'purgar': {
+      if (!adm) throw Error('Solo el administrador elimina definitivamente.');
+      if (ciclo !== 'papelera') throw Error('Solo se eliminan definitivamente los proyectos que están en la papelera.');
+      if (String(q.confirmar || '').trim() !== String(p.titulo).trim()) throw Error('Escribe el título exacto del proyecto para confirmar.');
+      if (!HD.ProyectosEliminados) HD.ProyectosEliminados = ['id', 'titulo', 'owner', 'miembroId', 'bajoSIG', 'carpeta', 'eliminadoPor', 'fecha', 'copia'];
+      const copia = { proyecto: p, comentarios: rows('Comentarios').filter(x => x.proyecto == p.id), archivos: rows('Archivos').filter(x => x.proyecto == p.id) };
+      let carpeta = '';
+      try {
+        const raiz = DriveApp.getFolderById(FOLDER_ID), it = raiz.getFoldersByName('Proyectos eliminados (archivo)');
+        const dest = it.hasNext() ? it.next() : raiz.createFolder('Proyectos eliminados (archivo)');
+        const f = DriveApp.getFolderById(p.carpeta); f.moveTo(dest); f.setName('[ELIMINADO ' + ahora.slice(0, 10) + '] ' + f.getName()); carpeta = f.getUrl();
+      } catch (e) {}
+      add('ProyectosEliminados', { id: p.id, titulo: p.titulo, owner: p.owner, miembroId: p.miembroId, bajoSIG: p.bajoSIG, carpeta: carpeta, eliminadoPor: u.email, fecha: ahora, copia: JSON.stringify(copia).slice(0, 49000) });
+      const s = sh('Proyectos'), d = s.getDataRange().getValues();
+      for (let i = 1; i < d.length; i++) if (d[i][0] == p.id) { s.deleteRow(i + 1); break; }
+      delete _R['Proyectos'];
+      bit('proyecto_eliminado_definitivo', { carpeta: carpeta, bajoSIG: p.bajoSIG });
+      return { ok: 1 };
+    }
+  }
+  throw Error('Acción desconocida');
+}
