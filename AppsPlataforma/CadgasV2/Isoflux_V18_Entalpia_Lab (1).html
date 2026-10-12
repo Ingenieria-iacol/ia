@@ -638,7 +638,7 @@ async function bgAdd(list){if(RO)return;const files=[...list].filter(f=>/^image\
 async function bgPack(){const out=[];for(const b of BG){const o=BGI[b.id];out.push(Object.assign(bgMeta(b),{data:await blob2URL(o.blob)}));}return out;}
 function bgSaved(arr,ro){if(!ro)bgHs();const old=BG;BG=[];arr.forEach(m=>{if(!m||!m.data)return;try{const id='F'+(bgSeq++);BGI[id]={blob:dURL2Blob(m.data),mips:[]};BG.push({id,name:m.name||id,x:+m.x||0,y:+m.y||0,sc:+m.sc||1,op:m.op==null?1:+m.op,vis:m.vis!==false,lock:!!m.lock,grp:m.grp||null,w:+m.w||0,h:+m.h||0,mime:m.mime||'',size:+m.size||0});}catch(e){}});
  bgSel=[];bgGC();BG.forEach(b=>bgLoad(b));renderBGP();draw();}
-async function bgSave(withBG){try{const o=Object.assign({version:7,caj:cajOn,fecha:new Date().toISOString(),proyecto:PJ,calculo:CF,axo:axoData()},S);if(withBG&&BG.length)o.fondos=await bgPack();dl('red_gas.json',JSON.stringify(o,null,1),'application/json');}
+async function bgSave(withBG){try{const o=Object.assign({version:7,caj:cajOn,fecha:new Date().toISOString(),proyecto:PJ,calculo:CF,axo:axoData(),vista:{yaw,pit}},S);if(withBG&&BG.length)o.fondos=await bgPack();dl('red_gas.json',JSON.stringify(o,null,1),'application/json');}
  catch(err){alert('No se pudo generar el archivo con los fondos (son demasiado pesados para un solo JSON).\n\nUsa «Guardar sin fondos» y conserva las imágenes originales aparte.\n\n'+err);}}
 /* --- panel de fondos --- */
 function renderBGP(){const el=$('bgp');if(!el)return;el.style.display=(bgOpen&&!RO)?'flex':'none';if(!bgOpen||RO)return;
@@ -2323,10 +2323,10 @@ if(RO&&LIVE)setTimeout(()=>tick(true),800);
 (function(){
 if(RO)return;
 const g=id=>document.getElementById(id),KEY='isoflux_auto_',NS=3,META='isoflux_auto_meta';
-const META_KEYS=['version','caj','fecha','proyecto','calculo','axo','fondos'];
+const META_KEYS=['version','caj','fecha','proyecto','calculo','axo','fondos','vista'];
 let lastAuto='',lastSaved=null,lastSaveT=Date.now(),lastNag=Date.now();
 const hasWork=()=>S.nodes.length||S.pipes.length||(S.anns&&S.anns.length);
-const snap=()=>{const o=Object.assign({version:7,caj:cajOn,fecha:new Date().toISOString(),proyecto:PJ,calculo:CF,axo:window.axoData?axoData():undefined},S);return JSON.stringify(o);};
+const snap=()=>{const o=Object.assign({version:7,caj:cajOn,fecha:new Date().toISOString(),proyecto:PJ,calculo:CF,axo:window.axoData?axoData():undefined,vista:{yaw,pit}},S);return JSON.stringify(o);};
 const cur=()=>JSON.stringify(S);
 const rd=()=>{try{return JSON.parse(localStorage.getItem(META)||'[]');}catch(e){return[];}};
 const pill=document.createElement('div');pill.id='autopill';pill.style.cssText='position:fixed;right:10px;bottom:30px;z-index:20;font-size:11px;padding:3px 9px;border-radius:12px;background:rgba(10,16,26,.85);border:1px solid var(--bd);color:#9fc4e8;pointer-events:none';document.body.appendChild(pill);
@@ -2399,7 +2399,7 @@ if(RO)return;
 const API="https://script.google.com/macros/s/AKfycbzPsHZ7TjSHExWu3dEboPC1_WXl5KMfisX3DKo4SOtQM2PYa66HF7ba0Ary8eET5N08/exec";
 const PORTAL="../../Modales%20Plataforma/ModalPortalProyectosClaude.html";
 const g=id=>document.getElementById(id),esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const SK='isoflux_sesion',LK='isoflux_vinculo',META_KEYS=['version','caj','fecha','proyecto','calculo','axo','fondos'];
+const SK='isoflux_sesion',LK='isoflux_vinculo',META_KEYS=['version','caj','fecha','proyecto','calculo','axo','fondos','vista'];
 const fch=t=>{const d=new Date(t);return isNaN(d)?'—':d.toLocaleString('es-CO',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});};
 const kb=n=>n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
 const toast=m=>{try{bgToast(m);}catch(e){}};
@@ -2426,7 +2426,7 @@ async function gz(str){if(!window.CompressionStream)return null;const st=new Blo
 async function gunz(b){if(!window.DecompressionStream)throw new Error('Este navegador no puede abrir planos de la nube. Actualízalo (Chrome, Edge, Firefox o Safari recientes).');return new Response(new Blob([b64u8(b)]).stream().pipeThrough(new DecompressionStream('gzip'))).text();}
 /* ---------- dibujo ---------- */
 const hasWork=()=>S.nodes.length||S.pipes.length||(S.anns&&S.anns.length);
-async function snapshot(withBG){const o=Object.assign({version:7,caj:cajOn,fecha:new Date().toISOString(),proyecto:PJ,calculo:CF,axo:window.axoData?axoData():undefined},S);if(withBG&&BG.length)o.fondos=await bgPack();return JSON.stringify(o);}
+async function snapshot(withBG){const o=Object.assign({version:7,caj:cajOn,fecha:new Date().toISOString(),proyecto:PJ,calculo:CF,axo:window.axoData?axoData():undefined,vista:{yaw,pit}},S);if(withBG&&BG.length)o.fondos=await bgPack();return JSON.stringify(o);}
 function miniatura(){try{const src=g('cv');if(!src||!src.width)return'';for(const [w,q] of [[360,.72],[300,.6],[240,.5]]){const h=Math.round(src.height*w/src.width),c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#0b131f';x.fillRect(0,0,w,h);x.drawImage(src,0,0,w,h);const d=c.toDataURL('image/jpeg',q);if(d.length<47000)return d;}}catch(e){}return'';}
 function aplicar(d){hs();const ns={nodes:[],pipes:[],anns:[],prices:{}};Object.keys(d).forEach(k=>{if(!META_KEYS.includes(k))ns[k]=d[k];});ns.nodes=ns.nodes||[];ns.pipes=ns.pipes||[];ns.anns=ns.anns||[];ns.prices=ns.prices||{};ns.seq=d.seq||1000;S=ns;loadPJ(d);
  try{bgSaved(Array.isArray(d.fondos)?d.fondos:[]);}catch(e){}cajOn=!!d.caj;const bc=g('bcaj');if(bc)bc.classList.toggle('on',cajOn);sel=null;ms=[];panel();draw();

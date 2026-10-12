@@ -1258,57 +1258,204 @@ function preparePlan(d, meta){
   });
   const count = {}; nodes.forEach(n => count[n.type] = (count[n.type] || 0) + 1);
   const pj = d.proyecto || {};
+  const ys = nodes.map(n => n.y);
   return {
     meta: Object.assign({ nombre: pj.nombre || 'Plano Isoflux', proyecto: pj.cliente || '', codigo: pj.codigo || '' }, meta || {}),
     nodes, pipes, byId, adj, sectors, count,
+    anns: Array.isArray(d.anns) ? d.anns : [], fondos: Array.isArray(d.fondos) ? d.fondos : [], vista: d.vista || null,
+    floorY: Math.min(0, ...ys), labels: 'comp', spin: false,
     box: bboxOf(nodes), len: pipes.reduce((t, p) => t + p._len, 0),
     cur: sectors.length > 1 ? -1 : 0, mode: 'maqueta', color: 'material'
   };
 }
 
-/* --- Geometrías de componentes (unidad u = 1, eje del tubo = +Y, "arriba" = +Z) --- */
-const T = (g, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) => { if (rx) g.rotateX(rx); if (ry) g.rotateY(ry); if (rz) g.rotateZ(rz); g.translate(x, y, z); return g; };
-const mg = arr => mergeGeometries(arr.map(g => { g.deleteAttribute('uv'); return g; }));
-const H90 = Math.PI / 2;
-const COMP = {
-  valvula:    { color: 0xb8c0ca, geo: () => mg([new THREE.SphereGeometry(0.42, 16, 12), new THREE.CylinderGeometry(0.28, 0.28, 1.1, 14)]) },
-  regulador:  { color: 0x2563c9, geo: () => mg([new THREE.SphereGeometry(0.5, 16, 12), new THREE.CylinderGeometry(0.3, 0.3, 1.2, 14), T(new THREE.CylinderGeometry(0.75, 0.75, 0.32, 24), 0, 0, 0.8, H90), T(new THREE.SphereGeometry(0.75, 24, 8, 0, Math.PI * 2, 0, H90), 0, 0, 0.96, H90)]) },
-  medidor:    { color: 0x7d8792, geo: () => mg([T(new THREE.BoxGeometry(1.4, 1.2, 1.6), 0, 0, 0.45), T(new THREE.BoxGeometry(0.9, 0.5, 0.06), 0, 0, 0.45 + 0.0, 0)]) },
-  brida:      { color: 0xc7ced6, geo: () => new THREE.CylinderGeometry(0.55, 0.55, 0.14, 20) },
-  union_u:    { color: 0x8a939e, geo: () => mg([new THREE.CylinderGeometry(0.36, 0.36, 0.6, 14), new THREE.CylinderGeometry(0.46, 0.46, 0.22, 6)]) },
-  union:      { color: 0x9aa3ad, geo: () => new THREE.CylinderGeometry(0.34, 0.34, 0.42, 14) },
-  reduccion:  { color: 0xaab3bd, geo: () => new THREE.CylinderGeometry(0.22, 0.38, 0.6, 16) },
-  transicion: { color: 0x2bb673, geo: () => new THREE.CylinderGeometry(0.3, 0.3, 1.0, 14) },
-  term_m:     { color: 0xc9a227, geo: () => new THREE.CylinderGeometry(0.18, 0.32, 0.5, 14) },
-  term_h:     { color: 0xc9a227, geo: () => new THREE.CylinderGeometry(0.32, 0.18, 0.5, 14) },
-  flexible:   { color: 0x4b5160, geo: () => new THREE.CylinderGeometry(0.24, 0.24, 1.0, 10) },
-  ptopres:    { color: 0xf5a623, geo: () => mg([new THREE.SphereGeometry(0.34, 14, 10), T(new THREE.CylinderGeometry(0.08, 0.08, 0.5, 8), 0, 0, 0.35, H90)]) },
-  manometro:  { color: 0xf2f2f2, geo: () => mg([T(new THREE.CylinderGeometry(0.07, 0.07, 0.6, 8), 0, 0, 0.3, H90), T(new THREE.CylinderGeometry(0.4, 0.4, 0.16, 24), 0, 0, 0.75)]) },
-  consumo:    { color: 0xff7a1a, geo: () => mg([T(new THREE.BoxGeometry(1.6, 1.6, 1.6), 0, 0, 0.6), T(new THREE.ConeGeometry(0.35, 0.6, 12), 0, 0, 1.7, H90)]) },
-  tanque:     { color: 0xe8e8e8, geo: () => T(new THREE.CapsuleGeometry(1.2, 3, 8, 16), 0, 0, 1.4) }
+/* --- Fidelidad 3D: materiales PBR con reflejos de estudio --- */
+let ENVMAP = null;
+function studioEnv(){
+  if (ENVMAP !== null) return ENVMAP || null;
+  ENVMAP = false;
+  try {
+    const pm = new THREE.PMREMGenerator(renderer), s = new THREE.Scene();
+    const room = new THREE.Mesh(new THREE.BoxGeometry(20, 10, 20), new THREE.MeshBasicMaterial({ color: 0x161c28, side: THREE.BackSide }));
+    room.position.y = 4; s.add(room);
+    const L = (w, h, x, y, z, rx, ry, c, k) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(k), side: THREE.DoubleSide })); m.position.set(x, y, z); m.rotation.set(rx, ry, 0); s.add(m); };
+    L(9, 4, 0, 8.9, 0, Math.PI / 2, 0, 0xffffff, 5);          // softbox cenital
+    L(5, 5, -9.9, 4, 2, 0, Math.PI / 2, 0xd6e6ff, 2.6);       // lateral frío
+    L(5, 5, 9.9, 3, -3, 0, -Math.PI / 2, 0xffe8cc, 2);         // lateral cálido
+    L(14, 1.4, 0, 1.2, -9.9, 0, 0, 0x3d8bff, 1.4);             // franja azul (marca)
+    L(14, 1.4, 0, 1.2, 9.9, 0, Math.PI, 0xffaa3c, 0.9);        // franja ámbar
+    ENVMAP = pm.fromScene(s, 0.04).texture; pm.dispose();
+  } catch (e){ console.warn('[VR] entorno de reflejos no disponible', e); }
+  return ENVMAP || null;
+}
+const MATS = {};
+function mat(key, o){
+  if (MATS[key]) return MATS[key];
+  const m = new THREE.MeshStandardMaterial(Object.assign({ envMap: studioEnv(), envMapIntensity: 1 }, o));
+  return MATS[key] = m;
+}
+const MT = {
+  acero:   () => mat('acero', { color: 0xc7ced6, metalness: 0.85, roughness: 0.28 }),
+  inox:    () => mat('inox', { color: 0xd9dee4, metalness: 0.9, roughness: 0.22 }),
+  fundido: () => mat('fundido', { color: 0x7d858f, metalness: 0.6, roughness: 0.45 }),
+  laton:   () => mat('laton', { color: 0xd4a94a, metalness: 0.9, roughness: 0.3 }),
+  negro:   () => mat('negro', { color: 0x1a1c22, metalness: 0.3, roughness: 0.55 }),
+  vidrio:  () => mat('vidrio', { color: 0x0b1420, metalness: 0.2, roughness: 0.08, envMapIntensity: 1.6 }),
+  blanco:  () => mat('blanco', { color: 0xf1f3f5, metalness: 0.15, roughness: 0.35 }),
+  amarillo:() => mat('amarillo', { color: 0xf5c518, metalness: 0.1, roughness: 0.4 }),
+  rojo:    () => mat('rojo', { color: 0xe5484d, metalness: 0.1, roughness: 0.4 }),
+  azul:    () => mat('azul', { color: 0x1e88e5, metalness: 0.35, roughness: 0.35 }),   // regulador (como en Isoflux)
+  morado:  () => mat('morado', { color: 0x7c6cf0, metalness: 0.3, roughness: 0.4 }),   // medidor
+  medidor: () => mat('medidor', { color: 0xb9bec6, metalness: 0.45, roughness: 0.45 }),
+  cian:    () => mat('cian', { color: 0x2bb8e8, metalness: 0.2, roughness: 0.35, emissive: 0x0a3a4a, emissiveIntensity: 0.4 }), // consumo
+  verde:   () => mat('verde', { color: 0x43a047, metalness: 0.3, roughness: 0.4 }),  // manómetro
+  naranja: () => mat('naranja', { color: 0xf5a623, metalness: 0.2, roughness: 0.4 }),
+  pevd:    () => mat('pevd', { color: 0x2bb673, metalness: 0.05, roughness: 0.5 }),
+  carat:   () => { if (MATS.carat) return MATS.carat; const c = makeCanvas(256, 256), x = c.getContext('2d');
+    x.fillStyle = '#f7f7f2'; x.beginPath(); x.arc(128, 128, 124, 0, 7); x.fill(); x.strokeStyle = '#222'; x.lineWidth = 4;
+    for (let i = 0; i <= 10; i++){ const a = Math.PI * 0.75 + i * Math.PI * 1.5 / 10; x.beginPath(); x.moveTo(128 + Math.cos(a) * 96, 128 + Math.sin(a) * 96); x.lineTo(128 + Math.cos(a) * 116, 128 + Math.sin(a) * 116); x.stroke(); }
+    x.fillStyle = '#c62828'; x.save(); x.translate(128, 128); x.rotate(-0.4); x.fillRect(-4, -100, 8, 104); x.restore(); x.fillStyle = '#222'; x.beginPath(); x.arc(128, 128, 12, 0, 7); x.fill();
+    x.font = 'bold 26px Arial'; x.textAlign = 'center'; x.fillText('psi', 128, 190);
+    return MATS.carat = new THREE.MeshStandardMaterial({ map: texFrom(c, true), roughness: 0.3, metalness: 0, envMap: studioEnv() }); }
 };
-const VALVE_HANDLE = () => mg([T(new THREE.CylinderGeometry(0.06, 0.06, 0.45, 8), 0, 0, 0.6, H90), T(new THREE.BoxGeometry(0.16, 1.1, 0.12), 0, 0.35, 0.85)]);
-const compGeoCache = {};
-const compGeo = t => compGeoCache[t] || (compGeoCache[t] = (t === '_mango' ? VALVE_HANDLE() : COMP[t].geo()));
-const unitCyl = new THREE.CylinderGeometry(1, 1, 1, 10, 1, true);
-const unitSph = new THREE.SphereGeometry(1, 10, 8);
+const PIPE_MAT = {};
+function pipeMat(metal, existente){
+  const k = (metal ? 'm' : 'p') + (existente ? 'e' : '');
+  return PIPE_MAT[k] || (PIPE_MAT[k] = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: metal ? 0.6 : 0.05, roughness: metal ? 0.32 : 0.48,
+    envMap: studioEnv(), envMapIntensity: metal ? 1.1 : 0.7, transparent: !!existente, opacity: existente ? 0.5 : 1, vertexColors: false }));
+}
+const ELB_MAT = {};
+function elbowMat(metal){ return ELB_MAT[metal] || (ELB_MAT[metal] = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: metal ? 0.6 : 0.05, roughness: metal ? 0.32 : 0.48, envMap: studioEnv(), envMapIntensity: metal ? 1.1 : 0.7 })); }
+const esMetal = m => /acero|cobre|galvan|hierro|inox/i.test(m || '');
+
+/* --- Geometría de componentes en metros (base: tubería de 3/4"), eje del tubo = +X, arriba = +Y --- */
+const H90 = Math.PI / 2;
+const gX = (r1, r2, len, seg = 20, x = 0, y = 0, z = 0) => { const g = new THREE.CylinderGeometry(r2, r1, len, seg); g.rotateZ(-H90); g.translate(x, y, z); return g; };
+const gY = (r1, r2, h, seg = 20, x = 0, y = 0, z = 0) => { const g = new THREE.CylinderGeometry(r2, r1, h, seg); g.translate(x, y, z); return g; };
+const gZ = (r, d, seg = 24, x = 0, y = 0, z = 0) => { const g = new THREE.CylinderGeometry(r, r, d, seg); g.rotateX(H90); g.translate(x, y, z); return g; };
+const gB = (w, h, d, x = 0, y = 0, z = 0) => { const g = new THREE.BoxGeometry(w, h, d); g.translate(x, y, z); return g; };
+const gS = (r, x = 0, y = 0, z = 0, sy = 1) => { const g = new THREE.SphereGeometry(r, 24, 16); if (sy !== 1) g.scale(1, sy, 1); g.translate(x, y, z); return g; };
+const gRB = (w, h, d, r, x = 0, y = 0, z = 0) => {   // caja con cantos redondeados (aspecto industrial)
+  const s = new THREE.Shape(), a = w / 2 - r, b = h / 2 - r;
+  s.moveTo(-a, -h / 2); s.lineTo(a, -h / 2); s.quadraticCurveTo(w / 2, -h / 2, w / 2, -b); s.lineTo(w / 2, b); s.quadraticCurveTo(w / 2, h / 2, a, h / 2);
+  s.lineTo(-a, h / 2); s.quadraticCurveTo(-w / 2, h / 2, -w / 2, b); s.lineTo(-w / 2, -b); s.quadraticCurveTo(-w / 2, -h / 2, -a, -h / 2);
+  const g = new THREE.ExtrudeGeometry(s, { depth: d - 2 * r, bevelEnabled: true, bevelSize: r, bevelThickness: r, bevelSegments: 3, curveSegments: 6 });
+  g.translate(x, y, z - (d - 2 * r) / 2); return g; };
+const merge = arr => { const a = arr.map(g => { const n = g.index ? g.toNonIndexed() : g; for (const k of Object.keys(n.attributes)) if (k !== 'position' && k !== 'normal') n.deleteAttribute(k); return n; }); return mergeGeometries(a); };
+const hexEnds = (r, w, off) => [gX(r, r, w, 6, -off), gX(r, r, w, 6, off)];
+const ribs = (r, n, len) => { const a = []; for (let i = 0; i < n; i++){ const t = new THREE.TorusGeometry(r, r * 0.22, 6, 18); t.rotateY(H90); t.translate(-len / 2 + (i + 0.5) * len / n, 0, 0); a.push(t); } return a; };
+
+/* Cada modelo: lista de piezas { m: material, g: geometría }; se instancian por tipo */
+const MODELS = {
+  'valvula:a': () => [{ m: MT.laton, g: merge([gS(0.024), gX(0.017, 0.017, 0.07), ...hexEnds(0.021, 0.018, 0.036), gY(0.005, 0.005, 0.03, 10, 0, 0.034)]) },
+                      { m: MT.amarillo, g: merge([gB(0.11, 0.009, 0.02, 0.04, 0.05, 0), gB(0.02, 0.016, 0.022, 0, 0.048, 0)]) }],
+  'valvula:c': () => [{ m: MT.laton, g: merge([gS(0.024), gX(0.017, 0.017, 0.07), ...hexEnds(0.021, 0.018, 0.036), gY(0.005, 0.005, 0.03, 10, 0, 0.034)]) },
+                      { m: MT.rojo, g: merge([gB(0.02, 0.009, 0.11, 0, 0.05, 0.04), gB(0.022, 0.016, 0.02, 0, 0.048, 0)]) }],
+  regulador: () => [{ m: MT.fundido, g: merge([gX(0.026, 0.026, 0.11), gS(0.036), ...hexEnds(0.022, 0.016, 0.055), gY(0.03, 0.03, 0.03, 20, 0, 0.035)]) },
+                    { m: MT.azul, g: merge([gY(0.072, 0.072, 0.03, 32, 0, 0.06), gS(0.072, 0, 0.075, 0, 0.45)]) },
+                    { m: MT.negro, g: merge([gX(0.009, 0.009, 0.03, 12, 0.07, 0.065), gY(0.008, 0.008, 0.02, 10, 0, 0.11)]) }],
+  medidor: () => [{ m: MT.medidor, g: merge([gRB(0.21, 0.27, 0.16, 0.015, 0, -0.12, 0), gY(0.013, 0.013, 0.05, 14, -0.065, 0.0), gY(0.013, 0.013, 0.05, 14, 0.065, 0.0), ...[-0.065, 0.065].map(x => gY(0.019, 0.019, 0.016, 6, x, 0.02))]) },
+                  { m: MT.morado, g: gB(0.214, 0.035, 0.164, 0, -0.235, 0) },
+                  { m: MT.vidrio, g: gB(0.1, 0.05, 0.006, 0, -0.07, 0.081) },
+                  { m: MT.blanco, g: gB(0.16, 0.03, 0.004, 0, -0.16, 0.081) }],
+  union_u: () => [{ m: MT.acero, g: merge([gX(0.019, 0.019, 0.07), gX(0.027, 0.027, 0.022, 6), gX(0.022, 0.022, 0.012, 6, -0.028), gX(0.022, 0.022, 0.012, 6, 0.028)]) }],
+  union: () => [{ m: MT.acero, g: merge([gX(0.019, 0.019, 0.045, 20), ...hexEnds(0.021, 0.008, 0.022)]) }],
+  brida: () => [{ m: MT.acero, g: merge([gX(0.058, 0.058, 0.012, 32, -0.008), gX(0.058, 0.058, 0.012, 32, 0.008), gX(0.022, 0.022, 0.06, 20), ...[0, 1, 2, 3].map(i => gX(0.005, 0.005, 0.045, 8, 0, Math.cos(i * H90 + 0.78) * 0.043, Math.sin(i * H90 + 0.78) * 0.043))]) }],
+  reduccion: () => [{ m: MT.acero, g: merge([gX(0.019, 0.013, 0.05, 20), gX(0.019, 0.019, 0.012, 20, -0.028), gX(0.013, 0.013, 0.012, 20, 0.028)]) }],
+  transicion: () => [{ m: MT.pevd, g: gX(0.016, 0.016, 0.09, 20) }, { m: MT.acero, g: merge([gX(0.02, 0.02, 0.02, 6, 0.05), gX(0.02, 0.02, 0.02, 6, -0.05)]) }],
+  term_m: () => [{ m: MT.laton, g: merge([gX(0.021, 0.021, 0.016, 6, 0.01), gX(0.012, 0.012, 0.03, 16, -0.02), ...ribs(0.012, 4, 0.028).map(g => g.translate(-0.02, 0, 0))]) }],
+  term_h: () => [{ m: MT.laton, g: merge([gX(0.021, 0.021, 0.016, 6, -0.01), gX(0.017, 0.017, 0.03, 16, 0.02)]) }],
+  flexible: () => [{ m: MT.inox, g: merge([gX(0.013, 0.013, 0.17, 16), ...ribs(0.015, 12, 0.16), ...hexEnds(0.019, 0.016, 0.09)]) }],
+  ptopres: () => [{ m: MT.acero, g: merge([gX(0.019, 0.019, 0.04, 16), gY(0.007, 0.007, 0.04, 12, 0, 0.022)]) }, { m: MT.naranja, g: gY(0.011, 0.011, 0.016, 16, 0, 0.046) }],
+  manometro: () => [{ m: MT.laton, g: merge([gX(0.016, 0.016, 0.035, 16), gY(0.006, 0.006, 0.05, 12, 0, 0.03)]) },
+                    { m: MT.verde, g: merge([gZ(0.05, 0.026, 32, 0, 0.1, 0), gZ(0.053, 0.006, 32, 0, 0.1, 0.012)]) },
+                    { m: MT.carat, g: (() => { const g = new THREE.CircleGeometry(0.044, 32); g.translate(0, 0.1, 0.0135); return g; })() }],
+  /* Tanque estacionario de GLP horizontal (≈ 1 m × 2,6 m) con silletas y domo de válvulas; eje = +X (se aleja de la conexión) */
+  tanque: () => [{ m: MT.blanco, g: (() => { const g = new THREE.CapsuleGeometry(0.5, 1.6, 12, 32); g.rotateZ(H90); g.translate(1.32, 0, 0); return g; })() },
+                 { m: MT.negro, g: merge([gB(0.16, 0.42, 0.78, 0.75, -0.42, 0), gB(0.16, 0.42, 0.78, 1.9, -0.42, 0)]) },
+                 { m: MT.laton, g: merge([gY(0.12, 0.12, 0.09, 24, 1.32, 0.52, 0), gY(0.03, 0.03, 0.12, 12, 1.32, 0.6, 0)]) },
+                 { m: MT.rojo, g: gB(0.6, 0.06, 0.003, 1.32, 0, 0.502) }]
+};
+/* Equipos de consumo: se reconocen por el nombre del equipo o la etiqueta. Eje +X = frente (se aleja de la acometida); el fondo queda en x = 0 */
+const EQUIPOS = [
+  { re: /estufa|cocina|fog[oó]n|quemador|range/i, k: 'estufa', W: 0.9, D: 0.72, H: 0.86 },
+  { re: /freidor/i, k: 'freidora', W: 0.42, D: 0.76, H: 0.92 },
+  { re: /plancha|asador|parrilla|grill|griddle/i, k: 'plancha', W: 0.9, D: 0.72, H: 0.86 },
+  { re: /horno/i, k: 'horno', W: 0.95, D: 0.82, H: 0.95 },
+  { re: /calentador|caldera|boiler|termo|acumulador/i, k: 'calentador', W: 0.5, D: 0.5, H: 1.35 },
+  { re: /secador|lavador/i, k: 'secadora', W: 0.68, D: 0.7, H: 0.9 },
+  { re: /marmita|paila|wok|caldero/i, k: 'marmita', W: 0.8, D: 0.8, H: 0.9 }
+];
+function equipoDe(n){ const t = `${n.eq && n.eq.nombre || ''} ${n.tag || ''} ${n.notes || ''}`; return EQUIPOS.find(e => e.re.test(t)) || { k: 'generico', W: 0.6, D: 0.6, H: 0.6 }; }
+function modeloEquipo(e){
+  const { W, D, H } = e, hx = D / 2, top = H, P = [];
+  const cuerpo = (m = MT.inox) => P.push({ m, g: gRB(D, H, W, 0.02, hx, H / 2, 0) });
+  const franja = () => P.push({ m: MT.cian, g: gB(D + 0.004, 0.035, W + 0.004, hx, H - 0.09, 0) });
+  switch (e.k){
+    case 'estufa': {
+      cuerpo(); franja(); P.push({ m: MT.negro, g: gB(D - 0.04, 0.02, W - 0.04, hx, top + 0.01, 0) });
+      const gr = []; for (let i = 0; i < 2; i++) for (let j = 0; j < 3; j++){ const x = hx - D * 0.22 + i * D * 0.44, z = -W * 0.3 + j * W * 0.3; gr.push(gY(0.075, 0.075, 0.012, 24, x, top + 0.026, z)); gr.push(gY(0.03, 0.03, 0.02, 16, x, top + 0.03, z)); }
+      P.push({ m: MT.fundido, g: merge(gr) });
+      const kn = []; for (let j = 0; j < 6; j++) kn.push(gX(0.018, 0.018, 0.025, 16, D + 0.012, H - 0.16, -W * 0.36 + j * W * 0.144)); P.push({ m: MT.negro, g: merge(kn) });
+      break; }
+    case 'freidora': {
+      cuerpo(); franja(); P.push({ m: MT.negro, g: gB(D * 0.7, 0.02, W - 0.06, hx, top + 0.005, 0) });
+      P.push({ m: MT.inox, g: merge([gB(0.025, 0.12, 0.012, D * 0.86, top + 0.07, -W * 0.18), gB(0.025, 0.12, 0.012, D * 0.86, top + 0.07, W * 0.18), gB(D * 0.5, 0.05, W * 0.3, hx, top + 0.02, -W * 0.2), gB(D * 0.5, 0.05, W * 0.3, hx, top + 0.02, W * 0.2)]) });
+      break; }
+    case 'plancha': {
+      cuerpo(); franja(); P.push({ m: MT.fundido, g: gB(D - 0.06, 0.03, W - 0.04, hx - 0.02, top + 0.015, 0) });
+      P.push({ m: MT.inox, g: merge([gB(0.04, 0.06, W, D - 0.02, top + 0.03, 0), gB(D, 0.08, 0.02, hx, top + 0.04, -W / 2), gB(D, 0.08, 0.02, hx, top + 0.04, W / 2)]) });
+      break; }
+    case 'horno': {
+      cuerpo(); franja(); P.push({ m: MT.vidrio, g: gB(0.008, H * 0.42, W * 0.7, D + 0.004, H * 0.42, 0) });
+      P.push({ m: MT.negro, g: gX(0.012, 0.012, 0.05, 12, D + 0.03, H * 0.7, 0).rotateX(0) }); P.push({ m: MT.inox, g: gZ(0.012, W * 0.6, 12, D + 0.05, H * 0.7, 0) });
+      break; }
+    case 'calentador': {
+      P.push({ m: MT.blanco, g: gY(W / 2, W / 2, H, 40, hx, H / 2, 0) }); P.push({ m: MT.cian, g: gY(W / 2 + 0.003, W / 2 + 0.003, 0.04, 40, hx, H - 0.12, 0) });
+      P.push({ m: MT.negro, g: gY(0.06, 0.06, 0.12, 20, hx, H + 0.06, 0) });
+      break; }
+    case 'secadora': {
+      P.push({ m: MT.blanco, g: gRB(D, H, W, 0.02, hx, H / 2, 0) }); P.push({ m: MT.vidrio, g: gX(W * 0.3, W * 0.3, 0.02, 40, D + 0.005, H * 0.45, 0) }); P.push({ m: MT.cian, g: gB(0.006, 0.06, W * 0.8, D + 0.003, H - 0.07, 0) });
+      break; }
+    case 'marmita': {
+      P.push({ m: MT.inox, g: merge([gY(W * 0.42, W * 0.36, H * 0.55, 40, hx, H * 0.6, 0), gY(0.02, 0.02, H * 0.35, 8, hx - D * 0.3, H * 0.17, -W * 0.3), gY(0.02, 0.02, H * 0.35, 8, hx + D * 0.3, H * 0.17, -W * 0.3), gY(0.02, 0.02, H * 0.35, 8, hx - D * 0.3, H * 0.17, W * 0.3), gY(0.02, 0.02, H * 0.35, 8, hx + D * 0.3, H * 0.17, W * 0.3)]) });
+      P.push({ m: MT.cian, g: gY(W * 0.43, W * 0.43, 0.03, 40, hx, H * 0.86, 0) });
+      break; }
+    default: {
+      cuerpo(); franja();
+      P.push({ m: MT.naranja, g: (() => { const g = new THREE.ConeGeometry(0.05, 0.12, 20); g.translate(hx, H + 0.06, 0); return g; })() });
+    }
+  }
+  return P;
+}
+const GEO = {};
+const modelo = k => GEO[k] || (GEO[k] = (k.startsWith('eq:') ? modeloEquipo(EQUIPOS.find(e => e.k === k.slice(3)) || { k: 'generico', W: 0.6, D: 0.6, H: 0.6 }) : MODELS[k]()));
+const unitCyl = new THREE.CylinderGeometry(1, 1, 1, 18, 1, true);
+const unitSph = new THREE.SphereGeometry(1, 18, 12);
 
 /* --- Escena del plano --- */
 const planView = new THREE.Group(); planView.visible = false; scene.add(planView);          // mesa (maqueta)
 const TABLE_H = 0.82, TABLE_R = 1.3;
-const table = new THREE.Mesh(new THREE.CylinderGeometry(TABLE_R, TABLE_R * 1.05, TABLE_H, 72),
-  new THREE.MeshStandardMaterial({ color: 0x12141b, metalness: 0.6, roughness: 0.35 }));
-table.position.y = TABLE_H / 2; planView.add(table);
-const tableRing = new THREE.Mesh(new THREE.TorusGeometry(TABLE_R, 0.01, 8, 128), new THREE.MeshBasicMaterial({ color: 0x3d8bff }));
+const table = new THREE.Mesh(new THREE.CylinderGeometry(TABLE_R, TABLE_R * 1.05, TABLE_H, 96),
+  new THREE.MeshStandardMaterial({ color: 0x10131a, metalness: 0.7, roughness: 0.3 }));
+table.position.y = TABLE_H / 2; table.receiveShadow = true; planView.add(table);
+const tableTop = new THREE.Mesh(new THREE.CircleGeometry(TABLE_R * 0.995, 96), new THREE.MeshStandardMaterial({ color: 0x0b1424, metalness: 0.2, roughness: 0.55 }));
+tableTop.rotation.x = -H90; tableTop.position.y = TABLE_H + 0.001; tableTop.receiveShadow = true; planView.add(tableTop);
+const tableRing = new THREE.Mesh(new THREE.TorusGeometry(TABLE_R, 0.012, 10, 160), new THREE.MeshBasicMaterial({ color: 0x3d8bff }));
 tableRing.rotation.x = H90; tableRing.position.y = TABLE_H + 0.002; planView.add(tableRing);
-const tableGrid = new THREE.GridHelper(TABLE_R * 2, 26, 0x2a5aa8, 0x1a2234);
-tableGrid.position.y = TABLE_H + 0.003; tableGrid.material.transparent = true; tableGrid.material.opacity = 0.5; planView.add(tableGrid);
+const tableGrid = new THREE.GridHelper(TABLE_R * 2, 26, 0x2a5aa8, 0x1a2a44);
+tableGrid.position.y = TABLE_H + 0.003; tableGrid.material.transparent = true; tableGrid.material.opacity = 0.45; planView.add(tableGrid);
 const planPivot = new THREE.Group();      // se agarra / gira
 const planScaler = new THREE.Group(); planPivot.add(planScaler);
 const planContent = new THREE.Group(); planScaler.add(planContent);
 planView.add(planPivot);
 const realGrid = new THREE.GridHelper(400, 400, 0x3d8bff, 0x1a2234);
 realGrid.material.transparent = true; realGrid.material.opacity = 0.35; realGrid.visible = false; scene.add(realGrid);
+/* luz principal con sombras (solo mientras hay un plano abierto) */
+const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
+keyLight.castShadow = !LOW_MEM; keyLight.shadow.mapSize.set(IS_HEADSET ? 1024 : 2048, IS_HEADSET ? 1024 : 2048); keyLight.shadow.bias = -0.0004; keyLight.shadow.normalBias = 0.02;
+keyLight.visible = false; scene.add(keyLight); scene.add(keyLight.target);
+renderer.shadowMap.enabled = !LOW_MEM; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 let PLAN = null;
 const planPickables = [];
@@ -1316,7 +1463,8 @@ const planHits = new Map();
 let planFrame = 0;
 
 function disposePlanMeshes(){
-  for (const m of [...planContent.children]){ planContent.remove(m); m.material.dispose?.(); m.dispose?.(); }
+  planContent.traverse(o => { if (o.isInstancedMesh) o.dispose(); if (o.userData.ownGeo) o.geometry?.dispose?.(); if (o.material && o.userData.ownMat){ o.material.map?.dispose?.(); o.material.dispose(); } });
+  for (const m of [...planContent.children]) planContent.remove(m);
   planPickables.length = 0;
 }
 function planSet(){
@@ -1334,90 +1482,263 @@ function pipeColor(p){
 }
 const _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _m = new THREE.Matrix4(), _c = new THREE.Color();
 const _bx = new THREE.Vector3(), _by = new THREE.Vector3(), _bz = new THREE.Vector3(), _bm = new THREE.Matrix4();
-function orientQuat(dir, out){
-  _by.copy(dir).normalize();
-  const up = Math.abs(_by.y) > 0.9 ? tmpV2.set(1, 0, 0) : tmpV2.set(0, 1, 0);
-  _bz.copy(up).addScaledVector(_by, -up.dot(_by)).normalize();
-  _bx.crossVectors(_by, _bz);
+/* base local: x = eje del componente, y = arriba (vertical del mundo si se puede) */
+function basisQuat(axis, out){
+  _bx.copy(axis).normalize();
+  _by.set(0, 1, 0); if (Math.abs(_bx.y) > 0.92) _by.set(0, 0, 1);
+  _by.addScaledVector(_bx, -_by.dot(_bx)).normalize();
+  _bz.crossVectors(_bx, _by);
   _bm.makeBasis(_bx, _by, _bz); return out.setFromRotationMatrix(_bm);
 }
 
+/* --- Etiquetas (estilo Isoflux) y anotaciones --- */
+function etiqueta(t1, t2, col, h){
+  const c = makeCanvas(512, t2 ? 150 : 96), x = c.getContext('2d'), W = c.width, H = c.height;
+  x.font = `700 46px ${FONT}`; let w1 = x.measureText(t1).width; x.font = `500 34px ${FONT}`; const w2 = t2 ? x.measureText(t2).width : 0;
+  const w = Math.min(W - 8, Math.max(w1, w2) + 56);
+  roundRect(x, 4, 4, w, H - 8, 18); x.fillStyle = 'rgba(8,13,22,.9)'; x.fill(); x.lineWidth = 3; x.strokeStyle = 'rgba(255,255,255,.18)'; x.stroke();
+  x.fillStyle = col; roundRect(x, 4, 4, 14, H - 8, 7); x.fill();
+  x.textBaseline = 'middle'; x.textAlign = 'left'; x.fillStyle = '#fff'; x.font = `700 46px ${FONT}`;
+  let s1 = t1; while (x.measureText(s1).width > w - 50 && s1.length > 3) s1 = s1.slice(0, -2);
+  x.fillText(s1, 34, t2 ? 50 : H / 2 + 2);
+  if (t2){ x.fillStyle = '#bcd6f5'; x.font = `500 34px ${FONT}`; let s2 = t2; while (x.measureText(s2).width > w - 50 && s2.length > 3) s2 = s2.slice(0, -2); x.fillText(s2, 34, 108); }
+  const tex = texFrom(c, true), sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false }));
+  sp.center.set(0.03, 0); sp.scale.set(h * W / H, h, 1); sp.renderOrder = 6; sp.userData.ownMat = true;
+  return sp;
+}
+function anotacion(a, h){
+  const lines = String(a.text || '').split('\n').slice(0, 6), col = a.color || ({ etq: '#ffd24a', rotulo: '#ffffff', texto: '#e4eefa' })[a.k] || '#e4eefa';
+  const c = makeCanvas(1024, 70 + lines.length * 64), x = c.getContext('2d');
+  x.font = `600 52px ${FONT}`; const w = Math.min(1016, Math.max(...lines.map(l => x.measureText(l).width)) + 50);
+  if (a.k === 'rotulo'){ roundRect(x, 4, 4, w, c.height - 8, 16); x.fillStyle = 'rgba(27,74,154,.92)'; x.fill(); }
+  else { roundRect(x, 4, 4, w, c.height - 8, 16); x.fillStyle = 'rgba(8,13,22,.78)'; x.fill(); }
+  x.fillStyle = a.k === 'rotulo' ? '#fff' : col; x.textBaseline = 'top';
+  lines.forEach((l, i) => x.fillText(l, 25, 30 + i * 64));
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFrom(c, true), transparent: true, depthWrite: false, toneMapped: false }));
+  const k = (a.size || (a.k === 'rotulo' ? 16 : 12)) / 12;
+  const hh = h * k * c.height / 64 * 0.9; sp.scale.set(hh * c.width / c.height, hh, 1); sp.center.set(0, 0); sp.renderOrder = 6; sp.userData.ownMat = true;
+  return sp;
+}
+
+/* --- Plano de fondo del arquitecto (imágenes de Isoflux), ubicado en el piso con la orientación de la vista en planta --- */
+function fondoTex(f, i){
+  PLAN.fondoTex = PLAN.fondoTex || {};
+  if (PLAN.fondoTex[i]) return PLAN.fondoTex[i];
+  const tex = new THREE.Texture(); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  const img = new Image();
+  img.onload = () => {
+    const MAX = LOW_MEM ? 2048 : 4096, k = Math.min(1, MAX / Math.max(img.width, img.height));
+    const c = makeCanvas(Math.max(1, Math.round(img.width * k)), Math.max(1, Math.round(img.height * k))), x = c.getContext('2d');
+    x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, c.width, c.height);
+    tex.image = c; tex.needsUpdate = true;
+  };
+  img.src = f.data;
+  return PLAN.fondoTex[i] = tex;
+}
+function fondosMundo(){
+  const out = [], yw = PLAN.vista && isFinite(PLAN.vista.yaw) ? PLAN.vista.yaw : Math.PI / 4, c = Math.cos(yw), q = Math.sin(yw);
+  (PLAN.fondos || []).forEach((f, i) => {
+    if (!f || !f.data || f.vis === false) return;
+    const w = (+f.w || 1) * (+f.sc || 1) / 24, h = (+f.h || 1) * (+f.sc || 1) / 24, X = (+f.x || 0) / 24, Y = (+f.y || 0) / 24;
+    const cx = X * c + Y * q, cz = -X * q + Y * c;
+    const corners = [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]].map(([u, v]) => [cx + u * c + v * q, cz - u * q + v * c]);
+    out.push({ f, i, w, h, cx, cz, c, q, yaw: yw, corners });
+  });
+  return out;
+}
+
+/* --- Construcción del plano --- */
 function buildPlan(){
   disposePlanMeshes();
-  const set = planSet(); const nodes = set.nodes, pipes = set.pipes;
-  const size = set.box.getSize(new THREE.Vector3()), center = set.box.getCenter(new THREE.Vector3());
+  const set = planSet(); const nodes = set.nodes, pipes = set.pipes, real = PLAN.mode === 'real';
+  const FL = PLAN.floorY;
+  // caja de encuadre: red + fondos (el plano del arquitecto da el contexto)
+  const fit = set.box.clone(); fit.min.y = Math.min(fit.min.y, FL);
+  const todo = PLAN.cur < 0 || PLAN.sectors.length <= 1, fondos = todo ? fondosMundo() : [];
+  fondos.forEach(o => o.corners.forEach(([x, z]) => fit.expandByPoint(tmpV.set(x, FL, z))));
+  for (const n of nodes){   // los equipos y tanques ocupan espacio más allá de su nodo
+    if (n.type === 'consumo'){ const e = equipoDe(n); fit.expandByPoint(tmpV.set(n.x + e.D + 0.1, FL + e.H, n.z + e.W)); fit.expandByPoint(tmpV.set(n.x - e.D - 0.1, FL, n.z - e.W)); }
+    if (n.type === 'tanque'){ fit.expandByPoint(tmpV.set(n.x + 2.8, n.y + 0.7, n.z + 2.8)); fit.expandByPoint(tmpV.set(n.x - 2.8, FL, n.z - 2.8)); }
+  }
+  const size = fit.getSize(new THREE.Vector3()), center = fit.getCenter(new THREE.Vector3());
   const ext = Math.max(size.x, size.z, size.y, 1);
-  const real = PLAN.mode === 'real';
-  const minR = real ? 0.025 : ext * 0.0035;
-  const U = real ? 0.16 : Math.max(ext * 0.009, minR * 3);
-  const rOf = p => Math.max(diaMM(p.dia) / 2000, minR);
+  const k = real ? 1 : (TABLE_R * 1.72) / Math.max(size.x, size.z, size.y * 1.4, 1e-3);
+  // exageración visual SOLO en maqueta para que tubería y accesorios se vean (misma proporción entre ellos)
+  const E = real ? 1 : THREE.MathUtils.clamp(0.0062 / (0.021 * k), 1, 7);
+  const rOf = p => diaMM(p.dia) * 1.2 / 2000 * E;
+  const mmN = n => { const ps = PLAN.adj.get(String(n.id)) || []; return ps.length ? Math.max(...ps.map(p => diaMM(p.dia))) : 19; };
+  const sOf = n => THREE.MathUtils.clamp(mmN(n) / 19, 0.7, 4) * E;
+  const LH = real ? 0.14 : 0.034 / k;                       // alto de etiqueta (≈ 2,4 cm sobre la mesa)
+  const add = (o, pick) => { o.castShadow = !LOW_MEM; planContent.add(o); if (pick) planPickables.push(o); return o; };
+  const nb = (n, p) => { const o = PLAN.byId.get(String(p.a)) === n ? PLAN.byId.get(String(p.b)) : PLAN.byId.get(String(p.a)); return o; };
+  const inSet = new Set(pipes);
 
-  // tuberías
-  const pm = new THREE.InstancedMesh(unitCyl, new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.25, roughness: 0.5 }), Math.max(1, pipes.length));
-  pm.count = pipes.length; pm.userData.pick = [];
-  pipes.forEach((p, i) => {
-    const A = PLAN.byId.get(String(p.a)), B = PLAN.byId.get(String(p.b));
-    const dir = tmpV.set(B.x - A.x, B.y - A.y, B.z - A.z); const L = dir.length() || 1e-4;
-    _q.setFromUnitVectors(Y_AXIS, dir.divideScalar(L));
-    _p.set((A.x + B.x) / 2, (A.y + B.y) / 2, (A.z + B.z) / 2);
-    const r = rOf(p); _s.set(r, L, r);
-    pm.setMatrixAt(i, _m.compose(_p, _q, _s)); pm.setColorAt(i, _c.set(pipeColor(p)));
-    pm.userData.pick[i] = { k: 'p', o: p };
-  });
-  pm.instanceMatrix.needsUpdate = true; if (pm.instanceColor) pm.instanceColor.needsUpdate = true;
-  planContent.add(pm); planPickables.push(pm);
+  /* 1) codos y recortes en nodos de paso (te con 2 tubos no alineados) */
+  const trim = new Map(); const elbows = { true: [], false: [] }, joints = [];
+  for (const n of nodes){
+    const ps = (PLAN.adj.get(String(n.id)) || []).filter(p => inSet.has(p));
+    if (n.type !== 'te' || !ps.length) continue;
+    if (ps.length === 1){ joints.push({ n, p: ps[0], r: rOf(ps[0]) * 1.02 }); continue; }
+    if (ps.length >= 3){ joints.push({ n, p: ps[0], r: Math.max(...ps.map(rOf)) * 1.35, tee: true }); continue; }
+    const [p1, p2] = ps, a = nb(n, p1), b = nb(n, p2);
+    const u1 = new THREE.Vector3(a.x - n.x, a.y - n.y, a.z - n.z), u2 = new THREE.Vector3(b.x - n.x, b.y - n.y, b.z - n.z);
+    const L1 = u1.length(), L2 = u2.length(); if (L1 < 1e-6 || L2 < 1e-6) continue; u1.divideScalar(L1); u2.divideScalar(L2);
+    const ang = Math.acos(THREE.MathUtils.clamp(u1.dot(u2), -1, 1));            // ángulo entre tubos (π = recto)
+    if (ang > Math.PI - 0.14){ joints.push({ n, p: p1, r: Math.max(rOf(p1), rOf(p2)) * 1.06, sleeve: true, ax: u1 }); continue; }
+    const r = Math.max(rOf(p1), rOf(p2)), Rb = 3 * r, t = Math.min(Rb / Math.tan(ang / 2), 0.45 * L1, 0.45 * L2);
+    trim.set(p1.id + '|' + n.id, t); trim.set(p2.id + '|' + n.id, t);
+    const P1 = new THREE.Vector3(n.x, n.y, n.z).addScaledVector(u1, t), P2 = new THREE.Vector3(n.x, n.y, n.z).addScaledVector(u2, t);
+    const curve = new THREE.QuadraticBezierCurve3(P1, new THREE.Vector3(n.x, n.y, n.z), P2);
+    const g = new THREE.TubeGeometry(curve, 14, r, 18, false);
+    const col = _c.set(pipeColor(p1)), cols = new Float32Array(g.attributes.position.count * 3);
+    for (let i = 0; i < cols.length; i += 3){ cols[i] = col.r; cols[i + 1] = col.g; cols[i + 2] = col.b; }
+    g.setAttribute('color', new THREE.BufferAttribute(cols, 3)); g.deleteAttribute('uv');
+    elbows[esMetal(p1.mat)].push(g);
+  }
+  for (const metal of [true, false]) if (elbows[metal].length){ const m = new THREE.Mesh(mergeGeometries(elbows[metal]), elbowMat(metal)); m.receiveShadow = true; m.userData.ownGeo = true; elbows[metal].forEach(g => g.dispose()); add(m); }
 
-  // uniones (esferas en nodos con 2+ tubos) para que la red se vea continua
-  const joints = nodes.filter(n => (PLAN.adj.get(String(n.id)) || []).length >= 2);
-  const jm = new THREE.InstancedMesh(unitSph, new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.25, roughness: 0.5 }), Math.max(1, joints.length));
-  jm.count = joints.length;
-  joints.forEach((n, i) => {
-    const ps = PLAN.adj.get(String(n.id)); const r = Math.max(...ps.map(rOf)) * 1.12;
-    jm.setMatrixAt(i, _m.compose(_p.set(n.x, n.y, n.z), _q.identity(), _s.set(r, r, r))); jm.setColorAt(i, _c.set(pipeColor(ps[0])));
-  });
-  jm.instanceMatrix.needsUpdate = true; if (jm.instanceColor) jm.instanceColor.needsUpdate = true;
-  planContent.add(jm);
-
-  // componentes por tipo
-  const groups = {};
-  for (const n of nodes){ if (COMP[n.type]) (groups[n.type] = groups[n.type] || []).push(n); }
-  for (const t in groups){
-    const list = groups[t];
-    const mk = (geo, color) => { const m = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color, metalness: 0.45, roughness: 0.4 }), list.length); m.userData.pick = []; return m; };
-    const im = mk(compGeo(t), COMP[t].color);
-    const handle = t === 'valvula' ? mk(compGeo('_mango'), 0xffffff) : null;
-    list.forEach((n, i) => {
-      const ps = PLAN.adj.get(String(n.id)) || [];
-      let dir;
-      if (t === 'tanque') dir = tmpV.set(1, 0, 0);
-      else if (ps.length){ const p = ps[0]; const o = PLAN.byId.get(String(p.a)) === n ? PLAN.byId.get(String(p.b)) : PLAN.byId.get(String(p.a)); dir = tmpV.set(o.x - n.x, o.y - n.y, o.z - n.z); if (dir.lengthSq() < 1e-9) dir.set(1, 0, 0); }
-      else dir = tmpV.set(1, 0, 0);
-      if (t === 'manometro' || t === 'consumo' || t === 'ptopres'){ // verticales: "arriba" del componente = +Y mundo
-        if (Math.abs(dir.y) / dir.length() > 0.9) dir.set(1, 0, 0); else dir.y = 0;
-      }
-      orientQuat(dir, _q);
-      const u = Math.max(U, (ps.length ? Math.max(...ps.map(rOf)) : minR) * 2.6);
-      _m.compose(_p.set(n.x, n.y, n.z), _q, _s.set(u, u, u));
-      im.setMatrixAt(i, _m); im.userData.pick[i] = { k: 'n', o: n };
-      if (handle){ handle.setMatrixAt(i, _m); handle.setColorAt(i, _c.set(/cerr/i.test(n.est || '') ? '#e5484d' : '#2fd36b')); handle.userData.pick[i] = { k: 'n', o: n }; }
+  /* 2) tuberías: instanciadas por (metal/plástico × nueva/existente), recortadas en los codos */
+  const groups = new Map();
+  for (const p of pipes){ const ex = /exist/i.test(p.obra || ''); const key = (esMetal(p.mat) ? 'm' : 'p') + (ex ? 'e' : ''); (groups.get(key) || groups.set(key, []).get(key)).push(p); }
+  for (const [key, list] of groups){
+    const im = new THREE.InstancedMesh(unitCyl, pipeMat(key[0] === 'm', key.length > 1), list.length); im.userData.pick = [];
+    list.forEach((p, i) => {
+      const A = PLAN.byId.get(String(p.a)), B = PLAN.byId.get(String(p.b));
+      const a = new THREE.Vector3(A.x, A.y, A.z), b = new THREE.Vector3(B.x, B.y, B.z), d = b.clone().sub(a), L = d.length() || 1e-4; d.divideScalar(L);
+      const ta = trim.get(p.id + '|' + A.id) || 0, tb = trim.get(p.id + '|' + B.id) || 0;
+      a.addScaledVector(d, ta); b.addScaledVector(d, -tb);
+      const l = Math.max(1e-4, L - ta - tb); _q.setFromUnitVectors(Y_AXIS, d);
+      const r = rOf(p); im.setMatrixAt(i, _m.compose(_p.copy(a).add(b).multiplyScalar(0.5), _q, _s.set(r, l, r)));
+      im.setColorAt(i, _c.set(pipeColor(p))); im.userData.pick[i] = { k: 'p', o: p };
     });
-    im.instanceMatrix.needsUpdate = true; planContent.add(im); planPickables.push(im);
-    if (handle){ handle.instanceMatrix.needsUpdate = true; if (handle.instanceColor) handle.instanceColor.needsUpdate = true; planContent.add(handle); planPickables.push(handle); }
+    im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; im.receiveShadow = true;
+    add(im, true);
+  }
+  /* uniones soldadas / tes / tapones */
+  if (joints.length){
+    const jm = new THREE.InstancedMesh(unitSph, pipeMat(true, false), joints.length);
+    joints.forEach((j, i) => {
+      if (j.sleeve){ basisQuat(j.ax, _q); _s.set(j.r * 1.6, j.r, j.r); } else { _q.identity(); _s.set(j.r, j.r, j.r); }
+      jm.setMatrixAt(i, _m.compose(_p.set(j.n.x, j.n.y, j.n.z), _q, _s)); jm.setColorAt(i, _c.set(pipeColor(j.p)));
+    });
+    jm.instanceMatrix.needsUpdate = true; if (jm.instanceColor) jm.instanceColor.needsUpdate = true; add(jm);
   }
 
-  // encuadre
+  /* 3) componentes con modelos detallados, orientados por la línea que los atraviesa */
+  const inst = new Map();   // clave de modelo → [{ m4, n }]
+  const push = (key, m4, n) => { (inst.get(key) || inst.set(key, []).get(key)).push({ m4: m4.clone(), n }); };
+  const etiquetas = [];
+  const centroRed = set.box.getCenter(new THREE.Vector3());
+  for (const n of nodes){
+    if (n.type === 'te') continue;
+    const ps = PLAN.adj.get(String(n.id)) || [];
+    const P0 = new THREE.Vector3(n.x, n.y, n.z);
+    let ax = new THREE.Vector3(1, 0, 0);
+    if (ps.length >= 2){ const a = nb(n, ps[0]), b = nb(n, ps[1]); ax.set(b.x - a.x, b.y - a.y, b.z - a.z); if (ax.lengthSq() < 1e-9) ax.set(1, 0, 0); }
+    else if (ps.length === 1){ const a = nb(n, ps[0]); ax.set(n.x - a.x, n.y - a.y, n.z - a.z); if (ax.lengthSq() < 1e-9) ax.set(1, 0, 0); }
+    // frente horizontal (se aleja de la acometida)
+    const fr = ax.clone(); fr.y = 0; if (fr.lengthSq() < 1e-6){ fr.set(n.x - centroRed.x, 0, n.z - centroRed.z); if (fr.lengthSq() < 1e-6) fr.set(1, 0, 0); } fr.normalize();
+    let top = 0.12 * sOf(n), key = null;
+    if (n.type === 'consumo'){
+      const e = equipoDe(n), ke = 1, base = (n.y - FL > 0.25 && n.y - FL < e.H + 0.5) ? FL : n.y - e.H * ke / 2;
+      basisQuat(fr, _q); _m.compose(_p.copy(P0).addScaledVector(fr, 0.04 * ke).setY(base), _q, _s.setScalar(ke)); push('eq:' + e.k, _m, n);
+      // conexión desde el nodo hasta el equipo
+      top = (base - n.y) + e.H * ke + 0.05 * ke;
+    } else if (n.type === 'tanque'){
+      const kt = 1, ty = Math.max(n.y, FL + 0.64 * kt); basisQuat(fr, _q); _m.compose(_p.copy(P0).setY(ty), _q, _s.setScalar(kt)); push('tanque', _m, n); top = ty - n.y + 0.8 * kt; P0.addScaledVector(fr, 1.32 * kt);
+    } else if (n.type === 'valvula'){
+      key = /cerr/i.test(n.est || '') ? 'valvula:c' : 'valvula:a';
+    } else if (n.type === 'medidor' || n.type === 'regulador' || n.type === 'manometro' || n.type === 'ptopres'){
+      key = n.type; if (n.type === 'medidor') ax.copy(fr);   // el medidor siempre vertical, con el frente a la vista
+    } else if (MODELS[n.type]) key = n.type;
+    if (key){
+      const sc = sOf(n);
+      basisQuat(ax, _q); _m.compose(P0, _q, _s.setScalar(n.type === 'medidor' ? Math.min(sc, Math.max(E, 1) * 1.4) : sc)); push(key, _m, n);
+    }
+    const t2 = n.type === 'consumo' ? [n.eq && n.eq.nombre !== 'Ninguno' ? n.eq.nombre : 'Punto de consumo', n.eq && n.eq.kw ? n.eq.kw + ' kW' : ''].filter(Boolean).join(' · ') : (TY[n.type] || n.type);
+    etiquetas.push({ pos: P0.clone().setY(n.y + top + LH * 0.25), t1: n.tag || n.id, t2, col: COLS_TIPO[n.type] || '#8fd0ff', n });
+  }
+  for (const [key, list] of inst){
+    for (const part of modelo(key)){
+      const im = new THREE.InstancedMesh(part.g, part.m(), list.length); im.userData.pick = [];
+      list.forEach((it, i) => { im.setMatrixAt(i, it.m4); im.userData.pick[i] = { k: 'n', o: it.n }; });
+      im.instanceMatrix.needsUpdate = true; im.userData.own = false; im.castShadow = !LOW_MEM; im.receiveShadow = true;
+      planContent.add(im); planPickables.push(im);
+    }
+  }
+
+  /* 4) cotas: líneas punteadas al piso, como en Isoflux */
+  const pts = [];
+  for (const n of nodes) if (n.y - FL > 0.05 && n.type !== 'consumo' && n.type !== 'tanque'){ pts.push(n.x, n.y, n.z, n.x, FL, n.z); }
+  if (pts.length){
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    const l = new THREE.LineSegments(g, new THREE.LineDashedMaterial({ color: 0x4a86d8, dashSize: real ? 0.08 : 0.006 / k, gapSize: real ? 0.06 : 0.0045 / k, transparent: true, opacity: 0.55, toneMapped: false }));
+    l.computeLineDistances(); l.userData.ownGeo = true; l.userData.ownMat = true; planContent.add(l);
+  }
+
+  /* 5) etiquetas y anotaciones */
+  PLAN.labelObjs = [];
+  if (PLAN.labels !== 'none'){
+    for (const e of etiquetas){ const s = etiqueta(e.t1, e.t2, e.col, LH); s.position.copy(e.pos); planContent.add(s); PLAN.labelObjs.push(s); }
+    if (PLAN.labels === 'all') for (const p of pipes){
+      const A = PLAN.byId.get(String(p.a)), B = PLAN.byId.get(String(p.b));
+      const s = etiqueta(`${p.tag || p.id} · Ø ${p.dia}"`, `${nf(p._len, 2)} m · ${p.mat || ''}`, pipeColor(p), LH * 0.8);
+      s.position.set((A.x + B.x) / 2, (A.y + B.y) / 2 + rOf(p) * 2 + LH * 0.1, (A.z + B.z) / 2); planContent.add(s); PLAN.labelObjs.push(s);
+    }
+    if (todo) for (const a of PLAN.anns){ if (!isFinite(a.x) || !String(a.text || '').trim()) continue; const s = anotacion(a, LH * 0.8); s.position.set(a.x, a.y, a.z); planContent.add(s); PLAN.labelObjs.push(s); }
+  }
+
+  /* 6) plano de fondo + receptor de sombras */
+  for (const o of fondos){
+    const g = new THREE.PlaneGeometry(o.w, o.h);
+    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: fondoTex(o.f, o.i), transparent: true, opacity: Math.min(1, (o.f.op == null ? 1 : +o.f.op) * 0.92), depthWrite: false, toneMapped: false, side: THREE.DoubleSide }));
+    g.rotateX(-H90); m.rotation.y = o.yaw;   // derecha de la imagen → (cos, 0, −sen); abajo → (sen, 0, cos), igual que la vista en planta
+    m.position.set(o.cx, FL + 0.002, o.cz); m.renderOrder = 1; m.userData.ownGeo = true; m.userData.ownMat = true; planContent.add(m);
+  }
+  if (!LOW_MEM){
+    const sh = new THREE.Mesh(new THREE.PlaneGeometry(size.x * 1.6 + 2 / (real ? 1 : k), size.z * 1.6 + 2 / (real ? 1 : k)), new THREE.ShadowMaterial({ opacity: 0.42, depthWrite: false }));
+    sh.rotation.x = -H90; sh.position.set(center.x, FL + 0.003, center.z); sh.receiveShadow = true; sh.renderOrder = 2; sh.userData.ownGeo = true; sh.userData.ownMat = true; planContent.add(sh);
+  }
+
+  /* encuadre */
   if (real){
     planPivot.position.set(0, 0, 0); planPivot.quaternion.identity(); planPivot.scale.setScalar(1);
     planScaler.scale.setScalar(1);
     planContent.position.set(-center.x, 0, -center.z);
   } else {
     planPivot.position.set(0, TABLE_H + 0.01, 0); planPivot.quaternion.identity(); planPivot.scale.setScalar(1);
-    const k = (TABLE_R * 1.75) / Math.max(size.x, size.z, size.y * 1.4, 1e-3);
     planScaler.scale.setScalar(k);
-    planContent.position.set(-center.x, -set.box.min.y, -center.z);
+    planContent.position.set(-center.x, -FL, -center.z);
   }
-  PLAN.ext = ext; PLAN.center = center;
+  PLAN.ext = ext; PLAN.center = center; PLAN.k = k; PLAN.E = E;
+  ajustarLuz();
   drawPlanTitle(); drawLegend();
+}
+const COLS_TIPO = { valvula: '#3b82f6', regulador: '#1e88e5', medidor: '#7c6cf0', consumo: '#2bb8e8', tanque: '#00acc1', manometro: '#43a047', brida: '#9aa3ad', union_u: '#9aa3ad', union: '#9aa3ad', reduccion: '#9aa3ad', ptopres: '#f5a623', transicion: '#2bb673', term_m: '#c9a227', term_h: '#c9a227', flexible: '#cfd6de' };
+/* la luz de sombras sigue a la maqueta: esfera envolvente en el espacio del pivote */
+function ajustarLuz(){
+  keyLight.visible = !!PLAN; if (!PLAN) return;
+  planPivot.updateMatrixWorld(true);
+  const b = new THREE.Box3(), inv = new THREE.Matrix4().copy(planPivot.matrixWorld).invert(), ib = new THREE.Box3(), pts = [];
+  const esq = (bx) => { for (const x of [bx.min.x, bx.max.x]) for (const y of [bx.min.y, bx.max.y]) for (const z of [bx.min.z, bx.max.z]) pts.push(new THREE.Vector3(x, y, z)); };
+  planContent.traverse(o => { if (!(o.isMesh && o.castShadow)) return; o.geometry.computeBoundingBox?.(); const gb = o.geometry.boundingBox; if (!gb) return;
+    if (o.isInstancedMesh){ for (let i = 0; i < o.count; i++){ o.getMatrixAt(i, _m); ib.copy(gb).applyMatrix4(_m).applyMatrix4(o.matrixWorld).applyMatrix4(inv); b.union(ib); if (o.geometry !== unitCyl) esq(ib); else { _m.premultiply(o.matrixWorld).premultiply(inv); pts.push(new THREE.Vector3(0, 0.5, 0).applyMatrix4(_m), new THREE.Vector3(0, -0.5, 0).applyMatrix4(_m)); } } }
+    else { ib.copy(gb).applyMatrix4(o.matrixWorld).applyMatrix4(inv); b.union(ib); esq(ib); } });
+  PLAN.luzPts = pts.length > 6000 ? pts.filter((_, i) => i % Math.ceil(pts.length / 6000) === 0) : pts;
+  if (b.isEmpty()){ PLAN.luz = null; return; }
+  PLAN.luz = { c: b.getCenter(new THREE.Vector3()), r: Math.max(b.getSize(new THREE.Vector3()).length() / 2, 0.01) };
+  PLAN.luzBox = b.clone();
+  seguirLuz(true);
+}
+const _lc = new THREE.Vector3(), _ls = new THREE.Vector3();
+function seguirLuz(force){
+  if (!PLAN || !PLAN.luz || !keyLight.visible) return;
+  planPivot.updateMatrixWorld(); _lc.copy(PLAN.luz.c); planPivot.localToWorld(_lc); planPivot.getWorldScale(_ls);
+  const r = Math.max(PLAN.luz.r * _ls.x, 0.15);
+  keyLight.target.position.copy(_lc); keyLight.position.copy(_lc).add(tmpV.set(0.45, 1, 0.3).normalize().multiplyScalar(r * 3));
+  const cam = keyLight.shadow.camera;
+  if (force || Math.abs(cam.right - r) > r * 0.02){ cam.left = -r; cam.right = r; cam.top = r; cam.bottom = -r; cam.near = r * 0.5; cam.far = r * 6; cam.updateProjectionMatrix(); }
+  keyLight.target.updateMatrixWorld();
 }
 
 /* --- Panel de control del plano --- */
@@ -1433,10 +1754,73 @@ const secLabel = panel(0.64, 0.075, () => {}, 900); secLabel.position.set(0, -0.
 pbtn('▶', 0.12, 0.4, -0.025, () => stepSector(1));
 pbtn('🗺 Toda la red', 0.44, -0.235, -0.13, () => { if (PLAN.cur !== -1){ PLAN.cur = -1; rebuildKeepMode(); } });
 const bColor = pbtn('🎨 Color: material', 0.44, 0.235, -0.13, () => cycleColor());
-pbtn('↺ Restablecer', 0.29, -0.315, -0.235, () => rebuildKeepMode());
-pbtn('📂 Otro plano', 0.29, 0, -0.235, () => abrirMisPlanos());
-pbtn('✕ Cerrar', 0.29, 0.315, -0.235, () => closeViewer(), true);
-const planHint = panel(PW, 0.06, () => {}, 900); planHint.position.y = -0.315; planUI.add(planHint);
+const bLab = pbtn('🏷 Etiquetas: equipos', 0.29, -0.315, -0.235, () => cycleLabels());
+pbtn('📸 Imagen 4K', 0.29, 0, -0.235, () => capturaHD());
+const bSpin = pbtn('🎬 Girar maqueta', 0.29, 0.315, -0.235, () => { PLAN.spin = !PLAN.spin; bSpin.userData.setText((PLAN.spin ? '■ Detener giro' : '🎬 Girar maqueta')); });
+pbtn('↺ Restablecer', 0.29, -0.315, -0.34, () => rebuildKeepMode());
+pbtn('📂 Otro plano', 0.29, 0, -0.34, () => abrirMisPlanos());
+pbtn('✕ Cerrar', 0.29, 0.315, -0.34, () => closeViewer(), true);
+const planHint = panel(PW, 0.06, () => {}, 900); planHint.position.y = -0.42; planUI.add(planHint);
+const LABEL_MODES = [['comp', 'equipos'], ['all', 'todo'], ['none', 'ninguna']];
+window.__vrPlan = { captura: () => capturaHD(), modo: m => setPlanMode(m), etiquetas: () => cycleLabels(), get plan(){ return PLAN; }, get contenido(){ return planContent; } };
+function cycleLabels(){
+  const i = LABEL_MODES.findIndex(c => c[0] === PLAN.labels); PLAN.labels = LABEL_MODES[(i + 1) % LABEL_MODES.length][0];
+  bLab.userData.setText('🏷 Etiquetas: ' + LABEL_MODES.find(c => c[0] === PLAN.labels)[1]); buildPlan();
+}
+/* --- Imagen 4K de presentación: vista isométrica como en Isoflux, con cajetín --- */
+async function capturaHD(){
+  if (!PLAN) return;
+  if (renderer.xr.isPresenting){ toast('La imagen 4K se genera fuera de las gafas: quítatelas y pulsa 📸 en la pantalla.'); return; }
+  if (!PLAN.luz) ajustarLuz(); if (!PLAN.luz){ toast('No hay nada que fotografiar.'); return; }
+  const W = LOW_MEM ? 1920 : 3840, H = LOW_MEM ? 1080 : 2160;
+  toast('📸 Generando imagen ' + W + '×' + H + '…'); await new Promise(r => setTimeout(r, 60));
+  const hid = [planUI, info, toastMesh, env.userData.stars, env.userData.dust, env.userData.arc, env.userData.floor, env.userData.grid, env.userData.ring].filter(o => o && o.visible); hid.forEach(o => o.visible = false);
+  planPivot.updateMatrixWorld(true);
+  // caja del modelo en el mundo (8 esquinas de la caja local del pivote)
+  const pts = PLAN.luzPts.map(p => planPivot.localToWorld(p.clone()));
+  if (PLAN.cur < 0 || PLAN.sectors.length <= 1) fondosMundo().forEach(o => o.corners.forEach(([x, z]) => pts.push(planContent.localToWorld(new THREE.Vector3(x, PLAN.floorY, z)))));
+  const c = new THREE.Box3().setFromPoints(pts).getCenter(new THREE.Vector3()), r = Math.max(...pts.map(p => p.distanceTo(c)));
+  const q = new THREE.Quaternion(); planPivot.getWorldQuaternion(q);
+  const e = THREE.MathUtils.degToRad(35.26), fov = 24, cam = new THREE.PerspectiveCamera(fov, W / H, r * 0.01, r * 80);
+  // ángulo de presentación: se prueban 8 azimuts (los isométricos de Isoflux tienen prioridad) y se elige el que muestra la red más grande
+  let best = null;
+  const az0 = PLAN.vista && isFinite(PLAN.vista.yaw) ? PLAN.vista.yaw : Math.PI / 4;   // mismo ángulo con que se dibujó en Isoflux
+  for (let i = 0; i < 8; i++){
+    const az = az0 + i * Math.PI / 4, dd = new THREE.Vector3(Math.cos(e) * Math.sin(az), Math.sin(e), Math.cos(e) * Math.cos(az)).applyQuaternion(q).normalize();
+    let dist = r / Math.sin(THREE.MathUtils.degToRad(fov / 2)), cc = c.clone();
+    for (let it = 0; it < 5; it++){   // encuadre ajustado y centrado: el modelo ocupa ~80 % del cuadro
+      cam.position.copy(cc).addScaledVector(dd, dist); cam.lookAt(cc); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
+      let x0 = 1, x1 = -1, y0 = 1, y1 = -1; pts.forEach(p => { const v = p.clone().project(cam); x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); });
+      const ndc = new THREE.Vector3((x0 + x1) / 2, (y0 + y1) / 2 + 0.06, 0.5).unproject(cam);   // recentrar (deja espacio al cajetín)
+      cc.add(ndc.sub(cam.position).normalize().multiplyScalar(dist).add(cam.position).sub(cc).projectOnPlane(dd));
+      dist *= Math.max((x1 - x0) / 2 / 0.82, (y1 - y0) / 2 / 0.72, 0.25);
+    }
+    const score = dist * (i === 0 ? 1 : i % 2 === 0 ? 1.15 : 1.22);
+    if (!best || score < best.score) best = { score, dist, dd, cc };
+  }
+  const d = best.dd, dist = best.dist; c.copy(best.cc);
+  cam.position.copy(c).addScaledVector(d, dist); cam.lookAt(c); cam.near = Math.max(dist - r * 1.5, r * 0.01); cam.far = dist + r * 3; cam.updateProjectionMatrix();
+  // fondo de estudio con viñeta (como los videos de presentación)
+  const bgc = makeCanvas(1024, 576), bx = bgc.getContext('2d'), gr = bx.createRadialGradient(512, 250, 40, 512, 288, 640);
+  gr.addColorStop(0, '#1a2b46'); gr.addColorStop(0.55, '#0c1424'); gr.addColorStop(1, '#04070c'); bx.fillStyle = gr; bx.fillRect(0, 0, 1024, 576);
+  const bgt = texFrom(bgc); const fog = scene.fog, bg0 = scene.background, size = renderer.getSize(new THREE.Vector2()), pr = renderer.getPixelRatio();
+  let url = null;
+  try { scene.fog = null; scene.background = bgt; renderer.setPixelRatio(1); renderer.setSize(W, H, false); renderer.render(scene, cam); url = renderer.domElement.toDataURL('image/png'); }
+  finally { scene.fog = fog; scene.background = bg0; bgt.dispose(); renderer.setPixelRatio(pr); renderer.setSize(size.x, size.y); hid.forEach(o => o.visible = true); }
+  const img = new Image(); await new Promise((ok, ko) => { img.onload = ok; img.onerror = ko; img.src = url; });
+  const cv = makeCanvas(W, H), x = cv.getContext('2d'), u = H / 1080; x.drawImage(img, 0, 0);
+  const g = x.createLinearGradient(0, H - 150 * u, 0, H); g.addColorStop(0, 'rgba(6,9,15,0)'); g.addColorStop(0.45, 'rgba(6,9,15,.85)'); g.addColorStop(1, 'rgba(6,9,15,.95)'); x.fillStyle = g; x.fillRect(0, H - 150 * u, W, 150 * u);
+  const m = PLAN.meta; x.textBaseline = 'alphabetic'; x.textAlign = 'left'; x.fillStyle = '#fff'; x.font = `700 ${34 * u}px ${FONT}`;
+  x.fillText((m.nombre || 'Plano') + (m.version ? '  v' + m.version : ''), 48 * u, H - 62 * u);
+  x.fillStyle = '#9fc4e8'; x.font = `500 ${21 * u}px ${FONT}`;
+  x.fillText([m.proyecto, `${nf(PLAN.pipes.length)} tuberías · ${nf(PLAN.len, 1)} m de red`, new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })].filter(Boolean).join('  ·  '), 48 * u, H - 28 * u);
+  x.textAlign = 'right'; x.fillStyle = '#ffaa3c'; x.font = `800 ${24 * u}px ${FONT}`; x.fillText('ISOFLUX · ENTALPÍA LAB', W - 48 * u, H - 62 * u);
+  x.fillStyle = '#8fa3b8'; x.font = `500 ${18 * u}px ${FONT}`; x.fillText("Mundo Virtual · Hub de Ingeniería Pioneer's · Industrias I.A. Col", W - 48 * u, H - 28 * u);
+  const bl = await new Promise(ok => cv.toBlob(ok, 'image/png'));
+  const a = document.createElement('a'); a.href = URL.createObjectURL(bl); a.download = String(m.nombre || 'Plano').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) + '_' + W + 'x' + H + '.png';
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+  toast('📸 Imagen ' + W + '×' + H + ' descargada'); window.__vrShot = { w: W, h: H, size: bl.size };
+}
 
 const COLOR_MODES = [['material', 'material'], ['obra', 'tipo de obra'], ['diametro', 'diámetro'], ['sector', 'sector']];
 function cycleColor(){
@@ -1508,7 +1892,7 @@ function drawLegend(){
       ctx.fillStyle = col; roundRect(ctx, x, y - H * 0.09, 30, H * 0.18, 6); ctx.fill();
       ctx.fillStyle = '#e6e7ee'; ctx.fillText(k, x + 40, y + 2); x += w;
     }
-    ctx.fillStyle = '#2fd36b'; ctx.fillRect(W - 290, H * 0.78, 18, 18); ctx.fillStyle = '#e5484d'; ctx.fillRect(W - 168, H * 0.78, 18, 18);
+    ctx.fillStyle = '#f5c518'; ctx.fillRect(W - 290, H * 0.78, 18, 18); ctx.fillStyle = '#e5484d'; ctx.fillRect(W - 168, H * 0.78, 18, 18);
     ctx.fillStyle = '#9a9ca8'; ctx.font = `500 ${H * 0.15}px ${FONT}`;
     ctx.fillText('V. abierta', W - 264, H * 0.78 + 10); ctx.fillText('V. cerrada', W - 142, H * 0.78 + 10);
   });
@@ -1538,13 +1922,13 @@ function setPlanMode(m){
     scene.add(planPivot); planView.visible = false;
     env.userData.floor.visible = false; env.userData.grid.visible = false; realGrid.visible = true;
     env.userData.arc.visible = false; env.userData.dust.visible = false;
-    buildPlan(); teleportStart();
+    buildPlan(); teleportStart(); ajustarLuz();
   } else {
     planView.add(planPivot); planView.visible = true;
     env.userData.floor.visible = true; env.userData.grid.visible = true; realGrid.visible = false;
     env.userData.arc.visible = true; env.userData.dust.visible = true;
     if (!renderer.xr.isPresenting){ yaw = innerWidth / innerHeight < 1.2 ? 0.45 : 0.26; pitch = 0.32; }
-    buildPlan(); placeTable(); placePlanUI(false);
+    buildPlan(); placeTable(); placePlanUI(false); ajustarLuz();
   }
 }
 function placeTable(){
@@ -1635,12 +2019,16 @@ function openPlan(data, meta){
   if (!P.nodes.length){ toast('El plano está vacío: no tiene nodos ni tuberías'); return; }
   if (mode !== 'menu') closeViewer();
   PLAN = P; mode = 'plano'; clearAllHovers(); showMenu(false); closeModal();
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+  bLab.userData.setText('🏷 Etiquetas: equipos'); bSpin.userData.setText('🎬 Girar maqueta');
+  planUI.traverse(o => { if (o.material) o.material.toneMapped = false; }); info.material.toneMapped = false;
   bColor.userData.setText('🎨 Color: material');
   planUI.visible = true;
   setPlanMode('maqueta');
   toast(`📐 ${P.meta.nombre}: ${nf(P.pipes.length)} tuberías en 3D`);
 }
 function closePlan(){
+  renderer.toneMapping = THREE.NoToneMapping; keyLight.visible = false; if (PLAN) PLAN.spin = false;
   planView.visible = false; planUI.visible = false; info.visible = false; realGrid.visible = false;
   planView.add(planPivot);
   disposePlanMeshes(); planHits.clear();
@@ -1672,7 +2060,6 @@ async function abrirPlanoNube(planoId, extra){
   try {
     const r = await api({ a: 'sgcPlanoLeer', planoId });
     const d = JSON.parse(await gunz(r.b64)); const m = r.plano || {};
-    delete d.fondos;
     const proyecto = (extra && extra.proyecto) || '';
     addRecent({ planoId: m.planoId || planoId, nombre: m.nombre || 'Plano', version: m.version, proyecto, miniatura: (extra && extra.miniatura) || '' });
     openPlan(d, { nombre: m.nombre, version: r.versionLeida || m.version, proyecto });
@@ -1705,7 +2092,7 @@ $('#btn-planos').onclick = () => openModal(SES ? 'proyectos' : 'login');
 $('#pm-file').onchange = async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
   try {
-    const d = JSON.parse(await f.text()); delete d.fondos;
+    const d = JSON.parse(await f.text());
     const meta = { nombre: (d.proyecto && d.proyecto.nombre) || f.name.replace(/\.json$/i, ''), proyecto: (d.proyecto && d.proyecto.cliente) || 'Archivo local' };
     const i = LOCALES.findIndex(l => l.meta.nombre === meta.nombre); if (i >= 0) LOCALES.splice(i, 1);
     LOCALES.unshift({ data: d, meta }); if (LOCALES.length > 3) LOCALES.pop();
@@ -1934,6 +2321,8 @@ function frame(){
   planFrame++;
   if (mode === 'plano'){
     desktopWalk(dt); updateInfo();
+    if (PLAN && PLAN.spin && PLAN.mode === 'maqueta' && !grabbedBy) planPivot.rotation.y += dt * 0.22;
+    seguirLuz();
     if (realGrid.visible){ realGrid.position.x = Math.round(rig.position.x); realGrid.position.z = Math.round(rig.position.z); }
   }
 
