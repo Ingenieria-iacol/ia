@@ -138,11 +138,13 @@ function endFor(mx,my){const a=start,s0=P(a.x,a.y,a.z),vx=mx-s0[0],vy=my-s0[1],v
 function len(p){const a=N(p.a),b=N(p.b);return r3(Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z));}
 function draw(){if(showR||sim)calcR=solve();const w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);
 drawBG();FA=1;FOC=focSet();const e=+$('el').value||0,g=[.001,.002,.005,.01,.02,.05,.1,.2,.5,1,2,5,10,20,50],st=g.find(x=>x>=step()&&x*V.s>=10)||50,c0=ground(cv.width/2,cv.height/2,e,true),ex=Math.max(cv.width,cv.height)/V.s*.9,x0=Math.floor((c0[0]-ex)/st)*st,x1=c0[0]+ex,z0=Math.floor((c0[2]-ex)/st)*st,z1=c0[2]+ex;ctx.lineWidth=1;ctx.strokeStyle='rgba(80,140,200,.25)';ctx.beginPath();for(let i=x0;i<=x1;i+=st){const a=P(i,e,z0),b=P(i,e,z1);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}for(let i=z0;i<=z1;i+=st){const a=P(x0,e,i),b=P(x1,e,i);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
-S.pipes.forEach(p=>{const a=N(p.a),b=N(p.b);if(!a||!b)return;const A=P(a.x,a.y,a.z),B=P(b.x,b.y,b.z),on=isS('p',p.id);
-ctx.lineCap='round';ctx.setLineDash(p.obra=='Existente'?[10,6]:[]);ctx.strokeStyle=on?'#8fe0ff':(MC[p.mat]||'#999');ctx.lineWidth=pw(p)+(on?2:0);ctx.beginPath();ctx.moveTo(A[0],A[1]);ctx.lineTo(B[0],B[1]);ctx.stroke();ctx.setLineDash([]);ovl(p,A,B);if(sim)fDots(p,A,B);
+PORTS=portsCalc();S.pipes.forEach(p=>{const a=N(p.a),b=N(p.b);if(!a||!b)return;const A=P(a.x,a.y,a.z),B=P(b.x,b.y,b.z),on=isS('p',p.id);
+const[A1,B1,ha,hb,ux,uy]=trimEnds(p,A,B),w0=pw(p);ctx.lineCap=(ha||hb)?'butt':'round';ctx.setLineDash(p.obra=='Existente'?[10,6]:[]);ctx.strokeStyle=on?'#8fe0ff':(MC[p.mat]||'#999');ctx.lineWidth=w0+(on?2:0);if(Math.hypot(B1[0]-A1[0],B1[1]-A1[1])>.5){ctx.beginPath();ctx.moveTo(A1[0],A1[1]);ctx.lineTo(B1[0],B1[1]);ctx.stroke();}ctx.setLineDash([]);ctx.lineCap='round';
+if(ha&&!PORTS.F[p.a])acople(A1[0],A1[1],ux,uy,w0);if(hb&&!PORTS.F[p.b])acople(B1[0],B1[1],ux,uy,w0);
+if(realHalf(a)+realHalf(b)>len(p)+.01){ctx.save();ctx.strokeStyle='rgba(255,90,90,.85)';ctx.lineWidth=1.2;ctx.setLineDash([3,3]);const ox=-uy*(w0/2+4),oy=ux*(w0/2+4);ctx.beginPath();ctx.moveTo(A[0]+ox,A[1]+oy);ctx.lineTo(B[0]+ox,B[1]+oy);ctx.stroke();ctx.restore();}ovl(p,A,B);if(sim)fDots(p,A,B);
 const mx=(A[0]+B[0])/2,my=(A[1]+B[1])/2;fArrow(p,A,B);
 if((labs&&(p.lab!==false||snapF)&&inFoc('p',p.id))||isH('p',p.id)){(LO='p'+p.id,LA=[mx,my],LK='tag',lab)(`${p.tag} Ø${p.dia}" ${p.press}`,mx+8,my-8);}});
-S.pipes.forEach(p=>{if(isH('p',p.id))dimP(p,true);else if(cotas&&inFoc('p',p.id))dimP(p);});
+drawFittings();S.pipes.forEach(p=>{if(isH('p',p.id))dimP(p,true);else if(cotas&&inFoc('p',p.id))dimP(p);});
 S.nodes.forEach(n=>{if(n.y!=e){const a0=P(n.x,e,n.z),b0=P(n.x,n.y,n.z);ctx.strokeStyle='rgba(60,120,200,.55)';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(a0[0],a0[1]);ctx.lineTo(b0[0],b0[1]);ctx.stroke();ctx.setLineDash([]);}});
 S.nodes.forEach(n=>{const[X0,Y0]=P(n.x,n.y,n.z),x=0,y=0,on=isS('n',n.id),kk=(CURK=nodeK(n));ctx.save();ctx.translate(X0,Y0);ctx.scale(kk,kk);ctx.lineWidth=1.5/Math.max(kk,.6);ctx.strokeStyle='#cfe9ff';
 const f=(c)=>{ctx.fillStyle=c;};
@@ -154,7 +156,7 @@ else if(n.type=='medidor'){f('#7c6cf0');ctx.fillRect(x-9,y-9,18,18);ctx.strokeRe
 else if(n.type=='consumo'){f('#2bb8e8');ctx.fillRect(x-9,y-9,18,18);ctx.strokeRect(x-9,y-9,18,18);ctx.fillStyle='#fff';ctx.font='bold 11px Arial';ctx.fillText('C',x-4,y+4);}
 else if(window.SENT&&SENT[n.type])fitSen(n);else if(n.type=='brida'||n.type=='union_u'||n.type=='union')fit6(n);else if(FT7[n.type])fit7(n);
 else{f('#00acc1');ctx.fillRect(x-10,y-9,20,18);ctx.strokeRect(x-10,y-9,20,18);ctx.fillStyle='#fff';ctx.font='bold 11px Arial';ctx.fillText('T',x-3,y+4);}
-if(on){ctx.strokeStyle='#8fe0ff';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(x,y,15,0,7);ctx.stroke();}
+if(on){ctx.strokeStyle='#8fe0ff';ctx.lineWidth=2/kk;ctx.setLineDash([4/kk,3/kk]);ctx.beginPath();ctx.arc(x,y,11+5/kk,0,7);ctx.stroke();ctx.setLineDash([]);}
 if(sim&&n.type=='consumo'&&n.eq&&n.eq.nombre&&n.eq.nombre!='Ninguno')flame();ctx.restore();if(((labs&&(n.lab!==false||snapF)&&inFoc('n',n.id))||isH('n',n.id))&&n.type!='te'){(LO='n'+n.id,LA=[X0,Y0],LK='tag',lab)(n.tag+(n.press?' '+n.press:'')+(n.y?` · ${n.y}m`:''),X0+8+8*kk,Y0+6+13*kk,'#2e9e4f');}});
 drawAnns();simNodes();mantMarks();if(window.senTags)senTags();if(mdrag&&mdrag.snapN){const q=P(mdrag.snapN.x,mdrag.snapN.y,mdrag.snapN.z);ctx.save();ctx.strokeStyle='#00e676';ctx.lineWidth=3;ctx.beginPath();ctx.arc(q[0],q[1],14,0,7);ctx.stroke();ctx.restore();}if(tool=='draw'&&start){const a=P(start.x,start.y,start.z);ctx.strokeStyle='#0b7bff';ctx.lineWidth=3;ctx.setLineDash([6,4]);if(end){const b=P(end.x,end.y,end.z);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();ctx.setLineDash([]);}ctx.setLineDash([]);}
 {const tg=tool=='draw'?(start?(end&&(end.node||end.pipe)?end:null):mag):null;if(tg){const q=tg.node?tg.node:tg,a=P(q.x,q.y,q.z);ctx.strokeStyle='#00c853';ctx.lineWidth=3;ctx.beginPath();ctx.arc(a[0],a[1],14,0,7);ctx.stroke();}{const li=$('li');if(tool=='draw'&&start&&end){const b=P(end.x,end.y,end.z);li.style.display='block';li.style.left=(b[0]+14)+'px';li.style.top=(b[1]-34)+'px';if(!typing)li.value=end.L+' m';}else li.style.display='none';}const fm=$('fm');if(tool=='draw'&&start){const q=P(start.x,start.y,start.z);fm.style.display='flex';fm.style.left=(q[0]+fmo.x)+'px';fm.style.top=(q[1]+fmo.y)+'px';}else fm.style.display='none';}
@@ -424,16 +426,44 @@ let SYM=null,CURK=1,SYMM='real';try{SYMM=localStorage.getItem('isoflux_sym')||'r
 const SYM_REAL={valvula:[3.6,.065],regulador:[7,.16],medidor:[0,.30],manometro:[0,.11],consumo:[0,.55],tanque:[0,1.1],flexible:[5,.14],brida:[3,.06],union_u:[2.6,.05],union:[2.2,.04],reduccion:[2.4,.05],ptopres:[2.4,.05],transicion:[3,.06],term_m:[2.2,.04],term_h:[2.2,.04]};
 function symDia(n){let d=dmm(n.dia)||0;S.pipes.forEach(p=>{if(p.a==n.id||p.b==n.id)d=Math.max(d,dmm(p.dia));});return(d||19)/1000;}
 function symData(){let h=S.nodes.length*7919+S.pipes.length;for(const n of S.nodes)h=(h*31+(n.x*97+n.y*13+n.z*41)*1000+(dmm(n.dia)|0)|0)|0;for(const p of S.pipes)h=(h*17+(dmm(p.dia)|0))|0;
- if(SYM&&SYM.h===h)return SYM;const C=S.nodes.filter(n=>n.type!='te'),real={},near={};
- for(const n of C){const r=SYM_REAL[n.type]||[3,.07];real[n.id]=Math.max(r[1],r[0]*symDia(n));let d=1e9;for(const m of C){if(m===n)continue;const q=Math.hypot(m.x-n.x,m.y-n.y,m.z-n.z);if(q<d)d=q;}near[n.id]=d;}
- return SYM={h,real,near};}
+ if(SYM&&SYM.h===h)return SYM;const real={},nb={};
+ for(const n of S.nodes){if(n.type=='te')continue;const r=SYM_REAL[n.type]||[3,.07];real[n.id]=Math.max(r[1],r[0]*symDia(n));
+  const L=[];for(const m of S.nodes){if(m===n)continue;const q=Math.hypot(m.x-n.x,m.y-n.y,m.z-n.z);if(q<8)L.push([q,m.id]);}L.sort((a,b)=>a[0]-b[0]);nb[n.id]=L.slice(0,10).map(x=>x[1]);}
+ return SYM={h,real,nb};}
 const compK=()=>Math.min(1.35,Math.max(.3,V.s/34));   // flechas y marcas sobre tubos (sin cambios)
 function nodeK(n){let pwm=0;S.pipes.forEach(p=>{if(p.a==n.id||p.b==n.id){const v=pw(p);if(v>pwm)pwm=v;}});
- if(n.type=='te')return Math.max(pwm*.56,2.2)/4;          // la te es la junta: un poco más ancha que el tubo
- const pipeFloor=pwm*1.9/18;
- if(SYMM=='fijo')return Math.max(1,pipeFloor);
- const D=symData(),Sw=D.real[n.id]||.07,px=Sw*V.s,gap=(D.near[n.id]||1e9)*V.s*.85,minPx=Math.max(6,Math.min(13,gap));
- return Math.max(px/18,minPx/18,pipeFloor);}
+ if(n.type=='te')return Math.max(pwm*.56,2.2)/4;
+ const D=symData(),q=P(n.x,n.y,n.z);let gap=1e9;
+ for(const id of D.nb[n.id]||[]){const m=N(id);if(!m)continue;const r=P(m.x,m.y,m.z),d=Math.hypot(r[0]-q[0],r[1]-q[1]);if(d<gap)gap=d;}
+ /* largo real del componente (mín. legible 14 px o fijo 18 px), con tope en el 85 % de la distancia en pantalla
+    al nodo vecino: dos piezas contiguas quedan acopladas cara a cara, nunca encimadas */
+ let px=SYMM=='fijo'?18:Math.max((D.real[n.id]||.07)*V.s,14);
+ px=Math.min(px,gap*.85);
+ px=Math.max(px,Math.min(pwm*1.6,gap*.9),3);
+ return px/18;}
+/* ---------- MODELO DE PUERTOS: cada pieza se acopla por sus extremos ----------
+   Válvulas, reguladores, uniones, medidores…: 2 puertos en sus caras (a ± medio largo del centro).
+   Tee: 3 puertos · codo: 2 · tanque y equipos: 1. La tubería se dibuja de puerto a puerto y cada
+   acople lleva su marca. Las cotas y el cálculo siguen siendo de centro a centro. */
+let PORTS=null;
+const NO_TRIM={manometro:1,ptopres:1};
+function colineal(n,ps){if(ps.length!=2)return false;const o1=N(ps[0].a==n.id?ps[0].b:ps[0].a),o2=N(ps[1].a==n.id?ps[1].b:ps[1].a);if(!o1||!o2)return true;
+ const u=[o1.x-n.x,o1.y-n.y,o1.z-n.z],v=[o2.x-n.x,o2.y-n.y,o2.z-n.z],lu=Math.hypot(...u),lv=Math.hypot(...v);if(!lu||!lv)return true;return(u[0]*v[0]+u[1]*v[1]+u[2]*v[2])/(lu*lv)<-.985;}
+const realHalf=n=>n.type=='te'?0:((symData().real[n.id]||.07)/2);
+function portsCalc(){const adj={};S.pipes.forEach(p=>{(adj[p.a]=adj[p.a]||[]).push(p);(adj[p.b]=adj[p.b]||[]).push(p);});const H={},F={};
+ S.nodes.forEach(n=>{const ps=adj[n.id]||[];if(!ps.length)return;
+  if(n.type=='te'){if(ps.length>=3||(ps.length==2&&!colineal(n,ps))){const pwm=Math.max(...ps.map(pw)),Dm=Math.max(...ps.map(p=>dmm(p.dia)))/1000,hf=Math.max(1.5*Dm*V.s,pwm*1.5);if(hf<6)return;H[n.id]=hf;F[n.id]=ps.length>=3?'tee':'codo';}return;}
+  if(NO_TRIM[n.type]||(window.SENT&&SENT[n.type]))return;H[n.id]=nodeK(n)*9;});
+ return{H,F,adj};}
+function trimEnds(p,A,B){const Q=PORTS;if(!Q)return[A,B,0,0];const dx=B[0]-A[0],dy=B[1]-A[1],L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L;let ha=Q.H[p.a]||0,hb=Q.H[p.b]||0;
+ if(ha+hb>L){const k=L/(ha+hb);ha*=k;hb*=k;}return[[A[0]+ux*ha,A[1]+uy*ha],[B[0]-ux*hb,B[1]-uy*hb],ha,hb,ux,uy];}
+function acople(x,y,ux,uy,w){const s=w*.9+2.6;ctx.strokeStyle='rgba(232,241,251,.95)';ctx.lineWidth=Math.max(1.3,w*.32);ctx.lineCap='butt';ctx.beginPath();ctx.moveTo(x-uy*s,y+ux*s);ctx.lineTo(x+uy*s,y-ux*s);ctx.stroke();}
+function drawFittings(){if(!PORTS)return;ctx.save();ctx.setLineDash([]);
+ for(const id in PORTS.F){const n=N(id);if(!n)continue;const c=P(n.x,n.y,n.z),ps=PORTS.adj[id]||[],h=PORTS.H[id];if(h<6)continue;let wm=0;
+  ps.forEach(p=>{const o=N(p.a==id?p.b:p.a);if(!o)return;const q=P(o.x,o.y,o.z),dx=q[0]-c[0],dy=q[1]-c[1],L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L,w=pw(p),hh=Math.min(h,L*.5);wm=Math.max(wm,w);
+   ctx.strokeStyle='#aebccb';ctx.lineWidth=w+2.2;ctx.lineCap='butt';ctx.beginPath();ctx.moveTo(c[0],c[1]);ctx.lineTo(c[0]+ux*hh,c[1]+uy*hh);ctx.stroke();acople(c[0]+ux*hh,c[1]+uy*hh,ux,uy,w);});
+  ctx.fillStyle='#aebccb';ctx.beginPath();ctx.arc(c[0],c[1],(wm+2.2)/2,0,7);ctx.fill();}
+ ctx.restore();}
 const curK=()=>CURK;
 {const sm=document.getElementById('symm');if(sm){sm.value=SYMM;sm.onchange=()=>{SYMM=sm.value;try{localStorage.setItem('isoflux_sym',SYMM);}catch(e){}draw();};}}
 const isS=(k,id)=>(sel&&sel.k==k&&sel.id==id)||ms.some(m=>m.k==k&&m.id==id);
