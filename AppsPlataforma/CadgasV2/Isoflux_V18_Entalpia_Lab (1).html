@@ -91,7 +91,7 @@ body.ro details.acc:not(:has(.accb>:not(.ed))){display:none}.pl.wide{width:340px
 </div></details>
 <details class="ac ed"><summary>Anotar ▾</summary><div class="pl"><button data-t="etq" title="Etiqueta con línea guía: clic sobre un elemento o un punto">Etiqueta</button><button data-t="rotulo" title="Rótulo / placa de texto">Rótulo</button><button data-t="texto" title="Texto libre">Texto</button><button id="bcaj" title="Cajetín con los datos del proyecto sobre el dibujo">Cajetín</button></div></details>
 <details class="ac ed"><summary>Parámetros ▾</summary><div class="pl">Ø<select id="dd"></select><select id="dmt"></select><input id="dp" type="text" value="60 psi" placeholder="Presión" title="Presión de nuevas tuberías (suministro del distribuidor: 60 psi)"><select id="dm"><option value="ejes">Nivel: ejes X/Z</option><option value="diag">Nivel: diagonal 45°</option></select>Paso<select id="st"><option value="0.001">1 mm</option><option value="0.005">5 mm</option><option value="0.01">10 mm</option><option value="0.05">50 mm</option><option value="0.1">100 mm</option><option value="0.25">250 mm</option><option value="0.5" selected>500 mm</option><option value="1">1 m</option><option value="2">2 m</option><option value="5">5 m</option></select> Elev.<input id="el" type="number" value="0" step="0.5">m<div style="width:100%;display:flex;gap:5px;align-items:center">Elementos nuevos<select id="do"><option>Nueva</option><option>Existente</option></select></div><div style="width:100%;display:flex;gap:5px;align-items:center">Válvula nueva<select id="vo"><option>Horizontal</option><option>Vertical</option></select><select id="ve"><option>Abierta</option><option>Cerrada</option></select></div><div style="width:100%;display:flex;gap:5px"><button data-m="up">⬆ Subir</button><button data-m="lvl" class="on">➡ Nivel</button><button data-m="dn">⬇ Bajar</button></div></div></details>
-<details class="ac"><summary>Vista ▾</summary><div class="pl"><button data-t="orbit">Orbitar</button><button data-t="hand">Mano</button><button id="bi">Vista ISO</button><button id="bpl">Planta</button><button id="bl">Etiquetas</button><button id="bk">Cotas</button><button id="bg" class="ed">Fondo</button> Grosor<select id="gk"><option value="c" selected>Constante</option><option value="1">Real 1:1</option><option value="5">×5</option><option value="10">×10</option><option value="25">×25</option></select><input id="fo" type="range" min="0.1" max="1" step="0.05" value="0.4" style="width:90px" title="Opacidad del fondo">
+<details class="ac"><summary>Vista ▾</summary><div class="pl"><button data-t="orbit">Orbitar</button><button data-t="hand">Mano</button><button id="bi">Vista ISO</button><button id="bpl">Planta</button><button id="bl">Etiquetas</button><button id="bk">Cotas</button><button id="bg" class="ed">Fondo</button> Grosor<select id="symm" title="Tamaño de válvulas, reguladores, medidores y demás componentes"><option value="real">Componentes: tamaño real</option><option value="fijo">Componentes: tamaño fijo</option></select><select id="gk"><option value="c" selected>Constante</option><option value="1">Real 1:1</option><option value="5">×5</option><option value="10">×10</option><option value="25">×25</option></select><input id="fo" type="range" min="0.1" max="1" step="0.05" value="0.4" style="width:90px" title="Opacidad del fondo">
 <div class="sg">Isométrico ajustable</div>
 <label style="width:100%;font-size:12px"><input id="axon" type="checkbox" style="width:auto"> Usar ángulos personalizados</label>
 <div class="axr">Preajuste<select id="axp"><option value="">Personalizado</option><option value="30,30">Isométrico 30° / 30°</option><option value="45,45">Militar 45° / 45°</option><option value="20,20">20° / 20°</option><option value="15,15">15° / 15°</option><option value="40,40">40° / 40°</option><option value="7,42">Dimétrico 7° / 42°</option><option value="42,7">Dimétrico 42° / 7°</option><option value="15,45">15° / 45°</option><option value="45,15">45° / 15°</option></select></div>
@@ -416,23 +416,26 @@ doc.setDrawColor(30,95,191);doc.line(24,556,818,556);doc.setTextColor(70);doc.se
 doc.save(FNP('Memoria_calculo_'+id+'.pdf'));};
 
 /* ===================== V6 (conservado en V7) ===================== */
-/* Escala de símbolos anclada al DIBUJO (como los bloques de un CAD): cada componente mide una
-   longitud fija en metros, así crece y se encoge con el zoom igual que las tuberías.
-   · tamaño base según la extensión de la red (redes grandes → símbolos proporcionalmente mayores)
-   · nunca más grande que el espacio hasta su vecino más cercano (no se amontonan al alejar)
-   · nunca más delgado que la tubería que lo atraviesa (no quedan "dentro" del tubo al acercar) */
-let SYM=null,CURK=1;
-function symData(){let h=S.nodes.length*7919+S.pipes.length;for(const n of S.nodes)h=(h*31+(n.x*97+n.y*13+n.z*41)*1000|0)|0;
- if(SYM&&SYM.h===h)return SYM;const C=S.nodes.filter(n=>n.type!='te');let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9,z0=1e9,z1=-1e9;
- S.nodes.forEach(n=>{x0=Math.min(x0,n.x);x1=Math.max(x1,n.x);y0=Math.min(y0,n.y);y1=Math.max(y1,n.y);z0=Math.min(z0,n.z);z1=Math.max(z1,n.z);});
- const ext=S.nodes.length?Math.max(x1-x0,y1-y0,z1-z0,1):10,base=Math.min(8,Math.max(.53,ext*.031)),per={};
- for(const n of C){let d=1e9;for(const m of C){if(m===n)continue;const q=Math.hypot(m.x-n.x,m.y-n.y,m.z-n.z);if(q<d)d=q;}per[n.id]=Math.max(base*.3,Math.min(base,d*.8));}
- return SYM={h,base,per};}
-const compK=()=>{const k=symData().base*V.s/18;return Math.min(1.6,Math.max(.3,k));};   // flechas y marcas sobre tubos
+/* Tamaño de los componentes A ESCALA REAL (como en el 3D): cada símbolo mide en el dibujo lo que mide
+   la pieza real según el diámetro de la tubería (válvula de 1/2" ≈ 6,5 cm, regulador ≈ 16 cm, medidor ≈ 30 cm…).
+   Al acercar crecen igual que la tubería; al alejar se mantienen legibles con un tamaño mínimo en pantalla
+   que nunca invade el espacio del componente vecino. Opción «tamaño fijo»: símbolo constante en pantalla. */
+let SYM=null,CURK=1,SYMM='real';try{SYMM=localStorage.getItem('isoflux_sym')||'real';}catch(e){}
+const SYM_REAL={valvula:[3.6,.065],regulador:[7,.16],medidor:[0,.30],manometro:[0,.11],consumo:[0,.55],tanque:[0,1.1],flexible:[5,.14],brida:[3,.06],union_u:[2.6,.05],union:[2.2,.04],reduccion:[2.4,.05],ptopres:[2.4,.05],transicion:[3,.06],term_m:[2.2,.04],term_h:[2.2,.04]};
+function symDia(n){let d=dmm(n.dia)||0;S.pipes.forEach(p=>{if(p.a==n.id||p.b==n.id)d=Math.max(d,dmm(p.dia));});return(d||19)/1000;}
+function symData(){let h=S.nodes.length*7919+S.pipes.length;for(const n of S.nodes)h=(h*31+(n.x*97+n.y*13+n.z*41)*1000+(dmm(n.dia)|0)|0)|0;for(const p of S.pipes)h=(h*17+(dmm(p.dia)|0))|0;
+ if(SYM&&SYM.h===h)return SYM;const C=S.nodes.filter(n=>n.type!='te'),real={},near={};
+ for(const n of C){const r=SYM_REAL[n.type]||[3,.07];real[n.id]=Math.max(r[1],r[0]*symDia(n));let d=1e9;for(const m of C){if(m===n)continue;const q=Math.hypot(m.x-n.x,m.y-n.y,m.z-n.z);if(q<d)d=q;}near[n.id]=d;}
+ return SYM={h,real,near};}
+const compK=()=>Math.min(1.35,Math.max(.3,V.s/34));   // flechas y marcas sobre tubos (sin cambios)
 function nodeK(n){let pwm=0;S.pipes.forEach(p=>{if(p.a==n.id||p.b==n.id){const v=pw(p);if(v>pwm)pwm=v;}});
- if(n.type=='te')return Math.max(pwm*.56,2.2)/4;   // la te es la junta: un poco más ancha que el tubo, a cualquier zoom
- const D=symData(),w=(D.per[n.id]||D.base)*V.s/18;return Math.max(w,pwm*1.9/18,.12);}
+ if(n.type=='te')return Math.max(pwm*.56,2.2)/4;          // la te es la junta: un poco más ancha que el tubo
+ const pipeFloor=pwm*1.9/18;
+ if(SYMM=='fijo')return Math.max(1,pipeFloor);
+ const D=symData(),Sw=D.real[n.id]||.07,px=Sw*V.s,gap=(D.near[n.id]||1e9)*V.s*.85,minPx=Math.max(6,Math.min(13,gap));
+ return Math.max(px/18,minPx/18,pipeFloor);}
 const curK=()=>CURK;
+{const sm=document.getElementById('symm');if(sm){sm.value=SYMM;sm.onchange=()=>{SYMM=sm.value;try{localStorage.setItem('isoflux_sym',SYMM);}catch(e){}draw();};}}
 const isS=(k,id)=>(sel&&sel.k==k&&sel.id==id)||ms.some(m=>m.k==k&&m.id==id);
 const getO=m=>m.k=='n'?N(m.id):m.k=='p'?Pi(m.id):(S.anns||[]).find(a=>a.id==m.id);
 function setMs(all){if(all.length>1){ms=all;sel=null;}else if(all.length==1){sel=all[0];ms=[];}else{sel=null;ms=[];}panel();draw();}
@@ -896,17 +899,23 @@ const l=selList(),ids=grpNodes(l),an=grpAnns(l);if(!ids.size&&!an.length)return;
 const org={};ids.forEach(id=>{const n=N(id);org[id]=[n.x,n.y,n.z];});const ao=an.map(a=>[a.x,a.y,a.z]);
 const ref=ids.size?N([...ids][0]):an[0],y=ref.y;mdrag={ids,org,an,ao,y,g0:ground(mx,my,y,true),h:0,x:mx,y2:my,snapN:null};draw();}
 function movMove(e){const q=pos(e),d=mdrag;if(!d)return;if(!d.h){if(Math.hypot(q[0]-d.x,q[1]-d.y2)<4)return;hs();d.h=1;}
-const g=ground(q[0],q[1],d.y,true);let dx=snap(g[0]-d.g0[0]),dz=snap(g[2]-d.g0[2]);
-let best=null,bd=18;d.ids.forEach(id=>{const o=d.org[id];S.nodes.forEach(f=>{if(d.ids.has(f.id)||Math.abs(f.y-o[1])>1e-6)return;const a=P(o[0]+dx,o[1],o[2]+dz),b=P(f.x,f.y,f.z),k=Math.hypot(a[0]-b[0],a[1]-b[1]);if(k<bd){bd=k;best={dx:r3(f.x-o[0]),dz:r3(f.z-o[2]),f};}});});
-d.snapN=best?best.f:null;if(best){dx=best.dx;dz=best.dz;}
-d.ids.forEach(id=>{const n=N(id),o=d.org[id];n.x=r3(o[0]+dx);n.z=r3(o[2]+dz);});d.an.forEach((a,i)=>{a.x=r3(d.ao[i][0]+dx);a.z=r3(d.ao[i][2]+dz);});
-$('sb').textContent=`Moviendo grupo · Δx ${dx} m · Δz ${dz} m`+(best?' · se acoplará con '+best.f.tag:'');draw();}
-function movUp(){const d=mdrag;mdrag=null;if(!d||!d.h){draw();return;}const w=weld(d.ids);panel();draw();toast(w?`Acoplado: ${w} unión(es) soldada(s) con la red existente.`:'Grupo movido. Si los extremos coinciden con otro nodo se acoplan solos (imán).');}
+const g=ground(q[0],q[1],d.y,true);let dx=snap(g[0]-d.g0[0]),dy=0,dz=snap(g[2]-d.g0[2]);
+/* imán 3D: lo que se arrastra sigue al cursor en pantalla y se acopla con un extremo/nodo a CUALQUIER altura,
+   o se inserta sobre una tubería (componente suelto) */
+const gx=q[0]-d.x,gy=q[1]-d.y2,one=d.ids.size==1?N([...d.ids][0]):null,comp=one&&one.type!='te';let best=null,bd=22;
+d.ids.forEach(id=>{const o=d.org[id],a0=P(o[0],o[1],o[2]),ax=a0[0]+gx,ay=a0[1]+gy;S.nodes.forEach(f=>{if(d.ids.has(f.id)||(comp&&f.type!='te'))return;const b=P(f.x,f.y,f.z),k=Math.hypot(ax-b[0],ay-b[1]);if(k<bd){bd=k;best={dx:r3(f.x-o[0]),dy:r3(f.y-o[1]),dz:r3(f.z-o[2]),f};}});});
+d.pipe=null;
+if(!best&&comp&&!S.pipes.some(p=>p.a==one.id||p.b==one.id)){const o=d.org[one.id],a0=P(o[0],o[1],o[2]),h=pipeAt(a0[0]+gx,a0[1]+gy);if(h){const pa=N(h.p.a),pb=N(h.p.b),L=Math.hypot(pb.x-pa.x,pb.y-pa.y,pb.z-pa.z)||1,u=Math.min(1,Math.max(0,snap(h.t*L)/L)),t={x:r3(pa.x+(pb.x-pa.x)*u),y:r3(pa.y+(pb.y-pa.y)*u),z:r3(pa.z+(pb.z-pa.z)*u)};best={dx:r3(t.x-o[0]),dy:r3(t.y-o[1]),dz:r3(t.z-o[2]),pt:t};d.pipe=h.p;}}
+d.snapN=best?(best.f||best.pt):null;if(best){dx=best.dx;dy=best.dy;dz=best.dz;}
+d.ids.forEach(id=>{const n=N(id),o=d.org[id];n.x=r3(o[0]+dx);n.y=r3(o[1]+dy);n.z=r3(o[2]+dz);});d.an.forEach((a,i)=>{a.x=r3(d.ao[i][0]+dx);a.y=r3(d.ao[i][1]+dy);a.z=r3(d.ao[i][2]+dz);});
+$('sb').textContent=(comp?'Moviendo '+(TY[one.type]||'componente')+' '+one.tag:'Moviendo grupo')+` · Δx ${dx} m · Δy ${dy} m · Δz ${dz} m`+(best&&best.f?' · se acoplará en '+best.f.tag:best&&best.pt?' · se insertará en la tubería '+(d.pipe.tag||d.pipe.id):'');draw();}
+function movUp(){const d=mdrag;mdrag=null;if(!d||!d.h){draw();return;}let ins=0;if(d.pipe&&d.ids.size==1){const id=[...d.ids][0],n=N(id),p=Pi(d.pipe.id);if(n&&p&&p.a!=id&&p.b!=id){const a=N(p.a),b=N(p.b);S.pipes=S.pipes.filter(x=>x.id!=p.id);addPipe(a,n,p);addPipe(n,b,p);ins=1;}}const w=weld(d.ids)+ins;panel();draw();toast(w?`Acoplado: ${w} unión(es) soldada(s) con la red existente.`:'Grupo movido. Si los extremos coinciden con otro nodo se acoplan solos (imán).');}
 function moveBy(dx,dy,dz){const l=selList(),ids=grpNodes(l),an=grpAnns(l);if(!ids.size&&!an.length)return;hs();ids.forEach(id=>{const n=N(id);n.x=r3(n.x+dx);n.y=r3(n.y+dy);n.z=r3(n.z+dz);});an.forEach(a=>{a.x=r3(a.x+dx);a.y=r3(a.y+dy);a.z=r3(a.z+dz);});const w=weld(ids);panel();draw();if(w)toast(`Acoplado: ${w} unión(es).`);}
 const _msP=msPanel;msPanel=function(){return _msP()+grpTools();};
 function grpTools(){const s=step();return `<hr style="border-color:var(--bd)"><b>Mover y acoplar grupo</b><div style="font-size:11px;opacity:.7;margin:3px 0">Herramienta ✥ Mover: arrastra la selección; al acercar un extremo a otro nodo se acopla con imán.</div><div class="g3"><button onclick="moveBy(0,${s},0)">⬆ ${s} m</button><button onclick="moveBy(0,-${s},0)">⬇ ${s} m</button><button onclick="expandSel(false)">⛓ Tramo</button></div><button style="width:100%;margin-top:5px" onclick="expandSel(true)">🕸 Seleccionar toda la red conectada</button>`;}
 /* integración con eventos */
 cv.addEventListener('pointerdown',e=>{if(tool=='mov'&&!RO&&e.button==0&&!e.shiftKey){e.stopImmediatePropagation();const[mx,my]=pos(e);cv.setPointerCapture(e.pointerId);movDown(e,mx,my);}},true);
+cv.addEventListener('pointerdown',e=>{if(tool!='sel'||RO||e.button!=0||e.shiftKey||e.ctrlKey||e.metaKey)return;const[mx,my]=pos(e);if(annAt(mx,my))return;const n=nodeAt(mx,my);if(!n||n.type=='te')return;e.stopImmediatePropagation();cv.setPointerCapture(e.pointerId);if(!(ms.length>1&&ms.some(m=>m.k=='n'&&m.id==n.id))){sel={k:'n',id:n.id};ms=[];panel();}movDown(e,mx,my);},true);
 cv.addEventListener('pointermove',e=>{if(mdrag){e.stopImmediatePropagation();movMove(e);}},true);
 cv.addEventListener('pointerup',e=>{if(mdrag)movUp();},true);
 cv.addEventListener('dblclick',e=>{if(RO||(tool!='sel'&&tool!='mov'))return;const[mx,my]=pos(e),it=pickAt(mx,my);if(!it||it.k=='a')return;sel=it;ms=[];expandSel(e.ctrlKey||e.metaKey);});
