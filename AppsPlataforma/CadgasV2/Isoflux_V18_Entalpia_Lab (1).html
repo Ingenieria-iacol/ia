@@ -3402,8 +3402,12 @@ $('pp').addEventListener('change',e=>{const k=e.target.dataset.k,o=so();if(o&&o.
   const acc=b0.closest('details');const cnt=acc&&acc.querySelector('summary .n,summary small,summary span:last-child');if(cnt&&/^\d+$/.test(cnt.textContent.trim()))cnt.textContent=LB.length;}
  const bd=document.querySelector('button[data-t=draw]'),dmt=$('dmt');
  if(bd&&dmt){const ORD=['Acero galvanizado','Acero al carbón','PE-AL-PE','Polietileno','Cobre flexible','Cobre rígido'].filter(m=>[...dmt.options].some(o=>o.value==m));
-  const box=document.createElement('div');box.className='matx';box.innerHTML='<div class="matt">Material de la tubería</div>'+ORD.map(m=>`<button type="button" data-mat="${m}" title="Dibujar con ${m}. Si hay tuberías seleccionadas, también se les asigna."><i style="background:${(typeof MC!='undefined'&&MC[m])||'#999'}"></i>${m}</button>`).join('');
-  const mark=()=>box.querySelectorAll('[data-mat]').forEach(x=>x.classList.toggle('on',x.dataset.mat==dmt.value));
+  const box=document.createElement('div');box.className='matx';const ico=c=>`<svg viewBox="0 0 30 20" width="34" height="22"><path d="M3 16 L11 16 L19 5 L27 5" fill="none" stroke="rgba(5,9,14,.9)" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 16 L11 16 L19 5 L27 5" fill="none" stroke="${c}" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 15 L11 15 L19 4 L27 4" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3" cy="16" r="2.6" fill="#e9eef3"/><circle cx="27" cy="5" r="2.6" fill="#e9eef3"/></svg>`;
+  box.innerHTML='<div class="matt">Elige el material y dibuja la tubería · con tuberías seleccionadas, les asigna el material</div>'+ORD.map(m=>`<button type="button" data-mat="${m}" title="Dibujar tubería de ${m} (si hay tuberías seleccionadas, se les asigna este material)">${ico((typeof MC!='undefined'&&MC[m])||'#999')}${m}</button>`).join('');
+  bd.style.display='none';
+  const mark=()=>{const dr=tool=='draw';box.querySelectorAll('[data-mat]').forEach(x=>{const me=x.dataset.mat==dmt.value;x.classList.toggle('on',dr&&me);x.classList.toggle('cur',!dr&&me);});};
+  document.addEventListener('click',()=>setTimeout(mark,0),true);document.addEventListener('keydown',()=>setTimeout(mark,0),true);
+  {const acc=bd.closest('details');const cnt=acc&&acc.querySelector('summary .n,summary small,summary span:last-child');if(cnt&&/^\d+$/.test(cnt.textContent.trim()))cnt.textContent=ORD.length;}
   box.addEventListener('click',e=>{const b=e.target.closest('[data-mat]');if(!b)return;e.stopPropagation();const m=b.dataset.mat;dmt.value=m;dmt.dispatchEvent(new Event('change',{bubbles:true}));
    const ps=[...(ms||[]).filter(x=>x.k=='p').map(x=>x.id),...(sel&&sel.k=='p'?[sel.id]:[])].map(Pi).filter(Boolean);
    if(ps.length){hs();ps.forEach(p=>p.mat=m);try{bgToast(`Material «${m}» asignado a ${ps.length} tubería${ps.length>1?'s':''}.`);}catch(_){}panel();}
@@ -3412,7 +3416,7 @@ $('pp').addEventListener('change',e=>{const k=e.target.dataset.k,o=so();if(o&&o.
   dmt.addEventListener('change',mark);mark();(bd.closest('.accb')||bd.parentNode).appendChild(box);}
 })();
 </script>
-<style>.matx{grid-column:1/-1;width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:5px;margin-top:3px}.matx .matt{grid-column:1/-1;font-size:11px;opacity:.75;margin:2px 2px 0}
-.matx button{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;padding:6px 8px;text-align:left;min-height:0}.matx button i{width:22px;height:8px;border-radius:4px;flex:none;box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.3),0 0 0 1px rgba(0,0,0,.5)}
+<style>.matx{grid-column:1/-1;width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:5px}.matx .matt{grid-column:1/-1;font-size:11px;opacity:.75;margin:2px 2px 0}
+.matx button svg{flex:none}.matx button.cur{outline:1px dashed rgba(79,195,247,.55);outline-offset:-3px}
 .matx button.on{outline:2px solid #4fc3f7;outline-offset:-2px;background:rgba(79,195,247,.14)}</style>
 </body></html>
