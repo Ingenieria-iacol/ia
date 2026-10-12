@@ -170,7 +170,8 @@ if(tool=='bg'&&bgDown(e,mx,my))return;if(e.button==1||tool=='hand'||e.shiftKey){
 
 if(tool=='etq'||tool=='rotulo'||tool=='texto'){const an=annAt(mx,my);if(an){sel={k:'a',id:an.id};ms=[];adrag={x:e.clientX,y:e.clientY,id:an.id,h:0};panel();draw();return;}addAnn(tool,mx,my);annEdit();return;}if(tool=='sel'){selDown(e,mx,my);return;}
 if(tool=='draw'){if(!start){hs();const m=magnet(mx,my);if(m)start=m.node||splitAt(m);else{const g=ground(mx,my,+$('el').value||0);start=addNode(g[0],g[1],g[2]);}}else if(end){commitEnd();}draw();return;}
-hs();const h=pipeAt(mx,my),nd=nodeAt(mx,my);let n;
+hs();if((tool=='consumo'||tool=='flexible')&&window.placeEnd){const r=placeEnd(tool,mx,my);if(r){if(r!==true)sel={k:'n',id:r.id};panel();draw();return;}}
+const h=pipeAt(mx,my),nd=nodeAt(mx,my);let n;
 if(nd){nd.type=tool;n=nd;}else if(h){const p=h.p,a=N(p.a),b=N(p.b),x=snap(a.x+(b.x-a.x)*h.t),y=snap(a.y+(b.y-a.y)*h.t),z=snap(a.z+(b.z-a.z)*h.t);n=addNode(x,y,z,tool);if(n.id!=a.id&&n.id!=b.id&&!S.pipes.some(q=>q.a==n.id||q.b==n.id)){S.pipes=S.pipes.filter(q=>q.id!=p.id);addPipe(a,n,p);addPipe(n,b,p);}}
 else{const g=ground(mx,my,+$('el').value||0);n=addNode(g[0],g[1],g[2],tool);}
 if(tool=='valvula'&&!n.ori){n.ori=$('vo').value;n.est=$('ve').value;}
@@ -183,7 +184,10 @@ document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tool=b.dataset.t
 addEventListener('keydown',e=>{if(RO){if(e.key=='Escape'&&tourOn)tourStop();return;}if(tool=='draw'&&start&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)&&/^[0-9.,]$/.test(e.key)&&(end||curU)){if(!end)setLen(step());const li=$('li');li.focus();li.select();typing=true;tp=mp.slice();return;}if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;if(e.key=='Escape'){start=null;end=null;if(ms.length||sel){ms=[];sel=null;panel();}draw();}if((e.ctrlKey||e.metaKey)&&(e.key=='a'||e.key=='A')){e.preventDefault();selAll();}if(e.key=='ArrowUp'){e.preventDefault();setMode('up');}if(e.key=='ArrowDown'){e.preventDefault();setMode('dn');}if(e.key=='ArrowRight'||e.key=='ArrowLeft'){e.preventDefault();setMode('lvl');}if(e.key=='Delete'||e.key=='Backspace')del();if((e.ctrlKey||e.metaKey)&&e.key=='z'){e.preventDefault();undo();}});
 function undo(){if(!hist.length)return;const hp=hist.pop();if(hp.startsWith('BG:')){bgRestore(JSON.parse(hp.slice(3)));return;}S=JSON.parse(hp);S.anns=S.anns||[];sel=null;ms=[];start=null;panel();draw();}
 function del1(nohs){if(!sel)return;if(!nohs)hs();if(sel.k=='p'){const p=Pi(sel.id);S.pipes=S.pipes.filter(q=>q.id!=sel.id);[p.a,p.b].forEach(id=>{const n=N(id);if(n&&n.type=='te'&&!S.pipes.some(q=>q.a==id||q.b==id))S.nodes=S.nodes.filter(m=>m.id!=id);});}
-else{const ps=S.pipes.filter(q=>q.a==sel.id||q.b==sel.id);S.pipes=S.pipes.filter(q=>!ps.includes(q));if(ps.length==2){const o=ps.map(q=>q.a==sel.id?q.b:q.a);addPipe(N(o[0]),N(o[1]),ps[0]);}S.nodes=S.nodes.filter(n=>n.id!=sel.id);}
+else{const nd0=N(sel.id),ps0=S.pipes.filter(q=>q.a==sel.id||q.b==sel.id);
+ /* quitar un componente no arrastra lo que está acoplado: en un extremo o en una te queda el punto de la tubería */
+ if(nd0&&nd0.type!='te'&&ps0.length&&ps0.length!=2&&!(nd0.type=='consumo'&&ps0.length==1&&(()=>{const o=N(ps0[0].a==nd0.id?ps0[0].b:ps0[0].a);return o&&len(ps0[0])<=(o.type=='flexible'?flexL(o)/2:realHalf(o))+.011;})())){nd0.type='te';delete nd0.sp;delete nd0.eq;delete nd0.est;delete nd0.ori;nd0.tag=nd0.id;sel=null;panel();draw();return;}
+ const ps=ps0;S.pipes=S.pipes.filter(q=>!ps.includes(q));if(ps.length==2){const o=ps.map(q=>q.a==sel.id?q.b:q.a);addPipe(N(o[0]),N(o[1]),ps[0]);}S.nodes=S.nodes.filter(n=>n.id!=sel.id);}
 sel=null;panel();draw();}
 function so(){return sel&&(sel.k=='n'?N(sel.id):sel.k=='a'?(S.anns||[]).find(a=>a.id==sel.id):Pi(sel.id));}
 function del(){if(RO)return;if(ms.length>1){hs();const l=ms.slice();ms=[];l.forEach(it=>{if(it.k=='a'){S.anns=(S.anns||[]).filter(a=>a.id!=it.id);return;}if(it.k=='n'&&!N(it.id))return;if(it.k=='p'&&!Pi(it.id))return;sel=it;del1(true);});sel=null;panel();draw();return;}
@@ -441,7 +445,7 @@ const compK=()=>Math.min(1.35,Math.max(.3,V.s/34));   // flechas y marcas sobre 
 function nodeK(n){let pwm=0;S.pipes.forEach(p=>{if(p.a==n.id||p.b==n.id){const v=pw(p);if(v>pwm)pwm=v;}});
  if(n.type=='te')return Math.max(pwm*.56,2.2)/4;
  /* conector flexible: grosor según su diámetro; el largo lo da su longitud real (ver flexPx) */
- if(n.type=='flexible')return(SYMM=='fijo'?14:Math.max(10,4.7*symDia(n)*V.s))/18;
+ if(n.type=='flexible')return Math.max(pwm*1.45,8)/8.8;
  const D=symData(),q=P(n.x,n.y,n.z);let gap=1e9;
  for(const id of D.nb[n.id]||[]){const m=N(id);if(!m)continue;const r=P(m.x,m.y,m.z),d=Math.hypot(r[0]-q[0],r[1]-q[1]);if(d<gap)gap=d;}
  /* largo real del componente (mín. legible 14 px o fijo 18 px), con tope en el 85 % de la distancia en pantalla
@@ -449,6 +453,8 @@ function nodeK(n){let pwm=0;S.pipes.forEach(p=>{if(p.a==n.id||p.b==n.id){const v
  let px=SYMM=='fijo'?18:Math.max((D.real[n.id]||.07)*V.s,14);
  px=Math.min(px,gap*.85);
  px=Math.max(px,Math.min(pwm*1.6,gap*.9),3);
+ /* grosor coherente con el tubo: el cuerpo de la pieza no supera ~2,6 veces el ancho de la tubería (3,6 en piezas grandes) */
+ const cap=Math.max(pwm,2.2)*({regulador:3.6,medidor:3.6,tanque:6,manometro:3.6,ptopres:3.6}[n.type]||2.6)*18/11;if(pwm>0&&px>cap)px=Math.max(cap,6);
  return px/18;}
 /* ---------- MODELO DE PUERTOS: cada pieza se acopla por sus extremos ----------
    Válvulas, reguladores, uniones, medidores…: 2 puertos en sus caras (a ± medio largo del centro).
@@ -3349,7 +3355,7 @@ window.EQ3D=(function(){
   else{const s=Math.min(w,h)*.22,g=ctx.createLinearGradient(0,h/2+s,0,h/2-s);g.addColorStop(0,'#0d47ff');g.addColorStop(1,'rgba(160,230,255,.9)');C(w/2,h/2,s*1.35,'#1b232b','#9aa8b5');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(w/2-s*.6,h/2+s*.7);ctx.quadraticCurveTo(w/2-s*.8,h/2-s*.1,w/2,h/2-s);ctx.quadraticCurveTo(w/2+s*.8,h/2-s*.1,w/2+s*.6,h/2+s*.7);ctx.closePath();ctx.fill();}}
  function draw(n,on,pre){const G=geo(n);if(pre!==undefined&&!!pre!==G.back)return;
   const base=COLB[G.kind]||'#8d9aa7',sc=V.s,lw=Math.max(.6,Math.min(1.2,sc*.004))/sc;ctx.save();ctx.setLineDash([]);ctx.lineJoin='round';
-  const stub=()=>{const A=P(n.x,n.y,n.z),B=G.Q(G.a0,0,0),w=Math.max(2.5,.03*sc);ctx.lineCap='butt';ctx.strokeStyle='rgba(5,9,14,.9)';ctx.lineWidth=w+1.6;ctx.beginPath();ctx.moveTo(A[0],A[1]);ctx.lineTo(B[0],B[1]);ctx.stroke();ctx.strokeStyle='#c9a144';ctx.lineWidth=w;ctx.stroke();};
+  const pq=S.pipes.find(q=>q.a==n.id||q.b==n.id),pwn=pq?pw(pq):3;const stub=()=>{const A=P(n.x,n.y,n.z),B=G.Q(G.a0,0,0),w=Math.max(2.5,pwn*1.15);ctx.lineCap='butt';ctx.strokeStyle='rgba(5,9,14,.9)';ctx.lineWidth=w+1.6;ctx.beginPath();ctx.moveTo(A[0],A[1]);ctx.lineTo(B[0],B[1]);ctx.stroke();ctx.strokeStyle='#c9a144';ctx.lineWidth=w;ctx.stroke();};
   if(G.back)0;else stub();
   ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=8;ctx.shadowOffsetY=3;
   const vis=G.F.filter(f=>f.vis);ctx.beginPath();vis.forEach(fc=>{poly(fc).forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();});ctx.fillStyle=sh(base,.8);ctx.fill();ctx.shadowColor='transparent';
@@ -3361,7 +3367,7 @@ window.EQ3D=(function(){
   if((G.kind=='caldera'||G.kind=='calent')){ctx.strokeStyle='rgba(5,9,14,.85)';ctx.lineWidth=1;vcyl(G,G.a0+G.D*.5,0,G.u1,G.u1+Math.min(.2,G.H*.3),Math.min(.06,G.W*.18),'#c3ccd4');}
   if(G.back)stub();
   if(on){ctx.strokeStyle='#8fe0ff';ctx.lineWidth=2;ctx.setLineDash([5,4]);vis.forEach(fc=>{ctx.beginPath();poly(fc).forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.stroke();});ctx.setLineDash([]);}
-  const A=P(n.x,n.y,n.z);if(G.back){ctx.fillStyle='#c9a144';ctx.strokeStyle='rgba(5,9,14,.9)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(A[0],A[1],Math.max(2.2,.018*sc),0,7);ctx.fill();ctx.stroke();}
+  const A=P(n.x,n.y,n.z);if(G.back){ctx.fillStyle='#c9a144';ctx.strokeStyle='rgba(5,9,14,.9)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(A[0],A[1],Math.max(2.4,pwn*.85),0,7);ctx.fill();ctx.stroke();}
   if(typeof sim!='undefined'&&sim&&n.eq&&n.eq.nombre&&n.eq.nombre!='Ninguno'){const T=G.Q(G.a0+G.D/2,0,G.u1),k=Math.max(.7,Math.min(2.2,sc*.012));ctx.translate(T[0],T[1]+12*k);ctx.scale(k,k);flame();}
   ctx.restore();}
  function pre(){S.nodes.forEach(n=>{if(n.type=='consumo')draw(n,isS('n',n.id),true);});}
@@ -3392,6 +3398,22 @@ window.acoplarEq=function(n,auto){if(!n)return false;const adj=id=>S.pipes.filte
  if(Math.abs(l-L/2)<1e-4&&!sh){say('El equipo ya está acoplado al conector.');return true;}
  if(!auto)hs();if(sh){F.x=r4(F.x+u[0]*sh);F.y=r4(F.y+u[1]*sh);F.z=r4(F.z+u[2]*sh);}C.x=r4(F.x+u[0]*L/2);C.y=r4(F.y+u[1]*L/2);C.z=r4(F.z+u[2]*L/2);
  say('Equipo acoplado al extremo del conector ('+Math.round(L*100)+' cm).');draw();return true;};
+/* equipo y conector se instalan en el EXTREMO LIBRE de la red (nunca reemplazan ni parten lo existente) */
+window.placeEnd=function(t,mx,my){const deg=id=>S.pipes.filter(q=>q.a==id||q.b==id),r4=v=>Math.round(v*1e4)/1e4,say=m=>{try{bgToast(m);}catch(e){}};
+ const free=n=>n&&n.type!='consumo'&&n.type!='tanque'&&deg(n.id).length==1;
+ const nd=nodeAt(mx,my),onP=!nd&&pipeAt(mx,my);let X=free(nd)?nd:null;
+ if(!nd&&!onP){let bd=70;S.nodes.forEach(n=>{if(!free(n))return;const p=P(n.x,n.y,n.z),d=Math.hypot(p[0]-mx,p[1]-my);if(d<bd){bd=d;X=n;}});}
+ if(t=='consumo'){
+  if(nd&&!X){if(nd.type=='consumo')return true;say('El equipo de consumo se instala en un extremo libre: al final de la tubería o del conector flexible.');return true;}
+  if(onP){say('El equipo de consumo se instala en un extremo libre de la tubería, no en medio del tramo.');return true;}
+  if(!X)return null;}
+ if(t=='flexible'&&(!X||X.type=='flexible'))return null;
+ const q=deg(X.id)[0],o=N(q.a==X.id?q.b:q.a);let u=[X.x-o.x,X.y-o.y,X.z-o.z];const l=Math.hypot(...u)||1;u=u.map(v=>v/l);
+ const mk=(d,type)=>{const id='N'+S.seq++,n={id,x:r4(X.x+u[0]*d),y:r4(X.y+u[1]*d),z:r4(X.z+u[2]*d),type,tag:id,dia:q.dia,mat:q.mat,press:'',notes:'',obra:X.obra||q.obra};S.nodes.push(n);addPipe(X,n,q);return n;};
+ if(t=='consumo'){if(X.type=='te'){X.type='consumo';say('Equipo instalado en el extremo de la tubería.');return X;}
+  const C=mk(X.type=='flexible'?flexL(X)/2:realHalf(X),'consumo');say(X.type=='flexible'?'Equipo acoplado al extremo del conector.':'Equipo acoplado al extremo de '+(TY[X.type]||'la pieza').toLowerCase()+'.');return C;}
+ const tp=window.FLEXT||'Acero inoxidable corrugado',L=/Alta presi|ACME/.test(tp)?.6:.4;
+ const Fx=mk((X.type=='te'?0:realHalf(X))+L/2,'flexible');Fx.sp={tipo:tp,long:L*100};say('Conector de '+L*100+' cm acoplado al extremo.');return Fx;};
 $('pp').addEventListener('change',e=>{const k=e.target.dataset.k,o=so();if(o&&o.type=='flexible'&&(k=='s_long'||k=='s_tipo')){acoplarEq(o,true);panel();draw();}});
 /* paleta: tipos de conector y material de tubería */
 (function(){const LB=[['Acero inoxidable corrugado','Corrugado inox.'],['Acero inoxidable trenzado','Trenzado inox.'],['Nitrilo (elastómero)','Nitrilo'],['Flexo metálico (elastómero con forro metálico)','Flexo metálico'],['Alta presión (media y alta presión)','Alta presión'],['ACME (GLP líquido)','ACME (GLP líquido)'],['Manguera de caucho para gas','Caucho para gas']];
