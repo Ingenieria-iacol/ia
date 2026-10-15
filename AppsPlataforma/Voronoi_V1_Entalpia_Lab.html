@@ -1,0 +1,1754 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Voronoi · Entalpía Lab</title>
+<meta name="description" content="Diagramas de Voronoi y zonas de influencia a partir de georreferencias tomadas en campo. ENTALPIA LABS · Hub de Ingeniería Pioneer's · Industrias I.A. Col">
+<meta name="theme-color" content="#0a0d12">
+<style>
+:root{
+  --bg:#0a0d12;--pn:#141922;--pn2:#10151d;--tx:#e4eefa;--mu:#8fa3bd;--ac:#2f86e8;--ac2:#62b0ff;--bd:#2a3648;
+  --ok:#3fbf7f;--wa:#e8b23a;--er:#ef5b5b;
+  --metal:linear-gradient(135deg,#9bd0ff 0%,#2f6fc8 45%,#173a6b 100%);
+  --r:10px;--hdr:58px;--ftr:34px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:14px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--ac2)}
+.app{display:grid;grid-template-rows:var(--hdr) 1fr var(--ftr);height:100dvh;height:100vh}
+@supports(height:100dvh){.app{height:100dvh}}
+/* ---------- cabecera ---------- */
+header{display:flex;align-items:center;gap:12px;padding:0 12px;background:linear-gradient(180deg,#121924,#0c1118);border-bottom:1px solid var(--bd);min-width:0}
+header .logo{height:42px;width:auto;border-radius:6px}
+header .tit{display:flex;flex-direction:column;min-width:0}
+header .tit b{font-size:17px;letter-spacing:.3px;background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap}
+header .tit span{font-size:11.5px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header .sp{flex:1}
+.hbtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd);background:#18202c;border-radius:8px;padding:7px 11px;cursor:pointer;white-space:nowrap}
+.hbtn:hover{border-color:var(--ac)}
+.hbtn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+#btnPanel{display:none}
+/* ---------- cuerpo ---------- */
+main{display:grid;grid-template-columns:380px 1fr;min-height:0}
+aside{background:var(--pn);border-right:1px solid var(--bd);overflow:auto;min-height:0;padding:8px 8px 40px}
+details.acc{border:1px solid var(--bd);border-radius:var(--r);margin:0 0 8px;background:var(--pn2)}
+details.acc>summary{list-style:none;cursor:pointer;padding:10px 12px;display:flex;align-items:center;gap:8px;font-weight:600;user-select:none}
+details.acc>summary::-webkit-details-marker{display:none}
+details.acc>summary::after{content:"";margin-left:auto;width:8px;height:8px;border-right:2px solid var(--mu);border-bottom:2px solid var(--mu);transform:rotate(-45deg);transition:transform .15s}
+details.acc[open]>summary::after{transform:rotate(45deg)}
+details.acc>summary .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--metal);color:#fff;font-size:12px;flex:none}
+details.acc>summary .badge{font-weight:500;font-size:11.5px;color:var(--mu)}
+.accb{padding:4px 12px 12px}
+label.f{display:block;margin:6px 0 2px;font-size:12px;color:var(--mu)}
+input[type=text],input[type=number],input[type=search],select,textarea{width:100%;background:#0d1219;border:1px solid var(--bd);border-radius:7px;padding:7px 9px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--ac)}
+textarea{min-height:76px;resize:vertical}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--bd);background:#1a2330;border-radius:8px;padding:8px 10px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--ac)}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn.ok{background:#1c5c3e;border-color:#2a7d55}
+.btn.dan{border-color:#6b2a2a;color:#ffb3b3}
+.btn.sm{padding:4px 8px;font-size:12.5px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.btns .btn{flex:1 1 auto}
+.hint{font-size:12px;color:var(--mu);margin:6px 0}
+.note{font-size:12px;border-left:3px solid var(--ac);background:#0f1724;padding:6px 8px;border-radius:0 6px 6px 0;margin:8px 0;color:#c4d4ea}
+.note.wa{border-color:var(--wa)}.note.er{border-color:var(--er)}.note.ok{border-color:var(--ok)}
+.chk{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px}
+.chk input{width:16px;height:16px;accent-color:var(--ac)}
+/* GPS */
+.gps{border:1px solid var(--bd);border-radius:8px;padding:8px;background:#0b1017;font-variant-numeric:tabular-nums}
+.gps .big{font-size:20px;font-weight:700}
+.gps .acc-ok{color:var(--ok)}.gps .acc-wa{color:var(--wa)}.gps .acc-er{color:var(--er)}
+.bar{height:6px;background:#1b2533;border-radius:3px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;width:0;background:var(--ac);transition:width .2s}
+/* listas y tablas */
+.list{max-height:280px;overflow:auto;border:1px solid var(--bd);border-radius:8px}
+.li{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:center;padding:6px 8px;border-bottom:1px solid #1d2734;cursor:pointer}
+.li:last-child{border-bottom:0}
+.li:hover,.li.sel{background:#16243a}
+.li .sw{width:12px;height:12px;border-radius:3px}
+.li .t{min-width:0}.li .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.li .t small{color:var(--mu);font-size:11.5px}
+.li.off{opacity:.5}
+.flag{display:inline-block;font-size:10.5px;padding:0 5px;border-radius:4px;margin-left:4px;vertical-align:1px}
+.flag.wa{background:#4a3a12;color:#ffd77a}.flag.er{background:#4b1d1d;color:#ffb0b0}
+table.t{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+table.t th,table.t td{padding:5px 6px;border-bottom:1px solid #1d2734;text-align:right;white-space:nowrap}
+table.t th{position:sticky;top:0;background:#141c28;color:var(--mu);font-weight:600;cursor:pointer}
+table.t td:nth-child(-n+2),table.t th:nth-child(-n+2){text-align:left}
+table.t tr:hover td{background:#16243a}
+table.t tr.sel td{background:#1b3150}
+.tblw{max-height:320px;overflow:auto;border:1px solid var(--bd);border-radius:8px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.kpi{background:#0d1219;border:1px solid var(--bd);border-radius:8px;padding:6px 8px}
+.kpi small{display:block;color:var(--mu);font-size:11px}.kpi b{font-size:15px;font-variant-numeric:tabular-nums}
+/* mapa */
+#mapa{position:relative;overflow:hidden;background:#0c1118;touch-action:none;cursor:grab;min-height:0}
+#mapa.drag{cursor:grabbing}
+#mapa.modo-add,#mapa.modo-lim{cursor:crosshair}
+#tiles{position:absolute;inset:0}
+#tiles img{position:absolute;max-width:none;user-select:none;-webkit-user-drag:none;pointer-events:none}
+#grid{position:absolute;inset:0;pointer-events:none;opacity:.35}
+#svg{position:absolute;inset:0;width:100%;height:100%}
+#svg .cell{stroke-width:1.4;cursor:pointer}
+#svg .cell.sel{stroke:#fff;stroke-width:3}
+#svg .site{stroke:#0a0d12;stroke-width:1.6;cursor:pointer}
+#svg .site.sel{stroke:#fff;stroke-width:2.5}
+#svg .lbl{font:600 11.5px Inter,system-ui,sans-serif;fill:#fff;paint-order:stroke;stroke:#0a0d12;stroke-width:3px;pointer-events:none}
+#svg .lbl.sm{font-size:10.5px;font-weight:500;fill:#d9e6f7}
+.mctl{position:absolute;display:flex;flex-direction:column;gap:6px;z-index:5}
+.mctl.tr{top:10px;right:10px}.mctl.tl{top:10px;left:10px}
+.mctl .btn{background:rgba(20,25,34,.92);backdrop-filter:blur(4px);min-width:36px}
+.seg{display:flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden;background:rgba(20,25,34,.92)}
+.seg button{border:0;background:transparent;padding:6px 9px;cursor:pointer;font-size:12.5px}
+.seg button.on{background:var(--ac);color:#fff}
+#coord{position:absolute;left:10px;bottom:10px;z-index:5;background:rgba(10,13,18,.85);border:1px solid var(--bd);border-radius:7px;padding:4px 8px;font-size:11.5px;font-variant-numeric:tabular-nums;color:#c9d7ea;max-width:calc(100% - 140px)}
+#escala{position:absolute;right:10px;bottom:10px;z-index:5;font-size:11px;color:#dfe9f6;text-shadow:0 0 3px #000}
+#escala i{display:block;height:6px;border:2px solid #dfe9f6;border-top:0;margin-top:2px}
+#attr{position:absolute;right:10px;bottom:36px;z-index:5;font-size:10px;color:#cdd8e6;background:rgba(10,13,18,.7);padding:1px 5px;border-radius:4px}
+#modoBanner{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:6;background:#183a63;border:1px solid var(--ac);border-radius:8px;padding:6px 10px;display:none;gap:8px;align-items:center;font-size:13px;max-width:calc(100% - 120px)}
+#leyenda{position:absolute;left:10px;top:54px;z-index:5;background:rgba(10,13,18,.85);border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font-size:11.5px;max-height:40%;overflow:auto;display:none}
+#leyenda div{display:flex;align-items:center;gap:6px;margin:2px 0}#leyenda i{width:12px;height:12px;border-radius:3px;display:inline-block}
+#info{position:absolute;right:58px;top:10px;z-index:6;width:280px;max-width:calc(100% - 20px);background:rgba(20,25,34,.97);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;display:none;font-size:12.5px;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+#info h4{margin:0 0 6px;font-size:14px}
+#info .x{position:absolute;right:8px;top:6px;cursor:pointer;color:var(--mu);border:0;background:none;font-size:18px}
+#info table{width:100%;font-variant-numeric:tabular-nums}#info td:last-child{text-align:right}
+#spin{position:absolute;inset:0;display:none;place-items:center;background:rgba(10,13,18,.45);z-index:9;font-weight:600}
+/* pie */
+footer{display:flex;align-items:center;gap:10px;padding:0 12px;border-top:1px solid var(--bd);background:#0c1118;font-size:11.5px;color:var(--mu);min-width:0}
+footer img{height:26px;border-radius:4px}
+footer .sp{flex:1}
+footer span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* modales */
+.modal{position:fixed;inset:0;background:rgba(3,6,10,.7);display:none;align-items:center;justify-content:center;z-index:50;padding:12px}
+.modal.on{display:flex}
+.mbox{background:var(--pn);border:1px solid var(--bd);border-radius:12px;max-width:760px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.mhd{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--pn);z-index:1}
+.mhd b{font-size:15px}.mhd .sp{flex:1}
+.mbd{padding:12px 14px}
+.mbd h3{font-size:14px;margin:14px 0 6px;color:var(--ac2)}
+.mbd p,.mbd li{color:#cfdcec}
+.mft{display:flex;gap:8px;justify-content:flex-end;padding:10px 14px;border-top:1px solid var(--bd)}
+#toast{position:fixed;left:50%;bottom:48px;transform:translateX(-50%);background:#16243a;border:1px solid var(--ac);border-radius:8px;padding:8px 12px;z-index:60;display:none;max-width:min(92vw,560px);font-size:13px;word-break:break-word}
+/* informe (solo impresión) */
+#reporte{display:none}
+@media print{
+  @page{size:letter;margin:14mm}
+  html,body{background:#fff!important;color:#111;font:10.5pt/1.4 "Segoe UI",Arial,sans-serif;height:auto}
+  .app,.modal,#toast{display:none!important}
+  #reporte{display:block}
+  #reporte .rh{display:flex;align-items:center;gap:12px;border-bottom:2px solid #1d4f8f;padding-bottom:6px;margin-bottom:8px}
+  #reporte .rh img{height:46px}
+  #reporte h1{font-size:15pt;margin:0;color:#173a6b}
+  #reporte h2{font-size:11.5pt;color:#173a6b;margin:12px 0 4px;border-bottom:1px solid #c8d3e2}
+  #reporte table{width:100%;border-collapse:collapse;font-size:8.8pt}
+  #reporte th,#reporte td{border:1px solid #c8d3e2;padding:3px 5px;text-align:left;background:#fff;color:#111}
+  #reporte th{background:#eaf1fa}
+  #reporte td.n{text-align:right;font-variant-numeric:tabular-nums}
+  #reporte .mapa{border:1px solid #c8d3e2;margin:6px 0;page-break-inside:avoid}
+  #reporte .mapa svg{width:100%;height:auto;display:block}
+  #reporte .pie{margin-top:14px;border-top:1px solid #c8d3e2;padding-top:6px;font-size:8.5pt;color:#555;display:flex;align-items:center;gap:8px}
+  #reporte .pie img{height:28px}
+  #reporte .firmas td{height:46px;vertical-align:bottom}
+  #reporte .mono{font-family:Consolas,monospace;font-size:8pt;word-break:break-all}
+  #reporte tr{page-break-inside:avoid}
+}
+/* móvil */
+@media (max-width:820px){
+  :root{--hdr:54px}
+  main{grid-template-columns:1fr}
+  aside{position:fixed;left:0;right:0;bottom:var(--ftr);top:var(--hdr);z-index:20;transform:translateY(calc(100% + var(--ftr) + 12px));visibility:hidden;transition:transform .2s,visibility .2s;border-right:0;border-top:1px solid var(--bd);box-shadow:0 -10px 30px rgba(0,0,0,.5)}
+  aside.on{transform:none;visibility:visible}
+  #btnPanel{display:inline-flex}
+  header .tit span{display:none}
+  header .tit b .lg{display:none}
+  header .hide-m{display:none}
+  footer .hide-m{display:none}
+  #info{top:auto;bottom:44px;right:8px;left:8px;width:auto}
+  #coord{max-width:calc(100% - 110px);font-size:10.5px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <img class="logo" alt="Entalpía" src="data:image/jpeg;base64,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">
+  <div class="tit"><b>Voronoi<span class="lg"> · Zonas de influencia</span></b><span id="hProyecto">Georreferencias de campo → diagramas de Voronoi</span></div>
+  <div class="sp"></div>
+  <button class="hbtn" id="btnPanel" title="Mostrar u ocultar el panel">☰ Panel</button>
+  <button class="hbtn hide-m" id="btnNuevo" title="Empezar un proyecto vacío">Nuevo</button>
+  <button class="hbtn" id="btnAyuda" title="Guía de uso">? Ayuda</button>
+</header>
+<main>
+<aside id="panel">
+
+  <details class="acc" open id="accProyecto"><summary><span class="n">1</span>Proyecto <span class="badge" id="bProyecto"></span></summary><div class="accb">
+    <label class="f">Proyecto</label><input type="text" id="mProyecto" placeholder="Nombre del proyecto">
+    <div class="grid2">
+      <div><label class="f">Código en el portal</label><input type="text" id="mCodigo" placeholder="Ej. PRY-0001"></div>
+      <div><label class="f">Fecha de levantamiento</label><input type="text" id="mFecha" placeholder="AAAA-MM-DD"></div>
+    </div>
+    <label class="f">Organización</label><input type="text" id="mOrg" placeholder="Organización miembro del Hub">
+    <label class="f">Responsable</label><input type="text" id="mResp" placeholder="Nombre y cargo">
+    <label class="f">Propósito del diagrama</label>
+    <select id="mProp">
+      <option>Zonas de influencia de reguladores / ERM</option>
+      <option>Asignación de usuarios a puntos de suministro</option>
+      <option>Cobertura de puntos de medición o telemetría</option>
+      <option>Reconocimiento y catastro de redes</option>
+      <option>Interventoría: sectorización de frentes de obra</option>
+      <option>Otro</option>
+    </select>
+    <label class="f">Notas</label><textarea id="mNotas" placeholder="Alcance, supuestos, condiciones de la toma de datos"></textarea>
+  </div></details>
+
+  <details class="acc" id="accGps"><summary><span class="n">2</span>Captura en campo (GPS) <span class="badge" id="bGps"></span></summary><div class="accb">
+    <div id="gpsAviso"></div>
+    <div class="gps">
+      <div class="row"><div><small class="hint">Precisión reportada</small><div class="big" id="gAcc">—</div></div><div style="text-align:right"><small class="hint">Lecturas</small><div class="big" id="gN">0</div></div></div>
+      <div id="gPos" class="hint" style="margin:4px 0 0">Sin posición</div>
+      <div class="bar"><i id="gBar"></i></div>
+    </div>
+    <div class="btns"><button class="btn pri" id="gStart">▶ Activar GPS</button><button class="btn" id="gStop" disabled>■ Detener</button><button class="btn" id="gCentrar" disabled>⌖ Centrar</button></div>
+    <div class="grid2">
+      <div><label class="f">Umbral de precisión (m)</label><input type="number" id="gUmbral" min="1" step="1" value="10"></div>
+      <div><label class="f">Lecturas a promediar</label><input type="number" id="gLect" min="1" max="120" step="1" value="10"></div>
+    </div>
+    <label class="f">Capa destino</label>
+    <select id="gCapa"><option value="sitios">Sitios (generan las celdas)</option><option value="demanda">Puntos a asignar (usuarios, medidores…)</option></select>
+    <div class="grid2">
+      <div><label class="f">Nombre / código</label><input type="text" id="gNombre" placeholder="Automático"></div>
+      <div><label class="f">Tipo</label><input type="text" id="gTipo" list="dlTipos" placeholder="Ej. Regulador"></div>
+    </div>
+    <div class="grid2">
+      <div><label class="f" title="Solo para el diagrama de potencia">Radio de ponderación (m)</label><input type="number" id="gPeso" min="0" step="any" placeholder="0"></div>
+      <div><label class="f" title="Para puntos a asignar: consumo, usuarios, etc.">Valor</label><input type="number" id="gValor" step="any" placeholder="0"></div>
+    </div>
+    <label class="f">Observaciones</label><input type="text" id="gObs" placeholder="Referencia visual, estado, foto n.º…">
+    <div class="btns"><button class="btn ok" id="gReg" disabled>✚ Registrar punto</button></div>
+    <p class="hint">Se promedian solo las lecturas con precisión dentro del umbral. Cada punto guarda la precisión media, la dispersión de las lecturas y la hora. Los datos se procesan en este dispositivo.</p>
+  </div></details>
+
+  <details class="acc" id="accImport"><summary><span class="n">3</span>Importar georreferencias</summary><div class="accb">
+    <label class="f">Capa destino</label>
+    <select id="iCapa"><option value="sitios">Sitios (generan las celdas)</option><option value="demanda">Puntos a asignar</option><option value="limite">Límite del diagrama (polígono)</option></select>
+    <label class="f">Archivo: CSV, TXT, GeoJSON, KML, KMZ, GPX o proyecto (.json)</label>
+    <input type="file" id="iFile" accept=".csv,.txt,.tsv,.json,.geojson,.kml,.kmz,.gpx" multiple>
+    <label class="f">O pegue texto (enlaces de Google Maps / WhatsApp, o pares «lat, lon» por línea)</label>
+    <textarea id="iTexto" placeholder="https://maps.google.com/?q=4.8133,-75.6961&#10;4.81452, -75.69780  Regulador 2"></textarea>
+    <div class="btns"><button class="btn" id="iExtraer">Extraer coordenadas del texto</button></div>
+    <div class="btns"><button class="btn sm" id="iEjemplo">Cargar datos de ejemplo</button></div>
+  </div></details>
+
+  <details class="acc" id="accSitios"><summary><span class="n">4</span>Sitios y puntos <span class="badge" id="bSitios"></span></summary><div class="accb">
+    <div class="row"><input type="search" id="sBuscar" placeholder="Buscar por nombre o tipo"></div>
+    <div class="btns">
+      <button class="btn sm" id="sAddClic" title="Agregar un sitio haciendo clic en el mapa">✚ Agregar con clic</button>
+      <button class="btn sm" id="sAddMan">✚ Por coordenadas</button>
+    </div>
+    <label class="f">Sitios</label>
+    <div class="list" id="sLista"></div>
+    <label class="f" style="margin-top:10px">Puntos a asignar <span id="dCount"></span></label>
+    <div class="list" id="dLista" style="max-height:160px"></div>
+    <div class="btns"><button class="btn sm dan" id="dBorrar">Vaciar puntos a asignar</button><button class="btn sm dan" id="sBorrar">Vaciar sitios</button></div>
+  </div></details>
+
+  <details class="acc" id="accLimite"><summary><span class="n">5</span>Límite del diagrama <span class="badge" id="bLimite"></span></summary><div class="accb">
+    <select id="lModo">
+      <option value="bbox">Rectángulo envolvente con margen</option>
+      <option value="hull">Envolvente convexa ampliada</option>
+      <option value="custom">Polígono propio (importado o dibujado)</option>
+    </select>
+    <div id="lBbox"><label class="f">Margen (% del lado mayor)</label><input type="number" id="lMargen" min="0" max="200" step="1" value="10"></div>
+    <div id="lHull" style="display:none"><label class="f">Ampliación (m)</label><input type="number" id="lBuffer" min="0" step="1" value="100"></div>
+    <div id="lCustom" style="display:none">
+      <div class="btns"><button class="btn sm" id="lDibujar">✎ Dibujar en el mapa</button><button class="btn sm dan" id="lBorrar">Borrar polígono</button></div>
+      <p class="hint">Haga clic para cada vértice y pulse «Terminar» (o doble clic). También puede importar un polígono KML, KMZ o GeoJSON eligiendo la capa «Límite».</p>
+    </div>
+    <p class="hint" id="lInfo"></p>
+  </div></details>
+
+  <details class="acc" open id="accCalc"><summary><span class="n">6</span>Cálculo y presentación</summary><div class="accb">
+    <label class="f">Método</label>
+    <select id="cMetodo"><option value="voronoi">Voronoi clásico (distancia euclidiana)</option><option value="potencia">Diagrama de potencia (ponderado por radio)</option></select>
+    <div class="grid2">
+      <div><label class="f">Colorear por</label><select id="cColor"><option value="sitio">Sitio</option><option value="tipo">Tipo</option><option value="area">Área</option><option value="valor">Σ valor asignado</option></select></div>
+      <div><label class="f">Opacidad de celdas</label><input type="number" id="cOpac" min="0" max="1" step="0.05" value="0.35"></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="cEtq" checked> Mostrar nombres</label>
+    <label class="chk"><input type="checkbox" id="cArea"> Mostrar área en cada celda</label>
+    <label class="chk"><input type="checkbox" id="cAuto" checked> Recalcular automáticamente</label>
+    <div class="btns"><button class="btn pri" id="cCalcular">⟳ Calcular diagrama</button></div>
+    <div id="cMsg"></div>
+  </div></details>
+
+  <details class="acc" id="accRes"><summary><span class="n">7</span>Resultados <span class="badge" id="bRes"></span></summary><div class="accb">
+    <div class="kpis" id="rKpis"></div>
+    <div id="rAvisos"></div>
+    <div class="tblw"><table class="t" id="rTabla"></table></div>
+  </div></details>
+
+  <details class="acc" id="accExp"><summary><span class="n">8</span>Exportar y registros</summary><div class="accb">
+    <div class="btns">
+      <button class="btn" data-exp="geojson">GeoJSON</button><button class="btn" data-exp="kml">KML (Google Earth)</button>
+      <button class="btn" data-exp="csv">CSV resultados</button><button class="btn" data-exp="sitios">CSV sitios</button>
+      <button class="btn" data-exp="svg">Imagen SVG</button><button class="btn" data-exp="png">Imagen PNG</button>
+    </div>
+    <div class="btns"><button class="btn pri" id="eInforme">🖶 Informe para imprimir / PDF</button></div>
+    <div class="btns"><button class="btn ok" data-exp="proyecto">Guardar proyecto (.json)</button></div>
+    <p class="hint">Cada archivo exportado se registra con su huella SHA-256 en la bitácora del proyecto, para trazabilidad del registro en el portal.</p>
+    <label class="f">Bitácora de exportaciones</label>
+    <div class="list" id="eBit" style="max-height:160px"></div>
+  </div></details>
+
+</aside>
+
+<section id="mapa" aria-label="Mapa">
+  <div id="tiles"></div>
+  <canvas id="grid"></canvas>
+  <svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="mctl tl">
+    <div class="seg" id="fondoSeg"><button data-f="osm">Mapa</button><button data-f="sat">Satélite</button><button data-f="none">Sin fondo</button></div>
+  </div>
+  <div class="mctl tr">
+    <button class="btn" id="zMas" title="Acercar">＋</button>
+    <button class="btn" id="zMenos" title="Alejar">－</button>
+    <button class="btn" id="zAjustar" title="Ajustar a los datos">⤢</button>
+  </div>
+  <div id="modoBanner"><span id="modoTxt"></span><button class="btn sm pri" id="modoFin">Terminar</button><button class="btn sm" id="modoCancel">Cancelar</button></div>
+  <div id="leyenda"></div>
+  <div id="info"><button class="x" id="infoX" aria-label="Cerrar">×</button><div id="infoC"></div></div>
+  <div id="coord">Mueva el cursor sobre el mapa</div>
+  <div id="attr"></div>
+  <div id="escala"><span id="escT"></span><i id="escB"></i></div>
+  <div id="spin">Calculando…</div>
+</section>
+</main>
+<footer>
+  <img alt="Hub de Ingeniería Pioneer's" src="data:image/jpeg;base64,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">
+  <span>Hub de Ingeniería Pioneer's · un desarrollo de Industrias I.A. Col</span>
+  <div class="sp"></div>
+  <span class="hide-m" id="fVer"></span>
+</footer>
+</div>
+
+<datalist id="dlTipos"><option>Regulador</option><option>ERM</option><option>Estación de medición</option><option>Válvula</option><option>Tanque</option><option>Usuario</option><option>Medidor</option><option>Punto de control</option></datalist>
+
+<!-- Modal: mapeo de columnas CSV -->
+<div class="modal" id="mdCsv"><div class="mbox">
+  <div class="mhd"><b>Importar tabla</b><span class="hint" id="csvNom"></span><div class="sp"></div><button class="btn sm" data-close>×</button></div>
+  <div class="mbd">
+    <div class="grid2">
+      <div><label class="f">Sistema de coordenadas</label><select id="csvCrs"></select></div>
+      <div><label class="f">Capa destino</label><select id="csvCapa"><option value="sitios">Sitios</option><option value="demanda">Puntos a asignar</option><option value="limite">Límite (vértices en orden)</option></select></div>
+    </div>
+    <div class="grid2" id="csvCols"></div>
+    <label class="chk"><input type="checkbox" id="csvHead" checked> La primera fila tiene encabezados</label>
+    <label class="f">Vista previa</label>
+    <div class="tblw" style="max-height:200px"><table class="t" id="csvPrev"></table></div>
+    <div id="csvMsg"></div>
+  </div>
+  <div class="mft"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="csvOk">Importar</button></div>
+</div></div>
+
+<!-- Modal: editar punto -->
+<div class="modal" id="mdPunto"><div class="mbox" style="max-width:520px">
+  <div class="mhd"><b id="pTit">Punto</b><div class="sp"></div><button class="btn sm" data-close>×</button></div>
+  <div class="mbd">
+    <div class="grid2">
+      <div><label class="f">Nombre / código</label><input type="text" id="pNombre"></div>
+      <div><label class="f">Tipo</label><input type="text" id="pTipo" list="dlTipos"></div>
+    </div>
+    <label class="f">Ingresar coordenadas en</label><select id="pCrs"></select>
+    <div class="grid2">
+      <div><label class="f" id="pL1">Latitud</label><input type="text" id="pC1" inputmode="decimal"></div>
+      <div><label class="f" id="pL2">Longitud</label><input type="text" id="pC2" inputmode="decimal"></div>
+    </div>
+    <p class="hint" id="pConv"></p>
+    <div class="grid2">
+      <div><label class="f">Radio de ponderación (m)</label><input type="number" id="pPeso" step="any" min="0"></div>
+      <div><label class="f">Valor</label><input type="number" id="pValor" step="any"></div>
+      <div><label class="f">Precisión (m)</label><input type="number" id="pPrec" step="any" min="0"></div>
+      <div><label class="f">Fecha / hora</label><input type="text" id="pFecha"></div>
+    </div>
+    <label class="f">Observaciones</label><input type="text" id="pObs">
+    <label class="chk"><input type="checkbox" id="pActivo"> Incluir en el cálculo</label>
+    <p class="hint" id="pFuente"></p>
+  </div>
+  <div class="mft"><button class="btn dan" id="pEliminar">Eliminar</button><div style="flex:1"></div><button class="btn" data-close>Cancelar</button><button class="btn pri" id="pGuardar">Guardar</button></div>
+</div></div>
+
+<!-- Modal: ayuda -->
+<div class="modal" id="mdAyuda"><div class="mbox">
+  <div class="mhd"><b>Guía de uso · Voronoi</b><div class="sp"></div><button class="btn sm" id="ayDescargar">Descargar guía</button><button class="btn sm" data-close>×</button></div>
+  <div class="mbd" id="ayudaC"></div>
+</div></div>
+
+<!-- Modal: confirmación -->
+<div class="modal" id="mdConf"><div class="mbox" style="max-width:440px">
+  <div class="mhd"><b id="cfTit">Confirmar</b></div>
+  <div class="mbd"><p id="cfTxt"></p></div>
+  <div class="mft"><button class="btn" id="cfNo">Cancelar</button><button class="btn pri" id="cfSi">Aceptar</button></div>
+</div></div>
+
+<div id="toast"></div>
+<div id="reporte"></div>
+
+<script>
+/* ============================================================================
+ * VORONOI · ENTALPIA LABS — núcleo de cálculo (sin dependencias)
+ * Industrias I.A. Col · Hub de Ingeniería Pioneer's
+ * Proyección Transversa de Mercator (series de Krüger, 6.º orden), sistemas
+ * MAGNA-SIRGAS de Colombia, diagramas de Voronoi y de potencia por recorte de
+ * semiplanos, geometría plana y lectores de formatos de campo.
+ * ==========================================================================*/
+const VCore = (() => {
+  'use strict';
+  const D2R = Math.PI / 180, R2D = 180 / Math.PI;
+
+  // ---------------------------------------------------------------- Elipsoide
+  const GRS80 = { a: 6378137, f: 1 / 298.257222101 };
+
+  // ---------------------------------------------- Transversa de Mercator
+  function makeTM(p) {
+    const a = p.a || GRS80.a, f = p.f || GRS80.f;
+    const n = f / (2 - f), n2 = n * n, n3 = n2 * n, n4 = n3 * n, n5 = n4 * n, n6 = n5 * n;
+    const e2 = f * (2 - f), e = Math.sqrt(e2);
+    const A = a / (1 + n) * (1 + n2 / 4 + n4 / 64 + n6 / 256);
+    const al = [0,
+      n / 2 - 2 * n2 / 3 + 5 * n3 / 16 + 41 * n4 / 180 - 127 * n5 / 288 + 7891 * n6 / 37800,
+      13 * n2 / 48 - 3 * n3 / 5 + 557 * n4 / 1440 + 281 * n5 / 630 - 1983433 * n6 / 1935360,
+      61 * n3 / 240 - 103 * n4 / 140 + 15061 * n5 / 26880 + 167603 * n6 / 181440,
+      49561 * n4 / 161280 - 179 * n5 / 168 + 6601661 * n6 / 7257600,
+      34729 * n5 / 80640 - 3418889 * n6 / 1995840,
+      212378941 * n6 / 319334400];
+    const be = [0,
+      n / 2 - 2 * n2 / 3 + 37 * n3 / 96 - n4 / 360 - 81 * n5 / 512 + 96199 * n6 / 604800,
+      n2 / 48 + n3 / 15 - 437 * n4 / 1440 + 46 * n5 / 105 - 1118711 * n6 / 3870720,
+      17 * n3 / 480 - 37 * n4 / 840 - 209 * n5 / 4480 + 5569 * n6 / 90720,
+      4397 * n4 / 161280 - 11 * n5 / 504 - 830251 * n6 / 7257600,
+      4583 * n5 / 161280 - 108847 * n6 / 3991680,
+      20648693 * n6 / 638668800];
+    const k0 = p.k0, lon0 = p.lon0 * D2R, FE = p.FE, FN = p.FN;
+    function xiEta(phi, lam) {
+      const t = Math.sinh(Math.atanh(Math.sin(phi)) - e * Math.atanh(e * Math.sin(phi)));
+      const xp = Math.atan2(t, Math.cos(lam));
+      const ep = Math.atanh(Math.sin(lam) / Math.sqrt(1 + t * t));
+      let xi = xp, eta = ep;
+      for (let j = 1; j <= 6; j++) {
+        xi += al[j] * Math.sin(2 * j * xp) * Math.cosh(2 * j * ep);
+        eta += al[j] * Math.cos(2 * j * xp) * Math.sinh(2 * j * ep);
+      }
+      return [xi, eta];
+    }
+    const M0 = k0 * A * xiEta(p.lat0 * D2R, 0)[0];
+    function forward(lat, lon) {
+      let lam = lon * D2R - lon0;
+      lam = Math.atan2(Math.sin(lam), Math.cos(lam));
+      const [xi, eta] = xiEta(lat * D2R, lam);
+      return [FE + k0 * A * eta, FN + k0 * A * xi - M0];
+    }
+    function inverse(E, N) {
+      const xi = (N - FN + M0) / (k0 * A), eta = (E - FE) / (k0 * A);
+      let xp = xi, ep = eta;
+      for (let j = 1; j <= 6; j++) {
+        xp -= be[j] * Math.sin(2 * j * xi) * Math.cosh(2 * j * eta);
+        ep -= be[j] * Math.cos(2 * j * xi) * Math.sinh(2 * j * eta);
+      }
+      const tp = Math.sin(xp) / Math.sqrt(Math.sinh(ep) ** 2 + Math.cos(xp) ** 2);
+      const lam = Math.atan2(Math.sinh(ep), Math.cos(xp));
+      let ti = tp;
+      for (let it = 0; it < 15; it++) {
+        const si = Math.sinh(e * Math.atanh(e * ti / Math.sqrt(1 + ti * ti)));
+        const tip = ti * Math.sqrt(1 + si * si) - si * Math.sqrt(1 + ti * ti);
+        const d = (tp - tip) / Math.sqrt(1 + tip * tip) * (1 + (1 - e2) * ti * ti) / ((1 - e2) * Math.sqrt(1 + ti * ti));
+        ti += d;
+        if (Math.abs(d) < 1e-14) break;
+      }
+      return [Math.atan(ti) * R2D, (lam + lon0) * R2D];
+    }
+    // Factor de escala puntual (numérico; la proyección es conforme)
+    function scale(lat, lon) {
+      const phi = lat * D2R, dl = 1e-6;
+      const Np = a / Math.sqrt(1 - e2 * Math.sin(phi) ** 2);
+      const ds = Np * Math.cos(phi) * dl * D2R;
+      const p1 = forward(lat, lon - dl / 2), p2 = forward(lat, lon + dl / 2);
+      return Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) / ds;
+    }
+    return { forward, inverse, scale, params: p };
+  }
+
+  // Sistemas de referencia admitidos (datum MAGNA-SIRGAS, elipsoide GRS80).
+  // MAGNA-SIRGAS y WGS84 se tratan como coincidentes (diferencia < 1 m,
+  // transformación EPSG 15738 con parámetros nulos).
+  const L0 = 4.596200416666667;
+  const CRS = {
+    WGS84:  { id: 'WGS84', nombre: 'Geográficas WGS84 / MAGNA-SIRGAS (EPSG:4326 / 4686)', geo: true },
+    CTM12:  { id: 'CTM12', nombre: 'MAGNA-SIRGAS / Origen Nacional — CTM12 (EPSG:9377)', tm: makeTM({ lat0: 4, lon0: -73, k0: 0.9992, FE: 5000000, FN: 2000000 }) },
+    MB_OO:  { id: 'MB_OO', nombre: 'MAGNA-SIRGAS / Colombia Oeste Oeste (EPSG:3114)', tm: makeTM({ lat0: L0, lon0: -80.07750791666667, k0: 1, FE: 1000000, FN: 1000000 }) },
+    MB_O:   { id: 'MB_O',  nombre: 'MAGNA-SIRGAS / Colombia Oeste (EPSG:3115)',       tm: makeTM({ lat0: L0, lon0: -77.07750791666667, k0: 1, FE: 1000000, FN: 1000000 }) },
+    MB_BOG: { id: 'MB_BOG',nombre: 'MAGNA-SIRGAS / Colombia Bogotá (EPSG:3116)',      tm: makeTM({ lat0: L0, lon0: -74.07750791666667, k0: 1, FE: 1000000, FN: 1000000 }) },
+    MB_EC:  { id: 'MB_EC', nombre: 'MAGNA-SIRGAS / Colombia Este Central (EPSG:3117)',tm: makeTM({ lat0: L0, lon0: -71.07750791666667, k0: 1, FE: 1000000, FN: 1000000 }) },
+    MB_EE:  { id: 'MB_EE', nombre: 'MAGNA-SIRGAS / Colombia Este Este (EPSG:3118)',   tm: makeTM({ lat0: L0, lon0: -68.07750791666667, k0: 1, FE: 1000000, FN: 1000000 }) },
+  };
+  const PLANO = CRS.CTM12.tm; // plano de cálculo
+
+  // --------------------------------------------------------------- Geometría
+  function ringArea(r) { let s = 0; for (let i = 0, n = r.length; i < n; i++) { const a = r[i], b = r[(i + 1) % n]; s += a[0] * b[1] - b[0] * a[1]; } return s / 2; }
+  function ringPerim(r) { let s = 0; for (let i = 0, n = r.length; i < n; i++) { const a = r[i], b = r[(i + 1) % n]; s += Math.hypot(b[0] - a[0], b[1] - a[1]); } return s; }
+  function ringCentroid(r) {
+    let A = 0, cx = 0, cy = 0;
+    for (let i = 0, n = r.length; i < n; i++) { const a = r[i], b = r[(i + 1) % n], c = a[0] * b[1] - b[0] * a[1]; A += c; cx += (a[0] + b[0]) * c; cy += (a[1] + b[1]) * c; }
+    if (Math.abs(A) < 1e-12) { let x = 0, y = 0; r.forEach(p => { x += p[0]; y += p[1]; }); return [x / r.length, y / r.length]; }
+    return [cx / (3 * A), cy / (3 * A)];
+  }
+  function multiCentroid(rings) {
+    let A = 0, x = 0, y = 0;
+    rings.forEach(r => { const a = Math.abs(ringArea(r)), c = ringCentroid(r); A += a; x += c[0] * a; y += c[1] * a; });
+    return A > 0 ? [x / A, y / A] : ringCentroid(rings[0]);
+  }
+  function pointInRing(p, r) {
+    let ins = false;
+    for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+      const a = r[i], b = r[j];
+      if ((a[1] > p[1]) !== (b[1] > p[1]) && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0]) ins = !ins;
+    }
+    return ins;
+  }
+  function pointInRings(p, rings) { return rings.some(r => pointInRing(p, r)); }
+  function convexHull(pts) {
+    const P = pts.map(p => [p[0], p[1]]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    if (P.length < 3) return P;
+    const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    const lo = [], up = [];
+    for (const p of P) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+    for (let i = P.length - 1; i >= 0; i--) { const p = P[i]; while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+    up.pop(); lo.pop(); return lo.concat(up); // antihorario
+  }
+  // Envolvente convexa ampliada una distancia d (suma de Minkowski con un círculo de 32 lados)
+  function hullBuffer(pts, d) {
+    if (!(d > 0)) return convexHull(pts);
+    const s = [];
+    pts.forEach(p => { for (let k = 0; k < 32; k++) { const t = 2 * Math.PI * k / 32; s.push([p[0] + d * Math.cos(t), p[1] + d * Math.sin(t)]); } });
+    return convexHull(s);
+  }
+  function bboxRing(pts, marginFrac, minPad) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    pts.forEach(p => { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); });
+    const w = x1 - x0, h = y1 - y0, m = Math.max(Math.max(w, h) * marginFrac, minPad || 0);
+    return [[x0 - m, y0 - m], [x1 + m, y0 - m], [x1 + m, y1 + m], [x0 - m, y1 + m]];
+  }
+  // Sutherland–Hodgman: conserva la parte de r con a·x + b·y <= c
+  function clipHalf(r, a, b, c) {
+    const out = [], n = r.length; if (!n) return out;
+    const EPS = 1e-9 * (Math.abs(c) + 1);
+    for (let i = 0; i < n; i++) {
+      const P = r[i], Q = r[(i + 1) % n];
+      const fp = a * P[0] + b * P[1] - c, fq = a * Q[0] + b * Q[1] - c;
+      const pin = fp <= EPS, qin = fq <= EPS;
+      if (pin) out.push(P);
+      if (pin !== qin) { const t = fp / (fp - fq); out.push([P[0] + t * (Q[0] - P[0]), P[1] + t * (Q[1] - P[1])]); }
+    }
+    return out;
+  }
+  function cleanRing(r, tol) {
+    const o = [];
+    for (const p of r) { const q = o[o.length - 1]; if (!q || Math.hypot(p[0] - q[0], p[1] - q[1]) > tol) o.push(p); }
+    while (o.length > 1 && Math.hypot(o[0][0] - o[o.length - 1][0], o[0][1] - o[o.length - 1][1]) <= tol) o.pop();
+    return o;
+  }
+
+  /**
+   * Diagrama de Voronoi (w = 0) o de potencia (w = r²) recortado por un límite.
+   * sites: [{x, y, w}] en metros (plano). boundary: [ring, ...] (anillos exteriores).
+   * Devuelve por sitio: { rings, vecinos:[índices], vacio }.
+   */
+  function voronoi(sites, boundary) {
+    const n = sites.length, cells = new Array(n);
+    let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+    boundary.forEach(r => r.forEach(p => { bx0 = Math.min(bx0, p[0]); by0 = Math.min(by0, p[1]); bx1 = Math.max(bx1, p[0]); by1 = Math.max(by1, p[1]); }));
+    const tol = Math.max(bx1 - bx0, by1 - by0) * 1e-9 + 1e-6;
+    let wmax = 0; sites.forEach(s => { wmax = Math.max(wmax, s.w || 0); });
+    const idx = sites.map((_, i) => i);
+    for (let i = 0; i < n; i++) {
+      const p = sites[i], wp = p.w || 0;
+      const order = idx.filter(j => j !== i).map(j => [j, (sites[j].x - p.x) ** 2 + (sites[j].y - p.y) ** 2]).sort((u, v) => u[1] - v[1]);
+      let rings = boundary.map(r => r.slice());
+      const lines = [];
+      for (const [j, d2] of order) {
+        // radio máximo de la celda actual medido desde el sitio
+        let R2 = 0; rings.forEach(r => r.forEach(v => { R2 = Math.max(R2, (v[0] - p.x) ** 2 + (v[1] - p.y) ** 2); }));
+        const R = Math.sqrt(R2), d = Math.sqrt(d2);
+        const lim = R + Math.sqrt(Math.max(0, R2 + wmax - wp));
+        if (d > lim) break;               // ningún sitio más lejano puede recortar la celda
+        const q = sites[j], wq = q.w || 0;
+        // |x-p|² - wp <= |x-q|² - wq  ⇔  2(q-p)·x <= |q|²-|p|² - wq + wp   (coordenadas relativas a p)
+        const a = 2 * (q.x - p.x), b = 2 * (q.y - p.y), c = (q.x - p.x) ** 2 + (q.y - p.y) ** 2 - wq + wp;
+        if (a === 0 && b === 0) continue; // sitio coincidente: se depura antes
+        const rel = rings.map(r => r.map(v => [v[0] - p.x, v[1] - p.y]));
+        let changed = false;
+        const nr = [];
+        rel.forEach(r => {
+          const cut = clipHalf(r, a, b, c);
+          if (cut.length !== r.length || cut.some((v, k) => v !== r[k])) changed = true;
+          const cc = cleanRing(cut, tol);
+          if (cc.length >= 3 && Math.abs(ringArea(cc)) > tol * tol) nr.push(cc);
+        });
+        if (changed) { lines.push([j, a, b, c]); rings = nr.map(r => r.map(v => [v[0] + p.x, v[1] + p.y])); }
+        if (!rings.length) break;
+      }
+      // vecinos: sitios cuyo bisector (o eje radical) contiene un lado de la celda final
+      const vec = [];
+      for (const [j, a, b, c] of lines) {
+        const L = Math.hypot(a, b), tl = Math.max(1e-6, 1e-7 * Math.abs(c) / L);
+        let edge = false;
+        for (const r of rings) {
+          for (let k = 0; k < r.length && !edge; k++) {
+            const u = r[k], v = r[(k + 1) % r.length];
+            const fu = (a * (u[0] - p.x) + b * (u[1] - p.y) - c) / L, fv = (a * (v[0] - p.x) + b * (v[1] - p.y) - c) / L;
+            if (Math.abs(fu) < tl && Math.abs(fv) < tl && Math.hypot(v[0] - u[0], v[1] - u[1]) > tol * 10) edge = true;
+          }
+          if (edge) break;
+        }
+        if (edge) vec.push(j);
+      }
+      cells[i] = { rings, vecinos: vec.sort((u, v) => u - v), vacio: !rings.length };
+    }
+    return cells;
+  }
+
+  // Asigna cada punto al sitio de menor distancia (o distancia de potencia)
+  function nearestSite(pt, sites) {
+    let best = -1, bd = Infinity;
+    for (let i = 0; i < sites.length; i++) {
+      const s = sites[i], d = (s.x - pt[0]) ** 2 + (s.y - pt[1]) ** 2 - (s.w || 0);
+      if (d < bd) { bd = d; best = i; }
+    }
+    return best;
+  }
+
+  // ------------------------------------------------------ Lectura de datos
+  function num(v) {
+    if (v == null) return NaN;
+    if (typeof v === 'number') return v;
+    let s = String(v).trim().replace(/\s+/g, '');
+    if (!s) return NaN;
+    if (/^-?\d{1,3}(\.\d{3})+,\d+$/.test(s)) s = s.replace(/\./g, '').replace(',', '.'); // 1.234.567,89
+    else if (/^-?\d+,\d+$/.test(s)) s = s.replace(',', '.');                              // 4,8123
+    else if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) s = s.replace(/,/g, '');             // 1,234,567.89
+    const x = Number(s);
+    return Number.isFinite(x) ? x : NaN;
+  }
+  // Ángulo en decimal o sexagesimal (4°48'12.3"N, 75 41 22 W, -75.6895)
+  function parseAngle(v) {
+    if (v == null) return NaN;
+    const s0 = String(v).trim().toUpperCase().replace(/,(?=\d)/g, '.');
+    const d = num(s0); if (Number.isFinite(d)) return d;
+    const m = s0.match(/^([NSEWOn]?)\s*(-?\d+(?:\.\d+)?)\s*[°º:\s]\s*(\d+(?:\.\d+)?)?\s*['’′:\s]?\s*(\d+(?:\.\d+)?)?\s*(?:"|”|″|'')?\s*([NSEWO]?)$/);
+    if (!m) return NaN;
+    let x = Math.abs(+m[2]) + (+(m[3] || 0)) / 60 + (+(m[4] || 0)) / 3600;
+    const h = m[1] || m[5];
+    if (String(m[2]).startsWith('-') || h === 'S' || h === 'W' || h === 'O') x = -x;
+    return x;
+  }
+  function detectDelim(line) {
+    const c = { ';': 0, ',': 0, '\t': 0, '|': 0 };
+    let q = false; for (const ch of line) { if (ch === '"') q = !q; else if (!q && ch in c) c[ch]++; }
+    return Object.entries(c).sort((a, b) => b[1] - a[1])[0][1] ? Object.entries(c).sort((a, b) => b[1] - a[1])[0][0] : ',';
+  }
+  function parseCSV(text) {
+    text = text.replace(/^﻿/, '');
+    const first = text.split(/\r?\n/).find(l => l.trim()) || '';
+    const dl = detectDelim(first);
+    const rows = []; let row = [], f = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (q) { if (ch === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += ch; }
+      else if (ch === '"') q = true;
+      else if (ch === dl) { row.push(f); f = ''; }
+      else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(f); f = ''; if (row.some(x => x.trim() !== '')) rows.push(row); row = []; }
+      else f += ch;
+    }
+    row.push(f); if (row.some(x => x.trim() !== '')) rows.push(row);
+    return { delim: dl, rows };
+  }
+  const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+  function guessColumns(header) {
+    const h = header.map(norm), find = (...keys) => { for (const k of keys) { const i = h.findIndex(x => x === k); if (i >= 0) return i; } for (const k of keys) { const i = h.findIndex(x => x.startsWith(k)); if (i >= 0) return i; } return -1; };
+    return {
+      lat: find('lat', 'latitud', 'latitude', 'y_lat'),
+      lon: find('lon', 'lng', 'long', 'longitud', 'longitude', 'x_lon'),
+      este: find('este', 'east', 'easting', 'x', 'coordx', 'coorde'),
+      norte: find('norte', 'north', 'northing', 'y', 'coordy', 'coordn'),
+      nombre: find('nombre', 'name', 'id', 'codigo', 'punto', 'sitio', 'descripcion'),
+      tipo: find('tipo', 'type', 'clase', 'categoria'),
+      peso: find('peso', 'radio', 'weight', 'capacidad'),
+      valor: find('valor', 'consumo', 'demanda', 'caudal', 'value', 'cantidad'),
+      prec: find('precision', 'accuracy', 'exactitud', 'hdop', 'error'),
+      fecha: find('fecha', 'date', 'time', 'hora', 'timestamp'),
+      obs: find('observaciones', 'obs', 'notas', 'nota', 'comentario', 'comment'),
+    };
+  }
+  // Extrae pares lat,lon de texto libre: enlaces de Google Maps, WhatsApp, "4.81, -75.69"
+  function coordsFromText(text) {
+    const out = [], seen = new Set();
+    const push = (la, lo, ctx) => {
+      if (!(Math.abs(la) <= 90 && Math.abs(lo) <= 180)) return;
+      const k = la.toFixed(7) + ',' + lo.toFixed(7); if (seen.has(k)) return; seen.add(k);
+      out.push({ lat: la, lon: lo, ctx: ctx.trim().slice(0, 120) });
+    };
+    text.split(/\r?\n/).forEach(line => {
+      let m, found = false;
+      const re1 = /(?:[?&](?:q|ll|query|destination|daddr)=|@|loc:)\s*(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/g;
+      while ((m = re1.exec(line))) { push(+m[1], +m[2], line); found = true; }
+      if (!found) {
+        const re2 = /(-?\d{1,2}\.\d{3,})\s*[,;\s]\s*(-?\d{1,3}\.\d{3,})/g;
+        while ((m = re2.exec(line))) push(+m[1], +m[2], line);
+      }
+    });
+    return out;
+  }
+  function round(x, d) { const k = 10 ** d; return Math.round(x * k) / k; }
+
+  return { D2R, R2D, GRS80, makeTM, CRS, PLANO, ringArea, ringPerim, ringCentroid, multiCentroid, pointInRing, pointInRings,
+    convexHull, hullBuffer, bboxRing, clipHalf, cleanRing, voronoi, nearestSite, num, parseAngle, parseCSV, guessColumns, coordsFromText, norm, round };
+})();
+if (typeof module !== 'undefined') module.exports = VCore;
+
+</script>
+<script>
+const LOGO_ENT = "data:image/jpeg;base64,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";
+const LOGO_PIO = "data:image/jpeg;base64,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";
+/* ============================================================================
+ * VORONOI · ENTALPIA LABS — interfaz
+ * ==========================================================================*/
+(() => {
+'use strict';
+const V = VCore;
+const VER = 'V1.0';
+const APP_ID = 'Voronoi · Entalpía Lab';
+const DOC = 'TI-IN-01';
+const LS_KEY = 'entalpia.voronoi.v1';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (x, d = 0) => Number.isFinite(x) ? x.toLocaleString('es-CO', { minimumFractionDigits: d, maximumFractionDigits: d }) : '—';
+const hoy = () => { const d = new Date(), z = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; };
+const ahora = () => { const d = new Date(), z = n => String(n).padStart(2, '0'); return `${hoy()} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`; };
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+// ---------------------------------------------------------------- Estado
+const nuevoEstado = () => ({
+  app: APP_ID, version: VER,
+  meta: { proyecto: '', codigo: '', fecha: hoy(), org: '', resp: '', prop: 'Zonas de influencia de reguladores / ERM', notas: '' },
+  sitios: [], demanda: [],
+  limite: { modo: 'bbox', margen: 10, buffer: 100, anillos: [] },
+  calc: { metodo: 'voronoi', color: 'sitio', opac: 0.35, etq: true, area: false, auto: true },
+  gps: { umbral: 10, lect: 10 },
+  vista: { lat: 4.57, lon: -74.3, z: 5.4 }, fondo: 'osm',
+  bitacora: [],
+});
+let S = nuevoEstado();
+let R = null;            // resultados del último cálculo
+let sel = null;          // { tipo:'sitio'|'demanda', id }
+let modo = 'nav';        // nav | add | lim
+let borrador = [];       // vértices del límite en dibujo
+let gpsPos = null;
+
+function guardarLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) { } }
+let tGuardar = 0; const programarGuardado = () => { clearTimeout(tGuardar); tGuardar = setTimeout(guardarLocal, 400); };
+function cargarLocal() {
+  try { const t = localStorage.getItem(LS_KEY); if (t) { const o = JSON.parse(t); if (o && o.app === APP_ID) S = Object.assign(nuevoEstado(), o); } } catch (e) { }
+}
+
+// ---------------------------------------------------------------- Utilidades UI
+function toast(msg, ms = 3500) { const t = $('toast'); t.innerHTML = msg; t.style.display = 'block'; clearTimeout(t._t); t._t = setTimeout(() => t.style.display = 'none', ms); }
+function abrir(id) { $(id).classList.add('on'); }
+function cerrar(id) { $(id).classList.remove('on'); }
+document.querySelectorAll('.modal').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m || e.target.hasAttribute('data-close')) m.classList.remove('on'); });
+});
+function confirmar(tit, txt) {
+  return new Promise(res => {
+    $('cfTit').textContent = tit; $('cfTxt').innerHTML = txt; abrir('mdConf');
+    const fin = v => { cerrar('mdConf'); $('cfSi').onclick = $('cfNo').onclick = null; res(v); };
+    $('cfSi').onclick = () => fin(true); $('cfNo').onclick = () => fin(false);
+  });
+}
+function descargar(nombre, contenido, tipo) {
+  const blob = contenido instanceof Blob ? contenido : new Blob([contenido], { type: tipo });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  return blob;
+}
+async function sha256(blob) {
+  try { const buf = await blob.arrayBuffer(); const h = await crypto.subtle.digest('SHA-256', buf); return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, '0')).join(''); }
+  catch (e) { return 'no disponible (requiere https)'; }
+}
+const baseNombre = () => (S.meta.codigo || S.meta.proyecto || 'voronoi').replace(/[^\w\-áéíóúñÁÉÍÓÚÑ ]+/g, '').trim().replace(/\s+/g, '_').slice(0, 60) || 'voronoi';
+
+// ---------------------------------------------------------------- Proyección
+const P = V.PLANO;
+const aPlano = (lat, lon) => P.forward(lat, lon);
+const aGeo = (E, N) => P.inverse(E, N);
+const enColombia = (lat, lon) => lat > -4.5 && lat < 13.6 && lon > -82.2 && lon < -66.7;
+
+// ================================================================= MAPA
+const mapa = $('mapa'), svg = $('svg'), tilesDiv = $('tiles');
+const TS = 256;
+const FONDOS = {
+  osm: { url: (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`, max: 19, attr: '© colaboradores de OpenStreetMap' },
+  sat: { url: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`, max: 19, attr: 'Imágenes © Esri, Maxar, Earthstar Geographics' },
+  none: null,
+};
+function merc(lat, lon, z) {
+  const s = TS * 2 ** z, la = Math.max(-85.05, Math.min(85.05, lat)) * Math.PI / 180;
+  return [(lon + 180) / 360 * s, (1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * s];
+}
+function imerc(x, y, z) {
+  const s = TS * 2 ** z, lon = x / s * 360 - 180, n = Math.PI - 2 * Math.PI * y / s;
+  return [180 / Math.PI * Math.atan(Math.sinh(n)), lon];
+}
+let W = 0, H = 0;
+function tam() { const r = mapa.getBoundingClientRect(); W = r.width; H = r.height; svg.setAttribute('viewBox', `0 0 ${W} ${H}`); const g = $('grid'); g.width = W; g.height = H; }
+function aPant(lat, lon) { const z = S.vista.z, c = merc(S.vista.lat, S.vista.lon, z), p = merc(lat, lon, z); return [p[0] - c[0] + W / 2, p[1] - c[1] + H / 2]; }
+function dePant(x, y) { const z = S.vista.z, c = merc(S.vista.lat, S.vista.lon, z); return imerc(c[0] + x - W / 2, c[1] + y - H / 2, z); }
+const tileCache = new Map();
+function dibujarTiles() {
+  const f = FONDOS[S.fondo];
+  $('attr').textContent = f ? f.attr : 'Sin fondo · cuadrícula de 1 km aprox.';
+  if (!f) { tilesDiv.innerHTML = ''; tileCache.clear(); dibujarRejilla(true); return; }
+  dibujarRejilla(false);
+  const tz = Math.max(0, Math.min(f.max, Math.round(S.vista.z))), k = 2 ** (S.vista.z - tz), sz = TS * k;
+  const c = merc(S.vista.lat, S.vista.lon, tz), ox = W / 2 - c[0] * k, oy = H / 2 - c[1] * k;
+  const x0 = Math.floor(-ox / sz), x1 = Math.floor((W - ox) / sz), y0 = Math.floor(-oy / sz), y1 = Math.floor((H - oy) / sz);
+  const n = 2 ** tz, vivos = new Set();
+  for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) {
+    if (y < 0 || y >= n) continue;
+    const xx = ((x % n) + n) % n, key = `${S.fondo}/${tz}/${xx}/${y}`;
+    vivos.add(key);
+    let img = tileCache.get(key);
+    if (!img) {
+      img = new Image(); img.crossOrigin = 'anonymous'; img.decoding = 'async'; img.alt = '';
+      img.onerror = () => { img.style.visibility = 'hidden'; };
+      img.src = f.url(tz, xx, y); tileCache.set(key, img); tilesDiv.appendChild(img);
+    }
+    img.style.left = (ox + x * sz) + 'px'; img.style.top = (oy + y * sz) + 'px'; img.style.width = img.style.height = (sz + 0.5) + 'px';
+  }
+  for (const [k2, img] of tileCache) if (!vivos.has(k2)) { img.remove(); tileCache.delete(k2); }
+}
+function dibujarRejilla(on) {
+  const g = $('grid'), ctx = g.getContext('2d'); ctx.clearRect(0, 0, W, H); if (!on) return;
+  const mpp = metrosPorPixel(); if (!(mpp > 0)) return;
+  let paso = 1000; const opciones = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
+  for (const o of opciones) { if (o / mpp > 60) { paso = o; break; } }
+  ctx.strokeStyle = '#3b4c63'; ctx.lineWidth = 1;
+  const pts = [[0, 0], [W, 0], [0, H], [W, H]].map(([x, y]) => { const g2 = dePant(x, y); return aPlano(g2[0], g2[1]); });
+  const Es = pts.map(p => p[0]), Ns = pts.map(p => p[1]);
+  const e0 = Math.floor(Math.min(...Es) / paso) * paso, e1 = Math.max(...Es), n0 = Math.floor(Math.min(...Ns) / paso) * paso, n1 = Math.max(...Ns);
+  if ((e1 - e0) / paso > 200 || (n1 - n0) / paso > 200) return;
+  ctx.beginPath();
+  for (let e = e0; e <= e1; e += paso) { const a = aGeo(e, n0), b = aGeo(e, n1), A = aPant(a[0], a[1]), B = aPant(b[0], b[1]); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); }
+  for (let nn = n0; nn <= n1; nn += paso) { const a = aGeo(e0, nn), b = aGeo(e1, nn), A = aPant(a[0], a[1]), B = aPant(b[0], b[1]); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); }
+  ctx.stroke();
+  $('attr').textContent = `Sin fondo · cuadrícula CTM12 cada ${paso >= 1000 ? paso / 1000 + ' km' : paso + ' m'}`;
+}
+function metrosPorPixel() { const la = S.vista.lat * Math.PI / 180; return 40075016.686 * Math.cos(la) / (TS * 2 ** S.vista.z); }
+function dibujarEscala() {
+  const mpp = metrosPorPixel(), objetivo = 110 * mpp, pot = 10 ** Math.floor(Math.log10(objetivo));
+  let m = pot; for (const k of [1, 2, 5, 10]) if (k * pot <= objetivo) m = k * pot;
+  $('escB').style.width = (m / mpp) + 'px'; $('escT').textContent = m >= 1000 ? (m / 1000) + ' km' : m + ' m';
+}
+
+// ---------- capa vectorial
+const NS = 'http://www.w3.org/2000/svg';
+function colorSitio(i, n) { const h = (i * 137.508) % 360; return `hsl(${h.toFixed(1)},68%,56%)`; }
+function rampa(t) { // azul claro → azul profundo (secuencial)
+  t = Math.max(0, Math.min(1, t)); const a = [210, 236, 255], b = [21, 72, 160];
+  return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * t)).join(',')})`;
+}
+const PAL = ['#4e9cf5', '#f2a541', '#53c48c', '#e2617a', '#a68cf0', '#46c7d6', '#d9d24a', '#ef8a5a', '#8bb84f', '#c873c0'];
+function coloresCeldas() {
+  const act = sitiosActivos(); const col = new Map();
+  if (S.calc.color === 'tipo') {
+    const tipos = [...new Set(act.map(s => s.tipo || 'Sin tipo'))];
+    act.forEach(s => col.set(s.id, PAL[tipos.indexOf(s.tipo || 'Sin tipo') % PAL.length]));
+    return { col, ley: tipos.map((t, i) => [PAL[i % PAL.length], t]) };
+  }
+  if ((S.calc.color === 'area' || S.calc.color === 'valor') && R) {
+    const key = S.calc.color === 'area' ? 'areaHa' : 'valor';
+    const vals = R.filas.filter(f => !f.vacio).map(f => f[key]);
+    const mn = Math.min(...vals), mx = Math.max(...vals);
+    R.filas.forEach(f => col.set(f.id, rampa(mx > mn ? (f[key] - mn) / (mx - mn) : 0.5)));
+    const u = S.calc.color === 'area' ? ' ha' : '';
+    return { col, ley: [[rampa(0), 'Mín. ' + fmt(mn, 2) + u], [rampa(0.5), 'Medio'], [rampa(1), 'Máx. ' + fmt(mx, 2) + u]] };
+  }
+  act.forEach((s, i) => col.set(s.id, colorSitio(S.sitios.indexOf(s))));
+  return { col, ley: null };
+}
+function camino(rings) {
+  return rings.map(r => 'M' + r.map(([la, lo]) => { const p = aPant(la, lo); return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join('L') + 'Z').join('');
+}
+let rafP = 0;
+function render() { if (rafP) return; rafP = requestAnimationFrame(() => { rafP = 0; renderAhora(); }); }
+function renderAhora() {
+  dibujarTiles(); dibujarEscala();
+  const { col, ley } = coloresCeldas();
+  const op = Math.max(0, Math.min(1, +S.calc.opac || 0));
+  let h = '';
+  // celdas
+  if (R) R.filas.forEach(f => {
+    if (f.vacio) return;
+    const c = col.get(f.id) || '#4e9cf5', s2 = sel && sel.tipo === 'sitio' && sel.id === f.id;
+    h += `<path class="cell${s2 ? ' sel' : ''}" data-id="${f.id}" d="${camino(f.anillosGeo)}" fill="${c}" fill-opacity="${op}" stroke="${c}" fill-rule="evenodd"/>`;
+  });
+  // límite (encima de las celdas)
+  const lim = limiteGeo();
+  if (lim && lim.length) h += `<path d="${camino(lim)}" fill="none" stroke="#ffd166" stroke-width="2.2" stroke-dasharray="7 5" pointer-events="none"/>`;
+  // puntos a asignar
+  S.demanda.forEach(d => {
+    const p = aPant(d.lat, d.lon); if (p[0] < -20 || p[1] < -20 || p[0] > W + 20 || p[1] > H + 20) return;
+    const s2 = sel && sel.tipo === 'demanda' && sel.id === d.id;
+    h += `<rect class="dem" data-did="${d.id}" x="${(p[0] - 3).toFixed(1)}" y="${(p[1] - 3).toFixed(1)}" width="6" height="6" fill="${s2 ? '#fff' : '#c9d7ea'}" stroke="#0a0d12" stroke-width="1" ${d.activo === false ? 'opacity=".35"' : ''}/>`;
+  });
+  // sitios
+  S.sitios.forEach((s, i) => {
+    const p = aPant(s.lat, s.lon); if (p[0] < -40 || p[1] < -40 || p[0] > W + 40 || p[1] > H + 40) return;
+    const c = col.get(s.id) || '#7d8ea5', s2 = sel && sel.tipo === 'sitio' && sel.id === s.id;
+    // círculo de precisión GPS a escala
+    if (s.prec > 0) { const r = s.prec / metrosPorPixel(); if (r > 4) h += `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${r.toFixed(1)}" fill="${c}" fill-opacity=".12" stroke="${c}" stroke-opacity=".6" stroke-dasharray="3 3" pointer-events="none"/>`; }
+    if (S.calc.metodo === 'potencia' && s.peso > 0) { const r = s.peso / metrosPorPixel(); h += `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${r.toFixed(1)}" fill="none" stroke="${c}" stroke-width="1.2" pointer-events="none"/>`; }
+    h += `<circle class="site${s2 ? ' sel' : ''}" data-sid="${s.id}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${s2 ? 8 : 6.5}" fill="${s.activo === false ? '#55606f' : c}"/>`;
+  });
+  // etiquetas
+  if (S.calc.etq || S.calc.area) {
+    S.sitios.forEach(s => {
+      const p = aPant(s.lat, s.lon); if (p[0] < 0 || p[1] < 0 || p[0] > W || p[1] > H) return;
+      if (S.calc.etq) h += `<text class="lbl" x="${(p[0] + 9).toFixed(1)}" y="${(p[1] - 8).toFixed(1)}">${esc(s.nombre)}</text>`;
+    });
+    if (S.calc.area && R) R.filas.forEach(f => { if (f.vacio) return; const p = aPant(f.cLat, f.cLon); if (p[0] < 0 || p[1] < 0 || p[0] > W || p[1] > H) return; h += `<text class="lbl sm" text-anchor="middle" x="${p[0].toFixed(1)}" y="${(p[1] + 16).toFixed(1)}">${fmt(f.areaHa, 2)} ha</text>`; });
+  }
+  // dibujo de límite en curso
+  if (modo === 'lim' && borrador.length) {
+    const pts = borrador.map(([la, lo]) => aPant(la, lo).map(v => v.toFixed(1)).join(',')).join(' ');
+    h += `<polyline points="${pts}" fill="rgba(255,209,102,.15)" stroke="#ffd166" stroke-width="2"/>`;
+    borrador.forEach(([la, lo]) => { const p = aPant(la, lo); h += `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="#ffd166" pointer-events="none"/>`; });
+  }
+  // posición GPS en vivo
+  if (gpsPos) {
+    const p = aPant(gpsPos.lat, gpsPos.lon), r = Math.max(6, gpsPos.acc / metrosPorPixel());
+    h += `<circle cx="${p[0]}" cy="${p[1]}" r="${r}" fill="rgba(98,176,255,.15)" stroke="#62b0ff" pointer-events="none"/><circle cx="${p[0]}" cy="${p[1]}" r="6" fill="#62b0ff" stroke="#fff" stroke-width="2" pointer-events="none"/>`;
+  }
+  svg.innerHTML = h;
+  if (tactil) mostrarCoord(W / 2, H / 2, 'Centro · ');
+  // leyenda
+  const L = $('leyenda');
+  if (ley && R) { L.style.display = 'block'; L.innerHTML = `<b style="font-size:11px;color:var(--mu)">${{ tipo: 'Tipo', area: 'Área de la celda', valor: 'Σ valor asignado' }[S.calc.color]}</b>` + ley.map(([c, t]) => `<div><i style="background:${c}"></i>${esc(t)}</div>`).join(''); }
+  else L.style.display = 'none';
+}
+
+// ---------- navegación
+function zoomEn(x, y, dz) {
+  const z0 = S.vista.z, z1 = Math.max(2, Math.min(21, z0 + dz)); if (z1 === z0) return;
+  const g = dePant(x, y);
+  S.vista.z = z1;
+  const pg = aPant(g[0], g[1]); // tras cambiar zoom, el punto bajo el cursor se movió: corregir el centro
+  const c = merc(S.vista.lat, S.vista.lon, z1), nc = [c[0] + (pg[0] - x), c[1] + (pg[1] - y)], ll = imerc(nc[0], nc[1], z1);
+  S.vista.lat = ll[0]; S.vista.lon = ll[1]; render(); programarGuardado();
+}
+function panPx(dx, dy) { const z = S.vista.z, c = merc(S.vista.lat, S.vista.lon, z), ll = imerc(c[0] - dx, c[1] - dy, z); S.vista.lat = ll[0]; S.vista.lon = ((ll[1] + 540) % 360) - 180; render(); }
+function ajustar(puntos) {
+  if (!puntos.length) return;
+  let la0 = 90, la1 = -90, lo0 = 180, lo1 = -180;
+  puntos.forEach(([la, lo]) => { la0 = Math.min(la0, la); la1 = Math.max(la1, la); lo0 = Math.min(lo0, lo); lo1 = Math.max(lo1, lo); });
+  S.vista.lat = (la0 + la1) / 2; S.vista.lon = (lo0 + lo1) / 2;
+  let z = 18;
+  while (z > 2) { const a = merc(la1, lo0, z), b = merc(la0, lo1, z); if (b[0] - a[0] < W * 0.8 && b[1] - a[1] < H * 0.8) break; z -= 0.25; }
+  S.vista.z = Math.min(z, 18); render(); programarGuardado();
+}
+function ajustarTodo() {
+  const pts = S.sitios.map(s => [s.lat, s.lon]).concat(S.demanda.map(d => [d.lat, d.lon]));
+  const lim = limiteGeo(); if (lim) lim.forEach(r => r.forEach(p => pts.push(p)));
+  if (pts.length) ajustar(pts);
+}
+const punteros = new Map(); let arrastre = null, pinch = null, movido = false, ultimoClic = 0;
+mapa.addEventListener('pointerdown', e => {
+  if (e.target.closest('.mctl,#info,#modoBanner,#leyenda')) return;
+  mapa.setPointerCapture(e.pointerId); punteros.set(e.pointerId, [e.clientX, e.clientY]); movido = false;
+  if (punteros.size === 1) arrastre = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, target: e.target };
+  if (punteros.size === 2) { const [a, b] = [...punteros.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), z: S.vista.z }; arrastre = null; }
+});
+mapa.addEventListener('pointermove', e => {
+  const r = mapa.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  if (e.pointerType === 'mouse') mostrarCoord(x, y);
+  if (!punteros.has(e.pointerId)) return;
+  punteros.set(e.pointerId, [e.clientX, e.clientY]);
+  if (pinch && punteros.size === 2) {
+    const [a, b] = [...punteros.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    const mx = (a[0] + b[0]) / 2 - r.left, my = (a[1] + b[1]) / 2 - r.top;
+    zoomEn(mx, my, pinch.z + Math.log2(d / pinch.d) - S.vista.z); movido = true; return;
+  }
+  if (arrastre) {
+    const dx = e.clientX - arrastre.x, dy = e.clientY - arrastre.y;
+    if (Math.hypot(e.clientX - arrastre.x0, e.clientY - arrastre.y0) > 5) { movido = true; mapa.classList.add('drag'); }
+    if (movido) { panPx(dx, dy); arrastre.x = e.clientX; arrastre.y = e.clientY; }
+  }
+});
+function finPuntero(e) {
+  if (!punteros.has(e.pointerId)) return;
+  punteros.delete(e.pointerId); mapa.classList.remove('drag');
+  if (punteros.size < 2) pinch = null;
+  if (arrastre && !movido && e.type === 'pointerup') {
+    const r = mapa.getBoundingClientRect(); clicMapa(e.clientX - r.left, e.clientY - r.top, arrastre.target);
+  }
+  if (movido) programarGuardado();
+  arrastre = null;
+}
+mapa.addEventListener('pointerup', finPuntero); mapa.addEventListener('pointercancel', finPuntero);
+mapa.addEventListener('wheel', e => { e.preventDefault(); const r = mapa.getBoundingClientRect(); zoomEn(e.clientX - r.left, e.clientY - r.top, -e.deltaY * (e.deltaMode ? 0.05 : 0.0022)); }, { passive: false });
+mapa.addEventListener('dblclick', e => {
+  e.preventDefault();
+  if (modo === 'lim') { terminarLimite(); return; }
+  if (modo === 'nav') { const r = mapa.getBoundingClientRect(); zoomEn(e.clientX - r.left, e.clientY - r.top, 1); }
+});
+const tactil = window.matchMedia && matchMedia('(pointer:coarse)').matches;
+function mostrarCoord(x, y, pre) {
+  const [la, lo] = dePant(x, y), [E, N] = aPlano(la, lo);
+  $('coord').textContent = `${pre || ''}Lat ${la.toFixed(6)}  Lon ${lo.toFixed(6)}  ·  CTM12 E ${fmt(E, 1)}  N ${fmt(N, 1)}`;
+}
+function clicMapa(x, y, target) {
+  const [la, lo] = dePant(x, y);
+  if (modo === 'add') { editarPunto(null, 'sitios', { lat: la, lon: lo, fuente: 'Clic en el mapa' }); return; }
+  if (modo === 'lim') {
+    const t = Date.now(); if (t - ultimoClic < 280) return; ultimoClic = t;
+    borrador.push([la, lo]); $('modoTxt').textContent = `Límite: ${borrador.length} vértice(s). Doble clic o «Terminar» para cerrar.`; render(); return;
+  }
+  const sid = target && target.getAttribute && target.getAttribute('data-sid');
+  const did = target && target.getAttribute && target.getAttribute('data-did');
+  const cid = target && target.getAttribute && target.getAttribute('data-id');
+  if (sid) { seleccionar('sitio', sid); return; }
+  if (did) { seleccionar('demanda', did); return; }
+  if (cid) { seleccionar('sitio', cid); return; }
+  sel = null; $('info').style.display = 'none'; render(); pintarListas(); pintarTabla();
+}
+$('zMas').onclick = () => zoomEn(W / 2, H / 2, 1);
+$('zMenos').onclick = () => zoomEn(W / 2, H / 2, -1);
+$('zAjustar').onclick = ajustarTodo;
+$('fondoSeg').addEventListener('click', e => { const f = e.target.getAttribute('data-f'); if (!f) return; S.fondo = f; pintarFondoSeg(); tilesDiv.innerHTML = ''; tileCache.clear(); render(); programarGuardado(); });
+function pintarFondoSeg() { document.querySelectorAll('#fondoSeg button').forEach(b => b.classList.toggle('on', b.getAttribute('data-f') === S.fondo)); }
+
+// ---------- modos
+function fijarModo(m, txt) {
+  modo = m; mapa.classList.toggle('modo-add', m === 'add'); mapa.classList.toggle('modo-lim', m === 'lim');
+  const b = $('modoBanner'); b.style.display = m === 'nav' ? 'none' : 'flex'; $('modoTxt').textContent = txt || '';
+  $('modoFin').style.display = m === 'lim' ? '' : 'none';
+  if (window.innerWidth <= 820 && m !== 'nav') $('panel').classList.remove('on');
+  render();
+}
+$('modoCancel').onclick = () => { borrador = []; fijarModo('nav'); };
+$('modoFin').onclick = () => terminarLimite();
+$('sAddClic').onclick = () => fijarModo('add', 'Haga clic en el mapa donde está el sitio.');
+function terminarLimite() {
+  if (borrador.length < 3) { toast('El polígono necesita al menos 3 vértices.'); return; }
+  S.limite.anillos = [borrador.slice()]; S.limite.modo = 'custom'; borrador = []; fijarModo('nav'); pintarLimite(); cambio('limite');
+  toast('Límite dibujado y aplicado.');
+}
+
+// ================================================================= DATOS
+const sitiosActivos = () => S.sitios.filter(s => s.activo !== false);
+function nombreAuto(capa) {
+  const arr = capa === 'sitios' ? S.sitios : S.demanda, pref = capa === 'sitios' ? 'S-' : 'P-';
+  let n = arr.length + 1; const usados = new Set(arr.map(x => x.nombre));
+  while (usados.has(pref + String(n).padStart(3, '0'))) n++;
+  return pref + String(n).padStart(3, '0');
+}
+function agregarPunto(capa, o) {
+  const p = Object.assign({ id: uid(), nombre: '', tipo: '', lat: NaN, lon: NaN, peso: 0, valor: 0, prec: null, fecha: '', obs: '', fuente: '', activo: true }, o);
+  if (!p.nombre) p.nombre = nombreAuto(capa);
+  if (!(Number.isFinite(p.lat) && Number.isFinite(p.lon) && Math.abs(p.lat) <= 90 && Math.abs(p.lon) <= 180)) return null;
+  (capa === 'sitios' ? S.sitios : S.demanda).push(p); return p;
+}
+function limiteGeo() {
+  // anillos del límite en lat/lon para dibujar (según el modo)
+  if (S.limite.modo === 'custom') return S.limite.anillos;
+  const act = sitiosActivos(); if (act.length < 1) return null;
+  const pl = limitePlano(); return pl ? pl.map(r => r.map(([E, N]) => aGeo(E, N))) : null;
+}
+function limitePlano() {
+  const act = sitiosActivos();
+  const pts = act.map(s => aPlano(s.lat, s.lon)).concat(S.demanda.filter(d => d.activo !== false).map(d => aPlano(d.lat, d.lon)));
+  if (S.limite.modo === 'custom') {
+    if (!S.limite.anillos.length) return null;
+    return S.limite.anillos.map(r => { let pr = r.map(([la, lo]) => aPlano(la, lo)); if (V.ringArea(pr) < 0) pr.reverse(); return pr; });
+  }
+  if (!pts.length) return null;
+  if (S.limite.modo === 'hull') { const h = V.hullBuffer(pts, Math.max(0, +S.limite.buffer || 0)); return h.length >= 3 ? [h] : [V.bboxRing(pts, 0.1, 50)]; }
+  return [V.bboxRing(pts, Math.max(0, +S.limite.margen || 0) / 100, 50)];
+}
+
+// ================================================================= CÁLCULO
+let tCalc = 0;
+function cambio(que) {
+  programarGuardado(); pintarListas(); pintarLimite();
+  if (S.calc.auto) { clearTimeout(tCalc); tCalc = setTimeout(calcular, que === 'rapido' ? 0 : 250); }
+  else { if (R) R.desactualizado = true; pintarResultados(); }
+  render();
+}
+function calcular() {
+  const act = sitiosActivos();
+  const avisos = [];
+  if (act.length < 2) { R = null; $('cMsg').innerHTML = `<div class="note wa">Se necesitan al menos 2 sitios activos para calcular el diagrama.</div>`; pintarResultados(); render(); return; }
+  const n = act.length;
+  if (n > 3000) { $('cMsg').innerHTML = `<div class="note er">Hay ${n} sitios. El máximo recomendado en este dispositivo es 3 000.</div>`; return; }
+  $('spin').style.display = n > 300 ? 'grid' : 'none';
+  setTimeout(() => {
+    try {
+      const t0 = performance.now();
+      // sitios en plano CTM12; depurar coincidentes (< 0,5 m)
+      const base = [], dup = [];
+      act.forEach(s => {
+        const [x, y] = aPlano(s.lat, s.lon);
+        const otro = base.find(b => Math.hypot(b.x - x, b.y - y) < 0.5);
+        if (otro) { dup.push([s, otro.s]); return; }
+        base.push({ x, y, w: S.calc.metodo === 'potencia' ? Math.max(0, +s.peso || 0) ** 2 : 0, s });
+      });
+      if (base.length < 2) throw new Error('Tras depurar puntos coincidentes quedan menos de 2 sitios.');
+      const lim = limitePlano();
+      if (!lim || !lim.length) throw new Error('No hay un límite válido. Revise el paso 5.');
+      const areaLim = lim.reduce((a, r) => a + Math.abs(V.ringArea(r)), 0);
+      if (!(areaLim > 1)) throw new Error('El límite no tiene área. Revise el paso 5.');
+      const cells = V.voronoi(base, lim);
+      // puntos a asignar
+      const dem = S.demanda.filter(d => d.activo !== false).map(d => { const [x, y] = aPlano(d.lat, d.lon); return { d, x, y }; });
+      const asign = new Map(); let demFuera = 0;
+      dem.forEach(q => {
+        if (!V.pointInRings([q.x, q.y], lim)) { demFuera++; return; }
+        const k = V.nearestSite([q.x, q.y], base); if (k < 0) return;
+        const a = asign.get(k) || { n: 0, v: 0, ids: [] }; a.n++; a.v += +q.d.valor || 0; a.ids.push(q.d.id); asign.set(k, a);
+      });
+      const filas = base.map((b, i) => {
+        const c = cells[i], s = b.s;
+        const fila = { id: s.id, nombre: s.nombre, tipo: s.tipo || '', vacio: c.vacio, anillosGeo: [], areaM2: 0, areaHa: 0, perim: 0, rmax: 0, vecinos: c.vecinos.map(j => base[j].s.nombre), nVec: c.vecinos.length, n: 0, valor: 0, k: 1, E: b.x, N: b.y, cLat: s.lat, cLon: s.lon, fuera: !V.pointInRings([b.x, b.y], lim), ids: [] };
+        const a = asign.get(i); if (a) { fila.n = a.n; fila.valor = a.v; fila.ids = a.ids; }
+        if (!c.vacio) {
+          const cen = V.multiCentroid(c.rings), cg = aGeo(cen[0], cen[1]);
+          const k = P.scale(cg[0], cg[1]);  // factor de escala CTM12 en el centroide
+          const aPl = c.rings.reduce((t, r) => t + Math.abs(V.ringArea(r)), 0);
+          let rmax = 0; c.rings.forEach(r => r.forEach(v => { rmax = Math.max(rmax, Math.hypot(v[0] - b.x, v[1] - b.y)); }));
+          Object.assign(fila, { k, areaM2: aPl / (k * k), perim: c.rings.reduce((t, r) => t + V.ringPerim(r), 0) / k, rmax: rmax / k, cLat: cg[0], cLon: cg[1], cE: cen[0], cN: cen[1],
+            anillosGeo: c.rings.map(r => r.map(([E, N]) => aGeo(E, N))), anillosPl: c.rings });
+          fila.areaHa = fila.areaM2 / 1e4;
+        }
+        return fila;
+      });
+      // límite en área real
+      const cenL = V.multiCentroid(lim), gl = aGeo(cenL[0], cenL[1]), kL = P.scale(gl[0], gl[1]);
+      // avisos de calidad
+      const umb = +S.gps.umbral || 10;
+      const malos = act.filter(s => s.prec > umb);
+      if (malos.length) avisos.push(['wa', `${malos.length} sitio(s) con precisión peor que ${umb} m: ${malos.slice(0, 6).map(s => esc(s.nombre)).join(', ')}${malos.length > 6 ? '…' : ''}. Verifique antes de usar el resultado en un entregable.`]);
+      if (dup.length) avisos.push(['wa', `${dup.length} sitio(s) coinciden con otro a menos de 0,5 m y se excluyeron del cálculo: ${dup.slice(0, 6).map(([a, b]) => esc(a.nombre) + ' = ' + esc(b.nombre)).join('; ')}.`]);
+      const fueraCol = S.sitios.concat(S.demanda).filter(s => !enColombia(s.lat, s.lon));
+      if (fueraCol.length) avisos.push(['wa', `${fueraCol.length} punto(s) quedan fuera de Colombia. Revise si se intercambiaron latitud y longitud o el signo de la longitud (oeste = negativa).`]);
+      const fueraLim = filas.filter(f => f.fuera);
+      if (fueraLim.length) avisos.push(['wa', `${fueraLim.length} sitio(s) están fuera del límite: ${fueraLim.slice(0, 6).map(f => esc(f.nombre)).join(', ')}.`]);
+      const vacias = filas.filter(f => f.vacio);
+      if (vacias.length) avisos.push(['wa', `${vacias.length} sitio(s) no tienen celda dentro del límite${S.calc.metodo === 'potencia' ? ' (dominados por sitios de mayor radio)' : ''}: ${vacias.slice(0, 6).map(f => esc(f.nombre)).join(', ')}.`]);
+      if (demFuera) avisos.push(['wa', `${demFuera} punto(s) a asignar están fuera del límite y no se asignaron.`]);
+      const suma = filas.reduce((t, f) => t + f.areaM2, 0), limReal = areaLim / (kL * kL);
+      const cierre = Math.abs(suma - limReal) / limReal;
+      if (cierre > 0.001) avisos.push(['er', `Control de cierre: la suma de celdas difiere ${(cierre * 100).toFixed(3)} % del área del límite. Revise el polígono límite (autointersecciones o anillos superpuestos).`]);
+      R = { filas, avisos, metodo: S.calc.metodo, n: base.length, nDem: dem.length, demFuera, areaLimM2: limReal, sumaM2: suma, cierre, ms: performance.now() - t0, fecha: ahora(), limPl: lim };
+      $('cMsg').innerHTML = `<div class="note ok">Diagrama calculado: ${base.length} celdas en ${fmt(R.ms, 0)} ms · cierre de áreas ${(cierre * 100).toFixed(4)} %.</div>`;
+    } catch (err) {
+      R = null; $('cMsg').innerHTML = `<div class="note er">${esc(err.message || err)}</div>`;
+    }
+    $('spin').style.display = 'none'; pintarResultados(); render();
+  }, 20);
+}
+
+// ================================================================= PANELES
+function pintarMeta() {
+  $('mProyecto').value = S.meta.proyecto; $('mCodigo').value = S.meta.codigo; $('mFecha').value = S.meta.fecha; $('mOrg').value = S.meta.org; $('mResp').value = S.meta.resp; $('mProp').value = S.meta.prop; $('mNotas').value = S.meta.notas;
+  $('hProyecto').textContent = S.meta.proyecto ? `${S.meta.proyecto}${S.meta.codigo ? ' · ' + S.meta.codigo : ''}` : 'Georreferencias de campo → diagramas de Voronoi';
+  $('bProyecto').textContent = S.meta.codigo || '';
+}
+[['mProyecto', 'proyecto'], ['mCodigo', 'codigo'], ['mFecha', 'fecha'], ['mOrg', 'org'], ['mResp', 'resp'], ['mProp', 'prop'], ['mNotas', 'notas']].forEach(([id, k]) => {
+  $(id).addEventListener('input', () => { S.meta[k] = $(id).value; $('hProyecto').textContent = S.meta.proyecto ? `${S.meta.proyecto}${S.meta.codigo ? ' · ' + S.meta.codigo : ''}` : 'Georreferencias de campo → diagramas de Voronoi'; $('bProyecto').textContent = S.meta.codigo || ''; programarGuardado(); });
+});
+function pintarListas() {
+  const q = V.norm($('sBuscar').value);
+  const { col } = coloresCeldas(); const umb = +S.gps.umbral || 10;
+  const fila = R ? new Map(R.filas.map(f => [f.id, f])) : new Map();
+  const li = S.sitios.filter(s => !q || V.norm(s.nombre + ' ' + s.tipo).includes(q)).map(s => {
+    const f = fila.get(s.id), flags = [];
+    if (s.prec > umb) flags.push(`<span class="flag wa">±${fmt(s.prec, 0)} m</span>`);
+    if (f && f.vacio) flags.push(`<span class="flag er">sin celda</span>`);
+    if (!enColombia(s.lat, s.lon)) flags.push(`<span class="flag er">fuera de Colombia</span>`);
+    return `<div class="li${s.activo === false ? ' off' : ''}${sel && sel.tipo === 'sitio' && sel.id === s.id ? ' sel' : ''}" data-sid="${s.id}"><span class="sw" style="background:${col.get(s.id) || '#55606f'}"></span><span class="t"><b>${esc(s.nombre)}${flags.join('')}</b><small>${esc(s.tipo || 'Sin tipo')} · ${s.lat.toFixed(6)}, ${s.lon.toFixed(6)}${f && !f.vacio ? ' · ' + fmt(f.areaHa, 2) + ' ha' : ''}</small></span><button class="btn sm" data-edit="${s.id}">Editar</button></div>`;
+  });
+  $('sLista').innerHTML = li.join('') || `<p class="hint" style="padding:8px">Aún no hay sitios. Captúrelos con el GPS (paso 2), impórtelos (paso 3) o agréguelos con clic.</p>`;
+  const dli = S.demanda.slice(0, 400).filter(d => !q || V.norm(d.nombre + ' ' + d.tipo).includes(q)).map(d => `<div class="li${d.activo === false ? ' off' : ''}${sel && sel.tipo === 'demanda' && sel.id === d.id ? ' sel' : ''}" data-did="${d.id}"><span class="sw" style="background:#c9d7ea;border-radius:1px"></span><span class="t"><b>${esc(d.nombre)}</b><small>${esc(d.tipo || '')} ${d.valor ? '· valor ' + fmt(+d.valor, 2) : ''} · ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}</small></span><button class="btn sm" data-dedit="${d.id}">Editar</button></div>`);
+  $('dLista').innerHTML = dli.join('') + (S.demanda.length > 400 ? `<p class="hint" style="padding:6px 8px">Se muestran 400 de ${S.demanda.length}.</p>` : '') || `<p class="hint" style="padding:8px">Opcional: usuarios, medidores o puntos de consumo que se asignan a la celda más cercana.</p>`;
+  $('dCount').textContent = S.demanda.length ? `(${S.demanda.length})` : '';
+  $('bSitios').textContent = `${S.sitios.length} sitios${S.demanda.length ? ' · ' + S.demanda.length + ' puntos' : ''}`;
+}
+$('sLista').addEventListener('click', e => {
+  const ed = e.target.getAttribute('data-edit'); if (ed) { editarPunto(ed, 'sitios'); return; }
+  const li = e.target.closest('[data-sid]'); if (li) { const s = S.sitios.find(x => x.id === li.getAttribute('data-sid')); if (s) { seleccionar('sitio', s.id); centrarEn(s.lat, s.lon); } }
+});
+$('dLista').addEventListener('click', e => {
+  const ed = e.target.getAttribute('data-dedit'); if (ed) { editarPunto(ed, 'demanda'); return; }
+  const li = e.target.closest('[data-did]'); if (li) { const d = S.demanda.find(x => x.id === li.getAttribute('data-did')); if (d) { seleccionar('demanda', d.id); centrarEn(d.lat, d.lon); } }
+});
+$('sBuscar').addEventListener('input', pintarListas);
+$('sAddMan').onclick = () => editarPunto(null, 'sitios', {});
+$('sBorrar').onclick = async () => { if (!S.sitios.length) return; if (await confirmar('Vaciar sitios', `Se eliminarán ${S.sitios.length} sitios de este proyecto. Exporte antes una copia si la necesita.`)) { S.sitios = []; sel = null; R = null; cambio(); } };
+$('dBorrar').onclick = async () => { if (!S.demanda.length) return; if (await confirmar('Vaciar puntos', `Se eliminarán ${S.demanda.length} puntos a asignar.`)) { S.demanda = []; sel = null; cambio(); } };
+function centrarEn(lat, lon) { S.vista.lat = lat; S.vista.lon = lon; if (S.vista.z < 15) S.vista.z = 16; render(); }
+function seleccionar(tipo, id) {
+  sel = { tipo, id }; render(); pintarListas(); pintarTabla(); mostrarInfo();
+}
+function mostrarInfo() {
+  const I = $('info'), C = $('infoC'); if (!sel) { I.style.display = 'none'; return; }
+  if (sel.tipo === 'sitio') {
+    const s = S.sitios.find(x => x.id === sel.id); if (!s) { I.style.display = 'none'; return; }
+    const f = R && R.filas.find(x => x.id === s.id), [E, N] = aPlano(s.lat, s.lon);
+    C.innerHTML = `<h4>${esc(s.nombre)}</h4><div class="hint">${esc(s.tipo || 'Sin tipo')}${s.fuente ? ' · ' + esc(s.fuente) : ''}</div>
+      <table><tr><td>Lat / Lon</td><td>${s.lat.toFixed(7)}, ${s.lon.toFixed(7)}</td></tr><tr><td>CTM12 E / N</td><td>${fmt(E, 2)} / ${fmt(N, 2)}</td></tr>
+      ${s.prec != null ? `<tr><td>Precisión</td><td>±${fmt(+s.prec, 1)} m${s.disp != null ? ' (disp. ' + fmt(+s.disp, 1) + ' m)' : ''}</td></tr>` : ''}
+      ${f && !f.vacio ? `<tr><td>Área de la celda</td><td>${fmt(f.areaHa, 4)} ha</td></tr><tr><td></td><td>${fmt(f.areaM2, 1)} m²</td></tr><tr><td>Perímetro</td><td>${fmt(f.perim, 1)} m</td></tr><tr><td>Radio máximo</td><td>${fmt(f.rmax, 1)} m</td></tr><tr><td>Vecinos</td><td>${f.nVec}</td></tr>${R.nDem ? `<tr><td>Puntos asignados</td><td>${f.n} · Σ ${fmt(f.valor, 2)}</td></tr>` : ''}` : f && f.vacio ? '<tr><td colspan=2>Sin celda dentro del límite</td></tr>' : ''}
+      </table>${f && f.nVec ? `<div class="hint">Vecinos: ${f.vecinos.map(esc).join(', ')}</div>` : ''}${s.obs ? `<div class="hint">${esc(s.obs)}</div>` : ''}
+      <div class="btns"><button class="btn sm" id="infoEd">Editar</button></div>`;
+    $('infoEd').onclick = () => editarPunto(s.id, 'sitios');
+  } else {
+    const d = S.demanda.find(x => x.id === sel.id); if (!d) { I.style.display = 'none'; return; }
+    const f = R && R.filas.find(x => x.ids.includes(d.id));
+    C.innerHTML = `<h4>${esc(d.nombre)}</h4><table><tr><td>Lat / Lon</td><td>${d.lat.toFixed(7)}, ${d.lon.toFixed(7)}</td></tr><tr><td>Valor</td><td>${fmt(+d.valor || 0, 2)}</td></tr><tr><td>Asignado a</td><td>${f ? esc(f.nombre) : '—'}</td></tr></table><div class="btns"><button class="btn sm" id="infoEd">Editar</button></div>`;
+    $('infoEd').onclick = () => editarPunto(d.id, 'demanda');
+  }
+  I.style.display = 'block';
+}
+$('infoX').onclick = () => { sel = null; $('info').style.display = 'none'; render(); pintarListas(); pintarTabla(); };
+
+// ---------- límite
+function pintarLimite() {
+  const m = S.limite.modo; $('lModo').value = m; $('lMargen').value = S.limite.margen; $('lBuffer').value = S.limite.buffer;
+  $('lBbox').style.display = m === 'bbox' ? '' : 'none'; $('lHull').style.display = m === 'hull' ? '' : 'none'; $('lCustom').style.display = m === 'custom' ? '' : 'none';
+  const pl = limitePlano();
+  let txt = '';
+  if (pl) { const c = V.multiCentroid(pl), g = aGeo(c[0], c[1]), k = P.scale(g[0], g[1]); const a = pl.reduce((t, r) => t + Math.abs(V.ringArea(r)), 0) / (k * k); txt = `Área del límite: ${fmt(a / 1e4, 2)} ha · ${pl.length} polígono(s).`; }
+  else if (m === 'custom') txt = 'Sin polígono. Dibújelo o impórtelo.';
+  $('lInfo').textContent = txt; $('bLimite').textContent = { bbox: 'rectángulo', hull: 'envolvente', custom: 'propio' }[m];
+}
+$('lModo').onchange = () => { S.limite.modo = $('lModo').value; cambio('limite'); };
+$('lMargen').oninput = () => { S.limite.margen = +$('lMargen').value; cambio('limite'); };
+$('lBuffer').oninput = () => { S.limite.buffer = +$('lBuffer').value; cambio('limite'); };
+$('lDibujar').onclick = () => { borrador = []; fijarModo('lim', 'Haga clic en cada vértice del límite.'); };
+$('lBorrar').onclick = () => { S.limite.anillos = []; cambio('limite'); };
+
+// ---------- cálculo
+function pintarCalc() { $('cMetodo').value = S.calc.metodo; $('cColor').value = S.calc.color; $('cOpac').value = S.calc.opac; $('cEtq').checked = S.calc.etq; $('cArea').checked = S.calc.area; $('cAuto').checked = S.calc.auto; }
+$('cMetodo').onchange = () => { S.calc.metodo = $('cMetodo').value; if (S.calc.metodo === 'potencia' && !S.sitios.some(s => s.peso > 0)) toast('En el diagrama de potencia cada sitio pesa según su «radio de ponderación» (m). Asígnelo al editar cada sitio; con radio 0 en todos, el resultado es igual al Voronoi clásico.', 7000); cambio('rapido'); };
+$('cColor').onchange = () => { S.calc.color = $('cColor').value; programarGuardado(); render(); pintarListas(); };
+$('cOpac').oninput = () => { S.calc.opac = +$('cOpac').value; programarGuardado(); render(); };
+$('cEtq').onchange = () => { S.calc.etq = $('cEtq').checked; programarGuardado(); render(); };
+$('cArea').onchange = () => { S.calc.area = $('cArea').checked; programarGuardado(); render(); };
+$('cAuto').onchange = () => { S.calc.auto = $('cAuto').checked; programarGuardado(); };
+$('cCalcular').onclick = calcular;
+
+// ---------- resultados
+let orden = { k: 'nombre', asc: true };
+function pintarResultados() {
+  if (!R) { $('rKpis').innerHTML = ''; $('rAvisos').innerHTML = '<p class="hint">Sin resultados todavía.</p>'; $('rTabla').innerHTML = ''; $('bRes').textContent = ''; pintarListas(); return; }
+  const ok = R.filas.filter(f => !f.vacio), areas = ok.map(f => f.areaHa);
+  const prom = areas.reduce((a, b) => a + b, 0) / (areas.length || 1);
+  const ds = Math.sqrt(areas.reduce((a, b) => a + (b - prom) ** 2, 0) / (areas.length || 1));
+  $('rKpis').innerHTML = [
+    ['Celdas', fmt(ok.length, 0)], ['Área total', fmt(R.sumaM2 / 1e4, 2) + ' ha'], ['Área media', fmt(prom, 2) + ' ha'],
+    ['Mínima', fmt(Math.min(...areas), 2) + ' ha'], ['Máxima', fmt(Math.max(...areas), 2) + ' ha'], ['Coef. variación', fmt(prom ? ds / prom * 100 : 0, 1) + ' %'],
+  ].map(([a, b]) => `<div class="kpi"><small>${a}</small><b>${b}</b></div>`).join('');
+  $('rAvisos').innerHTML = (R.desactualizado ? `<div class="note wa">Los datos cambiaron. Pulse «Calcular diagrama» para actualizar.</div>` : '') + R.avisos.map(([c, t]) => `<div class="note ${c}">${t}</div>`).join('') + (R.avisos.length ? '' : '<div class="note ok">Sin observaciones de calidad.</div>');
+  $('bRes').textContent = `${ok.length} celdas`;
+  pintarTabla(); pintarListas();
+}
+const COLS = [['nombre', 'Sitio'], ['tipo', 'Tipo'], ['areaHa', 'Área (ha)'], ['perim', 'Perímetro (m)'], ['rmax', 'Radio máx. (m)'], ['nVec', 'Vecinos'], ['n', 'Puntos'], ['valor', 'Σ valor']];
+function pintarTabla() {
+  if (!R) return;
+  const cols = R.nDem ? COLS : COLS.slice(0, 6);
+  const f = R.filas.slice().sort((a, b) => { const x = a[orden.k], y = b[orden.k]; const c = typeof x === 'string' ? x.localeCompare(y, 'es', { numeric: true }) : x - y; return orden.asc ? c : -c; });
+  $('rTabla').innerHTML = `<thead><tr>${cols.map(([k, t]) => `<th data-k="${k}">${t}${orden.k === k ? (orden.asc ? ' ▲' : ' ▼') : ''}</th>`).join('')}</tr></thead><tbody>` +
+    f.map(r => `<tr data-id="${r.id}" class="${sel && sel.tipo === 'sitio' && sel.id === r.id ? 'sel' : ''}">${cols.map(([k]) => {
+      const v = r[k]; if (r.vacio && ['areaHa', 'perim', 'rmax'].includes(k)) return '<td>—</td>';
+      return `<td>${typeof v === 'number' ? fmt(v, k === 'areaHa' ? 4 : k === 'nVec' || k === 'n' ? 0 : k === 'valor' ? 2 : 1) : esc(v)}</td>`;
+    }).join('')}</tr>`).join('') + '</tbody>';
+}
+$('rTabla').addEventListener('click', e => {
+  const th = e.target.closest('th'); if (th) { const k = th.getAttribute('data-k'); orden = { k, asc: orden.k === k ? !orden.asc : true }; pintarTabla(); return; }
+  const tr = e.target.closest('tr[data-id]'); if (tr) { const s = S.sitios.find(x => x.id === tr.getAttribute('data-id')); if (s) { seleccionar('sitio', s.id); const f = R.filas.find(x => x.id === s.id); if (f && f.anillosGeo.length) ajustar(f.anillosGeo.flat()); } }
+});
+
+// ================================================================= EDITAR PUNTO
+let edit = null;
+function opcionesCrs(sel_) { sel_.innerHTML = Object.values(V.CRS).map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join(''); }
+opcionesCrs($('pCrs')); opcionesCrs($('csvCrs'));
+function editarPunto(id, capa, nuevo) {
+  const arr = capa === 'sitios' ? S.sitios : S.demanda;
+  const p = id ? arr.find(x => x.id === id) : Object.assign({ nombre: '', tipo: '', lat: NaN, lon: NaN, peso: 0, valor: 0, prec: null, fecha: ahora(), obs: '', fuente: 'Ingreso manual', activo: true }, nuevo || {});
+  if (!p) return;
+  edit = { id, capa, p };
+  $('pTit').textContent = id ? `Editar ${capa === 'sitios' ? 'sitio' : 'punto'}` : `Nuevo ${capa === 'sitios' ? 'sitio' : 'punto'}`;
+  $('pNombre').value = p.nombre || (id ? '' : nombreAuto(capa)); $('pTipo').value = p.tipo || '';
+  $('pCrs').value = 'WGS84'; ponerCoordsEdit();
+  $('pPeso').value = p.peso || ''; $('pValor').value = p.valor || ''; $('pPrec').value = p.prec ?? ''; $('pFecha').value = p.fecha || ''; $('pObs').value = p.obs || '';
+  $('pActivo').checked = p.activo !== false; $('pEliminar').style.display = id ? '' : 'none';
+  $('pFuente').textContent = p.fuente ? 'Origen del dato: ' + p.fuente : '';
+  abrir('mdPunto'); fijarModo('nav');
+}
+function ponerCoordsEdit() {
+  const p = edit.p, c = V.CRS[$('pCrs').value];
+  if (c.geo) { $('pL1').textContent = 'Latitud (decimal o 4°48\'12"N)'; $('pL2').textContent = 'Longitud (oeste negativa)'; $('pC1').value = Number.isFinite(p.lat) ? p.lat.toFixed(8) : ''; $('pC2').value = Number.isFinite(p.lon) ? p.lon.toFixed(8) : ''; }
+  else { $('pL1').textContent = 'Norte (m)'; $('pL2').textContent = 'Este (m)'; if (Number.isFinite(p.lat)) { const [E, N] = c.tm.forward(p.lat, p.lon); $('pC1').value = N.toFixed(3); $('pC2').value = E.toFixed(3); } else { $('pC1').value = $('pC2').value = ''; } }
+  convEdit();
+}
+function leerCoordsEdit() {
+  const c = V.CRS[$('pCrs').value];
+  if (c.geo) return [V.parseAngle($('pC1').value), V.parseAngle($('pC2').value)];
+  const N = V.num($('pC1').value), E = V.num($('pC2').value); if (!Number.isFinite(N) || !Number.isFinite(E)) return [NaN, NaN];
+  return c.tm.inverse(E, N);
+}
+function convEdit() {
+  const [la, lo] = leerCoordsEdit();
+  if (!Number.isFinite(la) || !Number.isFinite(lo)) { $('pConv').textContent = 'Ingrese coordenadas válidas.'; return; }
+  const [E, N] = aPlano(la, lo);
+  $('pConv').innerHTML = `= ${la.toFixed(7)}, ${lo.toFixed(7)} · CTM12 E ${fmt(E, 2)} N ${fmt(N, 2)}${enColombia(la, lo) ? '' : ' · <b style="color:var(--wa)">fuera de Colombia</b>'}`;
+}
+$('pCrs').onchange = () => { const [la, lo] = leerCoordsEdit(); if (Number.isFinite(la)) { edit.p = Object.assign({}, edit.p, { lat: la, lon: lo }); } ponerCoordsEdit(); };
+$('pC1').oninput = $('pC2').oninput = convEdit;
+$('pGuardar').onclick = () => {
+  const [la, lo] = leerCoordsEdit();
+  if (!Number.isFinite(la) || !Number.isFinite(lo) || Math.abs(la) > 90 || Math.abs(lo) > 180) { toast('Coordenadas no válidas.'); return; }
+  const o = { nombre: $('pNombre').value.trim(), tipo: $('pTipo').value.trim(), lat: la, lon: lo, peso: Math.max(0, V.num($('pPeso').value) || 0), valor: V.num($('pValor').value) || 0,
+    prec: $('pPrec').value === '' ? null : Math.max(0, V.num($('pPrec').value)), fecha: $('pFecha').value.trim(), obs: $('pObs').value.trim(), activo: $('pActivo').checked };
+  if (edit.id) { const arr = edit.capa === 'sitios' ? S.sitios : S.demanda, p = arr.find(x => x.id === edit.id); const movio = p.lat !== la || p.lon !== lo; Object.assign(p, o); if (movio && !/editad/.test(p.fuente || '')) p.fuente = (p.fuente ? p.fuente + ' · ' : '') + 'coordenadas editadas ' + ahora(); }
+  else { const p = agregarPunto(edit.capa, Object.assign(o, { fuente: edit.p.fuente || 'Ingreso manual', disp: edit.p.disp })); if (p) sel = { tipo: edit.capa === 'sitios' ? 'sitio' : 'demanda', id: p.id }; }
+  cerrar('mdPunto'); cambio(); mostrarInfo();
+};
+$('pEliminar').onclick = async () => {
+  if (!(await confirmar('Eliminar', `¿Eliminar «${esc(edit.p.nombre)}»?`))) return;
+  if (edit.capa === 'sitios') S.sitios = S.sitios.filter(x => x.id !== edit.id); else S.demanda = S.demanda.filter(x => x.id !== edit.id);
+  sel = null; $('info').style.display = 'none'; cerrar('mdPunto'); cambio();
+};
+
+// ================================================================= GPS
+let watchId = null, lecturas = [], capturando = null;
+function pintarGpsAviso() {
+  const a = $('gpsAviso');
+  if (!('geolocation' in navigator)) a.innerHTML = '<div class="note er">Este navegador no ofrece geolocalización.</div>';
+  else if (!window.isSecureContext) a.innerHTML = '<div class="note wa">El GPS del navegador solo funciona si la herramienta se abre por https (por ejemplo, desde el portal ENTALPIA LABS) o desde localhost. Abierta como archivo local, use la importación del paso 3.</div>';
+  else a.innerHTML = '<div class="note">Use el celular al aire libre, lejos de muros y cubiertas. Espere a que la precisión se estabilice antes de registrar.</div>';
+}
+$('gStart').onclick = () => {
+  if (!('geolocation' in navigator)) return;
+  watchId = navigator.geolocation.watchPosition(p => {
+    gpsPos = { lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy, alt: p.coords.altitude, t: p.timestamp };
+    const umb = +$('gUmbral').value || 10, acc = p.coords.accuracy;
+    $('gAcc').innerHTML = `<span class="${acc <= umb ? 'acc-ok' : acc <= umb * 2 ? 'acc-wa' : 'acc-er'}">±${fmt(acc, 1)} m</span>`;
+    const [E, N] = aPlano(gpsPos.lat, gpsPos.lon);
+    $('gPos').textContent = `${gpsPos.lat.toFixed(7)}, ${gpsPos.lon.toFixed(7)} · CTM12 E ${fmt(E, 1)} N ${fmt(N, 1)}${gpsPos.alt != null ? ' · alt. ' + fmt(gpsPos.alt, 0) + ' m' : ''}`;
+    $('gReg').disabled = false; $('gCentrar').disabled = false; $('bGps').textContent = `±${fmt(acc, 0)} m`;
+    if (capturando) {
+      if (acc <= umb) lecturas.push(gpsPos);
+      const n = +$('gLect').value || 10; $('gN').textContent = lecturas.length; $('gBar').style.width = Math.min(100, lecturas.length / n * 100) + '%';
+      if (lecturas.length >= n) finCaptura();
+    }
+    render();
+  }, err => {
+    $('gpsAviso').innerHTML = `<div class="note er">GPS: ${esc({ 1: 'permiso denegado. Habilite la ubicación para este sitio en el navegador.', 2: 'posición no disponible.', 3: 'tiempo de espera agotado.' }[err.code] || err.message)}</div>`;
+  }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+  $('gStart').disabled = true; $('gStop').disabled = false;
+};
+$('gStop').onclick = () => { if (watchId != null) navigator.geolocation.clearWatch(watchId); watchId = null; capturando = null; gpsPos = null; $('gStart').disabled = false; $('gStop').disabled = true; $('gReg').disabled = true; $('gCentrar').disabled = true; $('gReg').textContent = '✚ Registrar punto'; $('bGps').textContent = ''; render(); };
+$('gCentrar').onclick = () => { if (gpsPos) centrarEn(gpsPos.lat, gpsPos.lon); };
+$('gUmbral').oninput = () => { S.gps.umbral = +$('gUmbral').value || 10; programarGuardado(); };
+$('gLect').oninput = () => { S.gps.lect = +$('gLect').value || 10; programarGuardado(); };
+$('gReg').onclick = () => {
+  if (capturando) { finCaptura(true); return; }
+  lecturas = []; capturando = { t0: Date.now() }; $('gN').textContent = '0'; $('gBar').style.width = '0';
+  $('gReg').textContent = '■ Detener y registrar con lo tomado';
+};
+function finCaptura(manual) {
+  const L = lecturas.slice(); capturando = null; $('gReg').textContent = '✚ Registrar punto';
+  if (!L.length) { toast(`Ninguna lectura cumplió el umbral de ${$('gUmbral').value} m. Espere a mejor señal o amplíe el umbral.`, 6000); return; }
+  const lat = L.reduce((a, p) => a + p.lat, 0) / L.length, lon = L.reduce((a, p) => a + p.lon, 0) / L.length;
+  const [E0, N0] = aPlano(lat, lon);
+  const disp = Math.sqrt(L.reduce((a, p) => { const [E, N] = aPlano(p.lat, p.lon); return a + (E - E0) ** 2 + (N - N0) ** 2; }, 0) / L.length);
+  const acc = L.reduce((a, p) => a + p.acc, 0) / L.length;
+  const capa = $('gCapa').value;
+  const p = agregarPunto(capa, {
+    nombre: $('gNombre').value.trim(), tipo: $('gTipo').value.trim(), lat, lon, peso: Math.max(0, V.num($('gPeso').value) || 0), valor: V.num($('gValor').value) || 0,
+    prec: V.round(acc, 1), disp: V.round(disp, 2), alt: L[0].alt != null ? V.round(L.reduce((a, p) => a + (p.alt || 0), 0) / L.length, 1) : null,
+    fecha: ahora(), obs: $('gObs').value.trim(), fuente: `GPS del dispositivo · ${L.length} lecturas promediadas${manual ? ' (captura detenida manualmente)' : ''}`,
+  });
+  $('gNombre').value = ''; $('gObs').value = '';
+  if (p) { sel = { tipo: capa === 'sitios' ? 'sitio' : 'demanda', id: p.id }; toast(`Registrado «${esc(p.nombre)}» · ±${fmt(acc, 1)} m · dispersión ${fmt(disp, 1)} m`); cambio(); }
+}
+
+// ================================================================= IMPORTAR
+$('iFile').onchange = async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  for (const f of files) {
+    try { await importarArchivo(f); } catch (err) { toast(`No se pudo leer «${esc(f.name)}»: ${esc(err.message || err)}`, 7000); }
+  }
+};
+async function importarArchivo(f) {
+  const ext = (f.name.split('.').pop() || '').toLowerCase(), capa = $('iCapa').value;
+  if (ext === 'kmz') { const kml = await kmlDeKmz(await f.arrayBuffer()); return importarGeo(parseKML(kml), capa, f.name); }
+  const txt = await f.text();
+  if (ext === 'kml') return importarGeo(parseKML(txt), capa, f.name);
+  if (ext === 'gpx') return importarGeo(parseGPX(txt), capa, f.name);
+  if (ext === 'json' || ext === 'geojson') {
+    const o = JSON.parse(txt);
+    if (o && o.app === APP_ID) { if (await confirmar('Abrir proyecto', `Se reemplazará el proyecto actual por «${esc(o.meta && o.meta.proyecto || f.name)}». ¿Continuar?`)) { S = Object.assign(nuevoEstado(), o); R = null; sel = null; todo(); ajustarTodo(); toast('Proyecto abierto.'); } return; }
+    return importarGeo(parseGeoJSON(o), capa, f.name);
+  }
+  // CSV / TXT: si no hay columnas reconocibles, intentar extraer coordenadas del texto
+  const csv = V.parseCSV(txt);
+  if (csv.rows.length && csv.rows[0].length >= 2) return abrirCsv(csv, capa, f.name);
+  const pts = V.coordsFromText(txt); if (!pts.length) throw new Error('no se encontraron coordenadas');
+  importarGeo({ puntos: pts.map(p => ({ lat: p.lat, lon: p.lon, nombre: '', obs: p.ctx })), anillos: [] }, capa, f.name);
+}
+function importarGeo(g, capa, origen) {
+  let nP = 0, nA = 0;
+  if (capa === 'limite' || (!g.puntos.length && g.anillos.length)) {
+    if (g.anillos.length) { S.limite.anillos = g.anillos; S.limite.modo = 'custom'; nA = g.anillos.length; }
+    else if (g.puntos.length >= 3) { S.limite.anillos = [g.puntos.map(p => [p.lat, p.lon])]; S.limite.modo = 'custom'; nA = 1; }
+  }
+  if (capa !== 'limite') {
+    g.puntos.forEach(p => { if (agregarPunto(capa, Object.assign({ fuente: 'Importado de ' + origen, fecha: p.fecha || '' }, p))) nP++; });
+    if (g.anillos.length && !S.limite.anillos.length) { S.limite.anillos = g.anillos; nA = g.anillos.length; toast('El archivo traía polígonos: se guardaron como límite (elija «Polígono propio» en el paso 5 para usarlos).', 6000); }
+  }
+  cambio(); ajustarTodo(); cerrarPanelMovil();
+  toast(`«${esc(origen)}»: ${nP} punto(s)${nA ? ` y ${nA} polígono(s) de límite` : ''} importado(s).`);
+}
+function parseGeoJSON(o) {
+  const puntos = [], anillos = [];
+  const feats = o.type === 'FeatureCollection' ? o.features : o.type === 'Feature' ? [o] : [{ type: 'Feature', geometry: o, properties: {} }];
+  feats.forEach(ft => {
+    const g = ft.geometry, pr = ft.properties || {}; if (!g) return;
+    const pick = (...ks) => { for (const k of ks) for (const kk in pr) if (V.norm(kk) === k && pr[kk] != null && pr[kk] !== '') return pr[kk]; return ''; };
+    const base = { nombre: String(pick('nombre', 'name', 'sitio', 'id', 'codigo') || ''), tipo: String(pick('tipo', 'type', 'clase') || ''), peso: V.num(pick('peso', 'radio')) || 0, valor: V.num(pick('valor', 'consumo', 'demanda')) || 0, obs: String(pick('observaciones', 'obs', 'description', 'descripcion') || ''), prec: V.num(pick('precision', 'accuracy')) };
+    if (!Number.isFinite(base.prec)) base.prec = null;
+    const pt = c => puntos.push(Object.assign({}, base, { lat: c[1], lon: c[0] }));
+    if (g.type === 'Point') pt(g.coordinates);
+    else if (g.type === 'MultiPoint') g.coordinates.forEach(pt);
+    else if (g.type === 'Polygon') anillos.push(g.coordinates[0].map(c => [c[1], c[0]]));
+    else if (g.type === 'MultiPolygon') g.coordinates.forEach(pg => anillos.push(pg[0].map(c => [c[1], c[0]])));
+  });
+  return { puntos, anillos };
+}
+function parseKML(txt) {
+  const doc = new DOMParser().parseFromString(txt, 'application/xml');
+  if (doc.querySelector('parsererror')) throw new Error('KML mal formado');
+  const puntos = [], anillos = [];
+  const cs = s => s.trim().split(/\s+/).map(t => t.split(',').map(Number)).filter(c => c.length >= 2 && Number.isFinite(c[0]) && Number.isFinite(c[1]));
+  doc.querySelectorAll('Placemark').forEach(pm => {
+    const nombre = (pm.querySelector('name') || {}).textContent || '';
+    const desc = ((pm.querySelector('description') || {}).textContent || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+    const ext = {}; pm.querySelectorAll('Data').forEach(d => { ext[V.norm(d.getAttribute('name'))] = (d.querySelector('value') || {}).textContent; });
+    pm.querySelectorAll('SimpleData').forEach(d => { ext[V.norm(d.getAttribute('name'))] = d.textContent; });
+    pm.querySelectorAll('Point > coordinates').forEach(c => { const p = cs(c.textContent)[0]; if (p) puntos.push({ nombre: nombre.trim(), tipo: ext.tipo || '', obs: desc, lat: p[1], lon: p[0], peso: V.num(ext.peso || ext.radio) || 0, valor: V.num(ext.valor) || 0 }); });
+    pm.querySelectorAll('Polygon').forEach(pg => { const c = pg.querySelector('outerBoundaryIs coordinates') || pg.querySelector('coordinates'); if (c) { const r = cs(c.textContent).map(p => [p[1], p[0]]); if (r.length >= 3) anillos.push(r); } });
+  });
+  return { puntos, anillos };
+}
+function parseGPX(txt) {
+  const doc = new DOMParser().parseFromString(txt, 'application/xml'); const puntos = [];
+  doc.querySelectorAll('wpt').forEach(w => puntos.push({ lat: +w.getAttribute('lat'), lon: +w.getAttribute('lon'), nombre: ((w.querySelector('name') || {}).textContent || '').trim(), obs: ((w.querySelector('desc') || w.querySelector('cmt') || {}).textContent || '').trim(), fecha: ((w.querySelector('time') || {}).textContent || '').trim() }));
+  return { puntos, anillos: [] };
+}
+async function kmlDeKmz(buf) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf);
+  let eocd = -1; for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error('KMZ no válido');
+  let off = dv.getUint32(eocd + 16, true); const n = dv.getUint16(eocd + 10, true);
+  for (let k = 0; k < n; k++) {
+    const met = dv.getUint16(off + 10, true), csz = dv.getUint32(off + 20, true), fl = dv.getUint16(off + 28, true), xl = dv.getUint16(off + 30, true), cl = dv.getUint16(off + 32, true), loc = dv.getUint32(off + 42, true);
+    const nombre = new TextDecoder().decode(u8.subarray(off + 46, off + 46 + fl));
+    if (/\.kml$/i.test(nombre)) {
+      const lfl = dv.getUint16(loc + 26, true), lxl = dv.getUint16(loc + 28, true), ini = loc + 30 + lfl + lxl, data = u8.subarray(ini, ini + csz);
+      if (met === 0) return new TextDecoder().decode(data);
+      if (met === 8) { if (typeof DecompressionStream === 'undefined') throw new Error('el navegador no puede descomprimir KMZ; extraiga el .kml'); const ds = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw')); return await new Response(ds).text(); }
+      throw new Error('compresión KMZ no admitida');
+    }
+    off += 46 + fl + xl + cl;
+  }
+  throw new Error('el KMZ no contiene un .kml');
+}
+// ---------- CSV
+let csvTmp = null;
+function abrirCsv(csv, capa, nombre) {
+  csvTmp = { csv, nombre };
+  $('csvNom').textContent = nombre; $('csvCapa').value = capa; $('csvHead').checked = true;
+  armarCsvCols(); abrir('mdCsv');
+}
+function armarCsvCols() {
+  const { csv } = csvTmp, head = $('csvHead').checked, h = head ? csv.rows[0] : csv.rows[0].map((_, i) => 'Columna ' + (i + 1));
+  const g = head ? V.guessColumns(h) : {};
+  const geo = g.lat >= 0 && g.lon >= 0, pla = g.este >= 0 && g.norte >= 0;
+  if (!$('csvCrs')._tocado) $('csvCrs').value = geo || !pla ? 'WGS84' : 'CTM12';
+  const esGeo = V.CRS[$('csvCrs').value].geo;
+  const opt = (sel_, req) => `<option value="-1">${req ? '— elegir —' : '(ninguna)'}</option>` + h.map((x, i) => `<option value="${i}"${i === sel_ ? ' selected' : ''}>${esc(x || 'Columna ' + (i + 1))}</option>`).join('');
+  const c1 = esGeo ? (g.lat ?? -1) : (g.norte ?? -1), c2 = esGeo ? (g.lon ?? -1) : (g.este ?? -1);
+  $('csvCols').innerHTML = `
+    <div><label class="f">${esGeo ? 'Latitud' : 'Norte (m)'}</label><select id="cc1">${opt(c1, 1)}</select></div>
+    <div><label class="f">${esGeo ? 'Longitud' : 'Este (m)'}</label><select id="cc2">${opt(c2, 1)}</select></div>
+    <div><label class="f">Nombre / código</label><select id="ccN">${opt(g.nombre ?? -1)}</select></div>
+    <div><label class="f">Tipo</label><select id="ccT">${opt(g.tipo ?? -1)}</select></div>
+    <div><label class="f">Radio de ponderación (m)</label><select id="ccP">${opt(g.peso ?? -1)}</select></div>
+    <div><label class="f">Valor</label><select id="ccV">${opt(g.valor ?? -1)}</select></div>
+    <div><label class="f">Precisión (m)</label><select id="ccA">${opt(g.prec ?? -1)}</select></div>
+    <div><label class="f">Observaciones</label><select id="ccO">${opt(g.obs ?? -1)}</select></div>`;
+  const filas = csv.rows.slice(0, 6);
+  $('csvPrev').innerHTML = filas.map((r, i) => `<tr>${r.map(c => i === 0 && head ? `<th>${esc(c)}</th>` : `<td>${esc(c)}</td>`).join('')}</tr>`).join('');
+  $('csvMsg').innerHTML = `<p class="hint">${csv.rows.length - (head ? 1 : 0)} fila(s) · separador «${csv.delim === '\t' ? 'tabulador' : csv.delim}».</p>`;
+}
+$('csvHead').onchange = armarCsvCols;
+$('csvCrs').onchange = () => { $('csvCrs')._tocado = true; armarCsvCols(); };
+$('csvOk').onclick = () => {
+  const { csv, nombre } = csvTmp, head = $('csvHead').checked, crs = V.CRS[$('csvCrs').value], capa = $('csvCapa').value;
+  const ix = id => +$(id).value, c1 = ix('cc1'), c2 = ix('cc2');
+  if (c1 < 0 || c2 < 0) { $('csvMsg').innerHTML = '<div class="note er">Elija las dos columnas de coordenadas.</div>'; return; }
+  const filas = csv.rows.slice(head ? 1 : 0); let ok = 0, mal = 0; const anillo = [];
+  const col = (r, i) => i >= 0 ? (r[i] || '').trim() : '';
+  filas.forEach(r => {
+    let la, lo;
+    if (crs.geo) { la = V.parseAngle(r[c1]); lo = V.parseAngle(r[c2]); }
+    else { const N = V.num(r[c1]), E = V.num(r[c2]); if (Number.isFinite(N) && Number.isFinite(E)) [la, lo] = crs.tm.inverse(E, N); }
+    if (!Number.isFinite(la) || !Number.isFinite(lo) || Math.abs(la) > 90 || Math.abs(lo) > 180) { mal++; return; }
+    if (capa === 'limite') { anillo.push([la, lo]); ok++; return; }
+    const prec = V.num(col(r, ix('ccA')));
+    if (agregarPunto(capa, { lat: la, lon: lo, nombre: col(r, ix('ccN')), tipo: col(r, ix('ccT')), peso: Math.max(0, V.num(col(r, ix('ccP'))) || 0), valor: V.num(col(r, ix('ccV'))) || 0, prec: Number.isFinite(prec) ? prec : null, obs: col(r, ix('ccO')), fuente: `Importado de ${nombre} (${crs.id})` })) ok++; else mal++;
+  });
+  if (capa === 'limite') { if (anillo.length >= 3) { S.limite.anillos = [anillo]; S.limite.modo = 'custom'; } else { $('csvMsg').innerHTML = '<div class="note er">El límite necesita al menos 3 vértices.</div>'; return; } }
+  $('csvCrs')._tocado = false; cerrar('mdCsv'); cambio(); ajustarTodo(); cerrarPanelMovil();
+  toast(`«${esc(nombre)}»: ${ok} fila(s) importada(s)${mal ? `, ${mal} descartada(s) por coordenadas no válidas` : ''}.`, 6000);
+};
+$('iExtraer').onclick = () => {
+  const t = $('iTexto').value, pts = V.coordsFromText(t);
+  if (!pts.length) { toast('No se encontraron coordenadas en el texto.'); return; }
+  const capa = $('iCapa').value;
+  importarGeo({ puntos: pts.map(p => { const nom = p.ctx.replace(/^\s*\[?\d{1,2}\/\d{1,2}\/\d{2,4},?\s+\d{1,2}:\d{2}(?::\d{2})?\s*(?:[ap]\.?\s?m\.?)?\]?\s*(?:-\s*)?[^:]{1,40}:\s*/i, '').replace(/^(ubicaci[oó]n|location)\s*:?\s*/i, '').replace(/https?:\/\/\S+/g, '').replace(/-?\d{1,3}\.\d{3,}\s*[,;\s]\s*-?\d{1,3}\.\d{3,}/g, '').replace(/[\[\]\-–:,;]+/g, ' ').trim().slice(0, 40); return { lat: p.lat, lon: p.lon, nombre: nom.length > 1 && !/^\d/.test(nom) ? nom : '', obs: p.ctx }; }), anillos: [] }, capa, 'texto pegado');
+  $('iTexto').value = '';
+};
+$('iEjemplo').onclick = async () => {
+  if ((S.sitios.length || S.demanda.length) && !(await confirmar('Datos de ejemplo', 'Se agregarán 12 sitios y 120 puntos de ejemplo al proyecto actual.'))) return;
+  // ejemplo sintético en Dosquebradas / Pereira (no corresponde a datos reales)
+  let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const c = [4.8350, -75.6720];
+  for (let i = 0; i < 12; i++) agregarPunto('sitios', { lat: c[0] + (r() - .5) * 0.03, lon: c[1] + (r() - .5) * 0.03, tipo: i % 4 === 0 ? 'ERM' : 'Regulador', peso: i % 4 === 0 ? 350 : 120, prec: V.round(2 + r() * 6, 1), fuente: 'Ejemplo sintético', fecha: ahora() });
+  for (let i = 0; i < 120; i++) agregarPunto('demanda', { lat: c[0] + (r() - .5) * 0.034, lon: c[1] + (r() - .5) * 0.034, tipo: 'Usuario', valor: V.round(0.5 + r() * 4, 2), fuente: 'Ejemplo sintético' });
+  cambio(); ajustarTodo(); cerrarPanelMovil(); toast('Datos de ejemplo cargados (sintéticos).');
+};
+
+// ================================================================= EXPORTAR
+function metaExport() {
+  return { proyecto: S.meta.proyecto, codigo_portal: S.meta.codigo, fecha_levantamiento: S.meta.fecha, organizacion: S.meta.org, responsable: S.meta.resp, proposito: S.meta.prop, notas: S.meta.notas,
+    herramienta: `${APP_ID} ${VER}`, documento_sig: DOC, generado: ahora(), metodo: R ? (R.metodo === 'potencia' ? 'Diagrama de potencia (ponderado por radio)' : 'Voronoi clásico (euclidiano)') : '',
+    plano_de_calculo: 'MAGNA-SIRGAS / Origen Nacional (EPSG:9377); áreas y longitudes corregidas por el factor de escala local', datum_salida: 'WGS84 / MAGNA-SIRGAS (EPSG:4326)' };
+}
+const r7 = x => V.round(x, 7);
+function geojson() {
+  const feats = [];
+  R.filas.forEach(f => {
+    if (f.vacio) return;
+    const rings = f.anillosGeo.map(r => { const c = r.map(([la, lo]) => [r7(lo), r7(la)]); c.push(c[0]); return c; });
+    const geom = rings.length === 1 ? { type: 'Polygon', coordinates: [rings[0]] } : { type: 'MultiPolygon', coordinates: rings.map(r => [r]) };
+    feats.push({ type: 'Feature', geometry: geom, properties: { capa: 'celda', sitio: f.nombre, tipo: f.tipo, area_m2: V.round(f.areaM2, 2), area_ha: V.round(f.areaHa, 4), perimetro_m: V.round(f.perim, 2), radio_max_m: V.round(f.rmax, 2), vecinos: f.vecinos.join(', '), n_vecinos: f.nVec, puntos_asignados: f.n, suma_valor: V.round(f.valor, 4) } });
+  });
+  S.sitios.forEach(s => { const [E, N] = aPlano(s.lat, s.lon); feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [r7(s.lon), r7(s.lat)] }, properties: { capa: 'sitio', nombre: s.nombre, tipo: s.tipo, este_ctm12: V.round(E, 3), norte_ctm12: V.round(N, 3), precision_m: s.prec, radio_ponderacion_m: s.peso, fecha: s.fecha, fuente: s.fuente, observaciones: s.obs, activo: s.activo !== false } }); });
+  S.demanda.forEach(d => { const f = R.filas.find(x => x.ids.includes(d.id)); feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [r7(d.lon), r7(d.lat)] }, properties: { capa: 'punto_asignado', nombre: d.nombre, tipo: d.tipo, valor: d.valor, asignado_a: f ? f.nombre : null } }); });
+  const lim = R.limPl.map(r => { const c = r.map(([E, N]) => { const g = aGeo(E, N); return [r7(g[1]), r7(g[0])]; }); c.push(c[0]); return c; });
+  feats.push({ type: 'Feature', geometry: lim.length === 1 ? { type: 'Polygon', coordinates: [lim[0]] } : { type: 'MultiPolygon', coordinates: lim.map(r => [r]) }, properties: { capa: 'limite', area_m2: V.round(R.areaLimM2, 2) } });
+  return { type: 'FeatureCollection', name: baseNombre(), metadata: metaExport(), features: feats };
+}
+const kcol = c => { // css → aabbggrr
+  const cv = document.createElement('canvas').getContext('2d'); cv.fillStyle = c; const h = cv.fillStyle.replace('#', ''); return h.length === 6 ? h.slice(4, 6) + h.slice(2, 4) + h.slice(0, 2) : 'ff8800';
+};
+function kml() {
+  const { col } = coloresCeldas(), x = s => esc(s);
+  const sty = [], pms = [];
+  R.filas.forEach((f, i) => {
+    if (f.vacio) return; const c = kcol(col.get(f.id) || '#4e9cf5');
+    sty.push(`<Style id="c${i}"><LineStyle><color>ff${c}</color><width>2</width></LineStyle><PolyStyle><color>66${c}</color></PolyStyle></Style>`);
+    const polys = f.anillosGeo.map(r => `<Polygon><outerBoundaryIs><LinearRing><coordinates>${r.concat([r[0]]).map(([la, lo]) => `${r7(lo)},${r7(la)},0`).join(' ')}</coordinates></LinearRing></outerBoundaryIs></Polygon>`).join('');
+    pms.push(`<Placemark><name>${x(f.nombre)}</name><styleUrl>#c${i}</styleUrl><description>${x(`Área ${fmt(f.areaHa, 4)} ha · Perímetro ${fmt(f.perim, 1)} m · Radio máx. ${fmt(f.rmax, 1)} m · Vecinos: ${f.vecinos.join(', ')}`)}</description><ExtendedData><Data name="tipo"><value>${x(f.tipo)}</value></Data><Data name="area_ha"><value>${V.round(f.areaHa, 4)}</value></Data><Data name="perimetro_m"><value>${V.round(f.perim, 2)}</value></Data><Data name="radio_max_m"><value>${V.round(f.rmax, 2)}</value></Data><Data name="puntos_asignados"><value>${f.n}</value></Data><Data name="suma_valor"><value>${V.round(f.valor, 4)}</value></Data></ExtendedData>${polys.length && f.anillosGeo.length > 1 ? `<MultiGeometry>${polys}</MultiGeometry>` : polys}</Placemark>`);
+  });
+  const sit = S.sitios.map(s => `<Placemark><name>${x(s.nombre)}</name><description>${x([s.tipo, s.prec != null ? '±' + s.prec + ' m' : '', s.fecha, s.obs].filter(Boolean).join(' · '))}</description><Point><coordinates>${r7(s.lon)},${r7(s.lat)},0</coordinates></Point></Placemark>`).join('');
+  const dem = S.demanda.map(d => `<Placemark><name>${x(d.nombre)}</name><styleUrl>#dem</styleUrl><Point><coordinates>${r7(d.lon)},${r7(d.lat)},0</coordinates></Point></Placemark>`).join('');
+  const lim = R.limPl.map(r => `<Placemark><name>Límite</name><styleUrl>#lim</styleUrl><Polygon><outerBoundaryIs><LinearRing><coordinates>${r.concat([r[0]]).map(([E, N]) => { const g = aGeo(E, N); return `${r7(g[1])},${r7(g[0])},0`; }).join(' ')}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>`).join('');
+  const m = metaExport();
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${x(m.proyecto || 'Diagrama de Voronoi')}</name>
+<description>${x(`${m.herramienta} · ${m.metodo} · Proyecto ${m.proyecto} ${m.codigo_portal} · ${m.organizacion} · Responsable ${m.responsable} · Generado ${m.generado}`)}</description>
+<Style id="lim"><LineStyle><color>ff66d1ff</color><width>3</width></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+<Style id="dem"><IconStyle><scale>0.5</scale><Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_square.png</href></Icon></IconStyle><LabelStyle><scale>0</scale></LabelStyle></Style>
+${sty.join('\n')}
+<Folder><name>Celdas</name>${pms.join('\n')}</Folder>
+<Folder><name>Sitios</name>${sit}</Folder>
+${dem ? `<Folder><name>Puntos asignados</name>${dem}</Folder>` : ''}
+<Folder><name>Límite</name>${lim}</Folder>
+</Document></kml>`;
+}
+const dc = (x, d) => Number.isFinite(x) ? x.toFixed(d).replace('.', ',') : '';
+function csvRes() {
+  const q = s => `"${String(s == null ? '' : s).replace(/"/g, '""')}"`;
+  const h = ['Sitio', 'Tipo', 'Latitud', 'Longitud', 'Este CTM12 (m)', 'Norte CTM12 (m)', 'Área (m2)', 'Área (ha)', 'Perímetro (m)', 'Radio máximo (m)', 'N.º vecinos', 'Vecinos', 'Puntos asignados', 'Suma valor', 'Centroide lat', 'Centroide lon', 'Sin celda'];
+  const filas = R.filas.map(f => { const s = S.sitios.find(x => x.id === f.id); return [q(f.nombre), q(f.tipo), dc(s.lat, 8), dc(s.lon, 8), dc(f.E, 3), dc(f.N, 3), dc(f.areaM2, 2), dc(f.areaHa, 4), dc(f.perim, 2), dc(f.rmax, 2), f.nVec, q(f.vecinos.join(', ')), f.n, dc(f.valor, 4), dc(f.cLat, 8), dc(f.cLon, 8), f.vacio ? 'Sí' : 'No'].join(';'); });
+  const m = metaExport();
+  const cab = [`${q('Proyecto')};${q(m.proyecto)}`, `${q('Código en el portal')};${q(m.codigo_portal)}`, `${q('Organización')};${q(m.organizacion)}`, `${q('Responsable')};${q(m.responsable)}`, `${q('Herramienta')};${q(m.herramienta + ' · ' + DOC)}`, `${q('Método')};${q(m.metodo)}`, `${q('Generado')};${q(m.generado)}`, ''];
+  return '﻿' + cab.concat([h.map(q).join(';')], filas).join('\r\n');
+}
+function csvSitios() {
+  const q = s => `"${String(s == null ? '' : s).replace(/"/g, '""')}"`;
+  const h = ['Capa', 'Nombre', 'Tipo', 'Latitud', 'Longitud', 'Este CTM12 (m)', 'Norte CTM12 (m)', 'Precisión (m)', 'Dispersión (m)', 'Altitud (m)', 'Radio ponderación (m)', 'Valor', 'Fecha', 'Fuente', 'Observaciones', 'Activo'];
+  const fila = (capa, s) => { const [E, N] = aPlano(s.lat, s.lon); return [q(capa), q(s.nombre), q(s.tipo), dc(s.lat, 8), dc(s.lon, 8), dc(E, 3), dc(N, 3), dc(s.prec, 1), dc(s.disp, 2), dc(s.alt, 1), dc(s.peso, 2), dc(+s.valor, 4), q(s.fecha), q(s.fuente), q(s.obs), s.activo === false ? 'No' : 'Sí'].join(';'); };
+  return '﻿' + [h.map(q).join(';')].concat(S.sitios.map(s => fila('Sitio', s)), S.demanda.map(d => fila('Punto a asignar', d))).join('\r\n');
+}
+function svgMapa(claro) {
+  // SVG independiente, encuadrado a los resultados, con colores para fondo claro u oscuro
+  const pts = []; R.filas.forEach(f => f.anillosPl && f.anillosPl.forEach(r => r.forEach(p => pts.push(p)))); R.limPl.forEach(r => r.forEach(p => pts.push(p)));
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; pts.forEach(([x, y]) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); });
+  const Wd = 1200, pad = 30, s = (Wd - 2 * pad) / Math.max(x1 - x0, 1), Hd = Math.round((y1 - y0) * s + 2 * pad);
+  const T = ([x, y]) => [(pad + (x - x0) * s).toFixed(1), (Hd - pad - (y - y0) * s).toFixed(1)];
+  const { col } = coloresCeldas(), op = Math.max(0.25, +S.calc.opac || 0.35);
+  const tx = claro ? '#111' : '#fff', halo = claro ? '#fff' : '#0a0d12';
+  let h = `<svg xmlns="${NS}" viewBox="0 0 ${Wd} ${Hd}" width="${Wd}" height="${Hd}" font-family="Segoe UI,Arial,sans-serif"><rect width="100%" height="100%" fill="${claro ? '#fff' : '#0c1118'}"/>`;
+  R.filas.forEach(f => { if (f.vacio) return; const c = col.get(f.id) || '#4e9cf5'; h += `<path d="${f.anillosPl.map(r => 'M' + r.map(T).join('L') + 'Z').join('')}" fill="${c}" fill-opacity="${op}" stroke="${c}" stroke-width="1.5" fill-rule="evenodd"/>`; });
+  h += `<path d="${R.limPl.map(r => 'M' + r.map(T).join('L') + 'Z').join('')}" fill="none" stroke="#d99a00" stroke-width="2" stroke-dasharray="8 5"/>`;
+  S.demanda.forEach(d => { const p = T(aPlano(d.lat, d.lon)); h += `<rect x="${p[0] - 2.5}" y="${p[1] - 2.5}" width="5" height="5" fill="${claro ? '#556' : '#c9d7ea'}"/>`; });
+  S.sitios.forEach(si => { if (si.activo === false) return; const p = T(aPlano(si.lat, si.lon)); h += `<circle cx="${p[0]}" cy="${p[1]}" r="5.5" fill="${col.get(si.id) || '#4e9cf5'}" stroke="${halo}" stroke-width="1.5"/>`; if (S.calc.etq) h += `<text x="${+p[0] + 8}" y="${+p[1] - 7}" font-size="${claro ? 17 : 13}" font-weight="600" fill="${tx}" stroke="${halo}" stroke-width="3" paint-order="stroke">${esc(si.nombre)}</text>`; });
+  // barra de escala y norte
+  const mppx = 1 / s / (R.filas.find(f => !f.vacio) || { k: 1 }).k; let m = 10 ** Math.floor(Math.log10(200 * mppx)); for (const k of [1, 2, 5]) if (k * 10 ** Math.floor(Math.log10(200 * mppx)) <= 200 * mppx) m = k * 10 ** Math.floor(Math.log10(200 * mppx));
+  const bw = m / mppx; h += `<g transform="translate(${pad},${Hd - 14})"><rect width="${bw}" height="5" fill="${tx}"/><text y="-6" font-size="12" fill="${tx}">${m >= 1000 ? m / 1000 + ' km' : m + ' m'}</text></g>`;
+  h += `<g transform="translate(${Wd - pad - 10},${pad + 6})"><path d="M0,-14 L7,8 L0,3 L-7,8 Z" fill="${tx}"/><text y="24" text-anchor="middle" font-size="12" font-weight="700" fill="${tx}">N</text></g>`;
+  return h + '</svg>';
+}
+async function pngMapa() {
+  const svgTxt = svgMapa(false), img = new Image();
+  await new Promise((ok, no) => { img.onload = ok; img.onerror = no; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgTxt); });
+  const cv = document.createElement('canvas'); cv.width = img.width * 2; cv.height = img.height * 2;
+  const ctx = cv.getContext('2d'); ctx.scale(2, 2); ctx.drawImage(img, 0, 0);
+  return await new Promise(ok => cv.toBlob(ok, 'image/png'));
+}
+async function registrar(accion, nombre, blob) {
+  const h = await sha256(blob);
+  S.bitacora.unshift({ fecha: ahora(), accion, archivo: nombre, sha256: h, celdas: R ? R.filas.filter(f => !f.vacio).length : 0 });
+  S.bitacora = S.bitacora.slice(0, 200); programarGuardado(); pintarBitacora();
+  toast(`Exportado «${esc(nombre)}»<br><small>SHA-256: ${h}</small>`, 7000);
+}
+function pintarBitacora() {
+  $('eBit').innerHTML = S.bitacora.map(b => `<div class="li" style="grid-template-columns:1fr;cursor:default"><span class="t"><b>${esc(b.archivo)}</b><small>${esc(b.fecha)} · ${esc(b.accion)} · SHA-256 ${esc(String(b.sha256).slice(0, 16))}…</small></span></div>`).join('') || '<p class="hint" style="padding:8px">Sin exportaciones.</p>';
+}
+document.querySelectorAll('[data-exp]').forEach(b => b.onclick = async () => {
+  const t = b.getAttribute('data-exp'), bn = baseNombre(), fecha = hoy();
+  if (t === 'proyecto') { const n = `${bn}_proyecto_${fecha}.json`; const blob = descargar(n, JSON.stringify(S, null, 1), 'application/json'); return registrar('Proyecto', n, blob); }
+  if (t === 'sitios') { if (!S.sitios.length && !S.demanda.length) return toast('No hay puntos.'); const n = `${bn}_georreferencias_${fecha}.csv`; return registrar('CSV de georreferencias', n, descargar(n, csvSitios(), 'text/csv;charset=utf-8')); }
+  if (!R) { toast('Calcule primero el diagrama (paso 6).'); return; }
+  if (R.desactualizado) { toast('Los datos cambiaron desde el último cálculo. Recalcule antes de exportar.'); return; }
+  if (t === 'geojson') { const n = `${bn}_voronoi_${fecha}.geojson`; return registrar('GeoJSON', n, descargar(n, JSON.stringify(geojson()), 'application/geo+json')); }
+  if (t === 'kml') { const n = `${bn}_voronoi_${fecha}.kml`; return registrar('KML', n, descargar(n, kml(), 'application/vnd.google-earth.kml+xml')); }
+  if (t === 'csv') { const n = `${bn}_resultados_${fecha}.csv`; return registrar('CSV de resultados', n, descargar(n, csvRes(), 'text/csv;charset=utf-8')); }
+  if (t === 'svg') { const n = `${bn}_mapa_${fecha}.svg`; return registrar('Imagen SVG', n, descargar(n, svgMapa(true), 'image/svg+xml')); }
+  if (t === 'png') { try { const blob = await pngMapa(); const n = `${bn}_mapa_${fecha}.png`; descargar(n, blob); return registrar('Imagen PNG', n, blob); } catch (e) { toast('No se pudo generar la imagen PNG en este navegador. Use SVG.'); } }
+});
+$('eInforme').onclick = async () => {
+  if (!R) { toast('Calcule primero el diagrama (paso 6).'); return; }
+  const gj = new Blob([JSON.stringify(geojson())]), h = await sha256(gj), m = metaExport();
+  const ok = R.filas.filter(f => !f.vacio);
+  const filas = R.filas.slice().sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { numeric: true }));
+  $('reporte').innerHTML = `
+  <div class="rh"><img src="${LOGO_ENT}" alt="Entalpía"><div><h1>Informe de zonas de influencia — Diagrama de Voronoi</h1><div>${esc(m.proyecto || 'Proyecto sin nombre')}${m.codigo_portal ? ' · ' + esc(m.codigo_portal) : ''}</div></div></div>
+  <table><tr><th>Organización</th><td>${esc(m.organizacion)}</td><th>Responsable</th><td>${esc(m.responsable)}</td></tr>
+  <tr><th>Propósito</th><td>${esc(m.proposito)}</td><th>Fecha de levantamiento</th><td>${esc(m.fecha_levantamiento)}</td></tr>
+  <tr><th>Método</th><td>${esc(m.metodo)}</td><th>Generado</th><td>${esc(m.generado)}</td></tr>
+  <tr><th>Herramienta</th><td>${esc(m.herramienta)} · instructivo ${DOC}</td><th>Plano de cálculo</th><td>MAGNA-SIRGAS / Origen Nacional (EPSG:9377)</td></tr></table>
+  ${m.notas ? `<p><b>Notas:</b> ${esc(m.notas)}</p>` : ''}
+  <h2>Mapa</h2><div class="mapa">${svgMapa(true)}</div>
+  <h2>Resumen</h2>
+  <table><tr><th>Sitios en el cálculo</th><td class="n">${R.n}</td><th>Celdas con área</th><td class="n">${ok.length}</td></tr>
+  <tr><th>Área del límite</th><td class="n">${fmt(R.areaLimM2 / 1e4, 4)} ha</td><th>Suma de celdas</th><td class="n">${fmt(R.sumaM2 / 1e4, 4)} ha</td></tr>
+  <tr><th>Control de cierre</th><td class="n">${(R.cierre * 100).toFixed(4)} %</td><th>Puntos asignados</th><td class="n">${R.nDem ? R.nDem - R.demFuera : 0}${R.demFuera ? ` (${R.demFuera} fuera del límite)` : ''}</td></tr></table>
+  <h2>Resultados por celda</h2>
+  <table><thead><tr><th>Sitio</th><th>Tipo</th><th>Este CTM12</th><th>Norte CTM12</th><th>Precisión</th><th>Área (ha)</th><th>Perímetro (m)</th><th>Radio máx. (m)</th><th>Vecinos</th>${R.nDem ? '<th>Puntos</th><th>Σ valor</th>' : ''}</tr></thead><tbody>
+  ${filas.map(f => { const s = S.sitios.find(x => x.id === f.id); return `<tr><td>${esc(f.nombre)}</td><td>${esc(f.tipo)}</td><td class="n">${fmt(f.E, 2)}</td><td class="n">${fmt(f.N, 2)}</td><td class="n">${s.prec != null ? '±' + fmt(+s.prec, 1) + ' m' : '—'}</td><td class="n">${f.vacio ? '—' : fmt(f.areaHa, 4)}</td><td class="n">${f.vacio ? '—' : fmt(f.perim, 1)}</td><td class="n">${f.vacio ? '—' : fmt(f.rmax, 1)}</td><td>${esc(f.vecinos.join(', '))}</td>${R.nDem ? `<td class="n">${f.n}</td><td class="n">${fmt(f.valor, 2)}</td>` : ''}</tr>`; }).join('')}
+  </tbody></table>
+  <h2>Calidad de los datos</h2>
+  ${R.avisos.length ? '<ul>' + R.avisos.map(([, t]) => `<li>${t}</li>`).join('') + '</ul>' : '<p>Sin observaciones de calidad.</p>'}
+  <h2>Método y trazabilidad</h2>
+  <p>Las coordenadas se transforman al sistema oficial MAGNA-SIRGAS / Origen Nacional (Transversa de Mercator, k₀ = 0,9992, φ₀ = 4° N, λ₀ = 73° O, FE = 5 000 000 m, FN = 2 000 000 m; IGAC, Resoluciones 471 y 529 de 2020 y 370 de 2021). Las celdas se obtienen en ese plano recortando el límite con los semiplanos definidos por las mediatrices${R.metodo === 'potencia' ? ' (ejes radicales, peso = radio²)' : ''} entre cada sitio y los demás. Las áreas y longitudes se corrigen por el factor de escala de la proyección en el centroide de cada celda. Coordenadas de entrada sin corrección diferencial: la exactitud de los límites entre celdas depende de la precisión de cada georreferencia.</p>
+  <p>Huella SHA-256 del GeoJSON de este resultado: <span class="mono">${h}</span></p>
+  <table class="firmas"><tr><th>Elaboró</th><th>Revisó</th><th>Aprobó</th></tr><tr><td>${esc(m.responsable)}</td><td></td><td></td></tr></table>
+  <div class="pie"><img src="${LOGO_PIO}" alt="Pioneer's"><span>Hub de Ingeniería Pioneer's · un desarrollo de Industrias I.A. Col · ${esc(m.herramienta)} · Registro generado según ${DOC}. Copia impresa no controlada.</span></div>`;
+  S.bitacora.unshift({ fecha: ahora(), accion: 'Informe (impresión/PDF)', archivo: `${baseNombre()}_informe`, sha256: h, celdas: ok.length }); programarGuardado(); pintarBitacora();
+  setTimeout(() => window.print(), 150);
+};
+
+// ================================================================= AYUDA
+const AYUDA = `
+<h3>¿Para qué sirve?</h3>
+<p>Divide un área en zonas de influencia: cada punto del terreno queda asignado al sitio más cercano (regulador, ERM, medidor, frente de obra…). Sirve para sectorizar redes, asignar usuarios a puntos de suministro, definir cobertura de telemetría o repartir frentes de interventoría.</p>
+<h3>Flujo de trabajo</h3>
+<ol>
+<li><b>Proyecto.</b> Diligencie nombre, código del proyecto en el portal, organización y responsable. Estos datos acompañan cada archivo exportado.</li>
+<li><b>Captura en campo.</b> Abra la herramienta desde el portal (https) en el celular, active el GPS y espere a que la precisión sea menor que el umbral. «Registrar punto» promedia varias lecturas y guarda la precisión media y la dispersión.</li>
+<li><b>Importar.</b> Admite CSV/TXT (geográficas o planas MAGNA-SIRGAS: Origen Nacional y orígenes Bogotá, Oeste, etc.), GeoJSON, KML/KMZ de Google Earth, GPX de GPS de mano y texto con enlaces de Google Maps o ubicaciones de WhatsApp.</li>
+<li><b>Sitios y puntos.</b> Revise, edite o desactive puntos. Los «puntos a asignar» (usuarios, medidores) son opcionales: se cuentan y suman por celda.</li>
+<li><b>Límite.</b> Rectángulo con margen, envolvente convexa ampliada o un polígono propio (dibujado o importado, por ejemplo el perímetro del barrio o del predio).</li>
+<li><b>Cálculo.</b> Voronoi clásico o diagrama de potencia: este último da más territorio a los sitios con mayor «radio de ponderación» (por ejemplo, según la capacidad del regulador).</li>
+<li><b>Resultados.</b> Área, perímetro, radio máximo (distancia del sitio al punto más lejano de su celda), vecinos y puntos asignados. Revise los avisos de calidad.</li>
+<li><b>Exportar.</b> GeoJSON, KML, CSV, SVG/PNG, informe imprimible y el proyecto completo (.json) para continuar después o adjuntarlo al proyecto en el portal. Cada exportación queda en la bitácora con su huella SHA-256.</li>
+</ol>
+<h3>Buenas prácticas de georreferenciación</h3>
+<ul>
+<li>Tome los puntos al aire libre, con el celular quieto y la ubicación en «alta precisión». Un GPS de celular suele dar entre 3 y 10 m; para límites contractuales use un receptor GNSS con corrección.</li>
+<li>No mezcle datos en distintos sistemas sin indicarlo en la importación. La longitud en Colombia es negativa (oeste).</li>
+<li>Registre en «Observaciones» la referencia visual del punto y el número de foto.</li>
+<li>Guarde el proyecto (.json) al terminar cada jornada. Los datos se guardan también en el navegador del dispositivo, pero borrar los datos del navegador los elimina.</li>
+</ul>
+<h3>Cálculo</h3>
+<p>Las coordenadas se transforman a MAGNA-SIRGAS / Origen Nacional (EPSG:9377), sistema oficial de coordenadas planas de Colombia. En ese plano se construye cada celda recortando el límite con las mediatrices entre sitios (o ejes radicales en el diagrama de potencia). Áreas y longitudes se corrigen por el factor de escala de la proyección. El control de cierre compara la suma de celdas con el área del límite.</p>
+<h3>Privacidad</h3>
+<p>Los puntos se procesan solo en este dispositivo. Al usar fondo «Mapa» o «Satélite», el navegador descarga las imágenes del área visible desde OpenStreetMap o Esri; las coordenadas de los puntos no se envían. Si los puntos corresponden a viviendas o usuarios identificables, trátelos como datos personales según TI-PR-02.</p>
+<h3>Versión</h3>
+<p>${APP_ID} ${VER} · instructivo ${DOC} · control de cambios: V1.0 (2026-10-15) emisión inicial.</p>`;
+$('ayudaC').innerHTML = AYUDA;
+$('btnAyuda').onclick = () => abrir('mdAyuda');
+$('ayDescargar').onclick = () => {
+  const html = `<!doctype html><html lang="es"><meta charset="utf-8"><title>Guía de uso · Voronoi</title><style>body{font:15px/1.5 "Segoe UI",Arial,sans-serif;max-width:820px;margin:24px auto;padding:0 16px;color:#1b2533}h1{color:#173a6b}h3{color:#1d4f8f;margin-top:22px}header,footer{display:flex;align-items:center;gap:12px}header img{height:56px}footer{margin-top:30px;border-top:1px solid #ccd;padding-top:8px;font-size:12px;color:#556}footer img{height:30px}</style><header><img src="${LOGO_ENT}" alt="Entalpía"><h1>Guía de uso · Voronoi · Zonas de influencia</h1></header>${AYUDA}<footer><img src="${LOGO_PIO}" alt="Pioneer's">Hub de Ingeniería Pioneer's · un desarrollo de Industrias I.A. Col</footer></html>`;
+  descargar('Guia_de_uso_Voronoi_Entalpia_Lab.html', html, 'text/html');
+};
+function cerrarPanelMovil() { if (window.innerWidth <= 820) $('panel').classList.remove('on'); }
+$('btnPanel').onclick = () => $('panel').classList.toggle('on');
+$('btnNuevo').onclick = async () => {
+  if (!(await confirmar('Nuevo proyecto', 'Se vaciará el proyecto actual de este navegador. Guarde antes una copia (.json) si la necesita.'))) return;
+  S = nuevoEstado(); R = null; sel = null; todo(); toast('Proyecto nuevo.');
+};
+
+// ================================================================= INICIO
+function todo() { pintarMeta(); pintarCalc(); pintarLimite(); pintarListas(); pintarFondoSeg(); pintarBitacora(); $('gUmbral').value = S.gps.umbral; $('gLect').value = S.gps.lect; $('info').style.display = 'none'; pintarResultados(); if (sitiosActivos().length >= 2) calcular(); render(); }
+$('fVer').textContent = `${APP_ID} ${VER} · ${DOC}`;
+cargarLocal(); pintarGpsAviso(); tam(); todo();
+new ResizeObserver(() => { tam(); render(); }).observe(mapa);
+window.addEventListener('keydown', e => { if (e.key === 'Escape') { if (modo !== 'nav') { borrador = []; fijarModo('nav'); } document.querySelectorAll('.modal.on').forEach(m => m.classList.remove('on')); } });
+// API mínima para pruebas automatizadas y para una futura integración con el portal
+window.VoronoiApp = { estado: () => S, resultados: () => R, calcular, importarGeo, agregarPunto, cambio, version: VER };
+})();
+
+</script>
+</body>
+</html>
