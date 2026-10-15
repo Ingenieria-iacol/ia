@@ -938,7 +938,8 @@ function sigFormPublico(q) {
     if (!F || !m) return { error: 'El formulario ya no está disponible.' };
     if (q.paso !== 'enviar') return {
       form: F, email: s.email, proyecto: s.proyecto, mensaje: s.mensaje, expira: s.expira instanceof Date ? s.expira.toISOString() : s.expira,
-      miembro: { miembroId: m.miembroId, nombre: m.nombreComercial || m.razonSocial, estadoSIG: m.estadoSIG }, logo: sigLogoDataUrl_(m), titular: SIG.TITULAR, red: SIG.RED };
+      miembro: { miembroId: m.miembroId, nombre: m.nombreComercial || m.razonSocial, estadoSIG: m.estadoSIG }, logo: sigLogoDataUrl_(m), titular: SIG.TITULAR, red: SIG.RED,
+      auto: sigFormAuto_(s, m) };
     const datos = q.datos || {}, txt = JSON.stringify(datos);
     if (txt.length > 6 * 1024 * 1024) return { error: 'El formulario es demasiado pesado. Reduce las fotos.' };
     if (!String(datos._nombre || '').trim() || !String(datos._doc || '').trim()) return { error: 'Escribe tu nombre y documento.' };
@@ -1569,6 +1570,14 @@ function sigTitular(u, b) {
     sigBitacora_(u.email, '*', 'titular_actualizado', { antes: antes, despues: despues });
   }
   const o = {}; k.forEach(x => o[x] = P.getProperty(x) || ''); return o;
+}
+
+/** Datos que el formulario en línea llena solo: los del proyecto vinculado y los de la organización (no se vuelven a digitar). */
+function sigFormAuto_(s, m) {
+  const f = v => v instanceof Date ? Utilities.formatDate(v, 'America/Bogota', 'yyyy-MM-dd') : String(v || '');
+  let p = null;
+  try { const x = s.proyectoId && rows('Proyectos').find(r => String(r.id) === String(s.proyectoId) && r.miembroId === m.miembroId); if (x) p = { id: String(x.id), titulo: f(x.titulo), cliente: f(x.cliente), ubicacion: f(x.ubicacion), descripcion: f(x.descripcion).slice(0, 1500), tipo: f(x.tipo), inicio: f(x.inicio).slice(0, 10), fin: f(x.fin).slice(0, 10), sello: f(x.selloSIG), bajoSIG: f(x.bajoSIG) }; } catch (e) {}
+  return { proyecto: p, org: { miembroId: m.miembroId, razonSocial: f(m.razonSocial), nombre: f(m.nombreComercial || m.razonSocial), nit: f(m.nit), representante: f(m.representante), correo: f(m.correoContacto), ciudad: f(m.ciudad), servicios: String(m.serviciosSolicitados || '').split('|').filter(String).join(', '), alcance: String(m.alcanceAprobado || '').split('|').filter(String).join(', ') } };
 }
 
 // ---------- COMPARTIR PROYECTOS: correo al invitado y registro en la bitácora del SGC ----------
