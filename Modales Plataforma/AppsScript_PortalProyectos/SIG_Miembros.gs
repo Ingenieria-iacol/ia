@@ -619,11 +619,12 @@ function sigDiligenciar(u, id, proyectoId) {
   const copia = DriveApp.getFileById(d.id).makeCopy(n.m.miembroId + ' · ' + d.nombre + ' · ' + hoy, sigCarpetaRegistros_(n.m));
   copia.setDescription('Registro ' + d.codigo + ' de ' + n.m.miembroId + ', creado desde la plantilla maestra del SIG por ' + u.email);
   sigMarcarCopia_(copia.getId(), n.m);
+  let llenos = 0; try { llenos = sigLlenarCopia_(copia, d.codigo, pj, n.m); } catch (e) {}
   const sinAcceso = sigEditoresEquipo_(copia, n.m.miembroId);
   const rid = 'REG-' + Utilities.getUuid().slice(0, 8).toUpperCase();
   sigAgregar_('Registros', { registroId: rid, miembroId: n.m.miembroId, codigo: d.codigo, titulo: d.nombre + (pj ? ' · ' + pj.titulo : ''), origen: 'plantilla', fileId: copia.getId(), creadoPor: u.email, fecha: sigAhora_(), estado: 'abierto', proyectoId: pj ? String(pj.id) : '' });
   sigBitacora_(u.email, n.m.miembroId, 'registro_creado', { registroId: rid, codigo: d.codigo });
-  return { registroId: rid, url: copia.getUrl(), sinAcceso: sinAcceso };
+  return { registroId: rid, url: copia.getUrl(), sinAcceso: sinAcceso, llenos: llenos };
 }
 function sigRegistrosDe_(miembroId) {
   return sigLeer_('Registros').filter(r => miembroId === '*' || r.miembroId === miembroId).reverse().map(r => ({
@@ -1657,3 +1658,58 @@ function sigCompartir(u, b) {
   throw new Error('Acción no permitida.');
 }
 
+
+/** Valor automático de un campo según su etiqueta: datos del proyecto (P) y de la organización (O). Igual que en los formularios en línea. */
+function sigAutoValor_(label, codigo, P, O, tieneMiembro) {
+  const t = String(label || '').replace(/\s+/g, ' ').trim().toLowerCase(), j = function () { return [].slice.call(arguments).filter(String).join(' · '); };
+  if (P) {
+    if (t === 'proyecto') return P.titulo; if (t === 'proyecto (código)' || t === 'n.º de proyecto') return P.id;
+    if (['proyecto / dirección', 'proyecto / sede', 'lugar / proyecto'].indexOf(t) >= 0) return j(P.titulo, P.ubicacion); if (t === 'proyecto / cliente') return j(P.titulo, P.cliente);
+    if (['cliente', 'cliente / usuario', 'contratante'].indexOf(t) >= 0) return P.cliente;
+    if (['dirección', 'dirección del servicio', 'dirección / ubicación', 'ubicación'].indexOf(t) >= 0) return P.ubicacion;
+  }
+  if (O) {
+    const org = O.razonSocial + (O.nombre && O.nombre !== O.razonSocial ? ' (' + O.nombre + ')' : '');
+    if (['miembro', 'miembro (razón social)', 'sitio / miembro', 'miembro propietario'].indexOf(t) >= 0) return org + ' · ' + O.miembroId;
+    if (codigo === 'IV-FO-01' && t === 'interventor') return org;
+    if (t === 'nit' && tieneMiembro) return O.nit;
+    if (codigo === 'GI-FO-09') { const g = { 'razón social o nombre': O.razonSocial, 'nit / documento': O.nit, 'representante legal': O.representante, 'cuenta oficial en el portal': O.correo, 'servicios solicitados en el alcance': O.servicios, 'alcance aprobado': O.alcance }; if (g[t]) return g[t]; }
+  }
+  if (t === 'fecha') return Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd');
+  return '';
+}
+/** Llena en la copia de Google (Docs o Sheets) los campos del proyecto y de la organización: celda con la etiqueta y celda vacía a su derecha. */
+function sigLlenarCopia_(file, codigo, pj, m) {
+  const A = sigFormAuto_({ proyectoId: pj ? pj.id : '' }, m), P = A.proyecto, O = A.org, mt = file.getMimeType();
+  let n = 0;
+  if (mt === MimeType.GOOGLE_DOCS) {
+    const doc = DocumentApp.openById(file.getId()), tablas = doc.getBody().getTables();
+    const textos = []; tablas.forEach(tb => { for (let r = 0; r < tb.getNumRows(); r++) { const row = tb.getRow(r); for (let c = 0; c < row.getNumCells(); c++) textos.push(row.getCell(c).getText().trim().toLowerCase()); } });
+    const tieneMiembro = textos.indexOf('miembro (razón social)') >= 0;
+    tablas.forEach(tb => {
+      for (let r = 0; r < tb.getNumRows(); r++) {
+        const row = tb.getRow(r);
+        for (let c = 0; c + 1 < row.getNumCells(); c++) {
+          const lab = row.getCell(c).getText(), dest = row.getCell(c + 1);
+          if (!lab.trim() || dest.getText().trim()) continue;
+          const v = sigAutoValor_(lab, codigo, P, O, tieneMiembro);
+          if (v) { dest.setText(String(v)); n++; c++; }
+        }
+      }
+    });
+    doc.saveAndClose();
+  } else if (mt === MimeType.GOOGLE_SHEETS) {
+    const ss = SpreadsheetApp.openById(file.getId());
+    ss.getSheets().forEach(sh => {
+      const nr = Math.min(sh.getLastRow(), 40), nc = Math.min(sh.getLastColumn() + 1, 30); if (nr < 1 || nc < 2) return;
+      const rg = sh.getRange(1, 1, nr, nc), v = rg.getDisplayValues(), tieneMiembro = v.some(f => f.some(x => String(x).trim().toLowerCase() === 'miembro (razón social)'));
+      let cambio = false;
+      for (let r = 0; r < nr; r++) for (let c = 0; c + 1 < nc; c++) {
+        if (!String(v[r][c]).trim() || String(v[r][c + 1]).trim()) continue;
+        const x = sigAutoValor_(v[r][c], codigo, P, O, tieneMiembro);
+        if (x) { sh.getRange(r + 1, c + 2).setValue(String(x)); v[r][c + 1] = x; n++; cambio = true; }
+      }
+    });
+  }
+  return n;
+}
