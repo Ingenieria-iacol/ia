@@ -29,15 +29,41 @@ window.PropsPanel = {
         `;
 
         if (el.tipo === 'tuberia') {
+            // Datos de ingeniería del tramo (alimentan la memoria de cálculo del Reporte PDF)
+            const material = el.props.material || 'acero_sch40';
+            const lista = (window.DIAMETROS_DISPONIBLES && window.DIAMETROS_DISPONIBLES[material]) || ['1/2"', '3/4"', '1"'];
+            const diam = el.props.diamNominal || el.props.diametroNominal || lista[0];
+            const caudal = el.props.caudal || 2.5;
+            const presion = el.props.presionEntrada || 19;
+            const longReal = Math.sqrt(Math.pow(el.dx || 0, 2) + Math.pow(el.dy || 0, 2) + Math.pow(el.dz || 0, 2));
+            const calc = window.GasEngine ? window.GasEngine.calculateFlow({ diamNominal: diam, longitud: el.props.longitudManual || longReal, caudal, tipoGas: 'NATURAL', presionEntrada: presion, material }) : null;
+            const mats = Object.keys(window.DIAMETROS_DISPONIBLES || {});
             html += `
+                <div class="prop-row">
+                    <label>Material</label>
+                    <select onchange="window.PropsPanel.actualizarProp(${el.id}, 'material', this.value)">
+                        ${mats.map(m => `<option value="${m}" ${m === material ? 'selected' : ''}>${m.replace(/_/g, ' ')}</option>`).join('')}
+                    </select>
+                </div>
                 <div class="prop-row">
                     <label>Diámetro</label>
                     <select onchange="window.PropsPanel.actualizarProp(${el.id}, 'diamNominal', this.value)">
-                        <option value='1/2"' ${el.props.diamNominal === '1/2"' ? 'selected' : ''}>1/2"</option>
-                        <option value='3/4"' ${el.props.diamNominal === '3/4"' ? 'selected' : ''}>3/4"</option>
-                        <option value='1"' ${el.props.diamNominal === '1"' ? 'selected' : ''}>1"</option>
+                        ${lista.map(d => `<option value='${d}' ${d === diam ? 'selected' : ''}>${d}</option>`).join('')}
                     </select>
                 </div>
+                <div class="prop-row">
+                    <label>Caudal (m³/h)</label>
+                    <input type="number" step="0.1" min="0" value="${caudal}" onchange="window.PropsPanel.actualizarProp(${el.id}, 'caudal', parseFloat(this.value) || 0)">
+                </div>
+                <div class="prop-row">
+                    <label>Presión de entrada (mbar)</label>
+                    <input type="number" step="1" min="0" value="${presion}" onchange="window.PropsPanel.actualizarProp(${el.id}, 'presionEntrada', parseFloat(this.value) || 0)">
+                </div>
+                ${calc ? `<div style="background:#000; padding:10px; border-radius:4px; margin-top:6px; border-left:3px solid ${calc.estado === 'OK' ? '#3fbf7f' : '#ef5b5b'};">
+                    <div style="font-size:0.65rem; color:#888; text-transform:uppercase;">Cálculo del tramo (L = ${(el.props.longitudManual || longReal).toFixed(2)} m · Ø int ${calc.diametroInterno.toFixed(2)} mm)</div>
+                    <div style="font-size:0.85rem; font-weight:bold; color:#fff;">ΔP: ${calc.caidaPresionStr} (${calc.porcentajeCaida})</div>
+                    <div style="font-size:0.75rem; color:${calc.estado === 'OK' ? '#aaa' : '#ff6b6b'};">V: ${calc.velocidad} · ${calc.estado}</div>
+                </div>` : ''}
             `;
         } else {
             // --- PROPIEDADES DE TRANSFORMACIÓN ---
@@ -95,7 +121,11 @@ window.PropsPanel = {
             el.props[prop] = valor;
             window.AppCore.guardarEstado();
             window.CADRenderer.dibujarEscena();
-            if (prop === 'escala') this.abrir(el);
+            if (['escala', 'material', 'diamNominal', 'caudal', 'presionEntrada'].includes(prop)) {
+                // al cambiar de material, el diámetro debe existir en la nueva lista
+                if (prop === 'material' && window.DIAMETROS_DISPONIBLES && window.DIAMETROS_DISPONIBLES[valor] && !window.DIAMETROS_DISPONIBLES[valor].includes(el.props.diamNominal)) el.props.diamNominal = window.DIAMETROS_DISPONIBLES[valor][0];
+                this.abrir(el);
+            }
         }
     },
 

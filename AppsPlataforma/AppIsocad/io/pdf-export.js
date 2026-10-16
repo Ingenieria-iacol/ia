@@ -41,7 +41,7 @@ window.PDFExport = {
             window.AppCore.elementos.forEach(el => {
                 if (el.tipo === 'tuberia') {
                     // 1. Lógica para Lista de Materiales (BOM)
-                    const diam = el.props.diamNominal || '1/2"';
+                    const diam = el.props.diamNominal || el.props.diametroNominal || '1/2"';
                     const nombreBOM = `TUBERÍA - Ø ${diam}`;
                     const longReal = Math.sqrt(Math.pow(el.dx||0,2)+Math.pow(el.dy||0,2)+Math.pow(el.dz||0,2));
                     
@@ -55,7 +55,8 @@ window.PDFExport = {
                         longitud: el.props.longitudManual || longReal,
                         caudal: el.props.caudal || 2.5,
                         tipoGas: 'NATURAL',
-                        presionEntrada: el.props.presionEntrada || 19
+                        presionEntrada: el.props.presionEntrada || 19,
+                        material: el.props.material
                     });
 
                     datosIngenieria.push([
@@ -95,14 +96,14 @@ window.PDFExport = {
 
             doc.autoTable({
                 startY: doc.lastAutoTable.finalY + 14,
-                head: [['Tag', 'Ø', 'Long.', 'Q (m³/h)', 'ΔP', 'Vel.', 'Estado']],
+                head: [['Tag', 'Diám.', 'Long.', 'Q (m3/h)', 'Caída P', 'Vel.', 'Estado']],
                 body: datosIngenieria,
                 headStyles: { fillColor: [40, 40, 40] },
                 columnStyles: {
                     6: { fontStyle: 'bold' } // Columna Estado
                 },
                 didParseCell: function(data) {
-                    if (data.column.index === 6 && data.cell.raw === 'CRÍTICO') {
+                    if (data.section === 'body' && data.column.index === 6 && data.cell.raw && data.cell.raw !== 'OK') {
                         data.cell.styles.textColor = [255, 0, 0];
                     }
                 },

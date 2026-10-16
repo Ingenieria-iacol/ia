@@ -1,0 +1,21 @@
+<h3>¿Para qué sirve?</h3>
+<p>Dimensiona redes de gas de baja presión (hasta 50 mbar) por tramos con la fórmula lineal de Renouard: caudal, pérdida de presión y velocidad en cada tramo, y viabilidad de la red.</p>
+<h3>Cómo usarlo</h3>
+<ol>
+<li><b>Parámetros de diseño:</b> presión inicial y final mínima, velocidad máxima, ciudad y tipo de gas (GN o GLP).</li>
+<li><b>Puntos de consumo:</b> agregue los nodos (A, B, C…) e ingrese en cada uno la potencia acumulada en kW que pasa por el tramo que sale de ese nodo.</li>
+<li><b>Tramos:</b> defina inicio, fin, longitud real y tubería de cada tramo. Los resultados se calculan automáticamente.</li>
+<li>Revise el resumen y genere el <b>Informe PDF</b>.</li>
+</ol>
+<h3>Método de cálculo</h3>
+<div class="ek-f">Q = P / PC                                   [m³/h]
+L calc = 1,2 × L real   (20 % por accesorios) [m]
+ΔP = 23 200 · S · L calc · Q^1,82 · D^-4,82   [mbar]
+V = 353,68 · Q / D²                          [m/s]</div>
+<p>La presión mínima se evalúa en la <b>ruta crítica</b>: el recorrido desde el inicio de la red con mayor pérdida acumulada. Si los tramos no forman una red ramificada válida (un nodo alimentado por dos tramos, tramos sueltos) se usa la suma de todos los tramos.</p>
+<table><tr><th>Resultado</th><th>Condición</th></tr>
+<tr><td>Viable</td><td>ΔP ruta crítica ≤ P inicial − P final y todas las velocidades ≤ V máx</td></tr>
+<tr><td>Viable con advertencia</td><td>Cumple presión pero algún tramo supera V máx</td></tr>
+<tr><td>No viable</td><td>ΔP ruta crítica &gt; ΔP disponible</td></tr></table>
+<p><b>Tuberías por defecto</b> (diámetro interno D): cobre rígido tipo L de 1/2" a 4" y polietileno PE 80/100 SDR 11 de 20 a 90 mm. Puede editarlas o agregar otras con <b>Configurar Diámetros</b>.</p>
+<div class="ek-note">Constante de Renouard: 23 200 (ΔP en mbar, L en m, Q en m³/h, D en mm). Algunas referencias usan 25 078 para caudal a 15 °C.</div>

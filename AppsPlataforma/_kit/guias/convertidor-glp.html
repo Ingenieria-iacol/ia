@@ -1,0 +1,20 @@
+<h3>¿Para qué sirve?</h3>
+<p>Convierte una cantidad de GLP (gas licuado de petróleo) entre kilogramos, galones de líquido, metros cúbicos de vapor, BTU y kWh, y calcula el volumen de gas natural que entrega la misma energía.</p>
+<h3>Cómo usarlo</h3>
+<ol>
+<li>Escriba la cantidad y elija su unidad.</li>
+<li>Pulse <b>Realizar conversiones</b>: aparece la tabla de equivalencias y la equivalencia con gas natural.</li>
+<li><b>Método matemático</b> muestra el desarrollo con los valores ingresados.</li>
+<li><b>Informe PDF</b> abre el informe estándar; elija «Guardar como PDF».</li>
+</ol>
+<h3>Método de cálculo</h3>
+<p>La energía (kWh) es la unidad común: primero se pasa la cantidad a kWh y luego a cada unidad.</p>
+<div class="ek-f">E [kWh] = Cantidad × factor(origen)
+Valor destino = E / factor(destino)
+V GN [m³] = E / 11,70 kWh/m³</div>
+<table><tr><th>Unidad</th><th>Factor (kWh por unidad)</th><th>Equivale a</th></tr>
+<tr><td>kg de GLP</td><td>13,385</td><td>≈ 11 510 kcal/kg · 45 670 BTU/kg</td></tr>
+<tr><td>galón de GLP líquido</td><td>26,01</td><td>≈ 1,94 kg/gal</td></tr>
+<tr><td>m³ de GLP vapor</td><td>27,84</td><td>≈ 2,08 kg/m³</td></tr>
+<tr><td>BTU (IT)</td><td>0,000293071</td><td>exacto</td></tr></table>
+<div class="ek-note wa">Los poderes caloríficos son valores de referencia para GLP comercial (mezcla propano-butano) y gas natural. La composición real varía según el proveedor: para facturación o diseño use el poder calorífico certificado.</div>

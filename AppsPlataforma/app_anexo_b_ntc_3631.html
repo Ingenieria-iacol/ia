@@ -15,8 +15,554 @@
         /* Estilos base para transiciones suaves */
         .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
     </style>
+
+<!-- EK:INICIO estilos -->
+<style id="ek-kit-css">
+/* ==== ENTALPÍA LAB · Kit estándar de aplicativos (Tecnologías Básicas) ====
+   Fuente única: AppsPlataforma/_kit/entalpia-kit.css — se inserta en línea con _kit/aplicar_kit.py.
+   Todas las clases llevan prefijo ek- para no chocar con Tailwind ni con el CSS propio de cada app. */
+:root{
+  --ek-bg:#0a0d12;--ek-pn:#141922;--ek-pn2:#10151d;--ek-tx:#e4eefa;--ek-mu:#8fa3bd;
+  --ek-ac:#2f86e8;--ek-ac2:#62b0ff;--ek-bd:#2a3648;--ek-ok:#3fbf7f;--ek-wa:#e8b23a;--ek-er:#ef5b5b;
+  --ek-metal:linear-gradient(135deg,#9bd0ff 0%,#2f6fc8 45%,#173a6b 100%);
+  --ek-hdr:52px;--ek-ftr:30px;
+}
+html.ek body{padding-top:var(--ek-hdr)!important;padding-bottom:var(--ek-ftr)!important;box-sizing:border-box}
+html.ek.ek-sinpie body{padding-bottom:0!important}
+/* Las vistas a pantalla completa descuentan la cabecera y el pie del kit */
+html.ek .h-screen{height:calc(100vh - var(--ek-hdr) - var(--ek-ftr))!important}
+html.ek .min-h-screen{min-height:calc(100vh - var(--ek-hdr) - var(--ek-ftr))!important}
+html.ek .h-\[100dvh\]{height:calc(100dvh - var(--ek-hdr) - var(--ek-ftr))!important}
+
+/* ---------- cabecera ---------- */
+.ek-hdr{position:fixed;top:0;left:0;right:0;height:var(--ek-hdr);z-index:2147483000;display:flex;align-items:center;gap:10px;padding:0 12px;
+  background:linear-gradient(180deg,#121924,#0c1118);border-bottom:1px solid var(--ek-bd);color:var(--ek-tx);
+  font:14px/1.35 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;box-sizing:border-box;min-width:0}
+.ek-hdr *{box-sizing:border-box}
+.ek-hdr .ek-logo{height:38px;width:auto;border-radius:6px;flex:none;display:block}
+.ek-hdr .ek-tit{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.ek-hdr .ek-tit b{font-size:16px;letter-spacing:.3px;background:var(--ek-metal);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+.ek-hdr .ek-tit span{font-size:11.5px;color:var(--ek-mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ek-hdr .ek-sp{flex:1;min-width:6px}
+.ek-hbtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ek-bd);background:#18202c;color:var(--ek-tx);border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap;font:13px/1.2 Inter,system-ui,sans-serif;text-decoration:none}
+.ek-hbtn:hover{border-color:var(--ek-ac)}
+.ek-hbtn.pri{background:var(--ek-ac);border-color:var(--ek-ac);color:#fff}
+
+/* ---------- pie ---------- */
+.ek-ftr{position:fixed;left:0;right:0;bottom:0;height:var(--ek-ftr);z-index:2147482999;display:flex;align-items:center;gap:10px;padding:0 12px;
+  border-top:1px solid var(--ek-bd);background:#0c1118;color:var(--ek-mu);font:11.5px/1.2 Inter,system-ui,sans-serif;box-sizing:border-box;min-width:0}
+.ek-ftr img{height:22px;width:auto;border-radius:4px;flex:none}
+.ek-ftr .ek-sp{flex:1}
+.ek-ftr span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- modales ---------- */
+.ek-modal{position:fixed;inset:0;background:rgba(3,6,10,.72);display:none;align-items:center;justify-content:center;z-index:2147483100;padding:12px;
+  font:14px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ek-tx)}
+.ek-modal.on{display:flex}
+.ek-mbox{position:relative;background:var(--ek-pn);border:1px solid var(--ek-bd);border-radius:12px;max-width:760px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.6);text-align:left}
+.ek-mhd{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--ek-bd);cursor:move;user-select:none;flex:none}
+.ek-mhd b{font-size:15px;font-weight:700}.ek-mhd .ek-sp{flex:1}
+.ek-mbd{padding:12px 14px;overflow:auto;min-height:0}
+.ek-mbd h3{font-size:14px;margin:14px 0 6px;color:var(--ek-ac2);font-weight:700}
+.ek-mbd h3:first-child{margin-top:2px}
+.ek-mbd p,.ek-mbd li{color:#cfdcec;margin:4px 0}
+.ek-mbd ul,.ek-mbd ol{padding-left:22px;margin:4px 0}.ek-mbd ul{list-style:disc}.ek-mbd ol{list-style:decimal}
+.ek-mbd code,.ek-mbd .ek-f{font-family:Consolas,"JetBrains Mono",monospace;background:#0d1219;border:1px solid var(--ek-bd);border-radius:5px;padding:1px 5px;font-size:12.5px;color:#cfe6ff}
+.ek-mbd .ek-f{display:block;padding:6px 9px;margin:6px 0;white-space:pre-wrap}
+.ek-mbd table{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0}
+.ek-mbd th,.ek-mbd td{border-bottom:1px solid #1d2734;padding:5px 6px;text-align:left}
+.ek-mbd th{color:var(--ek-mu);font-weight:600}
+.ek-mft{display:flex;gap:8px;justify-content:flex-end;padding:10px 14px;border-top:1px solid var(--ek-bd);flex:none;flex-wrap:wrap}
+.ek-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--ek-bd);background:#1a2330;color:var(--ek-tx);border-radius:8px;padding:7px 12px;cursor:pointer;white-space:nowrap;font:13px/1.2 Inter,system-ui,sans-serif}
+.ek-btn:hover{border-color:var(--ek-ac)}
+.ek-btn.pri{background:var(--ek-ac);border-color:var(--ek-ac);color:#fff}
+.ek-btn.dan{border-color:#6b2a2a;color:#ffb3b3}
+.ek-btn.sm{padding:4px 8px;font-size:12.5px}
+.ek-x{border:0;background:none;color:var(--ek-mu);font-size:20px;line-height:1;cursor:pointer;padding:0 2px}
+.ek-x:hover{color:#fff}
+.ek-note{font-size:12.5px;border-left:3px solid var(--ek-ac);background:#0f1724;padding:6px 9px;border-radius:0 6px 6px 0;margin:8px 0;color:#c4d4ea}
+.ek-note.wa{border-color:var(--ek-wa)}.ek-note.er{border-color:var(--ek-er)}.ek-note.ok{border-color:var(--ek-ok)}
+#ek-toast{position:fixed;left:50%;bottom:calc(var(--ek-ftr) + 14px);transform:translateX(-50%);background:#16243a;color:var(--ek-tx);border:1px solid var(--ek-ac);border-radius:8px;padding:8px 12px;z-index:2147483200;display:none;max-width:min(92vw,560px);font:13px/1.4 Inter,system-ui,sans-serif;word-break:break-word;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+
+/* bloques que solo existen en impresión */
+.ek-print{display:none}
+#ek-reporte{display:none}
+
+@media (max-width:720px){
+  :root{--ek-hdr:48px;--ek-ftr:26px}
+  .ek-hdr .ek-tit span{display:none}
+  .ek-hdr .ek-logo{height:32px}
+  .ek-hbtn .ek-lbl{display:none}
+  .ek-ftr .ek-hide-m{display:none}
+}
+
+/* ---------- impresión / PDF del navegador ---------- */
+@media print{
+  html.ek body{padding:0!important}
+  .ek-hdr,.ek-ftr,.ek-modal,#ek-toast{display:none!important}
+  .ek-print{display:block!important;visibility:visible!important;color:#111;font:9.5pt/1.35 "Segoe UI",Arial,sans-serif;position:static!important}
+  .ek-print *{visibility:visible!important}
+  .ek-print-cab{display:flex!important;align-items:center;gap:12px;border-bottom:2px solid #1d4f8f;padding:0 0 6px;margin:0 0 10px;break-inside:avoid}
+  .ek-print-cab img{height:44px;width:auto}
+  .ek-print-cab h1{font-size:14pt;margin:0;color:#173a6b;font-weight:700}
+  .ek-print-cab div div{font-size:9pt;color:#444}
+  .ek-print-pie{display:flex!important;align-items:center;gap:8px;margin-top:14px;border-top:1px solid #c8d3e2;padding-top:6px;font-size:8pt;color:#555;break-inside:avoid}
+  .ek-print-pie img{height:26px;width:auto}
+  .ek-print-pie span{flex:1}
+  html.ek .h-screen,html.ek .min-h-screen{height:auto!important;min-height:0!important}
+  /* informe estándar EK.informe(): solo se imprime el informe */
+  html.ek-informe body>*:not(#ek-reporte){display:none!important}
+  html.ek-informe body{background:#fff!important;color:#111!important}
+  html.ek-informe #ek-reporte{display:block!important;visibility:visible!important;color:#111;font:9.6pt/1.4 "Segoe UI",Arial,sans-serif}
+  html.ek-informe #ek-reporte *{visibility:visible!important}
+  #ek-reporte .rh{display:flex;align-items:center;gap:12px;border-bottom:2px solid #1d4f8f;padding-bottom:6px;margin-bottom:8px}
+  #ek-reporte .rh img{height:46px;width:auto}
+  #ek-reporte h1{font-size:14.5pt;margin:0;color:#173a6b;font-weight:700}
+  #ek-reporte ul{list-style:disc;padding-left:18px;margin:4px 0}#ek-reporte ol{list-style:decimal;padding-left:18px}
+  #ek-reporte .rh div div{font-size:9pt;color:#444}
+  #ek-reporte h2{font-size:11pt;font-weight:700;color:#173a6b;margin:12px 0 4px;border-bottom:1px solid #c8d3e2;padding-bottom:2px;break-after:avoid}
+  #ek-reporte table{width:100%;border-collapse:collapse;font-size:8.8pt;margin:2px 0 4px}
+  #ek-reporte th,#ek-reporte td{border:1px solid #c8d3e2;padding:3px 5px;text-align:left;background:#fff;color:#111;vertical-align:top}
+  #ek-reporte th{background:#eaf1fa!important;font-weight:600}
+  #ek-reporte td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  #ek-reporte tr{break-inside:avoid}
+  #ek-reporte .ok{color:#17663f;font-weight:700}#ek-reporte .no{color:#a3161d;font-weight:700}#ek-reporte .wa{color:#8a5a00;font-weight:700}
+  #ek-reporte .ver{border:1.5px solid #1d4f8f;border-radius:6px;padding:7px 10px;margin:10px 0;font-size:10.5pt;break-inside:avoid}
+  #ek-reporte .ver.ok{border-color:#17663f;background:#effaf3!important}#ek-reporte .ver.no{border-color:#a3161d;background:#fdf0f0!important}#ek-reporte .ver.wa{border-color:#8a5a00;background:#fdf8ea!important}
+  #ek-reporte .txt{margin:4px 0;white-space:pre-wrap}
+  #ek-reporte .fm{font-family:Consolas,monospace;font-size:8.6pt;background:#f4f7fb!important;border:1px solid #d5dfec;padding:4px 7px;margin:4px 0;white-space:pre-wrap}
+  #ek-reporte .firmas td{height:48px;vertical-align:bottom;text-align:center;font-size:8.6pt;color:#444}
+  #ek-reporte .pie{margin-top:14px;border-top:1px solid #c8d3e2;padding-top:6px;font-size:8pt;color:#555;display:flex;align-items:center;gap:8px;break-inside:avoid}
+  #ek-reporte .pie img{height:28px;width:auto}
+  #ek-reporte img.fig{max-width:100%;max-height:120mm;display:block;margin:6px auto;border:1px solid #c8d3e2}
+  html.ek-informe .ek-print{display:none!important}
+  @page{margin:12mm 12mm 14mm;@bottom-right{content:"Pág. " counter(page) " / " counter(pages);font:8pt Arial,sans-serif;color:#555}}
+}
+
+/* ==== ENTALPÍA LAB · Tema oscuro estándar para aplicativos hechos con Tailwind en tonos claros ====
+   Se activa con html.ek-oscuro (EK_CFG.oscuro = true). Solo cambia colores en pantalla;
+   la impresión conserva el fondo blanco. */
+@media screen{
+html.ek-oscuro,html.ek-oscuro body{background:var(--ek-bg)!important;color:var(--ek-tx)}
+html.ek-oscuro body{background-image:radial-gradient(1200px 500px at 50% -10%,rgba(47,134,232,.10),transparent 70%)!important}
+/* superficies */
+html.ek-oscuro :is(.bg-white,.bg-slate-50,.bg-gray-50,.bg-zinc-50,.bg-neutral-50,.bg-stone-50){background-color:var(--ek-pn)!important}
+html.ek-oscuro :is(.bg-slate-100,.bg-gray-100,.bg-zinc-100,.bg-neutral-100){background-color:var(--ek-pn2)!important}
+html.ek-oscuro :is(.bg-slate-200,.bg-gray-200,.bg-zinc-200){background-color:#1a2330!important}
+html.ek-oscuro :is(.bg-slate-300,.bg-gray-300){background-color:#243044!important}
+html.ek-oscuro :is(.bg-white\/50,.bg-white\/60,.bg-white\/70,.bg-white\/80,.bg-white\/90,.bg-white\/95){background-color:rgba(20,25,34,.88)!important}
+html.ek-oscuro :is(.bg-blue-50,.bg-indigo-50,.bg-sky-50){background-color:#0f1b2d!important}
+html.ek-oscuro :is(.bg-blue-100,.bg-indigo-100,.bg-sky-100){background-color:#13253f!important}
+html.ek-oscuro :is(.bg-green-50,.bg-emerald-50){background-color:#0f2219!important}
+html.ek-oscuro :is(.bg-green-100,.bg-emerald-100){background-color:#12301f!important}
+html.ek-oscuro :is(.bg-red-50,.bg-rose-50){background-color:#2a1215!important}
+html.ek-oscuro :is(.bg-red-100,.bg-rose-100){background-color:#3a171b!important}
+html.ek-oscuro :is(.bg-yellow-50,.bg-amber-50,.bg-orange-50){background-color:#2a2110!important}
+html.ek-oscuro :is(.bg-yellow-100,.bg-amber-100,.bg-orange-100){background-color:#3a2d12!important}
+html.ek-oscuro :is(.bg-purple-50,.bg-violet-50){background-color:#1d1530!important}
+html.ek-oscuro :is(.hover\:bg-gray-50,.hover\:bg-slate-50,.hover\:bg-gray-100,.hover\:bg-slate-100,.hover\:bg-blue-50):hover{background-color:#16243a!important}
+html.ek-oscuro :is(.hover\:bg-gray-200,.hover\:bg-slate-200,.hover\:bg-gray-300):hover{background-color:#1d2c44!important}
+/* textos */
+html.ek-oscuro :is(.text-black,.text-gray-900,.text-slate-900,.text-gray-800,.text-slate-800,.text-zinc-900,.text-zinc-800,.text-neutral-900,.text-neutral-800){color:var(--ek-tx)!important}
+html.ek-oscuro :is(.text-gray-700,.text-slate-700,.text-zinc-700){color:#cfdcec!important}
+html.ek-oscuro :is(.text-gray-600,.text-slate-600,.text-gray-500,.text-slate-500,.text-zinc-600,.text-zinc-500){color:var(--ek-mu)!important}
+html.ek-oscuro :is(.text-gray-400,.text-slate-400){color:#6f8199!important}
+html.ek-oscuro :is(.text-blue-900,.text-blue-800,.text-indigo-900,.text-indigo-800,.text-sky-900){color:var(--ek-ac2)!important}
+html.ek-oscuro :is(.text-blue-700,.text-indigo-700){color:#7cbcff!important}
+html.ek-oscuro :is(.text-green-900,.text-green-800,.text-green-700,.text-emerald-800,.text-emerald-700){color:#6ee7a8!important}
+html.ek-oscuro :is(.text-red-900,.text-red-800,.text-red-700){color:#ff9a9a!important}
+html.ek-oscuro :is(.text-yellow-900,.text-yellow-800,.text-amber-900,.text-amber-800,.text-orange-800,.text-yellow-700,.text-amber-700){color:#ffd77a!important}
+html.ek-oscuro :is(.text-purple-900,.text-purple-800,.text-purple-700){color:#c9a8ff!important}
+html.ek-oscuro :is(.text-cyan-900,.text-cyan-800,.text-cyan-700,.text-teal-900,.text-teal-800,.text-teal-700,.text-sky-800,.text-sky-700){color:#67e8f9!important}
+html.ek-oscuro :is(.text-orange-900,.text-orange-700){color:#fdba74!important}
+html.ek-oscuro :is(.text-indigo-600,.text-blue-600){color:#5aa6f5!important}
+/* bordes */
+html.ek-oscuro :is(.border-gray-100,.border-gray-200,.border-gray-300,.border-slate-100,.border-slate-200,.border-slate-300,.border-zinc-200,.border-neutral-200){border-color:var(--ek-bd)!important}
+html.ek-oscuro :is(.border-blue-100,.border-blue-200,.border-indigo-100,.border-indigo-200){border-color:#24426b!important}
+html.ek-oscuro :is(.border-green-100,.border-green-200){border-color:#1f5137!important}
+html.ek-oscuro :is(.border-red-100,.border-red-200){border-color:#5b2328!important}
+html.ek-oscuro :is(.border-yellow-100,.border-yellow-200,.border-amber-200,.border-orange-200){border-color:#5b4818!important}
+html.ek-oscuro :is(.divide-gray-100,.divide-gray-200,.divide-slate-100,.divide-slate-200)>:not([hidden])~:not([hidden]){border-color:var(--ek-bd)!important}
+/* controles de formulario */
+html.ek-oscuro :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),select,textarea){background-color:#0d1219!important;color:var(--ek-tx)!important;border-color:var(--ek-bd)!important}
+html.ek-oscuro :is(input,select,textarea):focus{border-color:var(--ek-ac)!important;outline-color:var(--ek-ac)}
+html.ek-oscuro :is(input,textarea)::placeholder{color:#5f7189!important}
+html.ek-oscuro input:disabled,html.ek-oscuro input[readonly]{background-color:#111823!important}
+html.ek-oscuro select option{background:#0d1219;color:var(--ek-tx)}
+html.ek-oscuro input[type=checkbox],html.ek-oscuro input[type=radio],html.ek-oscuro input[type=range]{accent-color:var(--ek-ac)}
+/* tablas */
+html.ek-oscuro thead:is(.bg-gray-50,.bg-slate-50,.bg-gray-100,.bg-slate-100),html.ek-oscuro th:is(.bg-gray-50,.bg-slate-50,.bg-gray-100){background-color:#141c28!important;color:var(--ek-mu)!important}
+/* sombras más oscuras */
+html.ek-oscuro :is(.shadow,.shadow-sm,.shadow-md,.shadow-lg,.shadow-xl,.shadow-2xl){box-shadow:0 6px 24px rgba(0,0,0,.45)!important}
+/* acento corporativo: azul metalizado en botones primarios */
+html.ek-oscuro :is(.bg-blue-600,.bg-indigo-600,.bg-blue-700,.bg-indigo-700){background-color:var(--ek-ac)!important}
+html.ek-oscuro :is(.hover\:bg-blue-700,.hover\:bg-indigo-700,.hover\:bg-blue-800):hover{background-color:#2672c7!important}
+html.ek-oscuro :is(.bg-blue-900,.bg-indigo-900,.bg-slate-900,.bg-gray-900){background-color:#0c1118!important}
+html.ek-oscuro :is(.bg-blue-800,.bg-slate-800,.bg-gray-800){background-color:#121b29!important}
+/* variantes con opacidad (bg-*-50/50 …) */
+html.ek-oscuro :is(.bg-blue-50\/50,.bg-blue-50\/30,.bg-blue-50\/70,.bg-indigo-50\/50,.bg-sky-50\/50,.bg-blue-100\/50){background-color:rgba(19,37,63,.6)!important}
+html.ek-oscuro :is(.bg-green-50\/50,.bg-green-50\/30,.bg-green-50\/70,.bg-emerald-50\/50,.bg-green-100\/50){background-color:rgba(18,48,31,.6)!important}
+html.ek-oscuro :is(.bg-red-50\/50,.bg-red-50\/30,.bg-red-50\/70,.bg-rose-50\/50,.bg-red-100\/50){background-color:rgba(58,23,27,.6)!important}
+html.ek-oscuro :is(.bg-yellow-50\/50,.bg-amber-50\/50,.bg-orange-50\/50,.bg-amber-100\/50){background-color:rgba(58,45,18,.6)!important}
+html.ek-oscuro :is(.bg-gray-50\/50,.bg-slate-50\/50,.bg-gray-100\/50,.bg-slate-100\/50,.bg-gray-50\/80,.bg-slate-50\/80){background-color:rgba(16,21,29,.7)!important}
+/* paneles translúcidos propios de algunas apps */
+html.ek-oscuro .glass-panel{background:rgba(20,25,34,.95)!important}
+html.ek-oscuro input[type=file]::file-selector-button{background:#1a2330;color:var(--ek-tx);border:1px solid var(--ek-bd)}
+}
+
+</style>
+<!-- EK:FIN estilos -->
 </head>
 <body class="bg-slate-50 font-sans text-slate-800 min-h-screen p-4 md:p-8">
+<!-- EK:INICIO script -->
+<script id="ek-kit-js">
+window.EK_CFG={"app": "Evaluador de Monoespacios", "sub": "Potencia máxima, ubicación y ventilación · NTC 3631 Anexo B", "ver": "2.0", "norma": "NTC 3631 Anexo B", "informe": "Evaluación de monoespacio — NTC 3631 Anexo B", "oscuro": true, "pdf": false, "ayuda": "<h3>¿Para qué sirve?<\/h3>\n<p>Evalúa la instalación de artefactos a gas en monoespacios (apartaestudios, lofts) según el Anexo B de la NTC 3631: potencia máxima por volumen, ubicación respecto al dormitorio y ventilación.<\/p>\n<h3>Cómo usarlo<\/h3>\n<ol>\n<li>Ingrese el área en planta y la altura del monoespacio.<\/li>\n<li>Ingrese la potencia nominal total a instalar.<\/li>\n<li>Marque las condiciones de ubicación (B.1) y ventilación (B.3) que se cumplen.<\/li>\n<li>El resultado se actualiza en tiempo real. Genere el <b>Informe PDF<\/b>.<\/li>\n<\/ol>\n<h3>Método de cálculo<\/h3>\n<div class=\"ek-f\">V = A × H                      [m³]\nP máx = V / 3,4                [kW]\nP a instalar ≤ P máx<\/div>\n<table><tr><th>Numeral<\/th><th>Condición<\/th><\/tr>\n<tr><td>B.1<\/td><td>Artefactos fuera del área del dormitorio (sin divisiones se mide desde los bordes de la cama); tipo A a mínimo 2 m; cumplimiento de NTC 5360, 3643, 3632 y 5256 según el artefacto.<\/td><\/tr>\n<tr><td>B.3<\/td><td>Dos aberturas permanentes (superior e inferior) ubicadas fuera del área del dormitorio.<\/td><\/tr><\/table>\n<div class=\"ek-note wa\">Herramienta de apoyo: verifique contra la versión vigente de la NTC 3631.<\/div>\n"};
+window.EK_LOGO_ENT="data:image/jpeg;base64,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";
+window.EK_LOGO_PIO="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAQDAwMDAgQDAwMEBAQFBgoGBgUFBgwICQcKDgwPDg4MDQ0PERYTDxAVEQ0NExoTFRcYGRkZDxIbHRsYHRYYGRj/2wBDAQQEBAYFBgsGBgsYEA0QGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBj/wAARCACCAKADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD44FSLUa1ItdJiSr0qUVEDUi0ATL0qRRg5qNTxUopoCRR7VKtRA1KvSgkmSpFzUS4qUHigCQdqlXmolqQUCZMtPBqIVIDTQiZTUqsKripFYUwLANOzUQbing8VRJIDS5pgNLmgDzEVKKiFSLWRsSrUijmolNSg5oAmWpUB9Kri8S0dZZIBOqkExFiu8emRyPrXoOhW3hbXrOO6sdNba52lDcvujb+62Twf/wBddWFwssRLkg9TnxGIVCPNJaHFqD6VKqk9jXoZtPhvZ30lnqurQ2VxE5jkhec7o2HUEdjW5YW3wSJHn+JrZvY3ZX+ldiyx/wA8fvX+ZwyzSMfsS/8AAX/keShSOxp656dK+iNJ8OfATV2W0XWbcSvwHi1bDfgGBH6VznxV+EOi+DtBTXtF8UW9xayMFS1uyFnfPeMrlZAOp+6QOcVnVy+UIuSaaCjm1KpNU2mm+6a/M4Pw74M1XxBZm+tjZw2auY2uLm6jjVWHUYJ3E8joprrbTwDoSabqjXWvNLcWdnJdKbS1ZomK4AUyOVPLMo4U9ad4A+Hl14U0S98d+LL19Mhmg4tZW2AR9Q8g7sf4V6gH1OA7UPFeg33wsvNR0S4Zm1C6jsyjrsdFjJlcMO3KxfnXbh8NRp4f2lXSb2Wm3c5auLq1cR7OjrBOza6Pe1zzWZQlyyg5AOKAahaTdITT1NeG3roe4ttSUGng1GDTgaAJQalVuOtQA0oagCyGGOtKTxUAY0b8U7isedA1ItRr0zUgNZmpIpp4NRinqaAHsiyIVNXPDY17TdSvdS0S0e7gtYPtF/bofvQg4LY9VznI6DOeM1U3YGa9Y+DIt9M0jUfEF58gcvIHP8MUKMx/Mhq7MBRlVrJRla13ftZHJjqypUW3HmvZW73Yah4bsPiP4Wh8R+GYbe81uFQIxKoIvFX/AJYSg/8ALQdFJ6j5SfukReHvEHwLTSoX8U+E0sNUXKXNp9kkkCODg9/bp1FZ/gjWJ9A8GS23h60+1+KPEly0lvaQqCLePlQ7DovRiBxwMnCjm9418Maf4Q8I29hqUw1LxXrEhvNQvXYv5UKnhFJ6l5Mkt1by+wPPfOqmvrEIJu3vXV1fpbze7R5qpPm+rVJtK/u2dpW638lsmdQ/iT9mG+0a6hHhK2eWOMsiQ2kttNKfRHDcH68Dqa3fhj8NbLS9CXx/4+nns9FsQ8+mabqE5kNtGTuDPuxz0wuBkgEgcAfN1xEsVu3lDbkYyK+gP7ZfXf2CnbxHO8t3bqFtZZGyzsk6iMknrxuH0rLD1lVlKcoL3U3ZKy+ZGNw88PThSp1JWnJJtu7SfYqeMfFE3xM8XeHbzWdO1Cz+H0+qfYbeRB5ZuZBjLMfxXjsCec9M34xeALXwP8S7220e2WDT7tI72CCLO2NXGCo9gyuB7YrsfHOrQ/8ADEnhFrhI4LwXFjNEqIFO5VkDEY6ZGDXqvja70O/+Fl1Pq+mWF5PHpbtBNcIvmRP5RYFG+8MNzjOPauqWF9spuTu7J39UcdPHLDSpRpxtBuUbeaaV/wDM+MxlTzUitTZ3U3DFemaYrV4LVnY+pWquWQ4p4bFVg1PDUCsWd1ODcVAr04NTuBLmjdioy9JuoA4JeakWoQe1SLUGrJgaepqIGnA5oELcSMsB8tdzHhV9T2Fejido/DK+C9NjebU7yBLOCCLj5MgyyOTwqttbk9izHAGT5wkssV/bzwxrI8ciuqMMhmByBjvzjjvXZWV8ukynTTM02vao26+ud3zoh+ZlLfwIAMnu20AAKBXdgpcqktk9G/LsvNnHi483L1tql5935I7/AML/APCK/DuP7PJfR3GqTAC4uoVLsw/uRjqIx74LYyeMAS+JrHwn4p8R3Wsz+IdcxMQsaf2SmI41AVFBM/YD8yTXF32rJp/gqS00qJYbrVJxawyrxKFDBpJC/wB7PKLnP8TelVJIfDssSb38VPnjzH1oBXxwSAY+Ppk4r2a1SnZYeELxj521fn1Z5FGhNTeIlP3peV9F5dEdVB4O8DGQNLqes36Dk27W8dqjf7zh3IH0APuOtXPEF7F48isPAXhrZDo9k6yX91bjEEIHCxIejN16d/UAmuNttJ8G7vOvLHUZ4xyRf6yBF+O1VJ/MVt/8LCsLV7LRdCWxjtvOSESWqBLa23MAWAb77Y5JYnOOSRxWK9nGLjJKEXvZ3k/JdkaThOUlOLcpLa6tFefmza+LWvWf9qeGfB8cNxLp2lqlxcQ20ZldUwNq7R32LuPoGBrmviR4osvF/jKHVdLlneyis4Yo1cMg3AEsdp7gttz/ALNa2n6QZ7nUHtdQ1/TNVu71lW6sX/tW4uxCwd5Y/LWM+WWKktnB2qACOK6HV9F8Fy6JqmoSaVPYs9uuqWerRTA2t8Z/L2QRxkDaQTOTjBXZyMYrnr+0rOV7JSaf3bL7vIeG9lQ5IpNuKav62bfbV9mzx5WJPJp4OKjl2idgnTPFAavIase4icNTg1QB6cGpAThu1PDe9QBqUHigVifdSFqizxRuoCxxQNPBqMU4GpNSYU7dxUSnIp3BGDQSaFpdHTwbmNQbxlxExGRbg/x47ue3oOepFX9AtJXhnnjUzXN6/wBlhLHLEZBkYn1Ztq59mrn5pPKt2KdccVv6X4p0zSLu1udPvLqF7VQIibMtggcnk4JJJP4124SUPaJ1HZI5sSpcj5Fds1Ft/t+rzXNm4mtbPGmWJzxI/WSQf99Mc/8ATRfSs1b7R5fHEUd3ocGtWe0WVvFOzKq4P+s+VlJyd7Yz/FVqXxXbXsEzxzymdYmjgVLMQIhY4ZuMDOM9sk49K5e4t/OwQSu0ggrwQR0xV4irGKUYu+t35k0acpNuStpZHe6x4A0fUNUj1Lw1caRp9jcojPaSysJbF9oDqEbLSKWBZCpOQwBwQa3PibrWk/8ACPeHdCXwvYrBCkc41C2hjikkiDOksOFA7jcc98Y9a8vtLzV4LW6tReM0Nxu3mTLP8wAbDE8ZxUwLSKvnyySlVCBpGLHAGAMnsKmWIpKDjTjZvvZ28loJYebnGVSV+Xbf73qdRpnid7eK4vre/wBRubq2uAY7iyAtZbeKXCBPmyvlgoo5B25TBGK2NT1y2t4tV0C9vmuY4beK3s7FYMrazIU/fCfcQ2U3qxySwYA42jHnqRyxXYnt55YHAK7onKEg9Rkdj6VYjUIoVQAPQVLxcnHlf9f1p933P6pHm5v6/rf7/vsF8nNODVBmng8VynVYmDcU7fxUIIpQ1AibfineZUAal3CgCbfS76h3UFqAK/hzwje+J/DWtXuk295eX2ny2qpZ20XmGRJTIGY45G3YPzrYuvh+2mWajVnvrO+HhubXJLWaEI0ciXBiERB52lcNnrzWR4b0/wAT6r4U1rRtD0G51CC7mtpZpreN3aExGQqOBj5t56+ldB5fjrw5Yabear4IuTpthpUujXS3kEyxXVvLI8jB3AHltlxhgeCqn2reFO8U3F/0zCdSSk0pLfb5f5lTwl4KsvEf/CN7728jbVtTvbGRYY1ZkEFukoKZ6sxbbg8dKf4o8Ew6H4NtPEMdv4h07zrw2f2LXrRIJZP3e8yRFD8yjhWyBgsvXnFjTNb12KbSNa8N+BJE0LQXuZjAkk0yO8seyZ5bjGc7dvQAKFHHU1kDVZdT8Ny+E/DXhZrSG4uYrudI7ua9ld41ZUxuACD52zgZPGTgYocY8tra/Py/W4c03K99Pl3f6WLi6N4GsfBugar4h1HxFHPq0U8pNhbQSxWyxztFkq7Kzfd3YBHtW9Z/CVIrfWzf2/iDV5tN1OKwSPw3bRzeZHJb+ek58zBCspXA/wBrmq91b6pofgnRbPxh8KpbiHTlmjtbu9uLm3ilEkrSlXVAFbljwGBIqK11vxD4g8P65d614JuPEOn3GpDVLi7tpZrWO2kSHy9uYlICLGRwegAq/ZpWuvz7a/iZuc3dxf5d9LfIx/D3h/T9b+KEHhhJNQtLWeeaJWnRPtEYSN3w6j5d2UwQOOtax8Ah/hz4a8WWep/af7QSOTUrFVHm2Ecl01vHMP70RKEbv4WwDwwrF8O3t/a/EeDWfC3hySeS2aSWLTY3kn2I0bRkFwNxA35yR6VqaBq/jmw1TQpfD/h+5e68LWr6dcRC3kmWeJppJXjuY8cBt7KV/wBkEcisoqNtV/Wn/BNZud/dfb9f+AaGpeDvDPhhtRvPEup6w9mmsXmlafb6bBEbi4Fs4WSaRpGCRqCygAZJJPQDNW/DvgPSNds/EV/Yw+MNWttNu7SC3ttO06JLuRJ0kfzJI3YhQvlgcEg7gRwaxLfxXeeIr3UNJ1LwfH4jh1DUbjVLazhuJop7SWb5pRFJGCWRgFyrA/dDDBzWuda8R6xrXiPStX+G9xqL3stlcTadbzXNvLZi2hMMIyAzkbHGS3U4NWlFvQzk6iVm9fl3X6E2n/DiDXPD3iS80a61C31TTNSWytND1OJEursCBppU+Q489QjEIPvBSB83FUrrwXaQeGtQ1WK/uGNp4UsfESoyLh3uJkjMWf7qhyQepxzUv9h+P00SfTtA+Hmv6TE2rQaxaywpcSzWs0UTRqFcqCeWLbuoOB0rcmvPiV8TI9bv7TwJNcDVtHg0G5m0y0l8pDBMkhkVVXaGZk+ZOg3HFNU76W1F7SSd76f8N/wSP4gfDrSfBUF2kem+OZfJaCOPVbmzgTT5mkCHhwd2PmIHqRUXijwJ4Y0678b6boeo+Ift3hKKWe4k1S0hW1ukjlSJgjxtlHJcFQw+bBHBqz8RtO1WR7vWfEnwrvdD1a+KH7fLfXSpvVVGRE6BTkJ0zxnNReM/EvxO8T+BNe1rxLpl9P4S8Q3YltDPcu8OnXAZihgJOdu0yJtYbWHI5UGnOly30JhVb5dfy8v+CQt8PtBsPiz4g0DXfEk9h4c0JFe81kwqzp5nlpENmcEtJKoxn7que1cVrWlXvh/xHfaJqUYjvLGd7aZQcjcpwSD3B6g9wQa9Gtda+K3imDV9S8G+Dru3TV79L2+u7K0+1rMI4Vijh/eoV2Jh34GS0h9BXGeONU17VvEUVx4p01rPXIbWO1vpJI2ikunjG1ZXQgbXKBFOBg7Qe9Zzp2V0jWlUk5WbOe3CjcKh3UbjWJ02Jt4xSbqi3e9G6gLFn4fn7Vfy2U7gQS3cCHccAEhh+HBrV0G+8c+HPEKXF/EbGXKiJV2r5rE4KMgYh0IyCCMEHB61y/hLUdKs7kw6pPHHE97C8iyAkNEFYNwBz16VnLq2rCNh9qSEMCG8iJIyR6ZAzj6V6NPFRp0qd29L6L16nFPDSqVJ6LW2r/Q9J0zVLaKy8XR6eqx2YfUfsixnKrH5Zyqn0xx9MVOmq3fhb4PRXWipGt3PNGsk+0EK8iM+T64VMAH/ABrh/D2tadZ+H57K4uFSRoL6PyyDkmWHamOO5q94a8aWkGhTaFrkUE9rLGkMsFyzIkoQ5jkWReY5VyQD0IJByGIrWni1ZJO0uWyfZ3v8tDGphW221dc12u+h2vwt+K2tvrV5oPikRarp1zATLFJGAkiZAZHUcEEHg9VOCCCK1vA2tW/g678VQrdP9m0/VJmgc8ny0XkkdD8mMg8HnPBrzNNc0HSTKdIhjy5DMizGd5MfdVpMAKmeSAMn34wzw94jtUs79NRugbm7+2tIGBJdpYNqnp3Y/hWtHHOm4c8uaS5td91on3MauXxqKfJHli+XTbZ6vyPSI9L0vTPijD4p8OIkOhXUEoktUbIs5SAfLHcxN95D2AKnlclngnW5dO+KXjO4klcOLzKlDg7w7tke/FeWaL4hubKzbS724aNUXEMjZwV/uH6dR+XYV0+n+JNJsfiNqmqSXKi1udWW5VirfPFhskDHv0qqWMpRdOUNLOTt2vG33Cq4Kc4zjPW6Sv3s7ndvp+mTfEjQ/iH4W8mLT5pDJqFrFwIndGxKg7RuTyB9x+OjLi14a1tYP2ofEl3O5aKSyj5z2KxY/SvF/DPiC90gHT55XWzYZjc5xGe6n2P8/rXSReKdPi+I19rMN5Hh7WzVHbcFdo40Djp6rTo4uj+7lHT3rtdtLaeRFfA1Gpxlr7vKn31v956Q198WbSa4vofihojrB5k8UHkEsyoC4X/V4zhccnrWh8IfF/iyD9nrX4fCc7x6+95Pc2ZUKWL7kLAK3ByN3FeQef8ADSbWXuLmC9QzTGR9mqEbdzZbH7n3NWtC8V6Po3hnV9LsNQImX7Y1l5ilm3GT9yx4wSV9eKiFePtL1Jacr+1za+W1gqYLmpcsIq/NF/DyrR9d7n0J4U8e+PL/AMA+K9J+NdurWZt2CfaY0jYqY2OdqkjKnaVPUGvC7n4qo/wX8LeC557q8itrtJtUWWLaPKRwyxL/AHgMk59RVnSvHGgeJPA1xoHjG+Sxu5FKpcJG2EmT5o5cKOY2+669s7gOFrzNpLSO8hN4sn2fzF80RgM23POB3rHFYhKMVRldNat77317W29DTB4Fc0nVjZqV0lstLaeu/TU+t9aPiXxgmn6l8J/ihpOmWMUAUaU0QEZIJwd6q2OMAqwGCDzzXiPxbTx8PGyyfEEIdR+zRJG8TB4XiAIVo2BIKk7jx3yOOlG/4QpcR65ol5c6NdBhI0NhqTrHkHOPKdPMA/2dxFVPiP8AEFvG02nIqOLewheKJ5Bhn3PvJx2HTH4+tbYucZ0pSlLXspXXyXT5mOAw8qFaMYR9227jyy+b6nE7qN5qLdRu46V4Z9AS7j60b+OtRbqTNAEfh+88KWxuf+EjsL+4Y7fINo+3HXdu5+n61qvqnw7J+TStWA/2pG/+KrI0FNBluGTW54oFWeB90hcBogzeao2A/MQUx9DzU94fC0kNr9mjMIjntlnaJ5GkliaIGdsNwGVwwGMde/Wtoyagtv1MpRTm9/0NOHV/hpGD5ug6tIf9md1/9mpkmsfDctmPwrqZH+1eSf0NXWn8AyWccNz9kMsEDqq2kkwjOZZW+V2G4ybTFjdleSMdhXkh8CkTul1aorWR8uJWnZ45tj4IcnaxLiPI2gYboME03FvrEhTXaRCNb+H2Nv8Awi2oqP8AZu5D/Nqda3Xg2TxPp0tvYX1rpoZftkU0m9z853FT1xtxx65p/n+B/tMqRWdsmbicQvNNcGPasSeTvIOQruZCxHIwB8oyavyX3ghrU2VvLD5KtmITrIBuD3DKHcDf5e54gT97Zt7g4dN8sk9NAqe9Fq0tSfx7N4Jl8UxSeEYBFZCEeZwwQvk8qG5AxjPvmu58e3PwTk+CPh0eEbaWPxOqp9vZlcN9w+Z5hb5T8+Nu3tXm+jXPg2Lxq81zLa/ZYp7SSL7U8/kbQwNxsKgu2CDsDjlc5yabe3PhFBos2n3Enmfa4ZLuXe2UTIMu5CMAhs7Sv8I6HrWGOo/W60a/Ny8rvaLsn01XVdSsJL6vT9jZy03er779zs/C118Mf+FUatHrtsx107/srhWJ+6Nmwj5RzndntUvwUuPhVb+M7x/iTbrNYG2YQb0d4xJuH3gnzfdzj3rjY77wTKWhlihR1RWSeSa4CXErRSlhNj7sYkEP3ADyecEkX7+bwDc6rcX8d/abI08v7NHJPEJiEtghjOw4UYuAWYZyMkEkZ2w69lJzvc5Z0OZTjeXva+np2Ca9+Glt8R9Tl1LStYuvDzNL9iispRHOvz/JuJ/2evvVk+IPgWGzb+EfFpHq98P6VQv7vwIlrKkcOl3ZhN1IixG5jeVmtkMEe7cdyLKHBII59A1WHl+Ht1LNdXN1b3MrXUbIhkmgYp8qsrtgrtxlshR0xnqaqcuaTehtGyirpjZ/EPwix/ofhHxCp9XvSf61Wg1n4USS/wCneH/Eqp/073C5/wDHjWdcDQETXNPtNSsAJLu3azuXhkVPLVZi+3O5gMlBgk545xyLXiy58J6naxSeG7hLd7KNrTyp7XyHuUQqIpRtLB3O5yzMVJ2jism3boaq17anW6T4m/Z0spQbrwN4+vSOo/tKCMfotc/4+1bwJquqW1x4C0DVNHshDtmg1K5FxIZNx+YMAABt28etJJfeHJ7qIHUNE/skQA2NhLA8LwTiJRi6kjjEm0tvyQ7bm2HgZxmeLLvw/Pc2UXhty1nBFLHl1Ib/AI+JWXcSAW+RlwTzjbnnIq3Uai430M4wXMnZ3MPfRuqImjNYXOkl3Um6o80ZoAyj1oooqDQdS9xRRQAvelHWiigBx607+GiimSHanDpRRTAcO9A60UUAPpT92iigTGr1qUdKKKAYdqKKKYhO9J2oopAf/9k=";
+/* ==== ENTALPÍA LAB · Kit estándar de aplicativos (Tecnologías Básicas) ====
+   Fuente única: AppsPlataforma/_kit/entalpia-kit.js — se inserta en línea con _kit/aplicar_kit.py.
+   Configuración por aplicativo en window.EK_CFG (se define antes de este script):
+     app     nombre del aplicativo            sub     subtítulo de la cabecera
+     ver     versión mostrada en el pie       norma   referencia normativa (texto)
+     ayuda   HTML de la guía de uso           raiz    ruta relativa a la raíz del sitio ("../")
+     alerta  false para conservar window.alert nativo
+     pdf     false para no enmarcar los PDF de jsPDF
+     marcoImpresion false si la app ya imprime su propio encabezado
+     oscuro  true para aplicar el tema oscuro estándar a apps Tailwind claras
+     informe título por defecto de los informes
+   API pública: EK.modal, EK.alerta, EK.confirmar, EK.toast, EK.ayuda, EK.descargar,
+                EK.marcoPDF(doc,{titulo}), EK.fecha(), EK.esc() */
+(function () {
+  'use strict';
+  if (window.EK && window.EK.__v) return;
+  var C = window.EK_CFG || {};
+  var LOGO_ENT = window.EK_LOGO_ENT, LOGO_PIO = window.EK_LOGO_PIO;
+  var PIE = "Hub de Ingeniería Pioneer's · un desarrollo de Industrias I.A. Col";
+  var d = document;
+  var EK = { __v: '1.0', cfg: C, LOGO_ENT: LOGO_ENT, LOGO_PIO: LOGO_PIO, PIE: PIE };
+  window.EK = EK;
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function fecha() { var f = new Date(); return f.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' + f.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }); }
+  EK.esc = esc; EK.fecha = fecha;
+
+  /* ---------- cabecera y pie ---------- */
+  function montar() {
+    if (d.querySelector('.ek-hdr')) return;
+    d.documentElement.classList.add('ek');
+    if (C.pie === false) d.documentElement.classList.add('ek-sinpie');
+    var h = d.createElement('header');
+    h.className = 'ek-hdr';
+    h.setAttribute('data-ek', '');
+    h.innerHTML =
+      '<img class="ek-logo" alt="Entalpía" src="' + LOGO_ENT + '">' +
+      '<div class="ek-tit"><b>' + esc(C.app || d.title) + '</b><span>' + esc(C.sub || 'ENTALPÍA LAB · Tecnologías Básicas') + '</span></div>' +
+      '<div class="ek-sp"></div>' +
+      (C.ayuda ? '<button type="button" class="ek-hbtn" data-ek-ayuda title="Guía de uso, método de cálculo y referencias"><span>?</span><span class="ek-lbl">Ayuda</span></button>' : '') +
+      '<button type="button" class="ek-hbtn" data-ek-volver title="Volver a la plataforma"><span>⌂</span><span class="ek-lbl">Plataforma</span></button>';
+    d.body.insertBefore(h, d.body.firstChild);
+    if (C.pie !== false) {
+      var f = d.createElement('footer');
+      f.className = 'ek-ftr';
+      f.setAttribute('data-ek', '');
+      f.innerHTML = '<img alt="Hub de Ingeniería Pioneer\'s" src="' + LOGO_PIO + '"><span>' + PIE + '</span><div class="ek-sp"></div><span class="ek-hide-m">ENTALPÍA LAB · ' + esc(C.app || '') + (C.ver ? ' · v' + esc(C.ver) : '') + '</span>';
+      d.body.appendChild(f);
+    }
+    // bloques de impresión (navegador → PDF) para las vistas que la app imprime por su cuenta
+    if (C.marcoImpresion !== false) {
+    var pc = d.createElement('div');
+    pc.className = 'ek-print ek-print-cab';
+    pc.innerHTML = '<img alt="Entalpía" src="' + LOGO_ENT + '"><div><h1>' + esc(C.informe || C.app || d.title) + '</h1><div>ENTALPÍA LAB · ' + esc(C.app || '') + (C.norma ? ' · ' + esc(C.norma) : '') + ' · <span data-ek-fecha></span></div></div>';
+    d.body.insertBefore(pc, h.nextSibling);
+    var pp = d.createElement('div');
+    pp.className = 'ek-print ek-print-pie';
+    pp.setAttribute('data-ek', '');
+    pp.innerHTML = '<img alt="Pioneer\'s" src="' + LOGO_PIO + '"><span>' + PIE + ' · ' + esc(C.app || '') + (C.ver ? ' v' + esc(C.ver) : '') + '. Resultado de apoyo técnico: debe ser revisado por un profesional competente antes de usarse en obra.</span>';
+    // el pie de impresión va al final del documento: si aún se está leyendo el HTML, se espera
+    if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', function () { d.body.appendChild(pp); });
+    else d.body.appendChild(pp);
+    }
+    window.addEventListener('beforeprint', function () {
+      var s = d.querySelectorAll('[data-ek-fecha]');
+      for (var i = 0; i < s.length; i++) s[i].textContent = fecha();
+    });
+    h.addEventListener('click', function (e) {
+      if (e.target.closest('[data-ek-ayuda]')) EK.ayuda();
+      if (e.target.closest('[data-ek-volver]')) volver();
+    });
+  }
+  function volver() {
+    var dest = (C.raiz || '../') + 'index.html';
+    try { if (d.referrer && new URL(d.referrer).origin === location.origin && history.length > 1) { history.back(); return; } } catch (e) {}
+    location.href = dest;
+  }
+  EK.volver = volver;
+
+  /* ---------- modales ---------- */
+  var abiertos = [];
+  function arrastrable(box, asa) {
+    var x0, y0, dx = 0, dy = 0, mov = false;
+    asa.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('button,a,input,select,textarea')) return;
+      mov = true; x0 = e.clientX - dx; y0 = e.clientY - dy;
+      try { asa.setPointerCapture(e.pointerId); } catch (er) {}
+    });
+    asa.addEventListener('pointermove', function (e) {
+      if (!mov) return;
+      dx = e.clientX - x0; dy = e.clientY - y0;
+      box.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    });
+    function fin() { mov = false; }
+    asa.addEventListener('pointerup', fin); asa.addEventListener('pointercancel', fin);
+  }
+  /* EK.modal({titulo, html|nodo, ancho, botones:[{t, cls, fn(cerrar)->false para no cerrar}], alCerrar, cerrarFondo})
+     Devuelve {el, cuerpo, cerrar}. */
+  EK.modal = function (o) {
+    o = o || {};
+    var m = d.createElement('div');
+    m.className = 'ek-modal on';
+    m.setAttribute('role', 'dialog');
+    m.setAttribute('aria-modal', 'true');
+    m.innerHTML = '<div class="ek-mbox"' + (o.ancho ? ' style="max-width:' + o.ancho + 'px"' : '') + '>' +
+      '<div class="ek-mhd"><b>' + esc(o.titulo || '') + '</b><div class="ek-sp"></div><span class="ek-mhd-extra"></span><button type="button" class="ek-x" title="Cerrar" aria-label="Cerrar">×</button></div>' +
+      '<div class="ek-mbd"></div>' + ((o.botones && o.botones.length) ? '<div class="ek-mft"></div>' : '') + '</div>';
+    var box = m.firstChild, cuerpo = m.querySelector('.ek-mbd');
+    if (o.nodo) cuerpo.appendChild(o.nodo); else cuerpo.innerHTML = o.html || '';
+    var cerrado = false;
+    function cerrar(v) {
+      if (cerrado) return; cerrado = true;
+      m.remove();
+      abiertos = abiertos.filter(function (x) { return x !== api; });
+      if (o.alCerrar) o.alCerrar(v);
+    }
+    var api = { el: m, cuerpo: cuerpo, cerrar: cerrar, cabecera: m.querySelector('.ek-mhd-extra') };
+    (o.botones || []).forEach(function (b) {
+      var bt = d.createElement('button');
+      bt.type = 'button';
+      bt.className = 'ek-btn ' + (b.cls || '');
+      bt.textContent = b.t;
+      bt.onclick = function () { var r = b.fn ? b.fn(cerrar) : undefined; if (r !== false) cerrar(b.v); };
+      m.querySelector('.ek-mft').appendChild(bt);
+    });
+    m.querySelector('.ek-x').onclick = function () { cerrar(o.vCerrar); };
+    if (o.cerrarFondo !== false) m.addEventListener('mousedown', function (e) { if (e.target === m) cerrar(o.vCerrar); });
+    arrastrable(box, m.querySelector('.ek-mhd'));
+    (d.body || d.documentElement).appendChild(m);
+    abiertos.push(api);
+    var f = m.querySelector('.ek-mft .pri') || m.querySelector('.ek-mft .ek-btn');
+    if (f) setTimeout(function () { try { f.focus(); } catch (e) {} }, 30);
+    return api;
+  };
+  d.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && abiertos.length) { abiertos[abiertos.length - 1].cerrar(); e.stopPropagation(); }
+  }, true);
+
+  EK.alerta = function (msg, titulo) {
+    var txt = String(msg == null ? '' : msg);
+    var tipo = /error|no se pudo|inválid|invalid|falt|debe|⚠|❌/i.test(txt) ? 'wa' : '';
+    return new Promise(function (res) {
+      EK.modal({
+        titulo: titulo || C.app || 'Aviso', ancho: 460,
+        html: '<div class="ek-note ' + tipo + '" style="white-space:pre-wrap;margin:0">' + esc(txt) + '</div>',
+        botones: [{ t: 'Aceptar', cls: 'pri' }], alCerrar: function () { res(); }
+      });
+    });
+  };
+  EK.confirmar = function (titulo, texto, si, no) {
+    return new Promise(function (res) {
+      EK.modal({
+        titulo: titulo || 'Confirmar', ancho: 460, vCerrar: false,
+        html: '<p style="white-space:pre-wrap;margin:0">' + esc(texto || '') + '</p>',
+        botones: [{ t: no || 'Cancelar', v: false }, { t: si || 'Aceptar', cls: 'pri', v: true }],
+        alCerrar: function (v) { res(!!v); }
+      });
+    });
+  };
+  EK.toast = function (msg, ms) {
+    var t = d.getElementById('ek-toast');
+    if (!t) { t = d.createElement('div'); t.id = 'ek-toast'; d.body.appendChild(t); }
+    t.textContent = msg; t.style.display = 'block';
+    clearTimeout(t._t); t._t = setTimeout(function () { t.style.display = 'none'; }, ms || 3500);
+  };
+  EK.descargar = function (nombre, contenido, tipo) {
+    var b = contenido instanceof Blob ? contenido : new Blob([contenido], { type: tipo || 'text/plain;charset=utf-8' });
+    var a = d.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = nombre;
+    d.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  };
+
+  /* ---------- guía de uso ---------- */
+  function guiaHTML() {
+    return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Guía de uso · ' + esc(C.app) + '</title>' +
+      '<style>body{font:15px/1.55 "Segoe UI",Arial,sans-serif;max-width:840px;margin:24px auto;padding:0 16px;color:#1b2533}h1{color:#173a6b;font-size:22px;margin:0}h3{color:#1d4f8f;margin-top:22px}' +
+      'header{display:flex;align-items:center;gap:14px;border-bottom:2px solid #1d4f8f;padding-bottom:10px;margin-bottom:14px}header img{height:56px}footer{display:flex;align-items:center;gap:10px;border-top:1px solid #c8d3e2;margin-top:28px;padding-top:8px;font-size:12.5px;color:#555}footer img{height:30px}' +
+      'code,.ek-f{font-family:Consolas,monospace;background:#eef3fa;border:1px solid #c8d3e2;border-radius:5px;padding:1px 5px;font-size:13px}.ek-f{display:block;padding:6px 9px;margin:6px 0;white-space:pre-wrap}' +
+      'table{border-collapse:collapse;width:100%;font-size:13.5px}th,td{border:1px solid #c8d3e2;padding:4px 6px;text-align:left}th{background:#eaf1fa}.ek-note{border-left:3px solid #2f86e8;background:#f2f7fd;padding:6px 9px;margin:8px 0}.ek-note.wa{border-color:#e8b23a;background:#fdf8ea}</style></head><body>' +
+      '<header><img src="' + LOGO_ENT + '" alt="Entalpía"><div><h1>Guía de uso · ' + esc(C.app) + '</h1><div>ENTALPÍA LAB · Tecnologías Básicas' + (C.ver ? ' · v' + esc(C.ver) : '') + '</div></div></header>' +
+      (C.ayuda || '') +
+      '<footer><img src="' + LOGO_PIO + '" alt="Pioneer\'s"><span>' + PIE + ' · ' + esc(C.app) + '. Guía generada el ' + fecha() + '.</span></footer></body></html>';
+  }
+  EK.ayuda = function () {
+    var md = EK.modal({ titulo: 'Guía de uso · ' + (C.app || ''), html: C.ayuda || '<p>Sin guía.</p>', ancho: 780 });
+    var b = d.createElement('button');
+    b.type = 'button'; b.className = 'ek-btn sm'; b.textContent = 'Descargar guía';
+    b.onclick = function () { EK.descargar('Guia_de_uso_' + String(C.app || 'aplicativo').replace(/[^\wáéíóúñÁÉÍÓÚÑ]+/g, '_') + '_Entalpia_Lab.html', guiaHTML(), 'text/html;charset=utf-8'); };
+    md.cabecera.appendChild(b);
+    return md;
+  };
+
+  /* ---------- informe estándar (Imprimir / Guardar como PDF) ----------
+     EK.informe({
+       titulo, subtitulo,
+       datos:[[etiqueta, valor], ...],                       // identificación del proyecto
+       secciones:[{titulo, cabeza:[...], filas:[[...],...], numeros:[índices de columnas numéricas],
+                   formula:'texto', texto:'texto', html:'html propio'}],
+       veredicto:{tipo:'ok'|'no'|'wa', txt:'...'},
+       notas:['...'], firmas:true|['Elaboró','Revisó'] })
+     Abre el diálogo de impresión del navegador; el usuario elige "Guardar como PDF". */
+  EK.informe = function (o) {
+    o = o || {};
+    var h = [];
+    h.push('<div class="rh"><img src="' + LOGO_ENT + '" alt="Entalpía"><div><h1>' + esc(o.titulo || C.informe || C.app) + '</h1><div>' +
+      esc(o.subtitulo || ('ENTALPÍA LAB · ' + (C.app || '') + (C.norma ? ' · ' + C.norma : ''))) + ' · Generado: ' + fecha() + '</div></div></div>');
+    if (o.datos && o.datos.length) {
+      h.push('<table><tbody>');
+      for (var i = 0; i < o.datos.length; i += 2) {
+        var a = o.datos[i], b = o.datos[i + 1];
+        h.push('<tr><th style="width:18%">' + esc(a[0]) + '</th><td style="width:32%">' + esc(a[1] == null || a[1] === '' ? '—' : a[1]) + '</td>' +
+          (b ? '<th style="width:18%">' + esc(b[0]) + '</th><td style="width:32%">' + esc(b[1] == null || b[1] === '' ? '—' : b[1]) + '</td>' : '<td colspan="2"></td>') + '</tr>');
+      }
+      h.push('</tbody></table>');
+    }
+    (o.secciones || []).forEach(function (s) {
+      if (!s) return;
+      if (s.titulo) h.push('<h2>' + esc(s.titulo) + '</h2>');
+      if (s.texto) h.push('<div class="txt">' + esc(s.texto) + '</div>');
+      if (s.formula) h.push('<div class="fm">' + esc(s.formula) + '</div>');
+      if (s.filas && s.filas.length) {
+        var nums = s.numeros || [];
+        h.push('<table>');
+        if (s.cabeza) h.push('<thead><tr>' + s.cabeza.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead>');
+        h.push('<tbody>' + s.filas.map(function (f) {
+          return '<tr>' + f.map(function (c, j) {
+            var cls = nums.indexOf(j) >= 0 ? ' class="n"' : '';
+            if (c && typeof c === 'object' && 'v' in c) return '<td class="' + (c.cls || '') + (nums.indexOf(j) >= 0 ? ' n' : '') + '">' + esc(c.v) + '</td>';
+            return '<td' + cls + '>' + esc(c == null ? '' : c) + '</td>';
+          }).join('') + '</tr>';
+        }).join('') + '</tbody></table>');
+      }
+      if (s.html) h.push(s.html);
+    });
+    if (o.veredicto) h.push('<div class="ver ' + (o.veredicto.tipo || '') + '">' + esc(o.veredicto.txt) + '</div>');
+    if (o.notas && o.notas.length) h.push('<h2>Observaciones</h2><ul>' + o.notas.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>');
+    if (o.firmas) {
+      var f = o.firmas === true ? ['Elaboró', 'Revisó / Aprobó'] : o.firmas;
+      h.push('<table class="firmas" style="margin-top:16px"><tr>' + f.map(function (x) { return '<td>__________________________<br>' + esc(x) + '<br>Nombre, matrícula y firma</td>'; }).join('') + '</tr></table>');
+    }
+    h.push('<div class="pie"><img src="' + LOGO_PIO + '" alt="Pioneer\'s"><span>' + PIE + ' · ' + esc(C.app || '') + (C.ver ? ' v' + esc(C.ver) : '') +
+      '. Resultado de apoyo técnico generado por software: debe ser verificado por un profesional competente' + (C.norma ? ' frente a ' + esc(C.norma) + ' vigente' : '') + '.</span></div>');
+    var r = d.getElementById('ek-reporte');
+    if (!r) { r = d.createElement('div'); r.id = 'ek-reporte'; d.body.appendChild(r); }
+    r.innerHTML = h.join('');
+    d.documentElement.classList.add('ek-informe');
+    var t0 = d.title;
+    if (o.archivo) d.title = o.archivo;
+    function fin() { d.documentElement.classList.remove('ek-informe'); d.title = t0; window.removeEventListener('afterprint', fin); }
+    window.addEventListener('afterprint', fin);
+    setTimeout(function () { window.print(); setTimeout(fin, 500); }, 120);
+  };
+
+  /* ---------- marco estándar para PDF de jsPDF ----------
+     Reduce el contenido de cada página para dejar espacio a la franja de cabecera (logo Entalpía, título)
+     y al pie (texto del Hub, paginación, logo Pioneer's), igual que los informes de Isoflux. */
+  EK.marcoPDF = function (doc, o) {
+    if (!doc || doc.__ekMarco) return doc;
+    doc.__ekMarco = true;
+    o = o || {};
+    try {
+      var n = doc.getNumberOfPages(), k = doc.internal.scaleFactor;
+      var tit = o.titulo || C.informe || C.app || 'Informe';
+      var sub = 'ENTALPÍA LAB · ' + (C.app || '') + (C.norma ? ' · ' + C.norma : '') + ' · ' + fecha();
+      var TOP = 50, BOT = 30; // pt
+      for (var i = 1; i <= n; i++) {
+        doc.setPage(i);
+        var W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+        var Wp = W * k, Hp = H * k;
+        var s = (Hp - TOP - BOT) / Hp;
+        var tx = (Wp - s * Wp) / 2, ty = BOT + ((Hp - TOP - BOT) - s * Hp) / 2;
+        var pg = doc.internal.pages[i];
+        if (pg && pg.unshift) { pg.unshift('q ' + s.toFixed(5) + ' 0 0 ' + s.toFixed(5) + ' ' + tx.toFixed(3) + ' ' + ty.toFixed(3) + ' cm'); pg.push('Q'); }
+        var u = function (pt) { return pt / k; };
+        doc.setFillColor(12, 17, 26); doc.rect(0, 0, W, u(TOP - 6), 'F');
+        doc.setFillColor(30, 95, 191); doc.rect(0, u(TOP - 6), W, u(1.6), 'F');
+        try { doc.addImage(LOGO_ENT, 'JPEG', u(14), u(4), u(40), u(35)); } catch (e) {}
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(190, 225, 255); doc.setFontSize(13);
+        doc.text(String(tit).slice(0, 90), u(64), u(20));
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(150, 175, 205);
+        doc.text(sub.slice(0, 150), u(64), u(33));
+        doc.setDrawColor(30, 95, 191); doc.setLineWidth(u(0.8));
+        doc.line(u(22), H - u(BOT - 4), W - u(22), H - u(BOT - 4));
+        doc.setTextColor(80, 80, 80); doc.setFontSize(7.5);
+        doc.text(PIE + ' · ' + (C.app || ''), u(22), H - u(12));
+        doc.text('Pág. ' + i + '/' + n, W - u(52), H - u(12), { align: 'right' });
+        try { doc.addImage(LOGO_PIO, 'JPEG', W - u(46), H - u(BOT - 6), u(26), u(21)); } catch (e) {}
+      }
+      doc.setTextColor(0, 0, 0); doc.setDrawColor(0, 0, 0); doc.setFillColor(255, 255, 255);
+      doc.setPage(n);
+    } catch (e) { if (window.console) console.warn('EK.marcoPDF', e); }
+    return doc;
+  };
+  function enganchaJsPDF() {
+    if (C.pdf === false) return true;
+    var ns = window.jspdf, Orig = ns && ns.jsPDF;
+    if (!Orig || Orig.__ek) return !!(Orig && Orig.__ek);
+    function envolver(doc) {
+      ['save', 'output'].forEach(function (m) {
+        var f = doc[m];
+        if (typeof f !== 'function') return;
+        doc[m] = function () { EK.marcoPDF(doc); return f.apply(doc, arguments); };
+      });
+      return doc;
+    }
+    function J(a, b, c, e) { var doc = new Orig(a, b, c, e); return envolver(doc); }
+    J.prototype = Orig.prototype;
+    Object.keys(Orig).forEach(function (kk) { try { J[kk] = Orig[kk]; } catch (er) {} });
+    J.API = Orig.API; J.version = Orig.version; J.__ek = true; J.__orig = Orig;
+    ns.jsPDF = J;
+    if (window.jsPDF === Orig) window.jsPDF = J;
+    return true;
+  }
+  EK.enganchaJsPDF = enganchaJsPDF;
+
+  /* ---------- arranque ---------- */
+  d.documentElement.classList.add('ek');
+  if (C.oscuro) d.documentElement.classList.add('ek-oscuro');
+  if (C.alerta !== false) {
+    var alertaNativa = window.alert;
+    EK.alertaNativa = alertaNativa;
+    window.alert = function (m) { if (!d.body) return alertaNativa.call(window, m); EK.alerta(m); };
+  }
+  if (!enganchaJsPDF()) {
+    var tries = 0, iv = setInterval(function () { if (enganchaJsPDF() || ++tries > 40) clearInterval(iv); }, 250);
+    window.addEventListener('load', enganchaJsPDF);
+  }
+  function bordesOscuros() {
+    // Tailwind (preflight) pinta todos los bordes "sin color" en gris claro; en el tema oscuro se
+    // reemplaza con especificidad cero y al final del documento, para no pisar los bordes de color.
+    if (!C.oscuro || d.getElementById('ek-oscuro-base')) return;
+    var s = d.createElement('style');
+    s.id = 'ek-oscuro-base';
+    s.textContent = '@media screen{:where(html.ek-oscuro) *,:where(html.ek-oscuro) ::before,:where(html.ek-oscuro) ::after{border-color:#2a3648}}';
+    d.body.appendChild(s);
+  }
+  if (d.body) montar(); else d.addEventListener('DOMContentLoaded', montar);
+  if (d.readyState === 'complete') bordesOscuros(); else window.addEventListener('load', bordesOscuros);
+})();
+
+</script>
+<!-- EK:FIN script -->
+
 
     <div class="max-w-4xl mx-auto space-y-6">
         
@@ -36,6 +582,12 @@
             <!-- Columna Izquierda: Datos y Cálculos -->
             <div class="md:col-span-1 space-y-6">
                 
+                <!-- Trazabilidad (para el informe estándar) -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-100 p-5 space-y-3">
+                    <h2 class="font-semibold text-sm text-slate-600 uppercase tracking-wider">Datos de la inspección</h2>
+                    <input id="d-proyecto" type="text" class="w-full p-2 border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" placeholder="Proyecto / dirección">
+                    <input id="d-inspector" type="text" class="w-full p-2 border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" placeholder="Inspector">
+                </div>
                 <!-- Tarjeta Dimensiones -->
                 <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden p-5">
                     <h2 class="flex items-center font-semibold text-lg mb-4 text-blue-700">
@@ -172,6 +724,7 @@
                         </div>
                     </div>
                 </div>
+                <button type="button" onclick="informePDF()" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors">Informe PDF</button>
 
             </div>
         </div>
@@ -291,6 +844,31 @@
             lucide.createIcons(); // Re-renderizar icono insertado
         }
 
+        // Informe estándar ENTALPÍA LAB
+        function informePDF() {
+            actualizarCalculos();
+            const A = parseFloat(inputArea.value) || 0, H = parseFloat(inputAltura.value) || 0, P = parseFloat(inputPotencia.value);
+            const f2 = x => Number(x).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const est = id => document.getElementById(id).checked ? { v: 'CUMPLE', cls: 'ok' } : { v: 'NO CUMPLE', cls: 'no' };
+            const txt = id => document.getElementById(id).closest('label').querySelector('span').textContent.trim();
+            const t = resultadoTitulo.textContent.trim();
+            EK.informe({
+                titulo: 'Evaluación de monoespacio — NTC 3631 Anexo B',
+                archivo: 'Monoespacio_NTC3631_AnexoB',
+                datos: [['Proyecto / dirección', document.getElementById('d-proyecto').value], ['Inspector', document.getElementById('d-inspector').value]],
+                secciones: [
+                    { titulo: 'Potencia máxima admisible', formula: 'V = A × H = ' + f2(A) + ' m² × ' + f2(H) + ' m = ' + f2(A * H) + ' m³\nP máx = V / 3,4 = ' + f2(potenciaMaximaCalculada) + ' kW',
+                      cabeza: ['Concepto', 'Valor'], numeros: [1], filas: [['Potencia máxima admisible', f2(potenciaMaximaCalculada) + ' kW'], ['Potencia a instalar', isNaN(P) ? '—' : f2(P) + ' kW'],
+                        ['Estado', isNaN(P) || P <= 0 ? '—' : (P > potenciaMaximaCalculada ? { v: 'EXCEDE', cls: 'no' } : { v: 'CUMPLE', cls: 'ok' })]] },
+                    { titulo: 'Verificación normativa', cabeza: ['Numeral', 'Condición', 'Estado'], filas: [
+                        ['B.1', txt('chkUbicacion'), est('chkUbicacion')], ['B.1', txt('chkDistancia'), est('chkDistancia')], ['B.1', txt('chkNtcAdicional'), est('chkNtcAdicional')],
+                        ['B.3', txt('chkVentilacion'), est('chkVentilacion')], ['B.3', txt('chkVentFuera'), est('chkVentFuera')]] }
+                ],
+                veredicto: { tipo: t === 'APROBADO' ? 'ok' : t === 'RECHAZADO' ? 'no' : 'wa', txt: t + ' — ' + resultadoMensaje.textContent.trim() },
+                notas: [...listaDetalles.querySelectorAll('li')].map(li => li.textContent),
+                firmas: true
+            });
+        }
         // Event Listeners
         [inputArea, inputAltura, inputPotencia].forEach(el => {
             el.addEventListener('input', actualizarCalculos);

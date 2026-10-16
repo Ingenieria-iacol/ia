@@ -1,0 +1,70 @@
+/* ==== ENTALPÍA LAB · Tema oscuro estándar para aplicativos hechos con Tailwind en tonos claros ====
+   Se activa con html.ek-oscuro (EK_CFG.oscuro = true). Solo cambia colores en pantalla;
+   la impresión conserva el fondo blanco. */
+@media screen{
+html.ek-oscuro,html.ek-oscuro body{background:var(--ek-bg)!important;color:var(--ek-tx)}
+html.ek-oscuro body{background-image:radial-gradient(1200px 500px at 50% -10%,rgba(47,134,232,.10),transparent 70%)!important}
+/* superficies */
+html.ek-oscuro :is(.bg-white,.bg-slate-50,.bg-gray-50,.bg-zinc-50,.bg-neutral-50,.bg-stone-50){background-color:var(--ek-pn)!important}
+html.ek-oscuro :is(.bg-slate-100,.bg-gray-100,.bg-zinc-100,.bg-neutral-100){background-color:var(--ek-pn2)!important}
+html.ek-oscuro :is(.bg-slate-200,.bg-gray-200,.bg-zinc-200){background-color:#1a2330!important}
+html.ek-oscuro :is(.bg-slate-300,.bg-gray-300){background-color:#243044!important}
+html.ek-oscuro :is(.bg-white\/50,.bg-white\/60,.bg-white\/70,.bg-white\/80,.bg-white\/90,.bg-white\/95){background-color:rgba(20,25,34,.88)!important}
+html.ek-oscuro :is(.bg-blue-50,.bg-indigo-50,.bg-sky-50){background-color:#0f1b2d!important}
+html.ek-oscuro :is(.bg-blue-100,.bg-indigo-100,.bg-sky-100){background-color:#13253f!important}
+html.ek-oscuro :is(.bg-green-50,.bg-emerald-50){background-color:#0f2219!important}
+html.ek-oscuro :is(.bg-green-100,.bg-emerald-100){background-color:#12301f!important}
+html.ek-oscuro :is(.bg-red-50,.bg-rose-50){background-color:#2a1215!important}
+html.ek-oscuro :is(.bg-red-100,.bg-rose-100){background-color:#3a171b!important}
+html.ek-oscuro :is(.bg-yellow-50,.bg-amber-50,.bg-orange-50){background-color:#2a2110!important}
+html.ek-oscuro :is(.bg-yellow-100,.bg-amber-100,.bg-orange-100){background-color:#3a2d12!important}
+html.ek-oscuro :is(.bg-purple-50,.bg-violet-50){background-color:#1d1530!important}
+html.ek-oscuro :is(.hover\:bg-gray-50,.hover\:bg-slate-50,.hover\:bg-gray-100,.hover\:bg-slate-100,.hover\:bg-blue-50):hover{background-color:#16243a!important}
+html.ek-oscuro :is(.hover\:bg-gray-200,.hover\:bg-slate-200,.hover\:bg-gray-300):hover{background-color:#1d2c44!important}
+/* textos */
+html.ek-oscuro :is(.text-black,.text-gray-900,.text-slate-900,.text-gray-800,.text-slate-800,.text-zinc-900,.text-zinc-800,.text-neutral-900,.text-neutral-800){color:var(--ek-tx)!important}
+html.ek-oscuro :is(.text-gray-700,.text-slate-700,.text-zinc-700){color:#cfdcec!important}
+html.ek-oscuro :is(.text-gray-600,.text-slate-600,.text-gray-500,.text-slate-500,.text-zinc-600,.text-zinc-500){color:var(--ek-mu)!important}
+html.ek-oscuro :is(.text-gray-400,.text-slate-400){color:#6f8199!important}
+html.ek-oscuro :is(.text-blue-900,.text-blue-800,.text-indigo-900,.text-indigo-800,.text-sky-900){color:var(--ek-ac2)!important}
+html.ek-oscuro :is(.text-blue-700,.text-indigo-700){color:#7cbcff!important}
+html.ek-oscuro :is(.text-green-900,.text-green-800,.text-green-700,.text-emerald-800,.text-emerald-700){color:#6ee7a8!important}
+html.ek-oscuro :is(.text-red-900,.text-red-800,.text-red-700){color:#ff9a9a!important}
+html.ek-oscuro :is(.text-yellow-900,.text-yellow-800,.text-amber-900,.text-amber-800,.text-orange-800,.text-yellow-700,.text-amber-700){color:#ffd77a!important}
+html.ek-oscuro :is(.text-purple-900,.text-purple-800,.text-purple-700){color:#c9a8ff!important}
+html.ek-oscuro :is(.text-cyan-900,.text-cyan-800,.text-cyan-700,.text-teal-900,.text-teal-800,.text-teal-700,.text-sky-800,.text-sky-700){color:#67e8f9!important}
+html.ek-oscuro :is(.text-orange-900,.text-orange-700){color:#fdba74!important}
+html.ek-oscuro :is(.text-indigo-600,.text-blue-600){color:#5aa6f5!important}
+/* bordes */
+html.ek-oscuro :is(.border-gray-100,.border-gray-200,.border-gray-300,.border-slate-100,.border-slate-200,.border-slate-300,.border-zinc-200,.border-neutral-200){border-color:var(--ek-bd)!important}
+html.ek-oscuro :is(.border-blue-100,.border-blue-200,.border-indigo-100,.border-indigo-200){border-color:#24426b!important}
+html.ek-oscuro :is(.border-green-100,.border-green-200){border-color:#1f5137!important}
+html.ek-oscuro :is(.border-red-100,.border-red-200){border-color:#5b2328!important}
+html.ek-oscuro :is(.border-yellow-100,.border-yellow-200,.border-amber-200,.border-orange-200){border-color:#5b4818!important}
+html.ek-oscuro :is(.divide-gray-100,.divide-gray-200,.divide-slate-100,.divide-slate-200)>:not([hidden])~:not([hidden]){border-color:var(--ek-bd)!important}
+/* controles de formulario */
+html.ek-oscuro :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),select,textarea){background-color:#0d1219!important;color:var(--ek-tx)!important;border-color:var(--ek-bd)!important}
+html.ek-oscuro :is(input,select,textarea):focus{border-color:var(--ek-ac)!important;outline-color:var(--ek-ac)}
+html.ek-oscuro :is(input,textarea)::placeholder{color:#5f7189!important}
+html.ek-oscuro input:disabled,html.ek-oscuro input[readonly]{background-color:#111823!important}
+html.ek-oscuro select option{background:#0d1219;color:var(--ek-tx)}
+html.ek-oscuro input[type=checkbox],html.ek-oscuro input[type=radio],html.ek-oscuro input[type=range]{accent-color:var(--ek-ac)}
+/* tablas */
+html.ek-oscuro thead:is(.bg-gray-50,.bg-slate-50,.bg-gray-100,.bg-slate-100),html.ek-oscuro th:is(.bg-gray-50,.bg-slate-50,.bg-gray-100){background-color:#141c28!important;color:var(--ek-mu)!important}
+/* sombras más oscuras */
+html.ek-oscuro :is(.shadow,.shadow-sm,.shadow-md,.shadow-lg,.shadow-xl,.shadow-2xl){box-shadow:0 6px 24px rgba(0,0,0,.45)!important}
+/* acento corporativo: azul metalizado en botones primarios */
+html.ek-oscuro :is(.bg-blue-600,.bg-indigo-600,.bg-blue-700,.bg-indigo-700){background-color:var(--ek-ac)!important}
+html.ek-oscuro :is(.hover\:bg-blue-700,.hover\:bg-indigo-700,.hover\:bg-blue-800):hover{background-color:#2672c7!important}
+html.ek-oscuro :is(.bg-blue-900,.bg-indigo-900,.bg-slate-900,.bg-gray-900){background-color:#0c1118!important}
+html.ek-oscuro :is(.bg-blue-800,.bg-slate-800,.bg-gray-800){background-color:#121b29!important}
+/* variantes con opacidad (bg-*-50/50 …) */
+html.ek-oscuro :is(.bg-blue-50\/50,.bg-blue-50\/30,.bg-blue-50\/70,.bg-indigo-50\/50,.bg-sky-50\/50,.bg-blue-100\/50){background-color:rgba(19,37,63,.6)!important}
+html.ek-oscuro :is(.bg-green-50\/50,.bg-green-50\/30,.bg-green-50\/70,.bg-emerald-50\/50,.bg-green-100\/50){background-color:rgba(18,48,31,.6)!important}
+html.ek-oscuro :is(.bg-red-50\/50,.bg-red-50\/30,.bg-red-50\/70,.bg-rose-50\/50,.bg-red-100\/50){background-color:rgba(58,23,27,.6)!important}
+html.ek-oscuro :is(.bg-yellow-50\/50,.bg-amber-50\/50,.bg-orange-50\/50,.bg-amber-100\/50){background-color:rgba(58,45,18,.6)!important}
+html.ek-oscuro :is(.bg-gray-50\/50,.bg-slate-50\/50,.bg-gray-100\/50,.bg-slate-100\/50,.bg-gray-50\/80,.bg-slate-50\/80){background-color:rgba(16,21,29,.7)!important}
+/* paneles translúcidos propios de algunas apps */
+html.ek-oscuro .glass-panel{background:rgba(20,25,34,.95)!important}
+html.ek-oscuro input[type=file]::file-selector-button{background:#1a2330;color:var(--ek-tx);border:1px solid var(--ek-bd)}
+}
