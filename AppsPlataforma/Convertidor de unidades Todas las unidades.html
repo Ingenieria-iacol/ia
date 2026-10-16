@@ -7,12 +7,13 @@
     <style>
         /* ESTILOS (CSS) - Todo incluido aquí para no depender de archivos externos */
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --text-color: #f1f5f9;
-            --accent-color: #3b82f6;
-            --input-bg: #0f172a;
-            --border-color: #334155;
+            /* Paleta estándar ENTALPÍA LAB */
+            --bg-color: #0a0d12;
+            --card-bg: #141922;
+            --text-color: #e4eefa;
+            --accent-color: #2f86e8;
+            --input-bg: #0d1219;
+            --border-color: #2a3648;
         }
 
         body {
@@ -38,7 +39,7 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #2563eb, #4f46e5);
+            background: linear-gradient(135deg, #2f6fc8, #173a6b);
             padding: 20px;
             text-align: center;
         }
@@ -191,6 +192,15 @@
             align-items: center;
         }
 
+        .equivalencia {
+            margin-top: 14px;
+            font-size: 0.8rem;
+            color: #8fa3bd;
+            font-family: monospace;
+            text-align: center;
+            min-height: 1em;
+        }
+
         @media (min-width: 600px) {
             .converter-area {
                 flex-direction: row;
@@ -201,13 +211,490 @@
             }
         }
     </style>
+
+<!-- EK:INICIO estilos -->
+<style id="ek-kit-css">
+/* ==== ENTALPÍA LAB · Kit estándar de aplicativos (Tecnologías Básicas) ====
+   Fuente única: AppsPlataforma/_kit/entalpia-kit.css — se inserta en línea con _kit/aplicar_kit.py.
+   Todas las clases llevan prefijo ek- para no chocar con Tailwind ni con el CSS propio de cada app. */
+:root{
+  --ek-bg:#0a0d12;--ek-pn:#141922;--ek-pn2:#10151d;--ek-tx:#e4eefa;--ek-mu:#8fa3bd;
+  --ek-ac:#2f86e8;--ek-ac2:#62b0ff;--ek-bd:#2a3648;--ek-ok:#3fbf7f;--ek-wa:#e8b23a;--ek-er:#ef5b5b;
+  --ek-metal:linear-gradient(135deg,#9bd0ff 0%,#2f6fc8 45%,#173a6b 100%);
+  --ek-hdr:52px;--ek-ftr:30px;
+}
+html.ek body{padding-top:var(--ek-hdr)!important;padding-bottom:var(--ek-ftr)!important;box-sizing:border-box}
+html.ek.ek-sinpie body{padding-bottom:0!important}
+/* Las vistas a pantalla completa descuentan la cabecera y el pie del kit */
+html.ek .h-screen{height:calc(100vh - var(--ek-hdr) - var(--ek-ftr))!important}
+html.ek .min-h-screen{min-height:calc(100vh - var(--ek-hdr) - var(--ek-ftr))!important}
+html.ek .h-\[100dvh\]{height:calc(100dvh - var(--ek-hdr) - var(--ek-ftr))!important}
+
+/* ---------- cabecera ---------- */
+.ek-hdr{position:fixed;top:0;left:0;right:0;height:var(--ek-hdr);z-index:2147483000;display:flex;align-items:center;gap:10px;padding:0 12px;
+  background:linear-gradient(180deg,#121924,#0c1118);border-bottom:1px solid var(--ek-bd);color:var(--ek-tx);
+  font:14px/1.35 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;box-sizing:border-box;min-width:0}
+.ek-hdr *{box-sizing:border-box}
+.ek-hdr .ek-logo{height:38px;width:auto;border-radius:6px;flex:none;display:block}
+.ek-hdr .ek-tit{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.ek-hdr .ek-tit b{font-size:16px;letter-spacing:.3px;background:var(--ek-metal);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+.ek-hdr .ek-tit span{font-size:11.5px;color:var(--ek-mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ek-hdr .ek-sp{flex:1;min-width:6px}
+.ek-hbtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ek-bd);background:#18202c;color:var(--ek-tx);border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap;font:13px/1.2 Inter,system-ui,sans-serif;text-decoration:none}
+.ek-hbtn:hover{border-color:var(--ek-ac)}
+.ek-hbtn.pri{background:var(--ek-ac);border-color:var(--ek-ac);color:#fff}
+
+/* ---------- pie ---------- */
+.ek-ftr{position:fixed;left:0;right:0;bottom:0;height:var(--ek-ftr);z-index:2147482999;display:flex;align-items:center;gap:10px;padding:0 12px;
+  border-top:1px solid var(--ek-bd);background:#0c1118;color:var(--ek-mu);font:11.5px/1.2 Inter,system-ui,sans-serif;box-sizing:border-box;min-width:0}
+.ek-ftr img{height:22px;width:auto;border-radius:4px;flex:none}
+.ek-ftr .ek-sp{flex:1}
+.ek-ftr span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- modales ---------- */
+.ek-modal{position:fixed;inset:0;background:rgba(3,6,10,.72);display:none;align-items:center;justify-content:center;z-index:2147483100;padding:12px;
+  font:14px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ek-tx)}
+.ek-modal.on{display:flex}
+.ek-mbox{position:relative;background:var(--ek-pn);border:1px solid var(--ek-bd);border-radius:12px;max-width:760px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.6);text-align:left}
+.ek-mhd{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--ek-bd);cursor:move;user-select:none;flex:none}
+.ek-mhd b{font-size:15px;font-weight:700}.ek-mhd .ek-sp{flex:1}
+.ek-mbd{padding:12px 14px;overflow:auto;min-height:0}
+.ek-mbd h3{font-size:14px;margin:14px 0 6px;color:var(--ek-ac2);font-weight:700}
+.ek-mbd h3:first-child{margin-top:2px}
+.ek-mbd p,.ek-mbd li{color:#cfdcec;margin:4px 0}
+.ek-mbd ul,.ek-mbd ol{padding-left:22px;margin:4px 0}.ek-mbd ul{list-style:disc}.ek-mbd ol{list-style:decimal}
+.ek-mbd code,.ek-mbd .ek-f{font-family:Consolas,"JetBrains Mono",monospace;background:#0d1219;border:1px solid var(--ek-bd);border-radius:5px;padding:1px 5px;font-size:12.5px;color:#cfe6ff}
+.ek-mbd .ek-f{display:block;padding:6px 9px;margin:6px 0;white-space:pre-wrap}
+.ek-mbd table{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0}
+.ek-mbd th,.ek-mbd td{border-bottom:1px solid #1d2734;padding:5px 6px;text-align:left}
+.ek-mbd th{color:var(--ek-mu);font-weight:600}
+.ek-mft{display:flex;gap:8px;justify-content:flex-end;padding:10px 14px;border-top:1px solid var(--ek-bd);flex:none;flex-wrap:wrap}
+.ek-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--ek-bd);background:#1a2330;color:var(--ek-tx);border-radius:8px;padding:7px 12px;cursor:pointer;white-space:nowrap;font:13px/1.2 Inter,system-ui,sans-serif}
+.ek-btn:hover{border-color:var(--ek-ac)}
+.ek-btn.pri{background:var(--ek-ac);border-color:var(--ek-ac);color:#fff}
+.ek-btn.dan{border-color:#6b2a2a;color:#ffb3b3}
+.ek-btn.sm{padding:4px 8px;font-size:12.5px}
+.ek-x{border:0;background:none;color:var(--ek-mu);font-size:20px;line-height:1;cursor:pointer;padding:0 2px}
+.ek-x:hover{color:#fff}
+.ek-note{font-size:12.5px;border-left:3px solid var(--ek-ac);background:#0f1724;padding:6px 9px;border-radius:0 6px 6px 0;margin:8px 0;color:#c4d4ea}
+.ek-note.wa{border-color:var(--ek-wa)}.ek-note.er{border-color:var(--ek-er)}.ek-note.ok{border-color:var(--ek-ok)}
+#ek-toast{position:fixed;left:50%;bottom:calc(var(--ek-ftr) + 14px);transform:translateX(-50%);background:#16243a;color:var(--ek-tx);border:1px solid var(--ek-ac);border-radius:8px;padding:8px 12px;z-index:2147483200;display:none;max-width:min(92vw,560px);font:13px/1.4 Inter,system-ui,sans-serif;word-break:break-word;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+
+/* bloques que solo existen en impresión */
+.ek-print{display:none}
+#ek-reporte{display:none}
+
+@media (max-width:720px){
+  :root{--ek-hdr:48px;--ek-ftr:26px}
+  .ek-hdr .ek-tit span{display:none}
+  .ek-hdr .ek-logo{height:32px}
+  .ek-hbtn .ek-lbl{display:none}
+  .ek-ftr .ek-hide-m{display:none}
+}
+
+/* ---------- impresión / PDF del navegador ---------- */
+@media print{
+  html.ek body{padding:0!important}
+  .ek-hdr,.ek-ftr,.ek-modal,#ek-toast{display:none!important}
+  .ek-print{display:block!important;visibility:visible!important;color:#111;font:9.5pt/1.35 "Segoe UI",Arial,sans-serif;position:static!important}
+  .ek-print *{visibility:visible!important}
+  .ek-print-cab{display:flex!important;align-items:center;gap:12px;border-bottom:2px solid #1d4f8f;padding:0 0 6px;margin:0 0 10px;break-inside:avoid}
+  .ek-print-cab img{height:44px;width:auto}
+  .ek-print-cab h1{font-size:14pt;margin:0;color:#173a6b;font-weight:700}
+  .ek-print-cab div div{font-size:9pt;color:#444}
+  .ek-print-pie{display:flex!important;align-items:center;gap:8px;margin-top:14px;border-top:1px solid #c8d3e2;padding-top:6px;font-size:8pt;color:#555;break-inside:avoid}
+  .ek-print-pie img{height:26px;width:auto}
+  .ek-print-pie span{flex:1}
+  html.ek .h-screen,html.ek .min-h-screen{height:auto!important;min-height:0!important}
+  /* informe estándar EK.informe(): solo se imprime el informe */
+  html.ek-informe body>*:not(#ek-reporte){display:none!important}
+  html.ek-informe body{background:#fff!important;color:#111!important}
+  html.ek-informe #ek-reporte{display:block!important;visibility:visible!important;color:#111;font:9.6pt/1.4 "Segoe UI",Arial,sans-serif}
+  html.ek-informe #ek-reporte *{visibility:visible!important}
+  #ek-reporte .rh{display:flex;align-items:center;gap:12px;border-bottom:2px solid #1d4f8f;padding-bottom:6px;margin-bottom:8px}
+  #ek-reporte .rh img{height:46px;width:auto}
+  #ek-reporte h1{font-size:14.5pt;margin:0;color:#173a6b;font-weight:700}
+  #ek-reporte ul{list-style:disc;padding-left:18px;margin:4px 0}#ek-reporte ol{list-style:decimal;padding-left:18px}
+  #ek-reporte .rh div div{font-size:9pt;color:#444}
+  #ek-reporte h2{font-size:11pt;font-weight:700;color:#173a6b;margin:12px 0 4px;border-bottom:1px solid #c8d3e2;padding-bottom:2px;break-after:avoid}
+  #ek-reporte table{width:100%;border-collapse:collapse;font-size:8.8pt;margin:2px 0 4px}
+  #ek-reporte th,#ek-reporte td{border:1px solid #c8d3e2;padding:3px 5px;text-align:left;background:#fff;color:#111;vertical-align:top}
+  #ek-reporte th{background:#eaf1fa!important;font-weight:600}
+  #ek-reporte td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  #ek-reporte tr{break-inside:avoid}
+  #ek-reporte .ok{color:#17663f;font-weight:700}#ek-reporte .no{color:#a3161d;font-weight:700}#ek-reporte .wa{color:#8a5a00;font-weight:700}
+  #ek-reporte .ver{border:1.5px solid #1d4f8f;border-radius:6px;padding:7px 10px;margin:10px 0;font-size:10.5pt;break-inside:avoid}
+  #ek-reporte .ver.ok{border-color:#17663f;background:#effaf3!important}#ek-reporte .ver.no{border-color:#a3161d;background:#fdf0f0!important}#ek-reporte .ver.wa{border-color:#8a5a00;background:#fdf8ea!important}
+  #ek-reporte .txt{margin:4px 0;white-space:pre-wrap}
+  #ek-reporte .fm{font-family:Consolas,monospace;font-size:8.6pt;background:#f4f7fb!important;border:1px solid #d5dfec;padding:4px 7px;margin:4px 0;white-space:pre-wrap}
+  #ek-reporte .firmas td{height:48px;vertical-align:bottom;text-align:center;font-size:8.6pt;color:#444}
+  #ek-reporte .pie{margin-top:14px;border-top:1px solid #c8d3e2;padding-top:6px;font-size:8pt;color:#555;display:flex;align-items:center;gap:8px;break-inside:avoid}
+  #ek-reporte .pie img{height:28px;width:auto}
+  #ek-reporte img.fig{max-width:100%;max-height:120mm;display:block;margin:6px auto;border:1px solid #c8d3e2}
+  html.ek-informe .ek-print{display:none!important}
+  @page{margin:12mm 12mm 14mm;@bottom-right{content:"Pág. " counter(page) " / " counter(pages);font:8pt Arial,sans-serif;color:#555}}
+}
+
+/* ajustes propios del aplicativo */
+body{min-height:100vh}
+</style>
+<!-- EK:FIN estilos -->
 </head>
 <body>
+<!-- EK:INICIO script -->
+<script id="ek-kit-js">
+window.EK_CFG={"app": "Convertidor Universal", "sub": "12 magnitudes · factores exactos SI", "ver": "2.0", "norma": "SI / NIST SP 811", "informe": "Conversión de unidades", "oscuro": false, "pdf": false, "ayuda": "<h3>¿Para qué sirve?<\/h3>\n<p>Convierte valores entre unidades de 12 magnitudes de uso frecuente en ingeniería de gas: longitud, área, volumen, masa, presión, caudal, energía, potencia, velocidad, temperatura, tiempo y datos.<\/p>\n<h3>Cómo usarlo<\/h3>\n<ol>\n<li>Elija la magnitud con los botones de categoría.<\/li>\n<li>Escriba el valor en «De» y seleccione la unidad de origen y la de destino.<\/li>\n<li>El resultado se actualiza al escribir. El botón ⇄ intercambia las unidades.<\/li>\n<li>Debajo del resultado se muestra el factor de equivalencia (1 unidad de origen = k unidades de destino).<\/li>\n<\/ol>\n<h3>Método de cálculo<\/h3>\n<div class=\"ek-f\">Resultado = Valor × (factor origen / factor destino)\nfactor = valor de la unidad expresado en la unidad base de su magnitud (SI)<\/div>\n<p>Temperatura se convierte por fórmula pasando por °C:<\/p>\n<div class=\"ek-f\">T(°C) = (T(°F) − 32)·5/9 = T(K) − 273,15 = (T(°R) − 491,67)·5/9<\/div>\n<table><tr><th>Magnitud<\/th><th>Factores de referencia<\/th><\/tr>\n<tr><td>Presión<\/td><td>1 psi = 6 894,757 Pa · 1 mmca = 9,80665 Pa · 1 inH₂O = 249,089 Pa · 1 mbar = 100 Pa<\/td><\/tr>\n<tr><td>Caudal<\/td><td>1 ft³/h = 0,0283168 m³/h · 1 GPM = 0,227125 m³/h<\/td><\/tr>\n<tr><td>Energía / potencia<\/td><td>1 BTU (IT) = 1 055,056 J · 1 kcal (IT) = 4 186,8 J · 1 HP = 745,700 W · 1 TR = 3 516,85 W<\/td><\/tr><\/table>\n<div class=\"ek-note\">Factores exactos o de definición según SI / NIST SP 811. El año se toma de 365,25 días; los múltiplos de datos se muestran en base 10 (kB, MB) y base 2 (KiB, MiB).<\/div>\n"};
+window.EK_LOGO_ENT="data:image/jpeg;base64,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";
+window.EK_LOGO_PIO="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAQDAwMDAgQDAwMEBAQFBgoGBgUFBgwICQcKDgwPDg4MDQ0PERYTDxAVEQ0NExoTFRcYGRkZDxIbHRsYHRYYGRj/2wBDAQQEBAYFBgsGBgsYEA0QGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBj/wAARCACCAKADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD44FSLUa1ItdJiSr0qUVEDUi0ATL0qRRg5qNTxUopoCRR7VKtRA1KvSgkmSpFzUS4qUHigCQdqlXmolqQUCZMtPBqIVIDTQiZTUqsKripFYUwLANOzUQbing8VRJIDS5pgNLmgDzEVKKiFSLWRsSrUijmolNSg5oAmWpUB9Kri8S0dZZIBOqkExFiu8emRyPrXoOhW3hbXrOO6sdNba52lDcvujb+62Twf/wBddWFwssRLkg9TnxGIVCPNJaHFqD6VKqk9jXoZtPhvZ30lnqurQ2VxE5jkhec7o2HUEdjW5YW3wSJHn+JrZvY3ZX+ldiyx/wA8fvX+ZwyzSMfsS/8AAX/keShSOxp656dK+iNJ8OfATV2W0XWbcSvwHi1bDfgGBH6VznxV+EOi+DtBTXtF8UW9xayMFS1uyFnfPeMrlZAOp+6QOcVnVy+UIuSaaCjm1KpNU2mm+6a/M4Pw74M1XxBZm+tjZw2auY2uLm6jjVWHUYJ3E8joprrbTwDoSabqjXWvNLcWdnJdKbS1ZomK4AUyOVPLMo4U9ad4A+Hl14U0S98d+LL19Mhmg4tZW2AR9Q8g7sf4V6gH1OA7UPFeg33wsvNR0S4Zm1C6jsyjrsdFjJlcMO3KxfnXbh8NRp4f2lXSb2Wm3c5auLq1cR7OjrBOza6Pe1zzWZQlyyg5AOKAahaTdITT1NeG3roe4ttSUGng1GDTgaAJQalVuOtQA0oagCyGGOtKTxUAY0b8U7isedA1ItRr0zUgNZmpIpp4NRinqaAHsiyIVNXPDY17TdSvdS0S0e7gtYPtF/bofvQg4LY9VznI6DOeM1U3YGa9Y+DIt9M0jUfEF58gcvIHP8MUKMx/Mhq7MBRlVrJRla13ftZHJjqypUW3HmvZW73Yah4bsPiP4Wh8R+GYbe81uFQIxKoIvFX/AJYSg/8ALQdFJ6j5SfukReHvEHwLTSoX8U+E0sNUXKXNp9kkkCODg9/bp1FZ/gjWJ9A8GS23h60+1+KPEly0lvaQqCLePlQ7DovRiBxwMnCjm9418Maf4Q8I29hqUw1LxXrEhvNQvXYv5UKnhFJ6l5Mkt1by+wPPfOqmvrEIJu3vXV1fpbze7R5qpPm+rVJtK/u2dpW638lsmdQ/iT9mG+0a6hHhK2eWOMsiQ2kttNKfRHDcH68Dqa3fhj8NbLS9CXx/4+nns9FsQ8+mabqE5kNtGTuDPuxz0wuBkgEgcAfN1xEsVu3lDbkYyK+gP7ZfXf2CnbxHO8t3bqFtZZGyzsk6iMknrxuH0rLD1lVlKcoL3U3ZKy+ZGNw88PThSp1JWnJJtu7SfYqeMfFE3xM8XeHbzWdO1Cz+H0+qfYbeRB5ZuZBjLMfxXjsCec9M34xeALXwP8S7220e2WDT7tI72CCLO2NXGCo9gyuB7YrsfHOrQ/8ADEnhFrhI4LwXFjNEqIFO5VkDEY6ZGDXqvja70O/+Fl1Pq+mWF5PHpbtBNcIvmRP5RYFG+8MNzjOPauqWF9spuTu7J39UcdPHLDSpRpxtBuUbeaaV/wDM+MxlTzUitTZ3U3DFemaYrV4LVnY+pWquWQ4p4bFVg1PDUCsWd1ODcVAr04NTuBLmjdioy9JuoA4JeakWoQe1SLUGrJgaepqIGnA5oELcSMsB8tdzHhV9T2Fejido/DK+C9NjebU7yBLOCCLj5MgyyOTwqttbk9izHAGT5wkssV/bzwxrI8ciuqMMhmByBjvzjjvXZWV8ukynTTM02vao26+ud3zoh+ZlLfwIAMnu20AAKBXdgpcqktk9G/LsvNnHi483L1tql5935I7/AML/APCK/DuP7PJfR3GqTAC4uoVLsw/uRjqIx74LYyeMAS+JrHwn4p8R3Wsz+IdcxMQsaf2SmI41AVFBM/YD8yTXF32rJp/gqS00qJYbrVJxawyrxKFDBpJC/wB7PKLnP8TelVJIfDssSb38VPnjzH1oBXxwSAY+Ppk4r2a1SnZYeELxj521fn1Z5FGhNTeIlP3peV9F5dEdVB4O8DGQNLqes36Dk27W8dqjf7zh3IH0APuOtXPEF7F48isPAXhrZDo9k6yX91bjEEIHCxIejN16d/UAmuNttJ8G7vOvLHUZ4xyRf6yBF+O1VJ/MVt/8LCsLV7LRdCWxjtvOSESWqBLa23MAWAb77Y5JYnOOSRxWK9nGLjJKEXvZ3k/JdkaThOUlOLcpLa6tFefmza+LWvWf9qeGfB8cNxLp2lqlxcQ20ZldUwNq7R32LuPoGBrmviR4osvF/jKHVdLlneyis4Yo1cMg3AEsdp7gttz/ALNa2n6QZ7nUHtdQ1/TNVu71lW6sX/tW4uxCwd5Y/LWM+WWKktnB2qACOK6HV9F8Fy6JqmoSaVPYs9uuqWerRTA2t8Z/L2QRxkDaQTOTjBXZyMYrnr+0rOV7JSaf3bL7vIeG9lQ5IpNuKav62bfbV9mzx5WJPJp4OKjl2idgnTPFAavIase4icNTg1QB6cGpAThu1PDe9QBqUHigVifdSFqizxRuoCxxQNPBqMU4GpNSYU7dxUSnIp3BGDQSaFpdHTwbmNQbxlxExGRbg/x47ue3oOepFX9AtJXhnnjUzXN6/wBlhLHLEZBkYn1Ztq59mrn5pPKt2KdccVv6X4p0zSLu1udPvLqF7VQIibMtggcnk4JJJP4124SUPaJ1HZI5sSpcj5Fds1Ft/t+rzXNm4mtbPGmWJzxI/WSQf99Mc/8ATRfSs1b7R5fHEUd3ocGtWe0WVvFOzKq4P+s+VlJyd7Yz/FVqXxXbXsEzxzymdYmjgVLMQIhY4ZuMDOM9sk49K5e4t/OwQSu0ggrwQR0xV4irGKUYu+t35k0acpNuStpZHe6x4A0fUNUj1Lw1caRp9jcojPaSysJbF9oDqEbLSKWBZCpOQwBwQa3PibrWk/8ACPeHdCXwvYrBCkc41C2hjikkiDOksOFA7jcc98Y9a8vtLzV4LW6tReM0Nxu3mTLP8wAbDE8ZxUwLSKvnyySlVCBpGLHAGAMnsKmWIpKDjTjZvvZ28loJYebnGVSV+Xbf73qdRpnid7eK4vre/wBRubq2uAY7iyAtZbeKXCBPmyvlgoo5B25TBGK2NT1y2t4tV0C9vmuY4beK3s7FYMrazIU/fCfcQ2U3qxySwYA42jHnqRyxXYnt55YHAK7onKEg9Rkdj6VYjUIoVQAPQVLxcnHlf9f1p933P6pHm5v6/rf7/vsF8nNODVBmng8VynVYmDcU7fxUIIpQ1AibfineZUAal3CgCbfS76h3UFqAK/hzwje+J/DWtXuk295eX2ny2qpZ20XmGRJTIGY45G3YPzrYuvh+2mWajVnvrO+HhubXJLWaEI0ciXBiERB52lcNnrzWR4b0/wAT6r4U1rRtD0G51CC7mtpZpreN3aExGQqOBj5t56+ldB5fjrw5Yabear4IuTpthpUujXS3kEyxXVvLI8jB3AHltlxhgeCqn2reFO8U3F/0zCdSSk0pLfb5f5lTwl4KsvEf/CN7728jbVtTvbGRYY1ZkEFukoKZ6sxbbg8dKf4o8Ew6H4NtPEMdv4h07zrw2f2LXrRIJZP3e8yRFD8yjhWyBgsvXnFjTNb12KbSNa8N+BJE0LQXuZjAkk0yO8seyZ5bjGc7dvQAKFHHU1kDVZdT8Ny+E/DXhZrSG4uYrudI7ua9ld41ZUxuACD52zgZPGTgYocY8tra/Py/W4c03K99Pl3f6WLi6N4GsfBugar4h1HxFHPq0U8pNhbQSxWyxztFkq7Kzfd3YBHtW9Z/CVIrfWzf2/iDV5tN1OKwSPw3bRzeZHJb+ek58zBCspXA/wBrmq91b6pofgnRbPxh8KpbiHTlmjtbu9uLm3ilEkrSlXVAFbljwGBIqK11vxD4g8P65d614JuPEOn3GpDVLi7tpZrWO2kSHy9uYlICLGRwegAq/ZpWuvz7a/iZuc3dxf5d9LfIx/D3h/T9b+KEHhhJNQtLWeeaJWnRPtEYSN3w6j5d2UwQOOtax8Ah/hz4a8WWep/af7QSOTUrFVHm2Ecl01vHMP70RKEbv4WwDwwrF8O3t/a/EeDWfC3hySeS2aSWLTY3kn2I0bRkFwNxA35yR6VqaBq/jmw1TQpfD/h+5e68LWr6dcRC3kmWeJppJXjuY8cBt7KV/wBkEcisoqNtV/Wn/BNZud/dfb9f+AaGpeDvDPhhtRvPEup6w9mmsXmlafb6bBEbi4Fs4WSaRpGCRqCygAZJJPQDNW/DvgPSNds/EV/Yw+MNWttNu7SC3ttO06JLuRJ0kfzJI3YhQvlgcEg7gRwaxLfxXeeIr3UNJ1LwfH4jh1DUbjVLazhuJop7SWb5pRFJGCWRgFyrA/dDDBzWuda8R6xrXiPStX+G9xqL3stlcTadbzXNvLZi2hMMIyAzkbHGS3U4NWlFvQzk6iVm9fl3X6E2n/DiDXPD3iS80a61C31TTNSWytND1OJEursCBppU+Q489QjEIPvBSB83FUrrwXaQeGtQ1WK/uGNp4UsfESoyLh3uJkjMWf7qhyQepxzUv9h+P00SfTtA+Hmv6TE2rQaxaywpcSzWs0UTRqFcqCeWLbuoOB0rcmvPiV8TI9bv7TwJNcDVtHg0G5m0y0l8pDBMkhkVVXaGZk+ZOg3HFNU76W1F7SSd76f8N/wSP4gfDrSfBUF2kem+OZfJaCOPVbmzgTT5mkCHhwd2PmIHqRUXijwJ4Y0678b6boeo+Ift3hKKWe4k1S0hW1ukjlSJgjxtlHJcFQw+bBHBqz8RtO1WR7vWfEnwrvdD1a+KH7fLfXSpvVVGRE6BTkJ0zxnNReM/EvxO8T+BNe1rxLpl9P4S8Q3YltDPcu8OnXAZihgJOdu0yJtYbWHI5UGnOly30JhVb5dfy8v+CQt8PtBsPiz4g0DXfEk9h4c0JFe81kwqzp5nlpENmcEtJKoxn7que1cVrWlXvh/xHfaJqUYjvLGd7aZQcjcpwSD3B6g9wQa9Gtda+K3imDV9S8G+Dru3TV79L2+u7K0+1rMI4Vijh/eoV2Jh34GS0h9BXGeONU17VvEUVx4p01rPXIbWO1vpJI2ikunjG1ZXQgbXKBFOBg7Qe9Zzp2V0jWlUk5WbOe3CjcKh3UbjWJ02Jt4xSbqi3e9G6gLFn4fn7Vfy2U7gQS3cCHccAEhh+HBrV0G+8c+HPEKXF/EbGXKiJV2r5rE4KMgYh0IyCCMEHB61y/hLUdKs7kw6pPHHE97C8iyAkNEFYNwBz16VnLq2rCNh9qSEMCG8iJIyR6ZAzj6V6NPFRp0qd29L6L16nFPDSqVJ6LW2r/Q9J0zVLaKy8XR6eqx2YfUfsixnKrH5Zyqn0xx9MVOmq3fhb4PRXWipGt3PNGsk+0EK8iM+T64VMAH/ABrh/D2tadZ+H57K4uFSRoL6PyyDkmWHamOO5q94a8aWkGhTaFrkUE9rLGkMsFyzIkoQ5jkWReY5VyQD0IJByGIrWni1ZJO0uWyfZ3v8tDGphW221dc12u+h2vwt+K2tvrV5oPikRarp1zATLFJGAkiZAZHUcEEHg9VOCCCK1vA2tW/g678VQrdP9m0/VJmgc8ny0XkkdD8mMg8HnPBrzNNc0HSTKdIhjy5DMizGd5MfdVpMAKmeSAMn34wzw94jtUs79NRugbm7+2tIGBJdpYNqnp3Y/hWtHHOm4c8uaS5td91on3MauXxqKfJHli+XTbZ6vyPSI9L0vTPijD4p8OIkOhXUEoktUbIs5SAfLHcxN95D2AKnlclngnW5dO+KXjO4klcOLzKlDg7w7tke/FeWaL4hubKzbS724aNUXEMjZwV/uH6dR+XYV0+n+JNJsfiNqmqSXKi1udWW5VirfPFhskDHv0qqWMpRdOUNLOTt2vG33Cq4Kc4zjPW6Sv3s7ndvp+mTfEjQ/iH4W8mLT5pDJqFrFwIndGxKg7RuTyB9x+OjLi14a1tYP2ofEl3O5aKSyj5z2KxY/SvF/DPiC90gHT55XWzYZjc5xGe6n2P8/rXSReKdPi+I19rMN5Hh7WzVHbcFdo40Djp6rTo4uj+7lHT3rtdtLaeRFfA1Gpxlr7vKn31v956Q198WbSa4vofihojrB5k8UHkEsyoC4X/V4zhccnrWh8IfF/iyD9nrX4fCc7x6+95Pc2ZUKWL7kLAK3ByN3FeQef8ADSbWXuLmC9QzTGR9mqEbdzZbH7n3NWtC8V6Po3hnV9LsNQImX7Y1l5ilm3GT9yx4wSV9eKiFePtL1Jacr+1za+W1gqYLmpcsIq/NF/DyrR9d7n0J4U8e+PL/AMA+K9J+NdurWZt2CfaY0jYqY2OdqkjKnaVPUGvC7n4qo/wX8LeC557q8itrtJtUWWLaPKRwyxL/AHgMk59RVnSvHGgeJPA1xoHjG+Sxu5FKpcJG2EmT5o5cKOY2+669s7gOFrzNpLSO8hN4sn2fzF80RgM23POB3rHFYhKMVRldNat77317W29DTB4Fc0nVjZqV0lstLaeu/TU+t9aPiXxgmn6l8J/ihpOmWMUAUaU0QEZIJwd6q2OMAqwGCDzzXiPxbTx8PGyyfEEIdR+zRJG8TB4XiAIVo2BIKk7jx3yOOlG/4QpcR65ol5c6NdBhI0NhqTrHkHOPKdPMA/2dxFVPiP8AEFvG02nIqOLewheKJ5Bhn3PvJx2HTH4+tbYucZ0pSlLXspXXyXT5mOAw8qFaMYR9227jyy+b6nE7qN5qLdRu46V4Z9AS7j60b+OtRbqTNAEfh+88KWxuf+EjsL+4Y7fINo+3HXdu5+n61qvqnw7J+TStWA/2pG/+KrI0FNBluGTW54oFWeB90hcBogzeao2A/MQUx9DzU94fC0kNr9mjMIjntlnaJ5GkliaIGdsNwGVwwGMde/Wtoyagtv1MpRTm9/0NOHV/hpGD5ug6tIf9md1/9mpkmsfDctmPwrqZH+1eSf0NXWn8AyWccNz9kMsEDqq2kkwjOZZW+V2G4ybTFjdleSMdhXkh8CkTul1aorWR8uJWnZ45tj4IcnaxLiPI2gYboME03FvrEhTXaRCNb+H2Nv8Awi2oqP8AZu5D/Nqda3Xg2TxPp0tvYX1rpoZftkU0m9z853FT1xtxx65p/n+B/tMqRWdsmbicQvNNcGPasSeTvIOQruZCxHIwB8oyavyX3ghrU2VvLD5KtmITrIBuD3DKHcDf5e54gT97Zt7g4dN8sk9NAqe9Fq0tSfx7N4Jl8UxSeEYBFZCEeZwwQvk8qG5AxjPvmu58e3PwTk+CPh0eEbaWPxOqp9vZlcN9w+Z5hb5T8+Nu3tXm+jXPg2Lxq81zLa/ZYp7SSL7U8/kbQwNxsKgu2CDsDjlc5yabe3PhFBos2n3Enmfa4ZLuXe2UTIMu5CMAhs7Sv8I6HrWGOo/W60a/Ny8rvaLsn01XVdSsJL6vT9jZy03er779zs/C118Mf+FUatHrtsx107/srhWJ+6Nmwj5RzndntUvwUuPhVb+M7x/iTbrNYG2YQb0d4xJuH3gnzfdzj3rjY77wTKWhlihR1RWSeSa4CXErRSlhNj7sYkEP3ADyecEkX7+bwDc6rcX8d/abI08v7NHJPEJiEtghjOw4UYuAWYZyMkEkZ2w69lJzvc5Z0OZTjeXva+np2Ca9+Glt8R9Tl1LStYuvDzNL9iispRHOvz/JuJ/2evvVk+IPgWGzb+EfFpHq98P6VQv7vwIlrKkcOl3ZhN1IixG5jeVmtkMEe7cdyLKHBII59A1WHl+Ht1LNdXN1b3MrXUbIhkmgYp8qsrtgrtxlshR0xnqaqcuaTehtGyirpjZ/EPwix/ofhHxCp9XvSf61Wg1n4USS/wCneH/Eqp/073C5/wDHjWdcDQETXNPtNSsAJLu3azuXhkVPLVZi+3O5gMlBgk545xyLXiy58J6naxSeG7hLd7KNrTyp7XyHuUQqIpRtLB3O5yzMVJ2jism3boaq17anW6T4m/Z0spQbrwN4+vSOo/tKCMfotc/4+1bwJquqW1x4C0DVNHshDtmg1K5FxIZNx+YMAABt28etJJfeHJ7qIHUNE/skQA2NhLA8LwTiJRi6kjjEm0tvyQ7bm2HgZxmeLLvw/Pc2UXhty1nBFLHl1Ib/AI+JWXcSAW+RlwTzjbnnIq3Uai430M4wXMnZ3MPfRuqImjNYXOkl3Um6o80ZoAyj1oooqDQdS9xRRQAvelHWiigBx607+GiimSHanDpRRTAcO9A60UUAPpT92iigTGr1qUdKKKAYdqKKKYhO9J2oopAf/9k=";
+/* ==== ENTALPÍA LAB · Kit estándar de aplicativos (Tecnologías Básicas) ====
+   Fuente única: AppsPlataforma/_kit/entalpia-kit.js — se inserta en línea con _kit/aplicar_kit.py.
+   Configuración por aplicativo en window.EK_CFG (se define antes de este script):
+     app     nombre del aplicativo            sub     subtítulo de la cabecera
+     ver     versión mostrada en el pie       norma   referencia normativa (texto)
+     ayuda   HTML de la guía de uso           raiz    ruta relativa a la raíz del sitio ("../")
+     alerta  false para conservar window.alert nativo
+     pdf     false para no enmarcar los PDF de jsPDF
+     marcoImpresion false si la app ya imprime su propio encabezado
+     oscuro  true para aplicar el tema oscuro estándar a apps Tailwind claras
+     informe título por defecto de los informes
+   API pública: EK.modal, EK.alerta, EK.confirmar, EK.toast, EK.ayuda, EK.descargar,
+                EK.marcoPDF(doc,{titulo}), EK.fecha(), EK.esc() */
+(function () {
+  'use strict';
+  if (window.EK && window.EK.__v) return;
+  var C = window.EK_CFG || {};
+  var LOGO_ENT = window.EK_LOGO_ENT, LOGO_PIO = window.EK_LOGO_PIO;
+  var PIE = "Hub de Ingeniería Pioneer's · un desarrollo de Industrias I.A. Col";
+  var d = document;
+  var EK = { __v: '1.0', cfg: C, LOGO_ENT: LOGO_ENT, LOGO_PIO: LOGO_PIO, PIE: PIE };
+  window.EK = EK;
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function fecha() { var f = new Date(); return f.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' + f.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }); }
+  EK.esc = esc; EK.fecha = fecha;
+
+  /* ---------- cabecera y pie ---------- */
+  function montar() {
+    if (d.querySelector('.ek-hdr')) return;
+    d.documentElement.classList.add('ek');
+    if (C.pie === false) d.documentElement.classList.add('ek-sinpie');
+    var h = d.createElement('header');
+    h.className = 'ek-hdr';
+    h.setAttribute('data-ek', '');
+    h.innerHTML =
+      '<img class="ek-logo" alt="Entalpía" src="' + LOGO_ENT + '">' +
+      '<div class="ek-tit"><b>' + esc(C.app || d.title) + '</b><span>' + esc(C.sub || 'ENTALPÍA LAB · Tecnologías Básicas') + '</span></div>' +
+      '<div class="ek-sp"></div>' +
+      (C.ayuda ? '<button type="button" class="ek-hbtn" data-ek-ayuda title="Guía de uso, método de cálculo y referencias"><span>?</span><span class="ek-lbl">Ayuda</span></button>' : '') +
+      '<button type="button" class="ek-hbtn" data-ek-volver title="Volver a la plataforma"><span>⌂</span><span class="ek-lbl">Plataforma</span></button>';
+    d.body.insertBefore(h, d.body.firstChild);
+    if (C.pie !== false) {
+      var f = d.createElement('footer');
+      f.className = 'ek-ftr';
+      f.setAttribute('data-ek', '');
+      f.innerHTML = '<img alt="Hub de Ingeniería Pioneer\'s" src="' + LOGO_PIO + '"><span>' + PIE + '</span><div class="ek-sp"></div><span class="ek-hide-m">ENTALPÍA LAB · ' + esc(C.app || '') + (C.ver ? ' · v' + esc(C.ver) : '') + '</span>';
+      d.body.appendChild(f);
+    }
+    // bloques de impresión (navegador → PDF) para las vistas que la app imprime por su cuenta
+    if (C.marcoImpresion !== false) {
+    var pc = d.createElement('div');
+    pc.className = 'ek-print ek-print-cab';
+    pc.innerHTML = '<img alt="Entalpía" src="' + LOGO_ENT + '"><div><h1>' + esc(C.informe || C.app || d.title) + '</h1><div>ENTALPÍA LAB · ' + esc(C.app || '') + (C.norma ? ' · ' + esc(C.norma) : '') + ' · <span data-ek-fecha></span></div></div>';
+    d.body.insertBefore(pc, h.nextSibling);
+    var pp = d.createElement('div');
+    pp.className = 'ek-print ek-print-pie';
+    pp.setAttribute('data-ek', '');
+    pp.innerHTML = '<img alt="Pioneer\'s" src="' + LOGO_PIO + '"><span>' + PIE + ' · ' + esc(C.app || '') + (C.ver ? ' v' + esc(C.ver) : '') + '. Resultado de apoyo técnico: debe ser revisado por un profesional competente antes de usarse en obra.</span>';
+    // el pie de impresión va al final del documento: si aún se está leyendo el HTML, se espera
+    if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', function () { d.body.appendChild(pp); });
+    else d.body.appendChild(pp);
+    }
+    window.addEventListener('beforeprint', function () {
+      var s = d.querySelectorAll('[data-ek-fecha]');
+      for (var i = 0; i < s.length; i++) s[i].textContent = fecha();
+    });
+    h.addEventListener('click', function (e) {
+      if (e.target.closest('[data-ek-ayuda]')) EK.ayuda();
+      if (e.target.closest('[data-ek-volver]')) volver();
+    });
+  }
+  function volver() {
+    var dest = (C.raiz || '../') + 'index.html';
+    try { if (d.referrer && new URL(d.referrer).origin === location.origin && history.length > 1) { history.back(); return; } } catch (e) {}
+    location.href = dest;
+  }
+  EK.volver = volver;
+
+  /* ---------- modales ---------- */
+  var abiertos = [];
+  function arrastrable(box, asa) {
+    var x0, y0, dx = 0, dy = 0, mov = false;
+    asa.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('button,a,input,select,textarea')) return;
+      mov = true; x0 = e.clientX - dx; y0 = e.clientY - dy;
+      try { asa.setPointerCapture(e.pointerId); } catch (er) {}
+    });
+    asa.addEventListener('pointermove', function (e) {
+      if (!mov) return;
+      dx = e.clientX - x0; dy = e.clientY - y0;
+      box.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    });
+    function fin() { mov = false; }
+    asa.addEventListener('pointerup', fin); asa.addEventListener('pointercancel', fin);
+  }
+  /* EK.modal({titulo, html|nodo, ancho, botones:[{t, cls, fn(cerrar)->false para no cerrar}], alCerrar, cerrarFondo})
+     Devuelve {el, cuerpo, cerrar}. */
+  EK.modal = function (o) {
+    o = o || {};
+    var m = d.createElement('div');
+    m.className = 'ek-modal on';
+    m.setAttribute('role', 'dialog');
+    m.setAttribute('aria-modal', 'true');
+    m.innerHTML = '<div class="ek-mbox"' + (o.ancho ? ' style="max-width:' + o.ancho + 'px"' : '') + '>' +
+      '<div class="ek-mhd"><b>' + esc(o.titulo || '') + '</b><div class="ek-sp"></div><span class="ek-mhd-extra"></span><button type="button" class="ek-x" title="Cerrar" aria-label="Cerrar">×</button></div>' +
+      '<div class="ek-mbd"></div>' + ((o.botones && o.botones.length) ? '<div class="ek-mft"></div>' : '') + '</div>';
+    var box = m.firstChild, cuerpo = m.querySelector('.ek-mbd');
+    if (o.nodo) cuerpo.appendChild(o.nodo); else cuerpo.innerHTML = o.html || '';
+    var cerrado = false;
+    function cerrar(v) {
+      if (cerrado) return; cerrado = true;
+      m.remove();
+      abiertos = abiertos.filter(function (x) { return x !== api; });
+      if (o.alCerrar) o.alCerrar(v);
+    }
+    var api = { el: m, cuerpo: cuerpo, cerrar: cerrar, cabecera: m.querySelector('.ek-mhd-extra') };
+    (o.botones || []).forEach(function (b) {
+      var bt = d.createElement('button');
+      bt.type = 'button';
+      bt.className = 'ek-btn ' + (b.cls || '');
+      bt.textContent = b.t;
+      bt.onclick = function () { var r = b.fn ? b.fn(cerrar) : undefined; if (r !== false) cerrar(b.v); };
+      m.querySelector('.ek-mft').appendChild(bt);
+    });
+    m.querySelector('.ek-x').onclick = function () { cerrar(o.vCerrar); };
+    if (o.cerrarFondo !== false) m.addEventListener('mousedown', function (e) { if (e.target === m) cerrar(o.vCerrar); });
+    arrastrable(box, m.querySelector('.ek-mhd'));
+    (d.body || d.documentElement).appendChild(m);
+    abiertos.push(api);
+    var f = m.querySelector('.ek-mft .pri') || m.querySelector('.ek-mft .ek-btn');
+    if (f) setTimeout(function () { try { f.focus(); } catch (e) {} }, 30);
+    return api;
+  };
+  d.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && abiertos.length) { abiertos[abiertos.length - 1].cerrar(); e.stopPropagation(); }
+  }, true);
+
+  EK.alerta = function (msg, titulo) {
+    var txt = String(msg == null ? '' : msg);
+    var tipo = /error|no se pudo|inválid|invalid|falt|debe|⚠|❌/i.test(txt) ? 'wa' : '';
+    return new Promise(function (res) {
+      EK.modal({
+        titulo: titulo || C.app || 'Aviso', ancho: 460,
+        html: '<div class="ek-note ' + tipo + '" style="white-space:pre-wrap;margin:0">' + esc(txt) + '</div>',
+        botones: [{ t: 'Aceptar', cls: 'pri' }], alCerrar: function () { res(); }
+      });
+    });
+  };
+  EK.confirmar = function (titulo, texto, si, no) {
+    return new Promise(function (res) {
+      EK.modal({
+        titulo: titulo || 'Confirmar', ancho: 460, vCerrar: false,
+        html: '<p style="white-space:pre-wrap;margin:0">' + esc(texto || '') + '</p>',
+        botones: [{ t: no || 'Cancelar', v: false }, { t: si || 'Aceptar', cls: 'pri', v: true }],
+        alCerrar: function (v) { res(!!v); }
+      });
+    });
+  };
+  EK.toast = function (msg, ms) {
+    var t = d.getElementById('ek-toast');
+    if (!t) { t = d.createElement('div'); t.id = 'ek-toast'; d.body.appendChild(t); }
+    t.textContent = msg; t.style.display = 'block';
+    clearTimeout(t._t); t._t = setTimeout(function () { t.style.display = 'none'; }, ms || 3500);
+  };
+  EK.descargar = function (nombre, contenido, tipo) {
+    var b = contenido instanceof Blob ? contenido : new Blob([contenido], { type: tipo || 'text/plain;charset=utf-8' });
+    var a = d.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = nombre;
+    d.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  };
+
+  /* ---------- guía de uso ---------- */
+  function guiaHTML() {
+    return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Guía de uso · ' + esc(C.app) + '</title>' +
+      '<style>body{font:15px/1.55 "Segoe UI",Arial,sans-serif;max-width:840px;margin:24px auto;padding:0 16px;color:#1b2533}h1{color:#173a6b;font-size:22px;margin:0}h3{color:#1d4f8f;margin-top:22px}' +
+      'header{display:flex;align-items:center;gap:14px;border-bottom:2px solid #1d4f8f;padding-bottom:10px;margin-bottom:14px}header img{height:56px}footer{display:flex;align-items:center;gap:10px;border-top:1px solid #c8d3e2;margin-top:28px;padding-top:8px;font-size:12.5px;color:#555}footer img{height:30px}' +
+      'code,.ek-f{font-family:Consolas,monospace;background:#eef3fa;border:1px solid #c8d3e2;border-radius:5px;padding:1px 5px;font-size:13px}.ek-f{display:block;padding:6px 9px;margin:6px 0;white-space:pre-wrap}' +
+      'table{border-collapse:collapse;width:100%;font-size:13.5px}th,td{border:1px solid #c8d3e2;padding:4px 6px;text-align:left}th{background:#eaf1fa}.ek-note{border-left:3px solid #2f86e8;background:#f2f7fd;padding:6px 9px;margin:8px 0}.ek-note.wa{border-color:#e8b23a;background:#fdf8ea}</style></head><body>' +
+      '<header><img src="' + LOGO_ENT + '" alt="Entalpía"><div><h1>Guía de uso · ' + esc(C.app) + '</h1><div>ENTALPÍA LAB · Tecnologías Básicas' + (C.ver ? ' · v' + esc(C.ver) : '') + '</div></div></header>' +
+      (C.ayuda || '') +
+      '<footer><img src="' + LOGO_PIO + '" alt="Pioneer\'s"><span>' + PIE + ' · ' + esc(C.app) + '. Guía generada el ' + fecha() + '.</span></footer></body></html>';
+  }
+  EK.ayuda = function () {
+    var md = EK.modal({ titulo: 'Guía de uso · ' + (C.app || ''), html: C.ayuda || '<p>Sin guía.</p>', ancho: 780 });
+    var b = d.createElement('button');
+    b.type = 'button'; b.className = 'ek-btn sm'; b.textContent = 'Descargar guía';
+    b.onclick = function () { EK.descargar('Guia_de_uso_' + String(C.app || 'aplicativo').replace(/[^\wáéíóúñÁÉÍÓÚÑ]+/g, '_') + '_Entalpia_Lab.html', guiaHTML(), 'text/html;charset=utf-8'); };
+    md.cabecera.appendChild(b);
+    return md;
+  };
+
+  /* ---------- informe estándar (Imprimir / Guardar como PDF) ----------
+     EK.informe({
+       titulo, subtitulo,
+       datos:[[etiqueta, valor], ...],                       // identificación del proyecto
+       secciones:[{titulo, cabeza:[...], filas:[[...],...], numeros:[índices de columnas numéricas],
+                   formula:'texto', texto:'texto', html:'html propio'}],
+       veredicto:{tipo:'ok'|'no'|'wa', txt:'...'},
+       notas:['...'], firmas:true|['Elaboró','Revisó'] })
+     Abre el diálogo de impresión del navegador; el usuario elige "Guardar como PDF". */
+  EK.informe = function (o) {
+    o = o || {};
+    var h = [];
+    h.push('<div class="rh"><img src="' + LOGO_ENT + '" alt="Entalpía"><div><h1>' + esc(o.titulo || C.informe || C.app) + '</h1><div>' +
+      esc(o.subtitulo || ('ENTALPÍA LAB · ' + (C.app || '') + (C.norma ? ' · ' + C.norma : ''))) + ' · Generado: ' + fecha() + '</div></div></div>');
+    if (o.datos && o.datos.length) {
+      h.push('<table><tbody>');
+      for (var i = 0; i < o.datos.length; i += 2) {
+        var a = o.datos[i], b = o.datos[i + 1];
+        h.push('<tr><th style="width:18%">' + esc(a[0]) + '</th><td style="width:32%">' + esc(a[1] == null || a[1] === '' ? '—' : a[1]) + '</td>' +
+          (b ? '<th style="width:18%">' + esc(b[0]) + '</th><td style="width:32%">' + esc(b[1] == null || b[1] === '' ? '—' : b[1]) + '</td>' : '<td colspan="2"></td>') + '</tr>');
+      }
+      h.push('</tbody></table>');
+    }
+    (o.secciones || []).forEach(function (s) {
+      if (!s) return;
+      if (s.titulo) h.push('<h2>' + esc(s.titulo) + '</h2>');
+      if (s.texto) h.push('<div class="txt">' + esc(s.texto) + '</div>');
+      if (s.formula) h.push('<div class="fm">' + esc(s.formula) + '</div>');
+      if (s.filas && s.filas.length) {
+        var nums = s.numeros || [];
+        h.push('<table>');
+        if (s.cabeza) h.push('<thead><tr>' + s.cabeza.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead>');
+        h.push('<tbody>' + s.filas.map(function (f) {
+          return '<tr>' + f.map(function (c, j) {
+            var cls = nums.indexOf(j) >= 0 ? ' class="n"' : '';
+            if (c && typeof c === 'object' && 'v' in c) return '<td class="' + (c.cls || '') + (nums.indexOf(j) >= 0 ? ' n' : '') + '">' + esc(c.v) + '</td>';
+            return '<td' + cls + '>' + esc(c == null ? '' : c) + '</td>';
+          }).join('') + '</tr>';
+        }).join('') + '</tbody></table>');
+      }
+      if (s.html) h.push(s.html);
+    });
+    if (o.veredicto) h.push('<div class="ver ' + (o.veredicto.tipo || '') + '">' + esc(o.veredicto.txt) + '</div>');
+    if (o.notas && o.notas.length) h.push('<h2>Observaciones</h2><ul>' + o.notas.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>');
+    if (o.firmas) {
+      var f = o.firmas === true ? ['Elaboró', 'Revisó / Aprobó'] : o.firmas;
+      h.push('<table class="firmas" style="margin-top:16px"><tr>' + f.map(function (x) { return '<td>__________________________<br>' + esc(x) + '<br>Nombre, matrícula y firma</td>'; }).join('') + '</tr></table>');
+    }
+    h.push('<div class="pie"><img src="' + LOGO_PIO + '" alt="Pioneer\'s"><span>' + PIE + ' · ' + esc(C.app || '') + (C.ver ? ' v' + esc(C.ver) : '') +
+      '. Resultado de apoyo técnico generado por software: debe ser verificado por un profesional competente' + (C.norma ? ' frente a ' + esc(C.norma) + ' vigente' : '') + '.</span></div>');
+    var r = d.getElementById('ek-reporte');
+    if (!r) { r = d.createElement('div'); r.id = 'ek-reporte'; d.body.appendChild(r); }
+    r.innerHTML = h.join('');
+    d.documentElement.classList.add('ek-informe');
+    var t0 = d.title;
+    if (o.archivo) d.title = o.archivo;
+    function fin() { d.documentElement.classList.remove('ek-informe'); d.title = t0; window.removeEventListener('afterprint', fin); }
+    window.addEventListener('afterprint', fin);
+    setTimeout(function () { window.print(); setTimeout(fin, 500); }, 120);
+  };
+
+  /* ---------- marco estándar para PDF de jsPDF ----------
+     Reduce el contenido de cada página para dejar espacio a la franja de cabecera (logo Entalpía, título)
+     y al pie (texto del Hub, paginación, logo Pioneer's), igual que los informes de Isoflux. */
+  EK.marcoPDF = function (doc, o) {
+    if (!doc || doc.__ekMarco) return doc;
+    doc.__ekMarco = true;
+    o = o || {};
+    try {
+      var n = doc.getNumberOfPages(), k = doc.internal.scaleFactor;
+      var tit = o.titulo || C.informe || C.app || 'Informe';
+      var sub = 'ENTALPÍA LAB · ' + (C.app || '') + (C.norma ? ' · ' + C.norma : '') + ' · ' + fecha();
+      var TOP = 50, BOT = 30; // pt
+      for (var i = 1; i <= n; i++) {
+        doc.setPage(i);
+        var W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+        var Wp = W * k, Hp = H * k;
+        var s = (Hp - TOP - BOT) / Hp;
+        var tx = (Wp - s * Wp) / 2, ty = BOT + ((Hp - TOP - BOT) - s * Hp) / 2;
+        var pg = doc.internal.pages[i];
+        if (pg && pg.unshift) { pg.unshift('q ' + s.toFixed(5) + ' 0 0 ' + s.toFixed(5) + ' ' + tx.toFixed(3) + ' ' + ty.toFixed(3) + ' cm'); pg.push('Q'); }
+        var u = function (pt) { return pt / k; };
+        doc.setFillColor(12, 17, 26); doc.rect(0, 0, W, u(TOP - 6), 'F');
+        doc.setFillColor(30, 95, 191); doc.rect(0, u(TOP - 6), W, u(1.6), 'F');
+        try { doc.addImage(LOGO_ENT, 'JPEG', u(14), u(4), u(40), u(35)); } catch (e) {}
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(190, 225, 255); doc.setFontSize(13);
+        doc.text(String(tit).slice(0, 90), u(64), u(20));
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(150, 175, 205);
+        doc.text(sub.slice(0, 150), u(64), u(33));
+        doc.setDrawColor(30, 95, 191); doc.setLineWidth(u(0.8));
+        doc.line(u(22), H - u(BOT - 4), W - u(22), H - u(BOT - 4));
+        doc.setTextColor(80, 80, 80); doc.setFontSize(7.5);
+        doc.text(PIE + ' · ' + (C.app || ''), u(22), H - u(12));
+        doc.text('Pág. ' + i + '/' + n, W - u(52), H - u(12), { align: 'right' });
+        try { doc.addImage(LOGO_PIO, 'JPEG', W - u(46), H - u(BOT - 6), u(26), u(21)); } catch (e) {}
+      }
+      doc.setTextColor(0, 0, 0); doc.setDrawColor(0, 0, 0); doc.setFillColor(255, 255, 255);
+      doc.setPage(n);
+    } catch (e) { if (window.console) console.warn('EK.marcoPDF', e); }
+    return doc;
+  };
+  function enganchaJsPDF() {
+    if (C.pdf === false) return true;
+    var ns = window.jspdf, Orig = ns && ns.jsPDF;
+    if (!Orig || Orig.__ek) return !!(Orig && Orig.__ek);
+    function envolver(doc) {
+      ['save', 'output'].forEach(function (m) {
+        var f = doc[m];
+        if (typeof f !== 'function') return;
+        doc[m] = function () { EK.marcoPDF(doc); return f.apply(doc, arguments); };
+      });
+      return doc;
+    }
+    function J(a, b, c, e) { var doc = new Orig(a, b, c, e); return envolver(doc); }
+    J.prototype = Orig.prototype;
+    Object.keys(Orig).forEach(function (kk) { try { J[kk] = Orig[kk]; } catch (er) {} });
+    J.API = Orig.API; J.version = Orig.version; J.__ek = true; J.__orig = Orig;
+    ns.jsPDF = J;
+    if (window.jsPDF === Orig) window.jsPDF = J;
+    return true;
+  }
+  EK.enganchaJsPDF = enganchaJsPDF;
+
+  /* ---------- arranque ---------- */
+  d.documentElement.classList.add('ek');
+  if (C.oscuro) d.documentElement.classList.add('ek-oscuro');
+  if (C.alerta !== false) {
+    var alertaNativa = window.alert;
+    EK.alertaNativa = alertaNativa;
+    window.alert = function (m) { if (!d.body) return alertaNativa.call(window, m); EK.alerta(m); };
+  }
+  if (!enganchaJsPDF()) {
+    var tries = 0, iv = setInterval(function () { if (enganchaJsPDF() || ++tries > 40) clearInterval(iv); }, 250);
+    window.addEventListener('load', enganchaJsPDF);
+  }
+  function bordesOscuros() {
+    // Tailwind (preflight) pinta todos los bordes "sin color" en gris claro; en el tema oscuro se
+    // reemplaza con especificidad cero y al final del documento, para no pisar los bordes de color.
+    if (!C.oscuro || d.getElementById('ek-oscuro-base')) return;
+    var s = d.createElement('style');
+    s.id = 'ek-oscuro-base';
+    s.textContent = '@media screen{:where(html.ek-oscuro) *,:where(html.ek-oscuro) ::before,:where(html.ek-oscuro) ::after{border-color:#2a3648}}';
+    d.body.appendChild(s);
+  }
+  if (d.body) montar(); else d.addEventListener('DOMContentLoaded', montar);
+  if (d.readyState === 'complete') bordesOscuros(); else window.addEventListener('load', bordesOscuros);
+})();
+
+</script>
+<!-- EK:FIN script -->
+
 
     <div class="card">
         <div class="header">
             <h1>Convertidor Universal</h1>
-            <p>100% Offline • Sin descargas</p>
+            <p>12 magnitudes · factores exactos SI · funciona sin conexión</p>
         </div>
 
         <div class="content">
@@ -237,64 +724,128 @@
                 </div>
 
             </div>
+            <div id="equivalencia" class="equivalencia"></div>
         </div>
     </div>
 
     <script>
         // --- DATOS Y LÓGICA (JS) ---
         
+        // Factores exactos o de definición (SI / NIST SP 811). Cada unidad se expresa en la unidad base
+        // de su categoría (la que tiene factor 1). Temperatura se resuelve con fórmulas aparte.
+        const PIE3 = 0.028316846592;      // m³ por pie cúbico (exacto)
+        const GAL_US = 0.003785411784;    // m³ por galón US (exacto)
         const unitData = {
             longitud: {
-                icon: '📏',
+                icon: '📏', etiqueta: 'Longitud',
                 units: {
                     nanometro: 1e-9, micrometro: 1e-6, milimetro: 0.001, centimetro: 0.01,
                     metro: 1, kilometro: 1000, pulgada: 0.0254, pie: 0.3048, yarda: 0.9144,
-                    milla: 1609.34, 'año_luz': 9.461e15
-                }
-            },
-            masa: {
-                icon: '⚖️',
-                units: {
-                    miligramo: 1e-6, gramo: 0.001, kilogramo: 1, tonelada: 1000,
-                    onza: 0.0283495, libra: 0.453592
-                }
-            },
-            tiempo: {
-                icon: '⏳',
-                units: {
-                    milisegundo: 0.001, segundo: 1, minuto: 60, hora: 3600,
-                    dia: 86400, semana: 604800, año: 3.154e7
-                }
-            },
-            datos: {
-                icon: '💾',
-                units: {
-                    bit: 0.125, byte: 1, kilobyte: 1024, megabyte: 1048576,
-                    gigabyte: 1.074e9, terabyte: 1.1e12
-                }
-            },
-            volumen: {
-                icon: '🧪',
-                units: {
-                    mililitro: 0.001, litro: 1, galon: 3.78541, taza: 0.24
+                    milla: 1609.344, milla_nautica: 1852, 'año_luz': 9.4607304725808e15
                 }
             },
             area: {
-                icon: '🟥',
+                icon: '🟥', etiqueta: 'Área',
                 units: {
-                    metro_cuadrado: 1, hectarea: 10000, acre: 4046.86
+                    milimetro_cuadrado: 1e-6, centimetro_cuadrado: 1e-4, metro_cuadrado: 1, kilometro_cuadrado: 1e6,
+                    pulgada_cuadrada: 0.00064516, pie_cuadrado: 0.09290304, hectarea: 10000, acre: 4046.8564224
+                }
+            },
+            volumen: {
+                icon: '🧪', etiqueta: 'Volumen',
+                units: {
+                    mililitro: 1e-6, litro: 0.001, metro_cubico: 1, centimetro_cubico: 1e-6,
+                    pulgada_cubica: 1.6387064e-5, pie_cubico: PIE3, galon_us: GAL_US, galon_imperial: 0.00454609,
+                    barril_petroleo: 0.158987294928, taza_us: 0.00024
+                }
+            },
+            masa: {
+                icon: '⚖️', etiqueta: 'Masa',
+                units: {
+                    miligramo: 1e-6, gramo: 0.001, kilogramo: 1, tonelada: 1000,
+                    onza: 0.028349523125, libra: 0.45359237
+                }
+            },
+            presion: {
+                icon: '🧭', etiqueta: 'Presión',
+                units: {
+                    pascal: 1, kilopascal: 1000, megapascal: 1e6, milibar: 100, bar: 1e5,
+                    psi: 6894.757293168, atmosfera: 101325, kgf_cm2: 98066.5,
+                    mm_columna_agua: 9.80665, pulgada_columna_agua: 249.08891, mm_mercurio: 133.322387415,
+                    pulgada_mercurio: 3386.38864
+                }
+            },
+            caudal: {
+                icon: '🌀', etiqueta: 'Caudal',
+                units: {
+                    m3_h: 1 / 3600, m3_s: 1, litro_s: 0.001, litro_min: 0.001 / 60,
+                    pie3_h: PIE3 / 3600, pie3_min: PIE3 / 60, galon_us_min: GAL_US / 60
+                }
+            },
+            energia: {
+                icon: '🔥', etiqueta: 'Energía',
+                units: {
+                    julio: 1, kilojulio: 1000, megajulio: 1e6, vatio_hora: 3600, kilovatio_hora: 3.6e6,
+                    btu: 1055.05585262, kilocaloria: 4186.8, termia_us: 105480400
+                }
+            },
+            potencia: {
+                icon: '⚡', etiqueta: 'Potencia',
+                units: {
+                    vatio: 1, kilovatio: 1000, megavatio: 1e6, btu_h: 1055.05585262 / 3600, kcal_h: 4186.8 / 3600,
+                    caballo_fuerza_hp: 745.69987158227, caballo_vapor_cv: 735.49875, tonelada_refrigeracion: 3516.8528420667
                 }
             },
             velocidad: {
-                icon: '🚄',
+                icon: '🚄', etiqueta: 'Velocidad',
                 units: {
-                    m_s: 1, km_h: 0.277778, mph: 0.44704, nudo: 0.514444
+                    m_s: 1, km_h: 1 / 3.6, pie_s: 0.3048, mph: 0.44704, nudo: 1852 / 3600
                 }
             },
             temperatura: {
-                icon: '🌡️',
-                units: { celsius: 'C', fahrenheit: 'F', kelvin: 'K' }
+                icon: '🌡️', etiqueta: 'Temperatura',
+                units: { celsius: 'C', fahrenheit: 'F', kelvin: 'K', rankine: 'R' }
+            },
+            tiempo: {
+                icon: '⏳', etiqueta: 'Tiempo',
+                units: {
+                    milisegundo: 0.001, segundo: 1, minuto: 60, hora: 3600,
+                    dia: 86400, semana: 604800, 'año': 31557600
+                }
+            },
+            datos: {
+                icon: '💾', etiqueta: 'Datos',
+                units: {
+                    bit: 0.125, byte: 1, kibibyte_kib: 1024, mebibyte_mib: 1048576,
+                    gibibyte_gib: 1073741824, tebibyte_tib: 1099511627776,
+                    kilobyte_kb: 1e3, megabyte_mb: 1e6, gigabyte_gb: 1e9, terabyte_tb: 1e12
+                }
             }
+        };
+
+        // Nombres legibles de las unidades
+        const NOMBRES = {
+            nanometro: 'Nanómetro (nm)', micrometro: 'Micrómetro (µm)', milimetro: 'Milímetro (mm)', centimetro: 'Centímetro (cm)',
+            metro: 'Metro (m)', kilometro: 'Kilómetro (km)', pulgada: 'Pulgada (in)', pie: 'Pie (ft)', yarda: 'Yarda (yd)',
+            milla: 'Milla (mi)', milla_nautica: 'Milla náutica', 'año_luz': 'Año luz',
+            milimetro_cuadrado: 'mm²', centimetro_cuadrado: 'cm²', metro_cuadrado: 'm²', kilometro_cuadrado: 'km²',
+            pulgada_cuadrada: 'in²', pie_cuadrado: 'ft²', hectarea: 'Hectárea (ha)', acre: 'Acre',
+            mililitro: 'Mililitro (mL)', litro: 'Litro (L)', metro_cubico: 'm³', centimetro_cubico: 'cm³', pulgada_cubica: 'in³',
+            pie_cubico: 'ft³', galon_us: 'Galón US', galon_imperial: 'Galón imperial', barril_petroleo: 'Barril de petróleo (bbl)', taza_us: 'Taza US (240 mL)',
+            miligramo: 'Miligramo (mg)', gramo: 'Gramo (g)', kilogramo: 'Kilogramo (kg)', tonelada: 'Tonelada (t)', onza: 'Onza (oz)', libra: 'Libra (lb)',
+            pascal: 'Pascal (Pa)', kilopascal: 'Kilopascal (kPa)', megapascal: 'Megapascal (MPa)', milibar: 'Milibar (mbar)', bar: 'Bar',
+            psi: 'psi (lbf/in²)', atmosfera: 'Atmósfera (atm)', kgf_cm2: 'kgf/cm²', mm_columna_agua: 'mm columna de agua (mmca)',
+            pulgada_columna_agua: 'Pulgada columna de agua (inH₂O)', mm_mercurio: 'mm de mercurio (mmHg)', pulgada_mercurio: 'Pulgada de mercurio (inHg)',
+            m3_h: 'm³/h', m3_s: 'm³/s', litro_s: 'L/s', litro_min: 'L/min', pie3_h: 'ft³/h (CFH)', pie3_min: 'ft³/min (CFM)', galon_us_min: 'GPM (US)',
+            julio: 'Julio (J)', kilojulio: 'Kilojulio (kJ)', megajulio: 'Megajulio (MJ)', vatio_hora: 'Vatio hora (Wh)', kilovatio_hora: 'Kilovatio hora (kWh)',
+            btu: 'BTU', kilocaloria: 'Kilocaloría (kcal)', termia_us: 'Termia US (thm)',
+            vatio: 'Vatio (W)', kilovatio: 'Kilovatio (kW)', megavatio: 'Megavatio (MW)', btu_h: 'BTU/h', kcal_h: 'kcal/h',
+            caballo_fuerza_hp: 'Caballo de fuerza (HP)', caballo_vapor_cv: 'Caballo de vapor (CV)', tonelada_refrigeracion: 'Tonelada de refrigeración (TR)',
+            m_s: 'm/s', km_h: 'km/h', pie_s: 'ft/s', mph: 'mph', nudo: 'Nudo (kn)',
+            celsius: 'Celsius (°C)', fahrenheit: 'Fahrenheit (°F)', kelvin: 'Kelvin (K)', rankine: 'Rankine (°R)',
+            milisegundo: 'Milisegundo (ms)', segundo: 'Segundo (s)', minuto: 'Minuto', hora: 'Hora', dia: 'Día', semana: 'Semana', 'año': 'Año (365,25 d)',
+            bit: 'Bit', byte: 'Byte (B)', kibibyte_kib: 'KiB (1024 B)', mebibyte_mib: 'MiB (1024² B)', gibibyte_gib: 'GiB (1024³ B)', tebibyte_tib: 'TiB (1024⁴ B)',
+            kilobyte_kb: 'kB (1000 B)', megabyte_mb: 'MB (10⁶ B)', gigabyte_gb: 'GB (10⁹ B)', terabyte_tb: 'TB (10¹² B)'
         };
 
         // Estado Global
@@ -307,10 +858,11 @@
         const toUnitSelect = document.getElementById('toUnit');
         const resultDisplay = document.getElementById('resultDisplay');
         const swapBtn = document.getElementById('swapBtn');
+        const equivalencia = document.getElementById('equivalencia');
 
         // Función Auxiliar: Formatear Nombres (ej: metro_cuadrado -> Metro Cuadrado)
         function formatName(str) {
-            return str.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            return NOMBRES[str] || str.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         }
 
         // 1. Inicializar Interfaz
@@ -319,9 +871,10 @@
             Object.keys(unitData).forEach(cat => {
                 const btn = document.createElement('button');
                 btn.className = `cat-btn ${cat === currentCategory ? 'active' : ''}`;
+                btn.dataset.cat = cat;
                 btn.innerHTML = `
                     <span class="cat-icon">${unitData[cat].icon}</span>
-                    <span class="cat-label">${cat}</span>
+                    <span class="cat-label">${unitData[cat].etiqueta || cat}</span>
                 `;
                 btn.onclick = () => changeCategory(cat);
                 categoryGrid.appendChild(btn);
@@ -338,8 +891,7 @@
             
             // Actualizar botones visualmente
             document.querySelectorAll('.cat-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if(btn.textContent.toLowerCase().includes(cat)) btn.classList.add('active');
+                btn.classList.toggle('active', btn.dataset.cat === cat);
             });
 
             populateSelects();
@@ -371,6 +923,7 @@
             
             if (isNaN(amount)) {
                 resultDisplay.textContent = '...';
+                equivalencia.textContent = '';
                 return;
             }
 
@@ -383,11 +936,13 @@
                 if (from === 'celsius') valC = amount;
                 else if (from === 'fahrenheit') valC = (amount - 32) * 5/9;
                 else if (from === 'kelvin') valC = amount - 273.15;
+                else if (from === 'rankine') valC = (amount - 491.67) * 5/9;
 
                 // De Celsius a Destino
                 if (to === 'celsius') result = valC;
                 else if (to === 'fahrenheit') result = (valC * 9/5) + 32;
                 else if (to === 'kelvin') result = valC + 273.15;
+                else if (to === 'rankine') result = valC * 9/5 + 491.67;
             } 
             // Caso Normal: Factores de Conversión
             else {
@@ -396,13 +951,21 @@
                 result = (amount * factorFrom) / factorTo;
             }
 
-            // Formateo del resultado
-            if (Math.abs(result) < 0.000001 || Math.abs(result) > 999999999) {
-                resultDisplay.textContent = result.toExponential(4);
+            // Formateo del resultado (6 cifras significativas en notación científica para valores extremos)
+            resultDisplay.textContent = formatear(result);
+            if (currentCategory === 'temperatura') {
+                equivalencia.textContent = 'Conversión por fórmula: T(°C) = (T(°F) − 32)·5/9 = T(K) − 273,15 = (T(°R) − 491,67)·5/9';
             } else {
-                // Eliminar ceros innecesarios al final (ej: 5.000 -> 5)
-                resultDisplay.textContent = parseFloat(result.toFixed(6));
+                const k = unitData[currentCategory].units[from] / unitData[currentCategory].units[to];
+                equivalencia.textContent = '1 ' + formatName(from) + ' = ' + formatear(k) + ' ' + formatName(to);
             }
+        }
+
+        function formatear(x) {
+            if (x === 0) return '0';
+            if (Math.abs(x) < 0.000001 || Math.abs(x) > 999999999) return x.toExponential(5);
+            // Eliminar ceros innecesarios al final (ej: 5.000 -> 5)
+            return String(parseFloat(x.toPrecision(10)));
         }
 
         // 5. Event Listeners

@@ -1,0 +1,19 @@
+<h3>¿Para qué sirve?</h3>
+<p>Simula redes de gas ramificadas: a partir de tramos (longitud, material, diámetro) y consumos con su ruta, calcula caudales acumulados, pérdida de presión, presión final y velocidad en cada tramo.</p>
+<h3>Cómo usarlo</h3>
+<ol>
+<li>Ingrese con la clave de acceso.</li>
+<li>Diligencie el proyecto, el gas, la presión de suministro, la velocidad máxima y la ciudad (fija la presión atmosférica).</li>
+<li>Agregue los tramos con longitud, material y diámetro.</li>
+<li>Agregue los consumos con su caudal (m³/h) y marque los tramos por los que pasa cada uno (su ruta desde el inicio).</li>
+<li>Pulse <b>Lanzar iteración</b> y genere el informe con <b>Generar PDF</b>.</li>
+</ol>
+<h3>Método de cálculo</h3>
+<div class="ek-f">Q tramo = Σ caudales de los consumos cuya ruta incluye el tramo
+ΔP = K · 2,43·10^7 · S · L · Q^1,82 / (D^4,82 · P abs)   [mbar, m, m³/h, mm]
+P abs = P entrada del tramo + P atmosférica
+V = 4 · Q real / (π · D²) ,  Q real = Q · 1 013,25 / P abs</div>
+<p>El diámetro que entra a la fórmula es el <b>interno</b> del material elegido: cobre tipo L, acero Sch 40, PE SDR 11 (rotulado por su diámetro externo) y multicapa PE-AL-PE (designación interno/externo). En «Otro» el valor se toma directamente como diámetro interno en mm. Al cambiar el material de un tramo, vuelva a elegir su diámetro.</p>
+<p>La presión de entrada de cada tramo es la de suministro menos las pérdidas de los tramos aguas arriba en su ruta. K = 1 es la referencia; úselo solo para calibrar contra mediciones.</p>
+<table><tr><th>Criterio</th><th>Valor</th></tr><tr><td>Presión residual mínima</td><td>≥ 18 mbar</td></tr><tr><td>Velocidad</td><td>≤ V máx ingresada</td></tr></table>
+<div class="ek-note">Con P abs ≈ 1 036 mbar la ecuación coincide con el Renouard lineal (23 200 · S · L · Q^1,82 · D^-4,82).</div>

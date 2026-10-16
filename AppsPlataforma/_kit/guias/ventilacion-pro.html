@@ -1,0 +1,23 @@
+<h3>¿Para qué sirve?</h3>
+<p>Inspección completa de ventilación de recintos con artefactos a gas según la NTC 3631: volumen (espacio confinado o no), dimensionamiento de aberturas y lista de verificación, con informe firmado.</p>
+<h3>Cómo usarlo</h3>
+<ol>
+<li>Diligencie la información del sitio (se guarda automáticamente en este navegador).</li>
+<li>Registre los artefactos y su potencia nominal (kW).</li>
+<li>Ingrese las dimensiones del recinto.</li>
+<li>Si el recinto resulta confinado, elija el método de ventilación e ingrese ancho, alto y factor de rejilla de cada abertura.</li>
+<li>La herramienta de dimensionamiento sugiere la altura de corte para un ancho dado.</li>
+<li>Complete la lista de verificación y genere el informe con <b>PDF</b>.</li>
+</ol>
+<h3>Método de cálculo</h3>
+<div class="ek-f">P = Σ potencias                         [kW]
+V real = L × A × H ; V requerido = 3,4 × P   [m³]
+Confinado si V real &lt; V requerido
+Área libre de cada abertura = ancho × alto × factor   [cm²]
+Altura de corte = A mín / (factor × ancho)            [cm]</div>
+<table><tr><th>Método</th><th>Área mínima de CADA abertura</th></tr>
+<tr><td>4.1.2 Aire interior</td><td>máx(645 cm² ; 22 cm²/kW × P)</td></tr>
+<tr><td>4.2.1 Exterior vertical / directo</td><td>6 cm²/kW × P</td></tr>
+<tr><td>4.2.1 Exterior conductos horizontales</td><td>11 cm²/kW × P</td></tr></table>
+<div class="ek-note">El área se exige a cada una de las dos aberturas (superior e inferior); se compara la menor de ellas contra el mínimo.</div>
+<div class="ek-note wa">Herramienta de apoyo: verifique contra la versión vigente de la NTC 3631.</div>

@@ -1,0 +1,18 @@
+<h3>¿Para qué sirve?</h3>
+<p>Determina si el volumen de un recinto es suficiente para la potencia de los artefactos a gas instalados, según el criterio de espacio confinado / no confinado de la NTC 3631.</p>
+<h3>Cómo usarlo</h3>
+<ol>
+<li>Ingrese las dimensiones interiores del recinto (altura, profundidad y anchura) en metros.</li>
+<li>Ingrese la potencia nominal agregada de los artefactos instalados en el recinto, en kW (datos de placa del fabricante).</li>
+<li>Pulse <b>Evaluar idoneidad de la potencia</b> y revise el resultado.</li>
+<li>Con <b>Informe PDF</b> se abre la impresión del informe estándar; elija «Guardar como PDF».</li>
+</ol>
+<h3>Método de cálculo</h3>
+<div class="ek-f">V = Altura × Profundidad × Anchura          [m³]
+P máx = V / 3,4                             [kW]
+Relación = V / P instalada                  [m³/kW]</div>
+<table><tr><th>Condición</th><th>Clasificación (NTC 3631)</th></tr>
+<tr><td>V / P ≥ 3,4 m³/kW</td><td>APTO — espacio no confinado (num. 2.6)</td></tr>
+<tr><td>V / P &lt; 3,4 m³/kW</td><td>NO APTO — espacio confinado (num. 2.5): requiere aire adicional por aberturas permanentes</td></tr></table>
+<div class="ek-note">Los artefactos de circuito sellado o cámara estanca no se suman en la potencia agregada. Puede sumarse el volumen de recintos adyacentes que se comuniquen mediante aberturas permanentes sin puertas.</div>
+<div class="ek-note wa">Resultado de apoyo técnico. Verifique siempre contra la versión vigente de la NTC 3631 y las condiciones reales del sitio.</div>

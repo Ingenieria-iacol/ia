@@ -1,0 +1,11 @@
+<h3>¿Para qué sirve?</h3>
+<p>CAD isométrico de redes de gas con cálculo por tramo y reporte técnico con lista de materiales y memoria de cálculo.</p>
+<h3>Cómo usarlo</h3>
+<ol><li>Elija tuberías y componentes en la biblioteca y dibújelos en el lienzo; la elevación Z se ajusta en propiedades.</li>
+<li>Seleccione cada tubería e ingrese material, diámetro, caudal y presión de entrada: el panel muestra ΔP, velocidad y estado.</li>
+<li>Guarde o abra el proyecto (JSON) y genere el <b>Reporte PDF</b>.</li></ol>
+<h3>Método de cálculo</h3>
+<div class="ek-f">ΔP = 2,43·10^7 · S · L · Q^1,82 / (D int^4,82 · P abs)   [mbar, m, m³/h, mm]
+V = Q real / A ,  Q real = Q · 1 013,25 / P abs
+Estado OK: ΔP ≤ 10 % de la presión de entrada y V ≤ 20 m/s</div>
+<div class="ek-note">Los diámetros internos dependen del material (acero Sch 40/80/160, cobre K/L/M, flexible, multicapa, PE).</div>
