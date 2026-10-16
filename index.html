@@ -668,7 +668,8 @@
     </header>
 
     <div class="hero">
-        <video autoplay playsinline id="bg-video">
+        <!-- Sin 'autoplay': el script decide si se reproduce (solo en la primera entrada de la sesión) -->
+        <video playsinline preload="auto" id="bg-video">
             <source src="../Videos Plataforma/VideoSaberMas.mp4" type="video/mp4">
             Tu navegador no soporta el video HTML5.
         </video>
@@ -899,6 +900,20 @@
             const video = document.getElementById('bg-video');
 
             if (heroSection && video) {
+                // Reproducir automáticamente SOLO la primera vez que se entra en esta sesión del navegador.
+                // Al volver al inicio desde otra interfaz, el video queda en pausa (clic en el banner para verlo de nuevo).
+                const CLAVE_INTRO = 'sofia_intro_vista';
+                let yaVisto = false;
+                try { yaVisto = sessionStorage.getItem(CLAVE_INTRO) === '1'; } catch (e) {}
+
+                if (!yaVisto) {
+                    try { sessionStorage.setItem(CLAVE_INTRO, '1'); } catch (e) {}
+                    video.play().catch(err => console.log("Reproducción automática bloqueada:", err));
+                } else {
+                    video.pause();
+                    video.currentTime = 0.1; // muestra el primer cuadro como imagen fija
+                }
+
                 heroSection.addEventListener('click', (e) => {
                     if (e.target.closest('.email-form')) return;
                     if (video.paused || video.ended) {
