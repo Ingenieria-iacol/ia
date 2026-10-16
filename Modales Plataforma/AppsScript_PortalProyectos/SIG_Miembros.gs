@@ -85,7 +85,8 @@ const HOJAS = {
   Campo: ['id', 'proyectoId', 'fecha', 'tipo', 'texto', 'autor', 'email', 'origen', 'gps', 'archivos'],
   EnlacesCampo: ['token', 'proyectoId', 'email', 'expira', 'creadoPor', 'fecha', 'estado', 'mensaje'],
   // Planos de Isoflux asignados a proyectos (módulo Isoflux_Planos.gs)
-  Planos: ['planoId', 'proyectoId', 'nombre', 'version', 'fileId', 'bytes', 'nodos', 'tuberias', 'fondos', 'sha256', 'autor', 'email', 'creado', 'actualizado', 'actualizadoPor', 'estado', 'miniatura', 'nota'],
+  Planos: ['planoId', 'proyectoId', 'nombre', 'version', 'fileId', 'bytes', 'nodos', 'tuberias', 'fondos', 'sha256', 'autor', 'email', 'creado', 'actualizado', 'actualizadoPor', 'estado', 'miniatura', 'nota', 'vigente', 'vigentePor', 'vigenteFecha', 'vigenteFijada', 'borradorId', 'borradorRev', 'borradorFecha', 'borradorPor'],
+  PlanTrabajo: ['proyectoId', 'planoId', 'version', 'orden', 'id', 'fase', 'actividad', 'dias', 'predecesora', 'inicio', 'fin', 'responsable', 'avance', 'autor', 'fecha'],
   PlanosVersiones: ['planoId', 'version', 'fileId', 'bytes', 'sha256', 'autor', 'email', 'fecha', 'nota'],
 };
 

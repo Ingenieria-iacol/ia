@@ -44,6 +44,10 @@ function isoApi_(u, b) {
     case 'sgcPlanoRenombrar':  return isoRenombrar_(u, b.planoId, b.nombre);
     case 'sgcPlanoArchivar':   return isoArchivar_(u, b.planoId, b.archivar !== false);
     case 'sgcPlanoTrabajoGuardar': return isoPlanGuardar_(u, b);
+    case 'sgcPlanoVigente':    return isoVigente_(u, b.planoId, b.version);
+    case 'sgcPlanoLive':       return isoLive_(u, b);
+    case 'sgcPlanoBorrador':   return isoBorrador_(u, b);
+    case 'sgcPlanoBorradorLeer': return isoBorradorLeer_(u, b.planoId);
     case 'sgcPlanoTrabajoLeer':    return isoPlanLeer_(u, b.proyectoId);
   }
   return { error: 'Acción no permitida.' };
@@ -67,8 +71,12 @@ function isoMeta_(x) {
   return { planoId: x.planoId, proyectoId: String(x.proyectoId), nombre: x.nombre, version: +x.version || 0, bytes: +x.bytes || 0,
     nodos: +x.nodos || 0, tuberias: +x.tuberias || 0, fondos: +x.fondos || 0, sha256: x.sha256, autor: x.autor, email: x.email,
     creado: isoFecha_(x.creado), actualizado: isoFecha_(x.actualizado), actualizadoPor: x.actualizadoPor, estado: x.estado || 'vigente',
-    miniatura: String(x.miniatura || ''), nota: x.nota || '' };
+    miniatura: String(x.miniatura || ''), nota: x.nota || '', vigente: +x.vigente || +x.version || 0, vigentePor: x.vigentePor || '', vigenteFecha: isoFecha_(x.vigenteFecha),
+    enLinea: isoPresentes_(x.planoId).length };
 }
+const isoNom_ = s => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+/** La vigencia la decide el desarrollador del plano (quien lo creó) o el administrador. */
+function isoPuedeVigencia_(u, x) { return u.rol === 'admin' || String(x.email).toLowerCase() === String(u.email).toLowerCase(); }
 function isoPuedeArchivar_(u, x, p) { return u.rol === 'admin' || p.owner === u.email || x.email === u.email; }
 
 // ---------- CONSULTAS ----------
@@ -84,14 +92,14 @@ function isoListar_(u, proyectoId, archivados) {
   const p = sigProyectoVisible_(u, proyectoId);
   const lista = sigLeer_('Planos').filter(x => String(x.proyectoId) === String(p.id) && (archivados || x.estado !== 'archivado'))
     .sort((a, b) => String(isoFecha_(b.actualizado)).localeCompare(String(isoFecha_(a.actualizado))))
-    .map(x => Object.assign(isoMeta_(x), { puedeArchivar: isoPuedeArchivar_(u, x, p) }));
+    .map(x => Object.assign(isoMeta_(x), { puedeArchivar: isoPuedeArchivar_(u, x, p), puedeVigencia: isoPuedeVigencia_(u, x) }));
   return { proyecto: { id: String(p.id), titulo: p.titulo, cliente: p.cliente || '', ubicacion: p.ubicacion || '' }, planos: lista };
 }
 function isoVersiones_(u, planoId) {
   const o = isoPlano_(u, planoId);
   const vs = sigLeer_('PlanosVersiones').filter(v => v.planoId === planoId).sort((a, b) => (+b.version) - (+a.version))
     .map(v => ({ version: +v.version, bytes: +v.bytes || 0, sha256: v.sha256, autor: v.autor, email: v.email, fecha: isoFecha_(v.fecha), nota: v.nota || '' }));
-  return { plano: isoMeta_(o.x), versiones: vs };
+  return { plano: isoMeta_(o.x), versiones: vs, vigente: +o.x.vigente || +o.x.version, puedeVigencia: isoPuedeVigencia_(u, o.x) };
 }
 /** Devuelve el contenido del dibujo comprimido (gzip en base64). */
 function isoLeer_(u, planoId, version) {
@@ -139,6 +147,9 @@ function isoGuardar_(u, b) {
     if (x && !b.forzar && +b.baseVersion !== +x.version)
       return { conflicto: true, version: +x.version, por: x.actualizadoPor, fecha: isoFecha_(x.actualizado) };
     if (x && x.sha256 === sha && x.nombre === nombre) return { plano: isoMeta_(x), sinCambios: true };
+    /* no puede haber dos planos con el mismo nombre en el proyecto (nombre + versión es único) */
+    const dup = sigLeer_('Planos').find(r => String(r.proyectoId) === String(p.id) && r.estado !== 'archivado' && isoNom_(r.nombre) === isoNom_(nombre) && (!x || r.planoId !== x.planoId));
+    if (dup) throw new Error('Ya existe un plano llamado «' + dup.nombre + '» en este proyecto (v' + dup.version + '). Ábrelo y guarda una versión nueva, o usa otro nombre.');
     const planoId = x ? x.planoId : 'PL-' + Utilities.getUuid().slice(0, 8).toUpperCase();
     const version = x ? (+x.version + 1) : 1;
     const f = isoCarpeta_(p).createFile(Utilities.newBlob(bytes, 'application/json',
@@ -146,7 +157,10 @@ function isoGuardar_(u, b) {
     f.setDescription('Isoflux · ' + nombre + ' · v' + version + ' · ' + autor + ' · SHA-256 ' + sha);
     const fila = { planoId: planoId, proyectoId: String(p.id), nombre: nombre, version: version, fileId: f.getId(), bytes: bytes.length,
       nodos: +b.nodos || 0, tuberias: +b.tuberias || 0, fondos: +b.fondos || 0, sha256: sha, actualizado: ahora, actualizadoPor: autor,
-      estado: 'vigente', miniatura: mini.length <= ISO.MINI_MAX && /^data:image\//.test(mini) ? mini : (x ? x.miniatura : ''), nota: nota };
+      estado: x ? (x.estado || 'vigente') : 'vigente', miniatura: mini.length <= ISO.MINI_MAX && /^data:image\//.test(mini) ? mini : (x ? x.miniatura : ''), nota: nota };
+    const fija = x && String(x.vigenteFijada || '') === '1';
+    if (!x || (isoPuedeVigencia_(u, x) && b.vigente !== false && !fija)) Object.assign(fila, { vigente: version, vigentePor: autor, vigenteFecha: ahora, vigenteFijada: '' });
+    if (x && +(sigLeer_('PlanosVersiones').find(v => v.planoId === planoId && +v.version === version) || {}).version === version) throw new Error('La versión v' + version + ' ya existe. Vuelve a abrir el plano.');
     if (x) sigActualizar_('Planos', x._fila, fila);
     else sigAgregar_('Planos', Object.assign(fila, { autor: autor, email: u.email, creado: ahora }));
     sigAgregar_('PlanosVersiones', { planoId: planoId, version: version, fileId: f.getId(), bytes: bytes.length, sha256: sha, autor: autor, email: u.email, fecha: ahora, nota: nota });
@@ -159,6 +173,7 @@ function isoGuardar_(u, b) {
 function isoRenombrar_(u, planoId, nombre) {
   const o = isoPlano_(u, planoId), n = String(nombre || '').trim().slice(0, 120);
   if (!n) throw new Error('Escribe un nombre.');
+  if (sigLeer_('Planos').some(r => String(r.proyectoId) === String(o.p.id) && r.planoId !== planoId && r.estado !== 'archivado' && isoNom_(r.nombre) === isoNom_(n))) throw new Error('Ya existe otro plano con ese nombre en el proyecto.');
   sigActualizar_('Planos', o.x._fila, { nombre: n });
   sigBitacora_(u.email, o.p.miembroId || '', 'plano_renombrado', { plano: planoId, de: o.x.nombre, a: n });
   return { ok: true };
@@ -178,8 +193,10 @@ function isoBlobsProyecto_(proyectoId) {
   const out = [], lista = [];
   sigLeer_('Planos').filter(x => String(x.proyectoId) === String(proyectoId) && x.estado !== 'archivado').forEach(x => {
     try {
-      out.push(DriveApp.getFileById(x.fileId).getBlob().setName('Planos Isoflux/' + String(x.nombre + ' v' + x.version).replace(/[\\/:*?"<>|]/g, '_') + '.json'));
-      lista.push(x.planoId + ' | ' + x.nombre + ' | v' + x.version + ' | ' + x.actualizadoPor + ' | SHA-256 ' + x.sha256);
+      const vg = +x.vigente || +x.version, vv = vg !== +x.version ? sigLeer_('PlanosVersiones').find(r => r.planoId === x.planoId && +r.version === vg) : null;
+      const fid = vv ? vv.fileId : x.fileId, sha = vv ? vv.sha256 : x.sha256;
+      out.push(DriveApp.getFileById(fid).getBlob().setName('Planos Isoflux/' + String(x.nombre + ' v' + vg).replace(/[\\/:*?"<>|]/g, '_') + '.json'));
+      lista.push(x.planoId + ' | ' + x.nombre + ' | v' + vg + ' (vigente) | ' + (x.vigentePor || x.actualizadoPor) + ' | SHA-256 ' + sha);
     } catch (e) {}
   });
   return { blobs: out, lista: lista };
@@ -230,4 +247,80 @@ function isoPlanLeer_(u, proyectoId) {
     .map(r => ({ orden: +r.orden, id: r.id, fase: r.fase, actividad: r.actividad, dias: +r.dias, predecesora: r.predecesora,
       inicio: isoFecha_(r.inicio).slice(0, 10), fin: isoFecha_(r.fin).slice(0, 10), responsable: r.responsable, avance: +r.avance || 0, version: +r.version, autor: r.autor, fecha: isoFecha_(r.fecha) }));
   return { proyectoId: String(p.id), actividades: L };
+}
+
+// ---------- VIGENCIA (la decide el desarrollador del plano) ----------
+function isoVigente_(u, planoId, version) {
+  const o = isoPlano_(u, planoId), v = +version;
+  if (!isoPuedeVigencia_(u, o.x)) throw new Error('Solo el desarrollador del plano (' + o.x.autor + ') o el administrador pueden definir la versión vigente.');
+  if (!sigLeer_('PlanosVersiones').some(r => r.planoId === planoId && +r.version === v)) throw new Error('Versión no encontrada.');
+  const autor = String(u.nombre || u.email).slice(0, 80), ahora = sigAhora_();
+  sigActualizar_('Planos', o.x._fila, { vigente: v, vigentePor: autor, vigenteFecha: ahora, vigenteFijada: v === +o.x.version ? '' : '1' });
+  sigBitacora_(u.email, o.p.miembroId || '', 'plano_vigencia', { proyecto: String(o.p.id), plano: planoId, nombre: o.x.nombre, de: +o.x.vigente || +o.x.version, a: v });
+  CacheService.getScriptCache().put('v_' + o.p.id, String(Date.now()), 21600);
+  return { ok: 1, vigente: v };
+}
+
+// ---------- EDICIÓN EN LÍNEA (varias personas sobre el mismo plano) ----------
+/* Cada cliente envía cada pocos segundos los cambios por elemento (nodos, tuberías, anotaciones y datos
+   del proyecto) y recibe los de los demás. Los cambios se numeran (rev) y se guardan en la caché del
+   script; un borrador completo se guarda en Drive para quien entra después. Las versiones del SGC
+   siguen siendo explícitas (☁️ Guardar en el proyecto). */
+const ISO_LV = { TTL: 21600, MAX: 95000, VIVO: 25000 };
+function isoPresentes_(planoId) {
+  try { const c = CacheService.getScriptCache().get('lp_' + planoId); if (!c) return []; const o = JSON.parse(c), t = Date.now();
+    return Object.keys(o).filter(k => t - o[k].t < ISO_LV.VIVO).map(k => Object.assign({ email: k }, o[k])); } catch (e) { return []; }
+}
+function isoLive_(u, b) {
+  const o = isoPlano_(u, b.planoId), id = o.x.planoId, cache = CacheService.getScriptCache(), props = PropertiesService.getScriptProperties();
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const mk = 'lv_' + id;let meta = {}; try { meta = JSON.parse(props.getProperty(mk) || '{}'); } catch (e) {}
+    meta.rev = +meta.rev || 0; meta.min = +meta.min || 0;
+    // presencia
+    const pk = 'lp_' + id; let pr = {}; try { pr = JSON.parse(cache.get(pk) || '{}'); } catch (e) {}
+    const yo = String(u.email).toLowerCase(), nuevo = !pr[yo] || Date.now() - pr[yo].t > 3600000;
+    pr[yo] = { n: String(u.nombre || u.email).slice(0, 60), t: Date.now(), sel: b.sel ? String(b.sel).slice(0, 40) : '', c: String(b.color || '').slice(0, 9) };
+    Object.keys(pr).forEach(k => { if (Date.now() - pr[k].t > 120000) delete pr[k]; });
+    cache.put(pk, JSON.stringify(pr), ISO_LV.TTL);
+    // cambios propios
+    let mine = 0;
+    if (Array.isArray(b.ops) && b.ops.length) {
+      const txt = JSON.stringify({ by: yo, n: pr[yo].n, ops: b.ops });
+      if (txt.length > ISO_LV.MAX) throw new Error('Los cambios son demasiado grandes para la edición en línea: guarda una versión del plano.');
+      meta.rev++; mine = meta.rev; cache.put(mk + '_' + meta.rev, txt, ISO_LV.TTL);
+      if (!meta.min) meta.min = meta.rev; meta.t = sigAhora_(); props.setProperty(mk, JSON.stringify(meta));
+      if (nuevo) sigBitacora_(u.email, o.p.miembroId || '', 'plano_edicion_en_linea', { proyecto: String(o.p.id), plano: id, nombre: o.x.nombre });
+    }
+    // cambios de los demás desde b.rev
+    const from = +b.rev;let ops = [], resync = false;
+    if (from >= 0 && from < meta.rev) {
+      if (meta.rev - from > 400) resync = true;
+      else { const keys = []; for (let r = from + 1; r <= meta.rev; r++) keys.push(mk + '_' + r); const got = cache.getAll(keys);
+        for (let r = from + 1; r <= meta.rev; r++) { const t = got[mk + '_' + r]; if (!t) { if (r !== mine) { resync = true; break; } continue; } if (r === mine) continue;
+          const j = JSON.parse(t); if (j.by !== yo) ops.push({ rev: r, by: j.n, ops: j.ops }); } }
+    }
+    const bd = o.x.borradorId ? { rev: +o.x.borradorRev || 0, fecha: isoFecha_(o.x.borradorFecha), por: o.x.borradorPor || '' } : null;
+    return { rev: meta.rev, mine: mine, ops: resync ? [] : ops, resync: resync, usuarios: isoPresentes_(id).filter(x => x.email !== yo),
+      plano: { version: +o.x.version, vigente: +o.x.vigente || +o.x.version, actualizado: isoFecha_(o.x.actualizado), actualizadoPor: o.x.actualizadoPor }, borrador: bd };
+  } finally { lock.releaseLock(); }
+}
+function isoBorrador_(u, b) {
+  const o = isoPlano_(u, b.planoId);
+  let bytes; if (b.z) bytes = Utilities.ungzip(Utilities.newBlob(Utilities.base64Decode(String(b.b64 || '')), 'application/x-gzip')).getBytes(); else bytes = Utilities.newBlob(String(b.json || '')).getBytes();
+  if (!bytes.length || bytes.length > ISO.MAX_BYTES) throw new Error('Borrador no válido.');
+  const rev = +b.rev || 0;
+  if (o.x.borradorId && +o.x.borradorRev > rev) return { ok: 1, omitido: true };
+  const autor = String(u.nombre || u.email).slice(0, 80), blob = Utilities.newBlob(bytes, 'application/json', o.x.planoId + '_borrador_en_linea.json');
+  let fid = o.x.borradorId;
+  try { if (fid) { const f = DriveApp.getFileById(fid); f.setContent(Utilities.newBlob(bytes).getDataAsString()); } else throw 0; }
+  catch (e) { const f = isoCarpeta_(o.p).createFile(blob); f.setDescription('Isoflux · borrador de edición en línea · ' + o.x.nombre); fid = f.getId(); }
+  sigActualizar_('Planos', o.x._fila, { borradorId: fid, borradorRev: rev, borradorFecha: sigAhora_(), borradorPor: autor });
+  return { ok: 1 };
+}
+function isoBorradorLeer_(u, planoId) {
+  const o = isoPlano_(u, planoId);
+  if (!o.x.borradorId) return { vacio: true };
+  const blob = DriveApp.getFileById(o.x.borradorId).getBlob();
+  return { rev: +o.x.borradorRev || 0, fecha: isoFecha_(o.x.borradorFecha), por: o.x.borradorPor || '', z: 1, b64: Utilities.base64Encode(Utilities.gzip(blob).getBytes()) };
 }
