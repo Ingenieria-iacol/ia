@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#05060a">
 <title>VR | Entalpia</title>
+<link rel="preload" as="image" href="img/vr_carga.webp" type="image/webp" fetchpriority="high" media="(orientation: landscape)">
+<link rel="preload" as="image" href="img/vr_carga_movil.webp" type="image/webp" fetchpriority="high" media="(orientation: portrait)">
 <!--
   =====================================================================
    VR ENTALPIA · Mundo Virtual (WebXR)
@@ -72,10 +74,27 @@
     background:rgba(229,9,20,.92);color:#fff;font-weight:600;font-size:.9rem;padding:10px 18px;border-radius:10px;
     transition:opacity .25s,transform .25s;pointer-events:none;max-width:calc(100vw - 32px);text-align:center}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  #loading{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
-    background:var(--bg);transition:opacity .5s}
+  /* Pantalla de carga: portada de Entalpía de fondo + indicador discreto en la esquina */
+  #loading{position:fixed;inset:0;z-index:20;overflow:hidden;transition:opacity .6s ease;
+    background:var(--bg) url("data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA0JCgsKCA0LCgsODg0PEyAVExISEyccHhcgLikxMC4pLSwzOko+MzZGNywtQFdBRkxOUlNSMj5aYVpQYEpRUk//2wBDAQ4ODhMREyYVFSZPNS01T09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0//wAARCAASACADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDzgICgJb8K6Dw/o1je+Z9smkjCgEbBknNYMbKQBtGfUmuk0vTmlgDJcSZPH7pc1FW7jZO3mdFGClLUq6/pVjaTKllNI/GWLgDFYTx4yAc10+q6WYIvMM8vPH71cVzUjY46+9OnpG17irQUXoRr938atW80sa4SR157MRRRVmSHXc0sgxJK7jj7zE1Tb7poooBn/9k=") center/cover no-repeat}
   #loading.hide{opacity:0;pointer-events:none}
-  .spinner{width:46px;height:46px;border-radius:50%;border:3px solid rgba(255,255,255,.12);border-top-color:var(--accent);animation:spin 1s linear infinite}
+  .load-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.04);
+    transition:opacity .7s ease,transform 6s ease-out}
+  .load-bg.on{opacity:1;transform:scale(1)}
+  #loading::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(0,0,0,.45) 100%)}
+  .load-card{position:absolute;right:max(16px,3vw);bottom:max(16px,4vh);z-index:1;display:flex;align-items:center;gap:12px;
+    padding:10px 18px 10px 12px;border-radius:999px;background:rgba(5,6,10,.62);border:1px solid rgba(255,255,255,.14);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 8px 30px rgba(0,0,0,.45);transition:all .3s ease}
+  #load-msg{color:#e6e7ee;font-size:.88rem;letter-spacing:.02em}
+  .spinner{width:22px;height:22px;flex:none;border-radius:50%;border:2.5px solid rgba(255,255,255,.18);border-top-color:var(--accent);animation:spin .9s linear infinite}
+  /* estado de error: tarjeta centrada y legible sobre la imagen */
+  #loading.err::after{background:rgba(0,0,0,.6)}
+  #loading.err .load-card{right:50%;bottom:50%;transform:translate(50%,50%);flex-direction:column;gap:16px;text-align:center;
+    max-width:min(460px,calc(100vw - 32px));padding:24px 22px;border-radius:16px;background:rgba(10,11,16,.88)}
+  #loading.err #load-msg{font-size:.95rem;line-height:1.5}
+  @media (max-width:560px){ .load-card{right:50%;transform:translateX(50%);white-space:nowrap} }
+  @media (prefers-reduced-motion:reduce){ .load-bg,.load-bg.on{transition:opacity .3s;transform:none} .spinner{animation-duration:2.5s} }
   @keyframes spin{to{transform:rotate(360deg)}}
   /* Modal "Mis planos" */
   .pm{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
@@ -138,21 +157,34 @@
     <div id="pm-body"></div>
   </div>
 </div>
-<div id="loading" role="status" aria-live="polite"><div class="spinner"></div><div id="load-msg" style="color:var(--muted);font-size:.9rem;text-align:center;max-width:420px;padding:0 16px">Cargando el mundo virtual…</div><button class="btn btn-vr" id="load-retry" hidden onclick="location.reload()">↻ Reintentar</button></div>
+<div id="loading" role="status" aria-live="polite">
+  <picture>
+    <source media="(orientation: portrait)" srcset="img/vr_carga_movil.webp" type="image/webp">
+    <source srcset="img/vr_carga.webp" type="image/webp">
+    <img class="load-bg" src="img/vr_carga.jpg" alt="" aria-hidden="true" decoding="async" fetchpriority="high" onload="this.classList.add('on')">
+  </picture>
+  <div class="load-card"><div class="spinner"></div><div id="load-msg">Cargando el mundo virtual…</div><button class="btn btn-vr" id="load-retry" hidden onclick="location.reload()">↻ Reintentar</button></div>
+</div>
+<script>(function (){ var i = document.querySelector('.load-bg'); if (i && i.complete && i.naturalWidth) i.classList.add('on'); })();</script>
 <script>
 /* Vigilante de arranque: si algo falla o tarda, se informa y se ofrece reintentar (nunca carga infinita). */
 window.__vrBoot = { ok: false, failed: false };
 function vrFail(msg, keep){
   var b = window.__vrBoot; if (b.failed && !keep) return; b.failed = true;
   var l = document.getElementById('loading'); if (!l) return;
-  l.classList.remove('hide');
+  l.classList.remove('hide'); l.classList.add('err');
   l.querySelector('.spinner').style.display = 'none';
   document.getElementById('load-msg').innerHTML = msg;
   document.getElementById('load-retry').hidden = false;
 }
+/* oculta la portada de carga respetando un tiempo mínimo para que no parpadee */
+function vrHideLoading(){
+  var wait = Math.max(0, 1200 - performance.now());
+  setTimeout(function (){ var l = document.getElementById('loading'); if (l && !window.__vrBoot.failed) l.classList.add('hide'); }, wait);
+}
 function vrBusy(msg){
   var l = document.getElementById('loading'); if (!l) return;
-  l.classList.remove('hide'); l.querySelector('.spinner').style.display = '';
+  l.classList.remove('hide', 'err'); l.querySelector('.spinner').style.display = '';
   document.getElementById('load-msg').textContent = msg; document.getElementById('load-retry').hidden = true;
 }
 addEventListener('error', function (e){ var isScript = e.target && e.target.tagName === 'SCRIPT'; if (!(e instanceof ErrorEvent) && !isScript) return; if (!window.__vrBoot.ok) vrFail('No se pudo iniciar el Mundo Virtual.<br><small style="opacity:.7">' + String(e.message || 'Error al cargar los componentes 3D').replace(/</g, '&lt;') + '</small>'); }, true);
@@ -282,7 +314,7 @@ function armCtxTimer(){
 }
 renderer.domElement.addEventListener('webglcontextrestored', () => {
   clearTimeout(ctxTimer);
-  if (window.__vrBoot.ok) $('#loading').classList.add('hide');
+  if (window.__vrBoot.ok){ window.__vrBoot.failed = false; vrHideLoading(); }
   else vrBusy('Cargando el mundo virtual…');
 });
 addEventListener('pagehide', () => { try { renderer.setAnimationLoop(null); video.pause(); renderer.dispose(); } catch (_){} });
@@ -2549,7 +2581,7 @@ function loop(){
     if (loopErrors++ < 3) console.error('Mundo Virtual:', e);
     try { renderer.render(scene, camera); } catch (_){}
   }
-  if (!window.__vrBoot.ok){ window.__vrBoot.ok = true; $('#loading').classList.add('hide'); }
+  if (!window.__vrBoot.ok){ window.__vrBoot.ok = true; vrHideLoading(); }
 }
 function frame(){
   const dt = Math.min(clock.getDelta(), 0.05); elapsed += dt;
