@@ -43,6 +43,8 @@ function isoApi_(u, b) {
     case 'sgcPlanoVersiones':  return isoVersiones_(u, b.planoId);
     case 'sgcPlanoRenombrar':  return isoRenombrar_(u, b.planoId, b.nombre);
     case 'sgcPlanoArchivar':   return isoArchivar_(u, b.planoId, b.archivar !== false);
+    case 'sgcPlanoTrabajoGuardar': return isoPlanGuardar_(u, b);
+    case 'sgcPlanoTrabajoLeer':    return isoPlanLeer_(u, b.proyectoId);
   }
   return { error: 'Acción no permitida.' };
 }
@@ -181,4 +183,51 @@ function isoBlobsProyecto_(proyectoId) {
     } catch (e) {}
   });
   return { blobs: out, lista: lista };
+}
+
+// ---------- PLAN DE TRABAJO (Gantt del proyecto) ----------
+/* Isoflux publica el plan de trabajo de la obra (actividades, fases, fechas, responsables y avance).
+   Se guarda en la hoja PlanTrabajo (una fila por actividad); cada envío reemplaza el plan anterior
+   del proyecto y queda en la bitácora del SGC. El portal lo muestra en «Cronograma (Gantt)». */
+function isoPlanHoja_() {
+  if (!HOJAS.PlanTrabajo) HOJAS.PlanTrabajo = ['proyectoId', 'planoId', 'version', 'orden', 'id', 'fase', 'actividad', 'dias', 'predecesora', 'inicio', 'fin', 'responsable', 'avance', 'autor', 'fecha'];
+  return sigHoja_('PlanTrabajo');
+}
+function isoPlanGuardar_(u, b) {
+  const p = sigProyectoVisible_(u, b.proyectoId);
+  if (p.ciclo === 'papelera') throw new Error('El proyecto está en la papelera.');
+  const A = Array.isArray(b.actividades) ? b.actividades.slice(0, 300) : [];
+  if (!A.length) throw new Error('El plan no tiene actividades.');
+  const fd = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? String(s) : '';
+  const lock = LockService.getScriptLock(); lock.waitLock(25000);
+  try {
+    const sh = isoPlanHoja_(), H = HOJAS.PlanTrabajo, ahora = sigAhora_(), autor = String(u.nombre || u.email).slice(0, 80);
+    const prev = sigLeer_('PlanTrabajo').filter(r => String(r.proyectoId) === String(p.id));
+    const version = prev.reduce((m, r) => Math.max(m, +r.version || 0), 0) + 1;
+    prev.map(r => r._fila).sort((a, c) => c - a).forEach(f => sh.deleteRow(f));
+    delete SIG_RD_.PlanTrabajo;
+    const rows = A.map((a, i) => H.map(k => ({ proyectoId: String(p.id), planoId: String(b.planoId || ''), version: version, orden: +a.orden || i + 1, id: String(a.id || i + 1).slice(0, 20),
+      fase: String(a.fase || '').slice(0, 40), actividad: String(a.actividad || '').slice(0, 200), dias: +a.dias || 1, predecesora: String(a.predecesora || '').slice(0, 20),
+      inicio: fd(a.inicio), fin: fd(a.fin), responsable: String(a.responsable || '').slice(0, 80), avance: Math.max(0, Math.min(100, +a.avance || 0)), autor: autor, fecha: ahora })[k]));
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, H.length).setValues(rows);
+    delete SIG_RD_.PlanTrabajo;
+    const ini = rows.map(r => r[H.indexOf('inicio')]).filter(String).sort()[0] || '', fin = rows.map(r => r[H.indexOf('fin')]).filter(String).sort().pop() || '';
+    const cambios = {};
+    if (b.actualizarProyecto !== false) {
+      if (ini) cambios.inicio = ini; if (fin) cambios.fin = fin;
+      if (b.avance != null && isFinite(+b.avance)) cambios.avance = Math.round(Math.max(0, Math.min(100, +b.avance)));
+      try { Object.keys(cambios).forEach(k => setCell('Proyectos', p.id, k, cambios[k])); } catch (e) { cambios.error = String(e.message || e); }
+    }
+    sigBitacora_(u.email, p.miembroId || '', 'plan_trabajo_publicado', { proyecto: String(p.id), plano: String(b.planoId || ''), version: version, actividades: rows.length, inicio: ini, fin: fin, avance: cambios.avance });
+    CacheService.getScriptCache().put('v_' + p.id, String(Date.now()), 21600);
+    return { ok: 1, version: version, actividades: rows.length, inicio: ini, fin: fin, proyecto: cambios };
+  } finally { lock.releaseLock(); }
+}
+function isoPlanLeer_(u, proyectoId) {
+  const p = sigProyectoVisible_(u, proyectoId);
+  isoPlanHoja_();
+  const L = sigLeer_('PlanTrabajo').filter(r => String(r.proyectoId) === String(p.id)).sort((a, c) => (+a.orden) - (+c.orden))
+    .map(r => ({ orden: +r.orden, id: r.id, fase: r.fase, actividad: r.actividad, dias: +r.dias, predecesora: r.predecesora,
+      inicio: isoFecha_(r.inicio).slice(0, 10), fin: isoFecha_(r.fin).slice(0, 10), responsable: r.responsable, avance: +r.avance || 0, version: +r.version, autor: r.autor, fecha: isoFecha_(r.fecha) }));
+  return { proyectoId: String(p.id), actividades: L };
 }
