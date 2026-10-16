@@ -150,6 +150,11 @@ function sigApi(b, u) {
       case 'sgcCampoArchivo':    { const e = sigCampoEntradaDe_(b.entradaId); sigProyectoVisible_(u, e.proyectoId); return sigCampoArchivo_(e, b, u.nombre || u.email); }
       case 'sgcCampoEnlace':     return sigCampoEnlace(u, b);
       case 'sgcCampoRevocar':    return sigCampoRevocar(u, b.token);
+      // ---- archivos de cualquier tipo y tamaño grande (por partes) ----
+      case 'sgcSubirIni':        { const p = sigProyectoVisible_(u, b.proyectoId); if (p.ciclo === 'papelera' && !esAdmin) throw new Error('El proyecto está en la papelera.');
+                                   const e = b.entradaId ? sigCampoEntradaDe_(b.entradaId) : null; if (e && String(e.proyectoId) !== String(p.id)) throw new Error('Entrada no válida.');
+                                   return sigSubirIni_(p, u.nombre || u.email, u.email, b, e); }
+      case 'sgcSubirParte':      return sigSubirParte_(u.email, b);
       case 'sgcRegistros':       return sigRegistros(u, b.miembroId);
       case 'sgcRegistroVer':     return sigRegistroVer(u, b.id);
       case 'sgcSubirRegistro':   return sigSubirRegistro(u, b);
@@ -1075,6 +1080,85 @@ function sigCampoArchivo_(e, b, autor) {
   CacheService.getScriptCache().put('v_' + p.id, String(Date.now()), 21600);
   return { fid: f.getId(), nombre: nombre };
 }
+// =====================================================================================
+//  ARCHIVOS GRANDES DE CUALQUIER TIPO (video .mp4, .md, .html, .dwg, .zip, modelos…)
+//  Se cargan por partes de 8 MB con la carga reanudable de Drive: cada parte es una
+//  llamada corta al portal, así no se supera el límite de tamaño de una sola solicitud.
+//  El archivo queda en la carpeta del proyecto (Archivos y fotos) o en la entrada de la
+//  bitácora de campo, con su huella SHA-256 calculada en el navegador.
+//  Drive no ejecuta los .html: los muestra como texto o los descarga.
+// =====================================================================================
+const SIG_UP_MAX = 500 * 1024 * 1024, SIG_UP_PARTE = 8 * 1024 * 1024;
+function sigSubirIni_(p, autor, email, b, entrada) {
+  if (!p.carpeta) throw new Error('El proyecto no tiene carpeta de archivos.');
+  const tam = Math.floor(+b.tam || 0);
+  if (!(tam > 0)) throw new Error('El archivo está vacío.');
+  if (tam > SIG_UP_MAX) throw new Error('El archivo supera ' + (SIG_UP_MAX / 1048576) + ' MB.');
+  const mime = /^[\w.+-]+\/[\w.+-]+$/.test(String(b.mime || '')) ? String(b.mime) : 'application/octet-stream';
+  let nombre = String(b.nombre || 'archivo').replace(/[\\/:*?"<>|]/g, '_').slice(0, 140);
+  if (entrada) nombre = (Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HHmm') + ' · ' + nombre).slice(0, 140);
+  const r = UrlFetchApp.fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true&fields=id', {
+    method: 'post', contentType: 'application/json; charset=UTF-8', muteHttpExceptions: true,
+    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken(), 'X-Upload-Content-Type': mime, 'X-Upload-Content-Length': String(tam) },
+    payload: JSON.stringify({ name: nombre, parents: [p.carpeta], mimeType: mime })
+  });
+  const h = r.getHeaders(), uri = h.Location || h.location;
+  if (r.getResponseCode() !== 200 || !uri) throw new Error('Drive no aceptó la carga (' + r.getResponseCode() + '): ' + r.getContentText().slice(0, 160));
+  const id = 'U' + Utilities.getUuid().replace(/-/g, '');
+  CacheService.getScriptCache().put('up_' + id, JSON.stringify({ uri: uri, email: email, proyectoId: String(p.id), entradaId: entrada ? entrada.id : '',
+    nombre: nombre, mime: mime, tam: tam, off: 0, autor: String(autor).slice(0, 80), sha: /^[0-9a-f]{64}$/.test(String(b.sha || '')) ? String(b.sha) : '' }), 21600);
+  return { id: id, parte: SIG_UP_PARTE };
+}
+function sigSubirParte_(email, b) {
+  const C = CacheService.getScriptCache(), k = 'up_' + String(b.id || ''), s = JSON.parse(C.get(k) || 'null');
+  if (!s || s.email !== email) throw new Error('La carga venció o no es válida. Vuelve a seleccionar el archivo.');
+  if (s.fid) return { off: s.tam, fid: s.fid, nombre: s.nombre };            // ya terminó (reintento)
+  const off = Math.floor(+b.off || 0);
+  if (off < s.off) return { off: s.off };                                     // parte repetida: ya estaba
+  if (off > s.off) throw new Error('Falta una parte del archivo. Vuelve a intentarlo.');
+  const bytes = Utilities.base64Decode(String(b.b64 || '')), fin = off + bytes.length;
+  if (!bytes.length || bytes.length > SIG_UP_PARTE || fin > s.tam || (fin < s.tam && bytes.length % 262144)) throw new Error('Parte del archivo no válida.');
+  const r = UrlFetchApp.fetch(s.uri, { method: 'put', contentType: s.mime, payload: bytes, muteHttpExceptions: true,
+    headers: { 'Content-Range': 'bytes ' + off + '-' + (fin - 1) + '/' + s.tam } });
+  const c = r.getResponseCode();
+  if (c === 308) { s.off = fin; C.put(k, JSON.stringify(s), 21600); return { off: fin }; }
+  if (c !== 200 && c !== 201) throw new Error('Drive rechazó la parte (' + c + '): ' + r.getContentText().slice(0, 160));
+  const fid = JSON.parse(r.getContentText()).id, f = DriveApp.getFileById(fid);
+  f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  const p = rows('Proyectos').find(x => String(x.id) === String(s.proyectoId));
+  if (s.entradaId) {
+    const e = sigCampoEntradaDe_(s.entradaId), lista = (() => { try { return JSON.parse(e.archivos || '[]'); } catch (x) { return []; } })();
+    f.setDescription('Bitácora de campo ' + e.id + ' · ' + e.tipo + ' · ' + s.autor + (s.sha ? ' · SHA-256 ' + s.sha : ''));
+    lista.push({ fid: fid, n: s.nombre, m: s.mime });
+    sigActualizar_('Campo', e._fila, { archivos: JSON.stringify(lista) });
+    add('Archivos', { id: uid(), proyecto: s.proyectoId, nombre: s.nombre, fid: fid, autor: s.autor + ' (campo)', fecha: now() });
+  } else {
+    f.setDescription('Cargado por ' + s.autor + ' <' + s.email + '>' + (s.sha ? ' · SHA-256 ' + s.sha : ''));
+    add('Archivos', { id: uid(), proyecto: s.proyectoId, nombre: s.nombre, fid: fid, autor: s.autor, fecha: now() });
+  }
+  sigBitacora_(email, p ? p.miembroId || '' : '', 'archivo_cargado', { proyecto: s.proyectoId, archivo: s.nombre, bytes: s.tam, sha256: s.sha || '' });
+  CacheService.getScriptCache().put('v_' + s.proyectoId, String(Date.now()), 21600);
+  s.fid = fid; s.off = s.tam; C.put(k, JSON.stringify(s), 21600);
+  return { off: s.tam, fid: fid, nombre: s.nombre };
+}
+/** Prueba desde el editor: crea un archivo de 9 MB por partes en la carpeta del primer proyecto y lo deja en la papelera. */
+function probarCargaPorPartes() {
+  const p = rows('Proyectos').find(x => x.carpeta); if (!p) return 'Sin proyectos con carpeta';
+  const u = 'prueba@local', tam = 9 * 1024 * 1024, datos = [];
+  const r = UrlFetchApp.fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id', { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken(), 'X-Upload-Content-Type': 'text/markdown', 'X-Upload-Content-Length': String(tam) },
+    payload: JSON.stringify({ name: 'prueba-carga-por-partes.md', parents: [p.carpeta], mimeType: 'text/markdown' }) });
+  Logger.log('Inicio: ' + r.getResponseCode() + ' ' + r.getContentText().slice(0, 300));
+  const uri = r.getHeaders().Location || r.getHeaders().location; if (!uri) return 'Sin URI';
+  const parte = n => { const a = []; for (let i = 0; i < n; i++) a.push(35); return a; };
+  const r1 = UrlFetchApp.fetch(uri, { method: 'put', contentType: 'text/markdown', payload: parte(SIG_UP_PARTE), muteHttpExceptions: true, headers: { 'Content-Range': 'bytes 0-' + (SIG_UP_PARTE - 1) + '/' + tam } });
+  Logger.log('Parte 1: ' + r1.getResponseCode());
+  const r2 = UrlFetchApp.fetch(uri, { method: 'put', contentType: 'text/markdown', payload: parte(tam - SIG_UP_PARTE), muteHttpExceptions: true, headers: { 'Content-Range': 'bytes ' + SIG_UP_PARTE + '-' + (tam - 1) + '/' + tam } });
+  Logger.log('Parte 2: ' + r2.getResponseCode() + ' ' + r2.getContentText());
+  const f = DriveApp.getFileById(JSON.parse(r2.getContentText()).id);
+  const out = 'Archivo ' + f.getName() + ' · ' + f.getSize() + ' bytes · ' + f.getMimeType();
+  f.setTrashed(true); Logger.log(out); return out;
+}
 function sigCampoListar(u, proyectoId) {
   const p = sigProyectoVisible_(u, proyectoId);
   const en = sigLeer_('EnlacesCampo').filter(x => String(x.proyectoId) === String(p.id)).reverse().map(x => ({ token: x.token, email: x.email,
@@ -1128,6 +1212,8 @@ function sigCampoPublico(q) {
     const p = rows('Proyectos').find(r => String(r.id) === String(x.proyectoId)); if (!p) return { error: 'El proyecto ya no existe.' };
     const m = p.miembroId ? sigMiembro_(p.miembroId) : null;
     if (q.paso === 'entrada') return sigCampoEntrada_(p, String(q.autor || x.email).slice(0, 80), x.email, 'enlace', q);
+    if (q.paso === 'subirIni') { const e = sigCampoEntradaDe_(q.entradaId); if (String(e.proyectoId) !== String(p.id) || e.email !== x.email) return { error: 'Entrada no válida.' }; return sigSubirIni_(p, e.autor, x.email, q, e); }
+    if (q.paso === 'subirParte') return sigSubirParte_(x.email, q);
     if (q.paso === 'archivo') { const e = sigCampoEntradaDe_(q.entradaId); if (String(e.proyectoId) !== String(p.id) || e.email !== x.email) return { error: 'Entrada no válida.' }; return sigCampoArchivo_(e, q, e.autor); }
     if (q.paso === 'form') {
       if (!m) return { error: 'Este proyecto no pertenece a una organización de la red.' };
