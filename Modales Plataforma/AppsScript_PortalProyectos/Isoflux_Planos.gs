@@ -49,6 +49,7 @@ function isoApi_(u, b) {
     case 'sgcPlanoBorrador':   return isoBorrador_(u, b);
     case 'sgcPlanoBorradorLeer': return isoBorradorLeer_(u, b.planoId);
     case 'sgcPlanoTrabajoLeer':    return isoPlanLeer_(u, b.proyectoId);
+    case 'sgcPlanoPrecios':    return isoPrecios_(u, b);
   }
   return { error: 'Acción no permitida.' };
 }
@@ -323,4 +324,48 @@ function isoBorradorLeer_(u, planoId) {
   if (!o.x.borradorId) return { vacio: true };
   const blob = DriveApp.getFileById(o.x.borradorId).getBlob();
   return { rev: +o.x.borradorRev || 0, fecha: isoFecha_(o.x.borradorFecha), por: o.x.borradorPor || '', z: 1, b64: Utilities.base64Encode(Utilities.gzip(blob).getBytes()) };
+}
+
+
+// ---------- PRECIOS WEB (V19) ----------
+/**
+ * Busca en la Web el precio comercial aproximado (COP, sin IVA) de los ítems del despiece de Isoflux.
+ * La clave de Anthropic vive SOLO en el servidor: Configuración del proyecto ▸ Propiedades del script ▸
+ *   ANTHROPIC_API_KEY = sk-ant-…      (obligatoria)
+ *   ANTHROPIC_MODEL   = claude-sonnet-5-5 (opcional)
+ * Solo se envían descripción, especificación y unidad de cada ítem; nunca datos del proyecto ni del cliente.
+ * Límite: 60 consultas por usuario y hora.
+ */
+function isoPrecios_(u, b) {
+  const P = PropertiesService.getScriptProperties();
+  const key = P.getProperty('ANTHROPIC_API_KEY');
+  if (!key) return { error: 'La búsqueda de precios en la Web aún no está activada en el portal: el administrador debe registrar ANTHROPIC_API_KEY en Propiedades del script.', sinClave: true };
+  const items = (b.items || []).slice(0, 12).map(function (x, i) {
+    return { i: +x.i || i, item: String(x.item || '').slice(0, 160), especificacion: String(x.especificacion || '').slice(0, 160), unidad: String(x.unidad || '').slice(0, 16) };
+  });
+  if (!items.length) return { ok: true, precios: [] };
+  const C = CacheService.getScriptCache(), ck = 'px_' + Utilities.base64EncodeWebSafe(String(u.email)).slice(0, 60), n = +(C.get(ck) || 0);
+  if (n >= 60) return { error: 'Se alcanzó el límite de consultas de precios de esta hora. Intenta más tarde.' };
+  C.put(ck, String(n + 1), 3600);
+  const model = P.getProperty('ANTHROPIC_MODEL') || 'claude-sonnet-5-5';
+  const msgs = [{ role: 'user', content: 'Para cada ítem da el precio unitario comercial aproximado en pesos colombianos (COP), sin IVA, en el mercado colombiano actual (ferreterías, distribuidores de gas, listas de precios, APU publicados). Responde SOLO con un arreglo JSON: [{"i":<número>,"cop":<número>,"nota":"fuente o criterio breve"}]. Ítems: ' + JSON.stringify(items) }];
+  const body = { model: model, max_tokens: 4000, tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 4 }],
+    system: 'Eres un estimador de costos de obras de gas en Colombia. Usa la búsqueda web y responde SOLO con un arreglo JSON, sin texto ni markdown.', messages: msgs };
+  let d = null;
+  for (let k = 0; k < 3; k++) {
+    const r = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' }, payload: JSON.stringify(body) });
+    const code = r.getResponseCode(), tx = r.getContentText();
+    if (code !== 200) { let m = tx; try { m = JSON.parse(tx).error.message; } catch (e) {} return { error: 'El servicio de precios respondió ' + code + ': ' + String(m).slice(0, 200) }; }
+    d = JSON.parse(tx);
+    if (d.stop_reason !== 'pause_turn') break;
+    msgs.push({ role: 'assistant', content: d.content });           // búsqueda larga: se continúa el turno
+  }
+  const t = (d && d.content || []).filter(function (c) { return c.type === 'text'; }).map(function (c) { return c.text; }).join('\n');
+  const m = t.match(/\[[\s\S]*\]/);
+  let arr = [];
+  try { arr = m ? JSON.parse(m[0]) : []; } catch (e) { arr = []; }
+  arr = arr.filter(function (x) { return x && isFinite(+x.cop) && +x.cop > 0; }).map(function (x) { return { i: +x.i, cop: Math.round(+x.cop), nota: String(x.nota || '').slice(0, 200) }; });
+  try { sigBitacora_(u.email, '', 'precios_web', { items: items.length, respuestas: arr.length, plano: String(b.planoId || ''), modelo: model }); } catch (e) {}
+  return { ok: true, precios: arr, modelo: model, fecha: new Date().toISOString() };
 }
