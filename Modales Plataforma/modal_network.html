@@ -118,7 +118,44 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { scrollbar-width: none; }
 
+        /* ---------- Sondas ---------- */
+        .led { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+        .led-activa { background: #3ddc84; box-shadow: 0 0 8px rgba(61,220,132,.8); }
+        .led-disponible { background: #7fb4ff; box-shadow: 0 0 8px rgba(127,180,255,.7); }
+        .led-mantenimiento { background: var(--ember); box-shadow: 0 0 8px rgba(255,176,32,.8); }
+        .led-retirada { background: #6b7a90; }
+        @keyframes pulseLed { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+        .led-activa { animation: pulseLed 2.2s ease-in-out infinite; }
+        .probe-card { position: relative; overflow: hidden; }
+        .probe-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--probe-accent, var(--steel-600)); }
+        .probe-code { font-family: 'Cascadia Mono', 'Consolas', ui-monospace, monospace; letter-spacing: .06em; }
+        .health-bar { height: 6px; border-radius: 4px; background: #1a2535; overflow: hidden; }
+        .health-bar > span { display: block; height: 100%; border-radius: 4px; }
+        .tl-item { position: relative; padding-left: 26px; }
+        .tl-item::before { content: ""; position: absolute; left: 8px; top: 20px; bottom: -14px; width: 1px; background: var(--eng-line); }
+        .tl-item:last-child::before { display: none; }
+        .tl-dot { position: absolute; left: 2px; top: 5px; width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--ti-900); }
+        .field-in { width: 100%; background: var(--ti-900); border: 1px solid var(--eng-line); border-radius: .5rem; padding: .5rem .75rem; color: #fff; }
+        .field-in:focus { outline: 2px solid var(--steel-300); outline-offset: 1px; }
+        .sheet-scroll { max-height: calc(100vh - 2rem); }
+        .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px); opacity: 0; transition: all .3s ease; z-index: 90; pointer-events: none; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        @media print {
+            body { background: #fff !important; color: #111 !important; }
+            body > *:not(#sheet) { display: none !important; }
+            #sheet { position: static !important; display: block !important; background: #fff !important; padding: 0 !important; }
+            #sheet .panel { background: #fff !important; border: none !important; box-shadow: none !important; max-height: none !important; overflow: visible !important; }
+            #sheet .no-print { display: none !important; }
+            #sheet [data-sheet-pane] { display: block !important; break-inside: avoid; margin-top: 18px; }
+            #sheet .print-only { display: block !important; }
+            #sheet * { color: #111 !important; background: transparent !important; -webkit-text-fill-color: #111 !important; border-color: #bbb !important; box-shadow: none !important; }
+        }
+        .print-only { display: none; }
+        body.sheet-open .whatsapp-float, body.sheet-open #whatsappWindow { display: none; }
+
         @media (prefers-reduced-motion: reduce) {
+            .led-activa { animation: none; }
             .flow-line, .flame, .view-enter { animation: none; }
             .metal-btn, .metal-btn::after, .card, .whatsapp-float { transition: none; }
             html { scroll-behavior: auto; }
@@ -234,8 +271,8 @@
             <!-- Puertas de entrada -->
             <div class="mt-16">
                 <h2 class="text-2xl md:text-3xl font-bold text-white">Qué encontrarás en Entalpía</h2>
-                <p class="text-steel-400 mt-2 max-w-[60ch]">Cuatro secciones para trabajar con sistemas físicos, desde la consulta hasta la conexión con equipos reales.</p>
-                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6" id="doorGrid"></div>
+                <p class="text-steel-400 mt-2 max-w-[60ch]">Cinco secciones para trabajar con sistemas físicos, desde la consulta hasta la conexión con equipos reales y las sondas que los vigilan.</p>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-6" id="doorGrid"></div>
             </div>
 
             <!-- Campos de ingeniería -->
@@ -256,6 +293,45 @@
                     <p class="text-sm text-steel-300 mt-2 leading-relaxed">Redes de tubería, bombeo y caudal: dimensionamiento, pérdidas y puntos de operación.</p>
                 </div>
             </div>
+        </section>
+
+        <!-- ================= SONDAS ================= -->
+        <section id="view-sondas" data-view class="pt-10 md:pt-14 hidden">
+            <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                <div>
+                    <div class="text-xs uppercase tracking-[.2em] text-steel-400">Psinapsis · Plantilla de campo</div>
+                    <h2 class="metal-text text-3xl md:text-4xl font-black tracking-tight mt-1">Sondas</h2>
+                    <p class="text-steel-300 mt-3 max-w-[64ch] leading-relaxed">Cada sonda es un trabajador del Hub: tiene su hoja de vida, sus calibraciones, sus incidentes y los proyectos en los que ha trabajado. Asígnala a un proyecto y su historia queda registrada.</p>
+                </div>
+                <div class="flex flex-wrap gap-2 flex-shrink-0">
+                    <button type="button" id="btnNewProbe" class="metal-fill metal-btn eng-focus px-5 py-2.5 rounded-lg text-sm flex items-center gap-2"><i class="fa-solid fa-user-plus"></i> Contratar sonda</button>
+                    <button type="button" id="btnExport" class="ghost-btn eng-focus px-4 py-2.5 rounded-lg text-sm flex items-center gap-2" title="Descargar la plantilla completa en JSON"><i class="fa-solid fa-download"></i><span class="hidden sm:inline">Exportar</span></button>
+                    <label class="ghost-btn eng-focus px-4 py-2.5 rounded-lg text-sm flex items-center gap-2 cursor-pointer" title="Cargar una plantilla JSON">
+                        <i class="fa-solid fa-upload"></i><span class="hidden sm:inline">Importar</span>
+                        <input type="file" id="importFile" accept="application/json,.json" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Indicadores -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-8" id="probeKpis"></div>
+
+            <!-- Barra de herramientas -->
+            <div class="panel rounded-xl p-3 mt-6 flex flex-col lg:flex-row gap-3 lg:items-center">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-steel-500 text-sm"></i>
+                    <input id="probeSearch" type="search" placeholder="Buscar por código, nombre, modelo o proyecto…" class="field-in text-sm" style="padding-left:2.25rem" aria-label="Buscar sondas">
+                </div>
+                <div class="flex flex-wrap gap-2" id="probeFilters" role="group" aria-label="Filtrar por estado"></div>
+                <div class="flex gap-1 bg-ti900 border border-[#243245] rounded-lg p-1" role="tablist" aria-label="Modo de vista">
+                    <button type="button" data-mode="grid" class="chip eng-focus px-3 py-1.5 rounded-md text-sm" aria-selected="true"><i class="fa-solid fa-id-badge mr-1"></i>Plantilla</button>
+                    <button type="button" data-mode="projects" class="chip eng-focus px-3 py-1.5 rounded-md text-sm" aria-selected="false"><i class="fa-solid fa-diagram-project mr-1"></i>Por proyecto</button>
+                </div>
+            </div>
+
+            <div id="probeGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5"></div>
+            <div id="probeProjects" class="space-y-4 mt-5 hidden"></div>
+            <p class="text-xs text-steel-500 mt-6"><i class="fa-solid fa-circle-info mr-1"></i>Los registros se guardan en este navegador. Usa Exportar para respaldarlos o llevarlos a otro equipo.</p>
         </section>
 
         <!-- ================= SERVICIOS ================= -->
@@ -318,6 +394,10 @@
                 <div class="mt-6 rounded-lg border border-[#243245] bg-ti900 p-4 flex gap-3 text-sm text-steel-300">
                     <i class="fa-solid fa-shield-halved text-steel-400 mt-0.5"></i>
                     <p class="leading-relaxed">Al conectar un sistema real conviene separar la red de control de la red de oficina y empezar con permisos de solo lectura. Escribir valores en un equipo en operación requiere validación previa.</p>
+                </div>
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-sm text-steel-300">Los sensores conectados se registran como <span class="text-white font-semibold">Sondas</span>, cada una con su hoja de vida.</p>
+                    <button type="button" data-goto="sondas" class="ghost-btn eng-focus px-4 py-2 rounded-lg text-sm flex items-center gap-2"><i class="fa-solid fa-temperature-half"></i> Ver la plantilla de sondas</button>
                 </div>
             </div>
 
@@ -476,6 +556,30 @@
         </div>
     </footer>
 
+    <!-- HOJA DE VIDA DE LA SONDA -->
+    <div id="sheet" class="fixed inset-0 z-[55] hidden items-start md:items-center justify-center bg-black/75 p-2 md:p-4" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+        <div class="panel sheet-scroll rounded-2xl w-full max-w-4xl overflow-y-auto relative">
+            <div class="metal-edge absolute top-0 left-0 right-0"></div>
+            <div id="sheetBody"></div>
+        </div>
+    </div>
+
+    <!-- FORMULARIO GENÉRICO -->
+    <div id="formModal" class="fixed inset-0 z-[65] hidden items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+        <form id="formEl" class="panel rounded-2xl p-6 w-full max-w-lg max-h-[92vh] overflow-y-auto" novalidate>
+            <h3 id="formTitle" class="text-lg font-bold text-white"></h3>
+            <p id="formHint" class="text-sm text-steel-400 mt-1"></p>
+            <div id="formFields" class="grid sm:grid-cols-2 gap-4 mt-5"></div>
+            <p id="formError" class="text-sm text-ember mt-3 hidden"></p>
+            <div class="flex justify-end gap-3 mt-6">
+                <button type="button" id="formCancel" class="ghost-btn eng-focus px-4 py-2 rounded-lg text-sm">Cancelar</button>
+                <button type="submit" id="formOk" class="metal-fill metal-btn eng-focus px-5 py-2 rounded-lg text-sm">Guardar</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="toast" class="toast panel rounded-lg px-4 py-2.5 text-sm text-white flex items-center gap-2" role="status" aria-live="polite"></div>
+
     <!-- ACCESO A EXTENSIÓN -->
     <div id="gate" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
         <div class="panel rounded-2xl p-6 w-full max-w-sm">
@@ -532,6 +636,7 @@
         // ---------- Contenido ----------
         const views = [
             { id: 'inicio', label: 'Inicio', icon: 'fa-house', desc: 'Visión general del Hub y de los sistemas físicos que abordamos.' },
+            { id: 'sondas', label: 'Sondas', icon: 'fa-temperature-half', desc: 'La plantilla de sensores del Hub, con la hoja de vida de cada sonda.' },
             { id: 'servicios', label: 'Servicios', icon: 'fa-screwdriver-wrench', desc: 'Diseño, interventoría, entrega de obra y formación técnica.' },
             { id: 'productos', label: 'Productos', icon: 'fa-box-open', desc: 'Equipos y materiales relacionados, con acceso a WebMall.' },
             { id: 'extensiones', label: 'Extensiones', icon: 'fa-plug', desc: 'Conecta equipos reales para ver sus datos en el Hub.' },
@@ -572,8 +677,14 @@
             $('tabsDesktop').innerHTML = html.replace(/-X"/g, '-d"');
             $('tabsMobile').innerHTML = html.replace(/-X"/g, '-m"');
             document.querySelectorAll('[data-view-tab]').forEach(b => b.addEventListener('click', () => showView(b.dataset.viewTab)));
-            document.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', (e) => { e.preventDefault(); showView(b.dataset.goto); }));
         }
+        // Delegado: sirve también para botones creados después (tarjetas de inicio, sondas, etc.)
+        document.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-goto]');
+            if (!b) return;
+            e.preventDefault();
+            showView(b.dataset.goto);
+        });
 
         function showView(id, updateHash = true) {
             if (!views.some(v => v.id === id)) id = 'inicio';
@@ -586,6 +697,7 @@
             if (updateHash) history.replaceState(null, '', '#' + id);
             window.scrollTo({ top: 0 });
             if (id === 'simulaciones') runAllSims();
+            if (id === 'sondas') renderProbes();
         }
 
         // ---------- Tarjetas ----------
@@ -672,7 +784,12 @@
         $('gateOk').addEventListener('click', submitProtoGate);
         $('gateCancel').addEventListener('click', closeProtoGate);
         $('gateInput').addEventListener('keydown', e => { if (e.key === 'Enter') submitProtoGate(); });
-        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeProtoGate(); });
+        document.addEventListener('keydown', e => {
+            if (e.key !== 'Escape') return;
+            if (!$('gate').classList.contains('hidden')) closeProtoGate();
+            else if (!$('formModal').classList.contains('hidden')) closeForm();
+            else if (!$('sheet').classList.contains('hidden')) closeSheet();
+        });
 
         // ---------- Calculadora 4-20 mA ----------
         function calcMa() {
@@ -841,6 +958,807 @@
         }
 
         function runAllSims() { runComb(); runPump(); runTank(); }
+
+        // =====================================================================
+        // ---------- SONDAS: plantilla y hoja de vida ----------
+        // =====================================================================
+        const esc = escapeHtml;
+        const STORE_KEY = 'entalpia_psinapsis_sondas_v1';
+
+        const ESTADOS = {
+            activa:        { label: 'En proyecto',    color: '#3ddc84' },
+            disponible:    { label: 'Disponible',     color: '#7fb4ff' },
+            mantenimiento: { label: 'Mantenimiento',  color: '#ffb020' },
+            retirada:      { label: 'Retirada',       color: '#6b7a90' }
+        };
+        const TIPOS = {
+            'Temperatura': 'fa-temperature-half', 'Presión': 'fa-gauge-high', 'Caudal': 'fa-water',
+            'Gas / fugas': 'fa-wind', 'Humedad': 'fa-droplet', 'Nivel': 'fa-ruler-vertical',
+            'Llama': 'fa-fire', 'Corriente / energía': 'fa-bolt', 'Otro': 'fa-microchip'
+        };
+        const EVENTOS = {
+            'Alta':          { icon: 'fa-user-plus',        color: '#7f9bbb' },
+            'Asignación':    { icon: 'fa-briefcase',        color: '#3ddc84' },
+            'Liberación':    { icon: 'fa-right-from-bracket', color: '#7fb4ff' },
+            'Calibración':   { icon: 'fa-scale-balanced',   color: '#5fd4e8' },
+            'Falla':         { icon: 'fa-triangle-exclamation', color: '#ff6a4a' },
+            'Diagnóstico':   { icon: 'fa-stethoscope',      color: '#b39cff' },
+            'Mantenimiento': { icon: 'fa-screwdriver-wrench', color: '#ffb020' },
+            'Cambio de estado': { icon: 'fa-arrows-rotate', color: '#a9bdd3' },
+            'Nota':          { icon: 'fa-note-sticky',      color: '#a9bdd3' }
+        };
+
+        function todayISO() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+        function parseISO(s) { if (!s) return null; const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+        function fdate(s) { const d = parseISO(s); return d ? d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'; }
+        function daysBetween(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
+        function addDays(s, n) { const d = parseISO(s); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+        const uid = () => Math.random().toString(36).slice(2, 10);
+
+        // Sonda real existente: el nodo ESP32 + DS18B20 del monitor de quemador
+        function seedData() {
+            return {
+                version: 1,
+                sondas: [{
+                    id: 'SND-001',
+                    alias: 'Centinela del quemador',
+                    tipo: 'Temperatura',
+                    modelo: 'DS18B20',
+                    fabricante: 'Analog Devices (Maxim Integrated)',
+                    serial: '',
+                    variable: 'Temperatura de proceso',
+                    rango: '-55 a 125 °C',
+                    exactitud: '±0,5 °C entre -10 y 85 °C',
+                    resolucion: '9 a 12 bits (0,0625 °C a 12 bits)',
+                    senal: 'Digital 1-Wire',
+                    nodo: 'ESP32 DevKit',
+                    firmware: 'Monitor de Proceso (servidor web + envío a Google Sheets)',
+                    alimentacion: '3,3 V con resistencia pull-up de 4,7 kΩ',
+                    transmision: 'Wi-Fi · registro en Google Sheets cada 30 s',
+                    ingreso: '2026-10-08',
+                    calIntervalo: 365,
+                    estado: 'activa',
+                    monitorUrl: '../AppsPlataforma/ESP32/monitor_quemador.html',
+                    monitorCode: '192.168.101.14',
+                    notas: 'Primera sonda del Hub. Alimenta el monitor del quemador y la curva de temperatura.',
+                    asignaciones: [
+                        { id: uid(), proyecto: 'Banco de pruebas · Monitor de quemador', cliente: "Hub de Ingeniería Pioneer's", ubicacion: 'Laboratorio Entalpía', punto: 'Cámara del quemador', desde: '2026-10-08', hasta: '' }
+                    ],
+                    calibraciones: [],
+                    eventos: [
+                        { id: uid(), fecha: '2026-10-08', tipo: 'Alta', titulo: 'Ingreso a la plantilla', detalle: 'Integrada al ESP32 DevKit (puerto COM8) con OneWire y DallasTemperature.' },
+                        { id: uid(), fecha: '2026-10-08', tipo: 'Falla', titulo: 'Lectura de -127 °C', detalle: 'El nodo no detectaba la sonda: valor de desconexión del DS18B20. Se revisó el cableado del bus 1-Wire.', resuelto: true, resueltoFecha: '2026-10-08' },
+                        { id: uid(), fecha: '2026-10-08', tipo: 'Diagnóstico', titulo: 'Sonda detectada', detalle: 'El nodo reporta "Sensores encontrados: 1" y entrega lecturas válidas.' },
+                        { id: uid(), fecha: '2026-10-08', tipo: 'Asignación', titulo: 'Asignada a Banco de pruebas · Monitor de quemador', detalle: 'Punto de medición: Cámara del quemador.' },
+                        { id: uid(), fecha: '2026-10-08', tipo: 'Nota', titulo: 'Telemetría en línea', detalle: 'Registro en Google Sheets cada 30 s y monitor web del quemador publicado.' }
+                    ]
+                }]
+            };
+        }
+
+        let store;
+        function loadStore() {
+            try {
+                const raw = localStorage.getItem(STORE_KEY);
+                if (raw) { const d = JSON.parse(raw); if (d && Array.isArray(d.sondas)) return d; }
+            } catch (e) { /* almacenamiento no disponible */ }
+            return seedData();
+        }
+        function saveStore() {
+            try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+            catch (e) { toast('No se pudo guardar en este navegador. Exporta para no perder los cambios.', true); }
+        }
+        store = loadStore();
+
+        const getProbe = (id) => store.sondas.find(s => s.id === id);
+        const currentAssignment = (p) => (p.asignaciones || []).find(a => !a.hasta);
+        const openIncidents = (p) => (p.eventos || []).filter(e => e.tipo === 'Falla' && !e.resuelto);
+        function lastCal(p) {
+            const c = (p.calibraciones || []).slice().sort((a, b) => b.fecha.localeCompare(a.fecha));
+            return c[0] || null;
+        }
+        function calStatus(p) {
+            const c = lastCal(p);
+            if (!c) return { level: 'none', label: 'Sin calibración registrada', short: 'Sin registro' };
+            const due = addDays(c.fecha, Number(p.calIntervalo) || 365);
+            const left = daysBetween(todayISO(), due);
+            if (left < 0) return { level: 'bad', label: `Vencida hace ${-left} días`, short: 'Vencida', due };
+            if (left <= 30) return { level: 'warn', label: `Vence en ${left} días`, short: 'Por vencer', due };
+            return { level: 'ok', label: `Vigente hasta ${fdate(due)}`, short: 'Vigente', due };
+        }
+        function health(p) {
+            if (p.estado === 'retirada') return { score: 0, label: 'Retirada', color: '#6b7a90' };
+            let s = 100;
+            const c = calStatus(p);
+            if (c.level === 'none') s -= 30; else if (c.level === 'bad') s -= 40; else if (c.level === 'warn') s -= 10;
+            s -= openIncidents(p).length * 25;
+            if (p.estado === 'mantenimiento') s -= 20;
+            s = Math.max(0, Math.min(100, s));
+            const color = s >= 75 ? '#3ddc84' : s >= 45 ? '#ffb020' : '#ff6a4a';
+            const label = s >= 75 ? 'Saludable' : s >= 45 ? 'Requiere atención' : 'Crítica';
+            return { score: s, label, color };
+        }
+        const allProjects = () => [...new Set(store.sondas.flatMap(p => (p.asignaciones || []).map(a => a.proyecto)).filter(Boolean))].sort();
+        function nextId() {
+            const n = store.sondas.reduce((m, p) => Math.max(m, parseInt(String(p.id).replace(/\D/g, ''), 10) || 0), 0) + 1;
+            return 'SND-' + String(n).padStart(3, '0');
+        }
+        function addEvent(p, tipo, titulo, detalle, extra = {}) {
+            p.eventos = p.eventos || [];
+            p.eventos.push({ id: uid(), fecha: extra.fecha || todayISO(), tipo, titulo, detalle: detalle || '', ...extra });
+        }
+
+        let toastTimer;
+        function toast(msg, warn = false) {
+            const t = $('toast');
+            t.innerHTML = `<i class="fa-solid ${warn ? 'fa-triangle-exclamation text-ember' : 'fa-circle-check text-green-400'}"></i>${esc(msg)}`;
+            t.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+        }
+
+        // ---------- Plantilla ----------
+        let probeFilter = 'todas', probeMode = 'grid';
+
+        function renderProbes() {
+            const S = store.sondas;
+            const alerts = S.filter(p => p.estado !== 'retirada' && health(p).score < 75).length;
+            const kpis = [
+                { label: 'Sondas en plantilla', value: S.filter(p => p.estado !== 'retirada').length, icon: 'fa-users' },
+                { label: 'Trabajando en proyecto', value: S.filter(p => p.estado === 'activa').length, icon: 'fa-briefcase' },
+                { label: 'Disponibles en banco', value: S.filter(p => p.estado === 'disponible').length, icon: 'fa-warehouse' },
+                { label: 'Requieren atención', value: alerts, icon: 'fa-heart-pulse', warn: alerts > 0 }
+            ];
+            $('probeKpis').innerHTML = kpis.map(k => `
+                <div class="card rounded-xl p-4 flex items-center gap-3">
+                    <div class="icon-tile w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"><i class="fa-solid ${k.icon}"></i></div>
+                    <div class="min-w-0">
+                        <div class="${k.warn ? 'ember-text' : 'readout'} text-2xl font-bold leading-none">${k.value}</div>
+                        <div class="text-xs text-steel-400 mt-1">${k.label}</div>
+                    </div>
+                </div>`).join('');
+
+            const filters = [['todas', 'Todas'], ...Object.entries(ESTADOS).map(([k, v]) => [k, v.label])];
+            $('probeFilters').innerHTML = filters.map(([k, l]) => {
+                const n = k === 'todas' ? S.length : S.filter(p => p.estado === k).length;
+                return `<button type="button" data-filter="${k}" aria-pressed="${probeFilter === k}" class="chip eng-focus px-3 py-1.5 rounded-full text-xs">${l} <span class="opacity-70">${n}</span></button>`;
+            }).join('');
+
+            document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === probeMode)));
+            $('probeGrid').classList.toggle('hidden', probeMode !== 'grid');
+            $('probeProjects').classList.toggle('hidden', probeMode !== 'projects');
+
+            const q = $('probeSearch').value.trim().toLowerCase();
+            const list = S.filter(p => probeFilter === 'todas' || p.estado === probeFilter).filter(p => {
+                if (!q) return true;
+                const a = currentAssignment(p);
+                return [p.id, p.alias, p.modelo, p.tipo, p.nodo, a && a.proyecto].filter(Boolean).join(' ').toLowerCase().includes(q);
+            });
+
+            if (probeMode === 'grid') renderGrid(list); else renderByProject(list);
+        }
+
+        function emptyState(msg) {
+            return `<div class="panel rounded-xl p-10 text-center col-span-full">
+                <div class="icon-tile w-14 h-14 rounded-xl flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-user-astronaut"></i></div>
+                <p class="text-steel-300 mt-4">${msg}</p>
+                <button type="button" data-action="new" class="metal-fill metal-btn eng-focus px-5 py-2.5 rounded-lg text-sm mt-5 inline-flex items-center gap-2"><i class="fa-solid fa-user-plus"></i> Contratar sonda</button>
+            </div>`;
+        }
+
+        function renderGrid(list) {
+            if (!list.length) { $('probeGrid').innerHTML = emptyState(store.sondas.length ? 'Ninguna sonda coincide con el filtro.' : 'Aún no hay sondas en la plantilla.'); return; }
+            $('probeGrid').innerHTML = list.map(p => {
+                const est = ESTADOS[p.estado] || ESTADOS.disponible;
+                const a = currentAssignment(p);
+                const h = health(p);
+                const cal = calStatus(p);
+                const inc = openIncidents(p).length;
+                const years = daysBetween(p.ingreso || todayISO(), todayISO());
+                return `
+                <button type="button" data-open="${esc(p.id)}" class="card probe-card eng-focus text-left rounded-xl p-5 flex flex-col gap-4 ${p.estado === 'retirada' ? 'opacity-60' : ''}" style="--probe-accent:${est.color}">
+                    <div class="flex items-start gap-3">
+                        <div class="icon-tile w-12 h-12 rounded-xl flex items-center justify-center text-lg flex-shrink-0"><i class="fa-solid ${TIPOS[p.tipo] || 'fa-microchip'}"></i></div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="probe-code text-xs text-steel-400">${esc(p.id)}</span>
+                                <span class="flex items-center gap-1.5 text-xs text-steel-300"><span class="led led-${esc(p.estado)}"></span>${est.label}</span>
+                            </div>
+                            <h3 class="text-lg font-bold text-white truncate mt-0.5">${esc(p.alias || p.modelo)}</h3>
+                            <div class="text-xs text-steel-400 truncate">${esc(p.tipo)} · ${esc(p.modelo || '—')} · ${esc(p.nodo || 'sin nodo')}</div>
+                        </div>
+                    </div>
+                    <div class="rounded-lg bg-ti900 border border-[#1a2535] px-3 py-2.5">
+                        <div class="text-[11px] uppercase tracking-wider text-steel-500">${a ? 'Trabajando en' : 'Asignación'}</div>
+                        <div class="text-sm text-white truncate mt-0.5">${a ? esc(a.proyecto) : '<span class="text-steel-400">Sin proyecto</span>'}</div>
+                        ${a && a.punto ? `<div class="text-xs text-steel-400 truncate">${esc(a.punto)}</div>` : ''}
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1.5"><span class="text-steel-400">Salud</span><span style="color:${h.color}" class="font-semibold">${h.label}${p.estado !== 'retirada' ? ' · ' + h.score : ''}</span></div>
+                        <div class="health-bar"><span style="width:${h.score}%;background:${h.color}"></span></div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 text-[11px]">
+                        <span class="tag-steel px-2 py-0.5 rounded"><i class="fa-solid fa-scale-balanced mr-1"></i>${cal.short}</span>
+                        ${inc ? `<span class="px-2 py-0.5 rounded border border-[#ff6a4a66] text-[#ff9a80] bg-[#ff6a4a14]"><i class="fa-solid fa-triangle-exclamation mr-1"></i>${inc} incidente${inc > 1 ? 's' : ''}</span>` : ''}
+                        <span class="tag-steel px-2 py-0.5 rounded"><i class="fa-solid fa-diagram-project mr-1"></i>${(p.asignaciones || []).length} proyecto${(p.asignaciones || []).length === 1 ? '' : 's'}</span>
+                        <span class="tag-steel px-2 py-0.5 rounded"><i class="fa-regular fa-calendar mr-1"></i>${years} día${years === 1 ? '' : 's'} de servicio</span>
+                    </div>
+                    <span class="mt-auto text-sm text-steel-300">Ver hoja de vida <i class="fa-solid fa-arrow-right ml-1"></i></span>
+                </button>`;
+            }).join('');
+        }
+
+        function renderByProject(list) {
+            if (!list.length) { $('probeProjects').innerHTML = emptyState('Ninguna sonda coincide con el filtro.'); return; }
+            const groups = {};
+            list.forEach(p => {
+                const a = currentAssignment(p);
+                const key = a ? a.proyecto : (p.estado === 'retirada' ? '~Retiradas' : '~Sin proyecto');
+                (groups[key] = groups[key] || []).push({ p, a });
+            });
+            const keys = Object.keys(groups).sort((x, y) => (x.startsWith('~') - y.startsWith('~')) || x.localeCompare(y));
+            $('probeProjects').innerHTML = keys.map(k => {
+                const isBench = k.startsWith('~');
+                const first = groups[k][0].a;
+                return `
+                <div class="panel rounded-xl overflow-hidden">
+                    <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#1a2535]">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="icon-tile w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"><i class="fa-solid ${isBench ? 'fa-warehouse' : 'fa-helmet-safety'}"></i></div>
+                            <div class="min-w-0">
+                                <h3 class="font-bold text-white truncate">${esc(isBench ? k.slice(1) : k)}</h3>
+                                <div class="text-xs text-steel-400 truncate">${isBench ? 'Sondas fuera de proyecto' : esc([first && first.cliente, first && first.ubicacion].filter(Boolean).join(' · ') || 'Proyecto')}</div>
+                            </div>
+                        </div>
+                        <span class="tag-steel px-2.5 py-1 rounded text-xs flex-shrink-0">${groups[k].length} sonda${groups[k].length > 1 ? 's' : ''}</span>
+                    </div>
+                    <div class="divide-y divide-[#1a2535]">
+                        ${groups[k].map(({ p, a }) => `
+                        <button type="button" data-open="${esc(p.id)}" class="w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-[#151e2b] eng-focus">
+                            <span class="led led-${esc(p.estado)}"></span>
+                            <span class="probe-code text-xs text-steel-400 w-16 flex-shrink-0">${esc(p.id)}</span>
+                            <span class="text-sm text-white truncate flex-1">${esc(p.alias || p.modelo)} <span class="text-steel-500">· ${esc(p.tipo)}</span></span>
+                            <span class="text-xs text-steel-400 truncate hidden sm:block max-w-[40%]">${a ? esc(a.punto || '') + (a.desde ? ' · desde ' + fdate(a.desde) : '') : esc((ESTADOS[p.estado] || {}).label || '')}</span>
+                            <i class="fa-solid fa-chevron-right text-steel-500 text-xs"></i>
+                        </button>`).join('')}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // ---------- Hoja de vida ----------
+        let sheetId = null, sheetTab = 'ficha';
+
+        function openSheet(id, tab) {
+            sheetId = id;
+            if (tab) sheetTab = tab;
+            renderSheet();
+            $('sheet').classList.remove('hidden');
+            $('sheet').classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            document.body.classList.add('sheet-open');
+        }
+        function closeSheet() {
+            $('sheet').classList.add('hidden');
+            $('sheet').classList.remove('flex');
+            document.body.style.overflow = '';
+            document.body.classList.remove('sheet-open');
+            sheetId = null;
+        }
+
+        function kv(label, value) {
+            return `<div class="py-2.5 border-b border-[#1a2535] grid grid-cols-[minmax(110px,40%)_1fr] gap-3 text-sm">
+                <dt class="text-steel-400">${label}</dt><dd class="text-white break-words">${value ? esc(value) : '<span class="text-steel-500">Por registrar</span>'}</dd></div>`;
+        }
+
+        function renderSheet() {
+            const p = getProbe(sheetId);
+            if (!p) { closeSheet(); return; }
+            const est = ESTADOS[p.estado] || ESTADOS.disponible;
+            const a = currentAssignment(p);
+            const h = health(p);
+            const cal = calStatus(p);
+            const inc = openIncidents(p);
+            const tabs = [
+                ['ficha', 'Ficha técnica', 'fa-id-card'],
+                ['proyectos', `Proyectos (${(p.asignaciones || []).length})`, 'fa-briefcase'],
+                ['calibraciones', `Calibraciones (${(p.calibraciones || []).length})`, 'fa-scale-balanced'],
+                ['bitacora', `Bitácora (${(p.eventos || []).length})`, 'fa-notes-medical']
+            ];
+            const retired = p.estado === 'retirada';
+
+            const asign = (p.asignaciones || []).slice().sort((x, y) => (y.desde || '').localeCompare(x.desde || ''));
+            const cals = (p.calibraciones || []).slice().sort((x, y) => y.fecha.localeCompare(x.fecha));
+            // Más reciente primero; a igual fecha, el último anotado arriba
+            const evs = (p.eventos || []).map((e, i) => ({ e, i })).sort((x, y) => y.e.fecha.localeCompare(x.e.fecha) || y.i - x.i).map(x => x.e);
+
+            $('sheetBody').innerHTML = `
+            <div class="print-only" style="margin-bottom:10px">
+                <div style="font-size:12px">Entalpía · Hub de Ingeniería Pioneer's · Un desarrollo de Industrias I.A. Col</div>
+                <div style="font-size:20px;font-weight:800;margin-top:4px">Hoja de vida de sonda ${esc(p.id)}</div>
+                <div style="font-size:11px">Generada el ${fdate(todayISO())}</div>
+            </div>
+
+            <!-- Encabezado tipo credencial -->
+            <div class="p-5 md:p-7 border-b border-[#1a2535]">
+                <div class="flex items-start gap-4">
+                    <div class="icon-tile w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center text-2xl md:text-3xl flex-shrink-0 relative">
+                        <i class="fa-solid ${TIPOS[p.tipo] || 'fa-microchip'}"></i>
+                        <span class="led led-${esc(p.estado)} absolute -right-1 -top-1" style="width:14px;height:14px"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="probe-code text-sm text-steel-400">${esc(p.id)}</span>
+                            <span class="px-2 py-0.5 rounded text-xs font-semibold" style="color:${est.color};border:1px solid ${est.color}66;background:${est.color}14">${est.label}</span>
+                        </div>
+                        <h3 id="sheetTitle" class="metal-text text-2xl md:text-3xl font-black tracking-tight mt-1 break-words">${esc(p.alias || p.modelo)}</h3>
+                        <div class="text-sm text-steel-300 mt-1">${esc(p.tipo)} · ${esc(p.modelo || '—')}${p.fabricante ? ' · ' + esc(p.fabricante) : ''}</div>
+                    </div>
+                    <button type="button" data-action="close" class="no-print ghost-btn eng-focus w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" aria-label="Cerrar hoja de vida"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+
+                <!-- Signos vitales -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+                    <div class="card rounded-xl p-3.5">
+                        <div class="text-[11px] text-steel-400 uppercase tracking-wider">Salud</div>
+                        <div class="text-xl font-bold mt-1" style="color:${h.color}">${retired ? '—' : h.score + ' %'}</div>
+                        <div class="text-xs text-steel-400">${h.label}</div>
+                    </div>
+                    <div class="card rounded-xl p-3.5">
+                        <div class="text-[11px] text-steel-400 uppercase tracking-wider">Calibración</div>
+                        <div class="text-base font-bold mt-1 text-white">${cal.short}</div>
+                        <div class="text-xs text-steel-400">${esc(cal.label)}</div>
+                    </div>
+                    <div class="card rounded-xl p-3.5">
+                        <div class="text-[11px] text-steel-400 uppercase tracking-wider">Incidentes abiertos</div>
+                        <div class="text-xl font-bold mt-1 ${inc.length ? 'ember-text' : 'readout'}">${inc.length}</div>
+                        <div class="text-xs text-steel-400">${inc.length ? esc(inc[0].titulo) : 'Sin fallas pendientes'}</div>
+                    </div>
+                    <div class="card rounded-xl p-3.5">
+                        <div class="text-[11px] text-steel-400 uppercase tracking-wider">Trabajo actual</div>
+                        <div class="text-sm font-bold mt-1 text-white truncate">${a ? esc(a.proyecto) : 'Sin proyecto'}</div>
+                        <div class="text-xs text-steel-400 truncate">${a ? 'Desde ' + fdate(a.desde) : 'Lista para asignar'}</div>
+                    </div>
+                </div>
+
+                <!-- Acciones -->
+                <div class="no-print flex flex-wrap gap-2 mt-5">
+                    ${!retired ? (a
+                        ? `<button type="button" data-action="release" class="ghost-btn eng-focus px-3.5 py-2 rounded-lg text-sm"><i class="fa-solid fa-right-from-bracket mr-1.5"></i>Liberar del proyecto</button>
+                           <button type="button" data-action="assign" class="ghost-btn eng-focus px-3.5 py-2 rounded-lg text-sm"><i class="fa-solid fa-shuffle mr-1.5"></i>Trasladar</button>`
+                        : `<button type="button" data-action="assign" class="metal-fill metal-btn eng-focus px-3.5 py-2 rounded-lg text-sm"><i class="fa-solid fa-briefcase mr-1.5"></i>Asignar a proyecto</button>`) : ''}
+                    ${!retired ? `<button type="button" data-action="cal" class="ghost-btn eng-focus px-3.5 py-2 rounded-lg text-sm"><i class="fa-solid fa-scale-balanced mr-1.5"></i>Registrar calibración</button>` : ''}
+                    <button type="button" data-action="event" class="ghost-btn eng-focus px-3.5 py-2 rounded-lg text-sm"><i class="fa-solid fa-notes-medical mr-1.5"></i>Anotar en bitácora</button>
+                    ${p.monitorUrl ? `<button type="button" data-action="monitor" class="ghost-btn eng-focus px-3.5 py-2 rounded-lg text-sm"><i class="fa-solid fa-wave-square mr-1.5"></i>Signos en vivo</button>` : ''}
+                    <button type="button" data-action="print" class="ghost-btn eng-focus px-3.5 py-2 rounded-lg text-sm"><i class="fa-solid fa-print mr-1.5"></i>Imprimir / PDF</button>
+                </div>
+
+                <div class="no-print flex gap-5 overflow-x-auto no-scrollbar mt-6 -mb-5 md:-mb-7" role="tablist" aria-label="Secciones de la hoja de vida">
+                    ${tabs.map(([k, l, i]) => `<button type="button" role="tab" data-sheet-tab="${k}" aria-selected="${sheetTab === k}" class="tab-btn eng-focus py-3 text-sm font-medium"><i class="fa-solid ${i} mr-1.5"></i>${l}</button>`).join('')}
+                </div>
+            </div>
+
+            <div class="p-5 md:p-7">
+                <!-- Ficha -->
+                <div data-sheet-pane="ficha" class="${sheetTab === 'ficha' ? '' : 'hidden'}">
+                    <div class="flex items-center justify-between gap-3">
+                        <h4 class="text-lg font-bold text-white">Ficha técnica</h4>
+                        <button type="button" data-action="edit" class="no-print ghost-btn eng-focus px-3 py-1.5 rounded-lg text-xs"><i class="fa-solid fa-pen mr-1"></i>Editar</button>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-x-8 mt-3">
+                        <dl>
+                            <div class="text-xs uppercase tracking-wider text-steel-500 mt-2 mb-1">Identificación</div>
+                            ${kv('Código', p.id)}${kv('Nombre', p.alias)}${kv('Tipo', p.tipo)}${kv('Modelo', p.modelo)}${kv('Fabricante', p.fabricante)}${kv('Serial / dirección ROM', p.serial)}${kv('Fecha de ingreso', p.ingreso ? fdate(p.ingreso) : '')}
+                        </dl>
+                        <dl>
+                            <div class="text-xs uppercase tracking-wider text-steel-500 mt-2 mb-1">Capacidades</div>
+                            ${kv('Variable medida', p.variable)}${kv('Rango', p.rango)}${kv('Exactitud', p.exactitud)}${kv('Resolución', p.resolucion)}${kv('Señal', p.senal)}
+                        </dl>
+                        <dl>
+                            <div class="text-xs uppercase tracking-wider text-steel-500 mt-5 mb-1">Conexión</div>
+                            ${kv('Nodo / pasarela', p.nodo)}${kv('Firmware', p.firmware)}${kv('Alimentación', p.alimentacion)}${kv('Transmisión', p.transmision)}
+                        </dl>
+                        <dl>
+                            <div class="text-xs uppercase tracking-wider text-steel-500 mt-5 mb-1">Mantenimiento</div>
+                            ${kv('Intervalo de calibración', p.calIntervalo ? p.calIntervalo + ' días' : '')}${kv('Última calibración', lastCal(p) ? fdate(lastCal(p).fecha) : '')}${kv('Próxima calibración', cal.due ? fdate(cal.due) : '')}${kv('Monitor en vivo', p.monitorUrl ? 'Configurado' : '')}
+                        </dl>
+                    </div>
+                    ${p.notas ? `<div class="mt-5 rounded-lg border border-[#243245] bg-ti900 p-4 text-sm text-steel-300"><span class="text-steel-200 font-semibold">Observaciones:</span> ${esc(p.notas)}</div>` : ''}
+                    <div class="no-print flex flex-wrap gap-2 mt-6 pt-5 border-t border-[#1a2535]">
+                        ${p.estado !== 'mantenimiento' && !retired ? `<button type="button" data-action="state" data-state="mantenimiento" class="ghost-btn eng-focus px-3 py-1.5 rounded-lg text-xs"><i class="fa-solid fa-screwdriver-wrench mr-1"></i>Enviar a mantenimiento</button>` : ''}
+                        ${p.estado === 'mantenimiento' || retired ? `<button type="button" data-action="state" data-state="reactivar" class="ghost-btn eng-focus px-3 py-1.5 rounded-lg text-xs"><i class="fa-solid fa-heart-circle-check mr-1"></i>Reincorporar</button>` : ''}
+                        ${!retired ? `<button type="button" data-action="state" data-state="retirada" class="ghost-btn eng-focus px-3 py-1.5 rounded-lg text-xs"><i class="fa-solid fa-box-archive mr-1"></i>Retirar sonda</button>` : ''}
+                        <button type="button" data-action="delete" class="ghost-btn eng-focus px-3 py-1.5 rounded-lg text-xs text-[#ff9a80] ml-auto"><i class="fa-solid fa-trash mr-1"></i>Eliminar registro</button>
+                    </div>
+                </div>
+
+                <!-- Proyectos -->
+                <div data-sheet-pane="proyectos" class="${sheetTab === 'proyectos' ? '' : 'hidden'}">
+                    <h4 class="text-lg font-bold text-white">Historial laboral</h4>
+                    <p class="text-sm text-steel-400 mt-1">Proyectos en los que ha trabajado esta sonda, del más reciente al más antiguo.</p>
+                    <div class="mt-5 space-y-3">
+                        ${asign.length ? asign.map(x => {
+                            const dur = daysBetween(x.desde || todayISO(), x.hasta || todayISO());
+                            return `
+                            <div class="card rounded-xl p-4 flex gap-4 items-start">
+                                <div class="icon-tile w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-helmet-safety"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h5 class="font-bold text-white">${esc(x.proyecto)}</h5>
+                                        ${!x.hasta ? '<span class="px-2 py-0.5 rounded text-[11px] font-semibold text-[#3ddc84] border border-[#3ddc8466] bg-[#3ddc8414]">Actual</span>' : ''}
+                                    </div>
+                                    <div class="text-sm text-steel-300 mt-0.5">${esc([x.cliente, x.ubicacion].filter(Boolean).join(' · ') || '—')}</div>
+                                    ${x.punto ? `<div class="text-sm text-steel-400 mt-0.5"><i class="fa-solid fa-location-crosshairs mr-1"></i>${esc(x.punto)}</div>` : ''}
+                                </div>
+                                <div class="text-right text-xs text-steel-400 flex-shrink-0">
+                                    <div>${fdate(x.desde)} → ${x.hasta ? fdate(x.hasta) : 'hoy'}</div>
+                                    <div class="mt-0.5">${dur} día${dur === 1 ? '' : 's'}</div>
+                                </div>
+                            </div>`;
+                        }).join('') : '<p class="text-steel-400 text-sm">Esta sonda aún no ha trabajado en ningún proyecto.</p>'}
+                    </div>
+                </div>
+
+                <!-- Calibraciones -->
+                <div data-sheet-pane="calibraciones" class="${sheetTab === 'calibraciones' ? '' : 'hidden'}">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h4 class="text-lg font-bold text-white">Calibraciones y verificaciones</h4>
+                            <p class="text-sm text-steel-400 mt-1">Intervalo definido: cada ${esc(p.calIntervalo || 365)} días.</p>
+                        </div>
+                        ${!retired ? `<button type="button" data-action="cal" class="no-print ghost-btn eng-focus px-3 py-1.5 rounded-lg text-xs"><i class="fa-solid fa-plus mr-1"></i>Registrar</button>` : ''}
+                    </div>
+                    ${cals.length ? `
+                    <div class="overflow-x-auto mt-5">
+                        <table class="w-full text-sm">
+                            <thead><tr class="text-left text-steel-400 border-b border-[#243245]">
+                                <th class="py-2 pr-3 font-medium">Fecha</th><th class="py-2 pr-3 font-medium">Tipo</th><th class="py-2 pr-3 font-medium">Patrón</th><th class="py-2 pr-3 font-medium">Error</th><th class="py-2 pr-3 font-medium">Resultado</th><th class="py-2 font-medium">Responsable</th>
+                            </tr></thead>
+                            <tbody>${cals.map(c => `
+                                <tr class="border-b border-[#1a2535] align-top">
+                                    <td class="py-2.5 pr-3 text-white whitespace-nowrap">${fdate(c.fecha)}</td>
+                                    <td class="py-2.5 pr-3 text-steel-300">${esc(c.tipo)}</td>
+                                    <td class="py-2.5 pr-3 text-steel-300">${esc(c.patron || '—')}</td>
+                                    <td class="py-2.5 pr-3 text-steel-300 whitespace-nowrap">${esc(c.error || '—')}</td>
+                                    <td class="py-2.5 pr-3"><span class="font-semibold ${c.resultado === 'Conforme' ? 'text-[#3ddc84]' : 'text-ember'}">${esc(c.resultado)}</span></td>
+                                    <td class="py-2.5 text-steel-300">${esc(c.responsable || '—')}${c.notas ? `<div class="text-xs text-steel-500 mt-0.5">${esc(c.notas)}</div>` : ''}</td>
+                                </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>` : `<div class="mt-5 rounded-lg border border-dashed border-[#243245] p-6 text-center text-sm text-steel-400">Sin calibraciones registradas. Una verificación contra un patrón (por ejemplo, un termómetro de referencia en baño de hielo a 0 °C) deja la sonda con su calibración vigente.</div>`}
+                </div>
+
+                <!-- Bitácora -->
+                <div data-sheet-pane="bitacora" class="${sheetTab === 'bitacora' ? '' : 'hidden'}">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h4 class="text-lg font-bold text-white">Bitácora clínica</h4>
+                            <p class="text-sm text-steel-400 mt-1">Ingresos, fallas, diagnósticos, mantenimientos y traslados.</p>
+                        </div>
+                        <button type="button" data-action="event" class="no-print ghost-btn eng-focus px-3 py-1.5 rounded-lg text-xs"><i class="fa-solid fa-plus mr-1"></i>Anotar</button>
+                    </div>
+                    <div class="mt-6 space-y-4">
+                        ${evs.length ? evs.map(e => {
+                            const t = EVENTOS[e.tipo] || EVENTOS.Nota;
+                            const open = e.tipo === 'Falla' && !e.resuelto;
+                            return `
+                            <div class="tl-item">
+                                <span class="tl-dot" style="background:${t.color}"></span>
+                                <div class="flex items-center gap-2 flex-wrap text-xs">
+                                    <span class="text-steel-400">${fdate(e.fecha)}</span>
+                                    <span class="font-semibold" style="color:${t.color}"><i class="fa-solid ${t.icon} mr-1"></i>${esc(e.tipo)}</span>
+                                    ${e.tipo === 'Falla' ? (open
+                                        ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold text-[#ff9a80] border border-[#ff6a4a66]">ABIERTA</span>`
+                                        : `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold text-[#3ddc84] border border-[#3ddc8466]">RESUELTA${e.resueltoFecha ? ' · ' + fdate(e.resueltoFecha) : ''}</span>`) : ''}
+                                </div>
+                                <div class="text-white font-semibold mt-1">${esc(e.titulo)}</div>
+                                ${e.detalle ? `<div class="text-sm text-steel-300 mt-0.5 leading-relaxed">${esc(e.detalle)}</div>` : ''}
+                                ${open ? `<button type="button" data-action="resolve" data-ev="${esc(e.id)}" class="no-print mt-2 ghost-btn eng-focus px-3 py-1 rounded-lg text-xs"><i class="fa-solid fa-check mr-1"></i>Marcar como resuelta</button>` : ''}
+                            </div>`;
+                        }).join('') : '<p class="text-steel-400 text-sm">Sin anotaciones.</p>'}
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // ---------- Formulario genérico ----------
+        let formSubmit = null;
+        function openForm({ title, hint = '', fields, okLabel = 'Guardar', onSubmit }) {
+            $('formTitle').textContent = title;
+            $('formHint').textContent = hint;
+            $('formHint').classList.toggle('hidden', !hint);
+            $('formOk').textContent = okLabel;
+            $('formError').classList.add('hidden');
+            $('formFields').innerHTML = fields.map(f => {
+                const id = 'ff_' + f.name;
+                const req = f.required ? ' <span class="text-ember">*</span>' : '';
+                const span = f.full ? 'sm:col-span-2' : '';
+                const val = f.value == null ? '' : f.value;
+                let input;
+                if (f.type === 'select') {
+                    input = `<select id="${id}" name="${f.name}" class="field-in text-sm">${f.options.map(o => {
+                        const [v, l] = Array.isArray(o) ? o : [o, o];
+                        return `<option value="${esc(v)}" ${String(v) === String(val) ? 'selected' : ''}>${esc(l)}</option>`;
+                    }).join('')}</select>`;
+                } else if (f.type === 'textarea') {
+                    input = `<textarea id="${id}" name="${f.name}" rows="3" class="field-in text-sm" placeholder="${esc(f.placeholder || '')}">${esc(val)}</textarea>`;
+                } else {
+                    const list = f.list ? `list="${id}_dl"` : '';
+                    input = `<input id="${id}" name="${f.name}" type="${f.type || 'text'}" ${list} value="${esc(val)}" placeholder="${esc(f.placeholder || '')}" class="field-in text-sm" ${f.type === 'number' ? 'min="1" step="1"' : ''} autocomplete="off">`
+                        + (f.list ? `<datalist id="${id}_dl">${f.list.map(x => `<option value="${esc(x)}">`).join('')}</datalist>` : '');
+                }
+                const section = f.section ? `<div class="sm:col-span-2 text-xs uppercase tracking-wider text-steel-500 pt-2 border-t border-[#1a2535]">${esc(f.section)}</div>` : '';
+                return `${section}<div class="${span}"><label for="${id}" class="block text-sm text-steel-300 mb-1.5">${esc(f.label)}${req}</label>${input}</div>`;
+            }).join('');
+            formSubmit = () => {
+                const vals = {};
+                for (const f of fields) {
+                    const v = $('ff_' + f.name).value.trim();
+                    if (f.required && !v) return `Completa el campo «${f.label}».`;
+                    vals[f.name] = v;
+                }
+                return onSubmit(vals);
+            };
+            $('formModal').classList.remove('hidden');
+            $('formModal').classList.add('flex');
+            const first = $('formFields').querySelector('input,select,textarea');
+            if (first) first.focus();
+        }
+        function closeForm() {
+            $('formModal').classList.add('hidden');
+            $('formModal').classList.remove('flex');
+            formSubmit = null;
+        }
+        $('formEl').addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (!formSubmit) return;
+            const err = formSubmit();
+            if (err) { $('formError').textContent = err; $('formError').classList.remove('hidden'); return; }
+            closeForm();
+        });
+        $('formCancel').addEventListener('click', closeForm);
+        $('formModal').addEventListener('click', (e) => { if (e.target.id === 'formModal') closeForm(); });
+
+        // ---------- Acciones ----------
+        function probeFields(p = {}) {
+            return [
+                { section: 'Identificación', name: 'alias', label: 'Nombre de la sonda', required: true, value: p.alias, placeholder: 'Ej.: Vigía de la caldera 2' },
+                { name: 'tipo', label: 'Tipo', type: 'select', options: Object.keys(TIPOS), value: p.tipo || 'Temperatura' },
+                { name: 'modelo', label: 'Modelo', required: true, value: p.modelo, placeholder: 'Ej.: DS18B20, MAX6675, BMP280' },
+                { name: 'fabricante', label: 'Fabricante', value: p.fabricante },
+                { name: 'serial', label: 'Serial / dirección ROM', value: p.serial, placeholder: 'Ej.: 28-FF-64-1E-0F-16-04-6C' },
+                { name: 'ingreso', label: 'Fecha de ingreso', type: 'date', value: p.ingreso || todayISO() },
+                { section: 'Capacidades', name: 'variable', label: 'Variable medida', value: p.variable },
+                { name: 'rango', label: 'Rango', value: p.rango, placeholder: 'Ej.: 0 a 400 °C' },
+                { name: 'exactitud', label: 'Exactitud', value: p.exactitud, placeholder: 'Ej.: ±0,5 °C' },
+                { name: 'resolucion', label: 'Resolución', value: p.resolucion },
+                { name: 'senal', label: 'Señal', type: 'select', options: ['Digital 1-Wire', 'I²C', 'SPI', 'Analógica 0–3,3 V', '4–20 mA', 'Modbus RTU', 'Modbus TCP', 'MQTT', 'Otra'], value: p.senal || 'Digital 1-Wire' },
+                { section: 'Conexión', name: 'nodo', label: 'Nodo / pasarela', value: p.nodo, placeholder: 'Ej.: ESP32 DevKit' },
+                { name: 'firmware', label: 'Firmware', value: p.firmware },
+                { name: 'alimentacion', label: 'Alimentación', value: p.alimentacion },
+                { name: 'transmision', label: 'Transmisión', value: p.transmision, placeholder: 'Ej.: Wi-Fi · Google Sheets cada 30 s' },
+                { name: 'monitorUrl', label: 'Ruta del monitor en vivo', value: p.monitorUrl, placeholder: '../AppsPlataforma/…' },
+                { name: 'monitorCode', label: 'IP del nodo (acceso al monitor)', value: p.monitorCode, placeholder: '000.000.000.000' },
+                { section: 'Mantenimiento', name: 'calIntervalo', label: 'Intervalo de calibración (días)', type: 'number', value: p.calIntervalo || 365 },
+                { name: 'notas', label: 'Observaciones', type: 'textarea', full: true, value: p.notas }
+            ];
+        }
+
+        function newProbe() {
+            openForm({
+                title: 'Contratar una nueva sonda',
+                hint: 'Registra su ficha técnica. Luego podrás asignarla a un proyecto desde su hoja de vida.',
+                okLabel: 'Contratar',
+                fields: probeFields(),
+                onSubmit: (v) => {
+                    const p = { id: nextId(), ...v, calIntervalo: Number(v.calIntervalo) || 365, estado: 'disponible', asignaciones: [], calibraciones: [], eventos: [] };
+                    addEvent(p, 'Alta', 'Ingreso a la plantilla', `${v.modelo}${v.nodo ? ' conectada a ' + v.nodo : ''}.`, { fecha: v.ingreso || todayISO() });
+                    store.sondas.push(p);
+                    saveStore(); renderProbes();
+                    toast(`${p.id} ingresó a la plantilla`);
+                    openSheet(p.id, 'ficha');
+                }
+            });
+        }
+
+        function editProbe(p) {
+            openForm({
+                title: `Editar ficha · ${p.id}`,
+                fields: probeFields(p),
+                onSubmit: (v) => {
+                    Object.assign(p, v, { calIntervalo: Number(v.calIntervalo) || 365 });
+                    saveStore(); renderProbes(); renderSheet();
+                    toast('Ficha actualizada');
+                }
+            });
+        }
+
+        function assignProbe(p) {
+            const cur = currentAssignment(p);
+            openForm({
+                title: cur ? `Trasladar ${p.id} a otro proyecto` : `Asignar ${p.id} a un proyecto`,
+                hint: cur ? `Saldrá de «${cur.proyecto}» en la fecha de inicio indicada.` : 'La sonda quedará trabajando en este proyecto hasta que la liberes.',
+                okLabel: cur ? 'Trasladar' : 'Asignar',
+                fields: [
+                    { name: 'proyecto', label: 'Proyecto', required: true, full: true, list: allProjects(), placeholder: 'Escribe o elige un proyecto' },
+                    { name: 'cliente', label: 'Cliente', placeholder: 'Opcional' },
+                    { name: 'ubicacion', label: 'Ubicación', placeholder: 'Ciudad, planta, sitio' },
+                    { name: 'punto', label: 'Punto de medición', full: true, placeholder: 'Ej.: Salida del regulador de 2ª etapa' },
+                    { name: 'desde', label: 'Fecha de inicio', type: 'date', value: todayISO(), required: true }
+                ],
+                onSubmit: (v) => {
+                    if (cur && v.desde < cur.desde) return 'La fecha de inicio no puede ser anterior al ingreso al proyecto actual.';
+                    if (cur && cur.proyecto === v.proyecto) return 'La sonda ya trabaja en ese proyecto.';
+                    if (cur) { cur.hasta = v.desde; addEvent(p, 'Liberación', `Sale de ${cur.proyecto}`, 'Traslado a otro proyecto.', { fecha: v.desde }); }
+                    p.asignaciones.push({ id: uid(), proyecto: v.proyecto, cliente: v.cliente, ubicacion: v.ubicacion, punto: v.punto, desde: v.desde, hasta: '' });
+                    p.estado = 'activa';
+                    addEvent(p, 'Asignación', `Asignada a ${v.proyecto}`, v.punto ? `Punto de medición: ${v.punto}.` : '', { fecha: v.desde });
+                    saveStore(); renderProbes(); renderSheet();
+                    toast(`${p.id} trabaja ahora en ${v.proyecto}`);
+                }
+            });
+        }
+
+        function releaseProbe(p) {
+            const cur = currentAssignment(p);
+            if (!cur) return;
+            openForm({
+                title: `Liberar ${p.id}`,
+                hint: `Termina su trabajo en «${cur.proyecto}» y vuelve al banco como disponible.`,
+                okLabel: 'Liberar',
+                fields: [
+                    { name: 'hasta', label: 'Fecha de salida', type: 'date', value: todayISO(), required: true },
+                    { name: 'motivo', label: 'Motivo', type: 'select', options: ['Fin del proyecto', 'Reemplazo', 'Falla', 'Mantenimiento', 'Otro'] },
+                    { name: 'nota', label: 'Observaciones', type: 'textarea', full: true }
+                ],
+                onSubmit: (v) => {
+                    if (v.hasta < cur.desde) return 'La fecha de salida no puede ser anterior a la de inicio.';
+                    cur.hasta = v.hasta;
+                    p.estado = v.motivo === 'Mantenimiento' || v.motivo === 'Falla' ? 'mantenimiento' : 'disponible';
+                    addEvent(p, 'Liberación', `Sale de ${cur.proyecto}`, [v.motivo, v.nota].filter(Boolean).join('. '), { fecha: v.hasta });
+                    saveStore(); renderProbes(); renderSheet();
+                    toast(`${p.id} quedó ${ESTADOS[p.estado].label.toLowerCase()}`);
+                }
+            });
+        }
+
+        function calProbe(p) {
+            openForm({
+                title: `Registrar calibración · ${p.id}`,
+                okLabel: 'Registrar',
+                fields: [
+                    { name: 'fecha', label: 'Fecha', type: 'date', value: todayISO(), required: true },
+                    { name: 'tipo', label: 'Tipo', type: 'select', options: ['Verificación', 'Calibración', 'Ajuste'] },
+                    { name: 'patron', label: 'Patrón de referencia', full: true, placeholder: 'Ej.: Termómetro patrón en baño de hielo (0 °C)' },
+                    { name: 'error', label: 'Error encontrado', placeholder: 'Ej.: +0,3 °C' },
+                    { name: 'resultado', label: 'Resultado', type: 'select', options: ['Conforme', 'No conforme', 'Conforme tras ajuste'] },
+                    { name: 'responsable', label: 'Responsable', full: true },
+                    { name: 'notas', label: 'Observaciones', type: 'textarea', full: true }
+                ],
+                onSubmit: (v) => {
+                    p.calibraciones = p.calibraciones || [];
+                    p.calibraciones.push({ id: uid(), ...v });
+                    addEvent(p, 'Calibración', `${v.tipo}: ${v.resultado}`, [v.patron, v.error && 'Error ' + v.error].filter(Boolean).join(' · '), { fecha: v.fecha });
+                    if (v.resultado === 'No conforme') addEvent(p, 'Falla', 'Calibración no conforme', 'La sonda está fuera de tolerancia. Revisar antes de seguir usándola.', { fecha: v.fecha, resuelto: false });
+                    saveStore(); renderProbes(); sheetTab = 'calibraciones'; renderSheet();
+                    toast('Calibración registrada');
+                }
+            });
+        }
+
+        function eventProbe(p) {
+            openForm({
+                title: `Anotar en la bitácora · ${p.id}`,
+                okLabel: 'Anotar',
+                fields: [
+                    { name: 'fecha', label: 'Fecha', type: 'date', value: todayISO(), required: true },
+                    { name: 'tipo', label: 'Tipo', type: 'select', options: ['Nota', 'Falla', 'Diagnóstico', 'Mantenimiento'] },
+                    { name: 'titulo', label: 'Título', required: true, full: true, placeholder: 'Ej.: Lecturas intermitentes en la madrugada' },
+                    { name: 'detalle', label: 'Detalle', type: 'textarea', full: true }
+                ],
+                onSubmit: (v) => {
+                    addEvent(p, v.tipo, v.titulo, v.detalle, { fecha: v.fecha, ...(v.tipo === 'Falla' ? { resuelto: false } : {}) });
+                    saveStore(); renderProbes(); sheetTab = 'bitacora'; renderSheet();
+                    toast('Anotación guardada');
+                }
+            });
+        }
+
+        function changeState(p, target) {
+            if (target === 'reactivar') {
+                const cur = currentAssignment(p);
+                p.estado = cur ? 'activa' : 'disponible';
+                addEvent(p, 'Cambio de estado', 'Reincorporada', cur ? `Vuelve a trabajar en ${cur.proyecto}.` : 'Vuelve al banco como disponible.');
+            } else if (target === 'mantenimiento') {
+                p.estado = 'mantenimiento';
+                addEvent(p, 'Mantenimiento', 'Enviada a mantenimiento', '');
+            } else if (target === 'retirada') {
+                if (!confirm(`¿Retirar ${p.id}? Saldrá de su proyecto actual, pero su hoja de vida se conserva.`)) return;
+                const cur = currentAssignment(p);
+                if (cur) { cur.hasta = todayISO(); addEvent(p, 'Liberación', `Sale de ${cur.proyecto}`, 'Retiro de la sonda.'); }
+                p.estado = 'retirada';
+                addEvent(p, 'Cambio de estado', 'Retirada de servicio', '');
+            }
+            saveStore(); renderProbes(); renderSheet();
+            toast(`${p.id}: ${ESTADOS[p.estado].label}`);
+        }
+
+        $('sheet').addEventListener('click', (e) => {
+            if (e.target.id === 'sheet') { closeSheet(); return; }
+            const tab = e.target.closest('[data-sheet-tab]');
+            if (tab) { sheetTab = tab.dataset.sheetTab; renderSheet(); return; }
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const p = getProbe(sheetId);
+            if (!p) return;
+            switch (btn.dataset.action) {
+                case 'close': closeSheet(); break;
+                case 'edit': editProbe(p); break;
+                case 'assign': assignProbe(p); break;
+                case 'release': releaseProbe(p); break;
+                case 'cal': calProbe(p); break;
+                case 'event': eventProbe(p); break;
+                case 'state': changeState(p, btn.dataset.state); break;
+                case 'monitor':
+                    if (p.monitorCode) openProtoGate({ url: p.monitorUrl, code: p.monitorCode });
+                    else window.open(p.monitorUrl, '_blank', 'noopener');
+                    break;
+                case 'print': window.print(); break;
+                case 'resolve': {
+                    const ev = (p.eventos || []).find(x => x.id === btn.dataset.ev);
+                    if (ev) { ev.resuelto = true; ev.resueltoFecha = todayISO(); saveStore(); renderProbes(); renderSheet(); toast('Incidente resuelto'); }
+                    break;
+                }
+                case 'delete':
+                    if (confirm(`¿Eliminar definitivamente el registro de ${p.id}? Se pierde su hoja de vida. Para conservarla usa «Retirar sonda».`)) {
+                        store.sondas = store.sondas.filter(x => x.id !== p.id);
+                        saveStore(); closeSheet(); renderProbes(); toast(`${p.id} eliminada`);
+                    }
+                    break;
+            }
+        });
+
+        // Plantilla: filtros, modo, apertura
+        $('view-sondas').addEventListener('click', (e) => {
+            const f = e.target.closest('[data-filter]');
+            if (f) { probeFilter = f.dataset.filter; renderProbes(); return; }
+            const m = e.target.closest('[data-mode]');
+            if (m) { probeMode = m.dataset.mode; renderProbes(); return; }
+            const o = e.target.closest('[data-open]');
+            if (o) { openSheet(o.dataset.open, 'ficha'); return; }
+            if (e.target.closest('[data-action="new"]')) newProbe();
+        });
+        $('probeSearch').addEventListener('input', renderProbes);
+        $('btnNewProbe').addEventListener('click', newProbe);
+
+        // Exportar / importar
+        $('btnExport').addEventListener('click', () => {
+            const blob = new Blob([JSON.stringify(store, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `sondas_psinapsis_${todayISO()}.json`;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+            toast('Plantilla exportada');
+        });
+        $('importFile').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            e.target.value = '';
+            if (!file) return;
+            try {
+                const d = JSON.parse(await file.text());
+                if (!d || !Array.isArray(d.sondas)) throw new Error('formato');
+                if (!confirm(`Se cargarán ${d.sondas.length} sonda(s) y se reemplazará la plantilla actual de este navegador. ¿Continuar?`)) return;
+                d.sondas.forEach(s => { s.asignaciones = s.asignaciones || []; s.calibraciones = s.calibraciones || []; s.eventos = s.eventos || []; s.estado = ESTADOS[s.estado] ? s.estado : 'disponible'; });
+                store = d; saveStore(); renderProbes();
+                toast('Plantilla importada');
+            } catch (err) {
+                toast('El archivo no es una plantilla de sondas válida.', true);
+            }
+        });
 
         // ---------- Chat ----------
         let isChatOpen = false;
