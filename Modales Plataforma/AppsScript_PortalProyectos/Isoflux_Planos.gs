@@ -50,6 +50,10 @@ function isoApi_(u, b) {
     case 'sgcPlanoBorradorLeer': return isoBorradorLeer_(u, b.planoId);
     case 'sgcPlanoTrabajoLeer':    return isoPlanLeer_(u, b.proyectoId);
     case 'sgcPlanoPrecios':    return isoPrecios_(u, b);
+    case 'sgcPlanoNormasListar':  return isoNormasListar_(u);
+    case 'sgcPlanoNormasLeer':    return isoNormasLeer_(u, b.id);
+    case 'sgcPlanoNormasGuardar': return isoNormasGuardar_(u, b);
+    case 'sgcPlanoNormasEliminar':return isoNormasEliminar_(u, b.id);
   }
   return { error: 'Acción no permitida.' };
 }
@@ -368,4 +372,71 @@ function isoPrecios_(u, b) {
   arr = arr.filter(function (x) { return x && isFinite(+x.cop) && +x.cop > 0; }).map(function (x) { return { i: +x.i, cop: Math.round(+x.cop), nota: String(x.nota || '').slice(0, 200) }; });
   try { sigBitacora_(u.email, '', 'precios_web', { items: items.length, respuestas: arr.length, plano: String(b.planoId || ''), modelo: model }); } catch (e) {}
   return { ok: true, precios: arr, modelo: model, fecha: new Date().toISOString() };
+}
+
+
+// ---------- LIBRERÍA DE NORMAS DEL AUDITOR (V19.5) ----------
+/**
+ * Plantillas de requisitos normativos compartidas por toda la red (hoja NormasLib).
+ * Cada plantilla guarda sus criterios en JSON (o en un archivo de Drive si es muy grande).
+ * Cualquier usuario con sesión puede usarlas; edita o elimina quien la creó o el administrador.
+ */
+const ISO_NL_H = ['id', 'nombre', 'codigo', 'entidad', 'version', 'descripcion', 'n', 'criterios', 'autor', 'email', 'fecha', 'actualizado', 'eliminado'];
+function isoNormasHoja_() { if (!HOJAS.NormasLib) HOJAS.NormasLib = ISO_NL_H; return sigHoja_('NormasLib'); }
+function isoNormasMeta_(r) {
+  return { id: String(r.id), nombre: r.nombre, codigo: r.codigo, entidad: r.entidad, version: r.version, descripcion: r.descripcion, n: +r.n || 0,
+    autor: r.autor, email: r.email, fecha: isoFecha_(r.fecha), actualizado: isoFecha_(r.actualizado) };
+}
+function isoNormasListar_(u) {
+  isoNormasHoja_();
+  return { normas: sigLeer_('NormasLib').filter(r => r.id && !r.eliminado).map(isoNormasMeta_), puedeTodo: u.rol === 'admin' };
+}
+function isoNormasLeer_(u, id) {
+  isoNormasHoja_();
+  const r = sigLeer_('NormasLib').find(x => String(x.id) === String(id) && !x.eliminado);
+  if (!r) throw new Error('La plantilla no existe o fue eliminada.');
+  let c = String(r.criterios || '[]');
+  if (c.indexOf('drive:') === 0) c = DriveApp.getFileById(c.slice(6)).getBlob().getDataAsString();
+  return Object.assign(isoNormasMeta_(r), { criterios: JSON.parse(c) });
+}
+function isoNormasGuardar_(u, b) {
+  const m = b.meta || {}, C = Array.isArray(b.criterios) ? b.criterios.slice(0, 2000) : [];
+  if (!String(m.nombre || '').trim()) throw new Error('La plantilla necesita un nombre.');
+  if (!C.length) throw new Error('La plantilla no tiene requisitos.');
+  isoNormasHoja_();
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const L = sigLeer_('NormasLib'), ahora = sigAhora_();
+    const dup = L.find(x => !x.eliminado && String(x.id) !== String(b.id || '') && String(x.nombre).trim().toLowerCase() === String(m.nombre).trim().toLowerCase() && String(x.version || '') === String(m.version || ''));
+    if (dup) throw new Error('Ya existe una plantilla con ese nombre y versión.');
+    let json = JSON.stringify(C);
+    if (json.length > 45000) {
+      const raiz = DriveApp.getFolderById(SIG.CARPETA_RAIZ_ID), it = raiz.getFoldersByName(ISO.CARPETA), base = it.hasNext() ? it.next() : raiz.createFolder(ISO.CARPETA);
+      const it2 = base.getFoldersByName('Librería de normas'), carp = it2.hasNext() ? it2.next() : base.createFolder('Librería de normas');
+      json = 'drive:' + carp.createFile(Utilities.newBlob(json, 'application/json', String(m.nombre).slice(0, 80) + '.json')).getId();
+    }
+    const fila = { nombre: String(m.nombre).slice(0, 160), codigo: String(m.codigo || '').slice(0, 60), entidad: String(m.entidad || '').slice(0, 120), version: String(m.version || '').slice(0, 30),
+      descripcion: String(m.descripcion || '').slice(0, 1000), n: C.length, criterios: json, actualizado: ahora };
+    if (b.id) {
+      const r = L.find(x => String(x.id) === String(b.id) && !x.eliminado);
+      if (!r) throw new Error('La plantilla no existe.');
+      if (u.rol !== 'admin' && String(r.email).toLowerCase() !== String(u.email).toLowerCase()) throw new Error('Solo quien creó la plantilla o el administrador pueden editarla.');
+      sigActualizar_('NormasLib', r._fila, fila);
+      sigBitacora_(u.email, '', 'norma_editada', { id: String(b.id), nombre: fila.nombre, requisitos: C.length });
+      return { ok: 1, id: String(b.id) };
+    }
+    const id = 'NL' + Date.now().toString(36);
+    sigAgregar_('NormasLib', Object.assign(fila, { id: id, autor: String(u.nombre || u.email).slice(0, 80), email: u.email, fecha: ahora, eliminado: '' }));
+    sigBitacora_(u.email, '', 'norma_creada', { id: id, nombre: fila.nombre, requisitos: C.length });
+    return { ok: 1, id: id };
+  } finally { lock.releaseLock(); }
+}
+function isoNormasEliminar_(u, id) {
+  isoNormasHoja_();
+  const r = sigLeer_('NormasLib').find(x => String(x.id) === String(id) && !x.eliminado);
+  if (!r) throw new Error('La plantilla no existe.');
+  if (u.rol !== 'admin' && String(r.email).toLowerCase() !== String(u.email).toLowerCase()) throw new Error('Solo quien creó la plantilla o el administrador pueden eliminarla.');
+  sigActualizar_('NormasLib', r._fila, { eliminado: sigAhora_() });
+  sigBitacora_(u.email, '', 'norma_eliminada', { id: String(id), nombre: r.nombre });
+  return { ok: 1 };
 }
