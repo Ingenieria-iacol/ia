@@ -1,4 +1,18 @@
 /**
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║  PUBLICAR CAMBIOS (léelo antes de tocar «Implementar»)                    ║
+ * ║  La ÚNICA implementación que usan Isoflux y el Portal es la de producción: ║
+ * ║    ID …Ary8eET5N08  (AKfycbzPsHZ7…)                                       ║
+ * ║  1) Guardar (💾).  2) Implementar ▸ Gestionar implementaciones.           ║
+ * ║  3) Seleccionar la de ID …Ary8eET5N08 ▸ ✏️ Editar ▸ Versión: Nueva versión ║
+ * ║     ▸ Implementar.                                                        ║
+ * ║  NUNCA «Nueva implementación»: crea otra URL y Isoflux no la conoce.      ║
+ * ║  Isoflux avisa si el servidor publicado quedó desactualizado              ║
+ * ║  (compara ISO_BACKEND con la versión que espera).                         ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ */
+const ISO_BACKEND = '20.1';
+/**
  * ============================================================================
  *  Isoflux_Planos.gs — Planos de Isoflux guardados dentro de los proyectos del
  *  Portal de Proyectos (SGC). Industrias I.A. Col · ENTALPIA LABS · V01 (2026-10-11)
@@ -56,6 +70,7 @@ function isoApi_(u, b) {
     case 'sgcPlanoNormasEliminar':return isoNormasEliminar_(u, b.id);
     case 'sgcPlanoMover':      return isoMover_(u, b.planoId, b.proyectoId);
     case 'sgcPlanoCowork':     return isoCowork_(u, b);
+    case 'sgcPlanoServidor':   return { version: ISO_BACKEND, implementacion: ScriptApp.getService().getUrl() };
   }
   return { error: 'Acción no permitida.' };
 }

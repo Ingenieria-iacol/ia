@@ -7001,4 +7001,23 @@ if(!MAN.some(x=>x.t===S64.t))MAN.push(S64);
 
 try{const e=(window.ISO_VER||[]).find(x=>x.v=='20.1');if(e&&!e.img.length)e.img=[I.fs.src];}catch(x){}
 try{$('hbd').innerHTML=manHTML();}catch(e){}})();</script>
+<script>
+/* ---- V51 · Control de la publicación del servidor del SGC ----
+   Al tener sesión del portal, Isoflux pregunta una vez la versión del servidor publicado (sgcPlanoServidor).
+   Si la implementación de producción no tiene la última versión, muestra cómo publicarla sin equivocarse. */
+(function(){
+if(typeof RO!=='undefined'&&RO)return;
+const REQ='20.1',PROD='Ary8eET5N08';let hecho=false;
+const cmp=(a,b)=>{const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d;}return 0;};
+function aviso(txt){if(document.getElementById('srv51'))return;const d=document.createElement('div');d.id='srv51';d.style.cssText='position:fixed;left:50%;top:96px;transform:translateX(-50%);z-index:90;max-width:min(640px,94vw);background:#3a2a0c;border:1px solid #ffb020;border-radius:12px;padding:10px 14px;font-size:12.5px;color:#ffe7b8;box-shadow:0 10px 30px #000a';
+ d.innerHTML=`<b>⚠️ Servidor del SGC sin publicar la última versión</b><div style="margin:5px 0 7px;line-height:1.5">${txt}<br>Para publicarlo (solo la cuenta dueña del proyecto de Apps Script):<br>1. Implementar ▸ <b>Gestionar implementaciones</b>.<br>2. Selecciona la que tiene el ID que termina en <b>…${PROD}</b>.<br>3. ✏️ Editar ▸ Versión: <b>Nueva versión</b> ▸ Implementar. <i>Nunca «Nueva implementación».</i></div><button id="srv51x">Entendido</button>`;
+ document.body.appendChild(d);document.getElementById('srv51x').onclick=()=>d.remove();}
+async function revisar(){if(hecho||!window.V19sgc||!V19sgc.ses())return;hecho=true;
+ try{const r=await V19sgc.api({a:'sgcPlanoServidor'});window.V51srv=r;if(cmp(r.version,REQ)<0)aviso('El servidor publicado es la versión '+r.version+' y esta versión de Isoflux necesita la '+REQ+'.');else if(r.implementacion&&!String(r.implementacion).includes(PROD))aviso('Isoflux está hablando con una implementación distinta a la de producción.');}
+ catch(e){if(e.auth){hecho=false;return;}if(/no permitida/i.test(e.message))aviso('El servidor publicado es anterior a la '+REQ+' (no reconoce la consulta de versión).');}}
+setInterval(revisar,5000);
+window.V51servidor={revisar,REQ,PROD};
+})();
+
+</script>
 </body></html>
