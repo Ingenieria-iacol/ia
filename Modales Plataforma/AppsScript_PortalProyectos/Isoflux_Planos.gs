@@ -11,7 +11,7 @@
  * ║  (compara ISO_BACKEND con la versión que espera).                         ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
  */
-const ISO_BACKEND = '20.1';
+const ISO_BACKEND = '21.0';
 /**
  * ============================================================================
  *  Isoflux_Planos.gs — Planos de Isoflux guardados dentro de los proyectos del
@@ -70,6 +70,7 @@ function isoApi_(u, b) {
     case 'sgcPlanoNormasEliminar':return isoNormasEliminar_(u, b.id);
     case 'sgcPlanoMover':      return isoMover_(u, b.planoId, b.proyectoId);
     case 'sgcPlanoCowork':     return isoCowork_(u, b);
+    case 'sgcPlanoCampo':      return isoCampo_(u, b);
     case 'sgcPlanoServidor':   return { version: ISO_BACKEND, implementacion: ScriptApp.getService().getUrl() };
   }
   return { error: 'Acción no permitida.' };
@@ -512,4 +513,21 @@ function isoNormasEliminar_(u, id) {
   sigActualizar_('NormasLib', r._fila, { eliminado: sigAhora_() });
   sigBitacora_(u.email, '', 'norma_eliminada', { id: String(id), nombre: r.nombre });
   return { ok: 1 };
+}
+
+// ---------- LEVANTAMIENTO DE CAMPO GEORREFERENCIADO (V21) ----------
+/**
+ * Isoflux trae de la bitácora de campo del proyecto los levantamientos que publicó el personal de campo
+ * (colector móvil o plantilla Excel): sin fid lista los registros con archivos de levantamiento; con fid
+ * entrega ese archivo (solo si pertenece a la bitácora de un proyecto que el usuario puede ver).
+ */
+const ISO_CAMPO_EXT = /\.(json|xlsx|xls|csv|kml|gpx|geojson)$/i;
+function isoCampo_(u, b) {
+  const p = sigProyectoVisible_(u, b.proyectoId), es = sigCampoLista_(p.id);
+  if (!b.fid) return { entradas: es.filter(e => (e.archivos || []).some(a => ISO_CAMPO_EXT.test(String(a.n || '')))) };
+  const ok = es.some(e => (e.archivos || []).some(a => a.fid === b.fid && ISO_CAMPO_EXT.test(String(a.n || ''))));
+  if (!ok) throw new Error('Ese archivo no pertenece a la bitácora de campo del proyecto.');
+  const f = DriveApp.getFileById(b.fid), bytes = f.getBlob().getBytes();
+  if (bytes.length > 25 * 1024 * 1024) throw new Error('El archivo supera 25 MB.');
+  return { n: f.getName().replace(/^\d{4}-\d{2}-\d{2} \d{4} · /, ''), m: f.getMimeType(), b64: Utilities.base64Encode(bytes) };
 }

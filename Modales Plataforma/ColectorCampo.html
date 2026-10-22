@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d2848">
+<title>Isoflux · Colector de campo</title>
+<style>
+:root{--bg:#f3f6fa;--cd:#fff;--tx:#0f1f33;--mu:#5b6b7f;--b:#1d5fd8;--bd:#d5dde8;--ok:#13824f;--wa:#a35b00;--er:#c62828;--hd:#0d2848}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--hd);color:#fff;padding:10px 14px calc(10px) 14px;display:flex;align-items:center;gap:10px}
+header b{font-size:15px;letter-spacing:.3px}header small{display:block;opacity:.8;font-size:11.5px}header .sp{flex:1}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:#fff;border-top:1px solid var(--bd);display:grid;grid-template-columns:repeat(6,1fr);padding-bottom:env(safe-area-inset-bottom)}
+nav button{border:0;background:none;padding:7px 2px 8px;font:inherit;font-size:10.5px;color:var(--mu);display:flex;flex-direction:column;align-items:center;gap:1px}nav button i{font-style:normal;font-size:19px}nav button.on{color:var(--b);font-weight:700}
+main{padding:12px 12px 92px;max-width:760px;margin:0 auto}
+.cd{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:12px;margin:0 0 12px}
+h2{font-size:16px;margin:4px 0 10px}h3{font-size:14px;margin:8px 0 6px}
+label{display:block;font-size:12.5px;color:var(--mu);margin:8px 0 3px}
+input,select,textarea{width:100%;font:inherit;padding:10px;border:1px solid var(--bd);border-radius:9px;background:#fff;color:var(--tx)}textarea{min-height:70px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--bd);background:#fff;color:var(--tx);border-radius:10px;padding:11px 14px;font:inherit;font-weight:600;cursor:pointer}
+.btn.pr{background:var(--b);border-color:var(--b);color:#fff}.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}.btn.sm{padding:7px 10px;font-size:13px}.btn.w{width:100%}.btn:disabled{opacity:.5}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.mu{color:var(--mu);font-size:12.5px}.er{color:var(--er)}.wa{color:var(--wa)}.okc{color:var(--ok)}
+.seg{display:flex;border:1px solid var(--bd);border-radius:10px;overflow:hidden}.seg button{flex:1;border:0;background:#fff;padding:9px 4px;font:inherit;font-size:13px}.seg button.on{background:var(--b);color:#fff;font-weight:700}
+.dirs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:4px}.dirs button{padding:9px 0;border:1px solid var(--bd);border-radius:8px;background:#fff;font:inherit;font-weight:700}.dirs button.on{background:var(--b);color:#fff;border-color:var(--b)}
+.pt{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--bd)}.pt:last-child{border-bottom:0}.pt .ic{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e8f0fd;font-size:17px;flex:none}
+.pt .tx{flex:1;min-width:0}.pt .tx b{display:block}.pt .tx span{font-size:12px;color:var(--mu)}
+.gps{border-radius:10px;padding:10px;background:#eef4ff;border:1px solid #c9dafb;font-size:13px;margin-top:8px}.acc{font-weight:700}
+.tag{display:inline-block;background:#eef2f7;border-radius:8px;padding:2px 8px;font-size:12px;margin:2px}
+canvas.map{width:100%;height:260px;border:1px solid var(--bd);border-radius:10px;background:#0b1a2b;display:block}
+canvas.sig{width:100%;height:150px;border:1px dashed #9aa9bb;border-radius:10px;background:#fff;touch-action:none;display:block}
+.ph{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.ph img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--bd)}
+.ph .x{position:relative}.ph .x b{position:absolute;top:-6px;right:-6px;background:var(--er);color:#fff;border-radius:50%;width:20px;height:20px;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.doc{border-bottom:1px solid var(--bd);padding:8px 0}.doc:last-child{border:0}.doc .c{font-family:ui-monospace,monospace;font-size:12px;color:var(--b)}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#0f1f33;color:#fff;padding:10px 14px;border-radius:10px;font-size:13.5px;z-index:9;max-width:92vw;display:none}
+.ov{position:fixed;inset:0;background:rgba(10,20,35,.55);z-index:8;display:none;align-items:flex-end;justify-content:center}.ov.on{display:flex}
+.sh{background:var(--bg);width:100%;max-width:760px;max-height:94vh;overflow:auto;border-radius:16px 16px 0 0;padding:12px 12px 24px}
+.sh .hd{display:flex;align-items:center;gap:8px;position:sticky;top:-12px;background:var(--bg);padding:6px 0;z-index:2}.sh .hd b{flex:1;font-size:16px}
+.priv{background:#fff8e6;border:1px solid #f0d58c;border-radius:10px;padding:10px;font-size:12.5px}.priv label{color:var(--tx);display:flex;gap:8px;align-items:flex-start;margin:0}.priv input{width:auto;margin-top:3px}
+.ck{display:flex;gap:8px;align-items:flex-start}.ck input{width:auto;margin-top:3px}
+</style>
+</head>
+<body>
+<header><div style="font-size:24px">📍</div><div><b>ISOFLUX · COLECTOR DE CAMPO</b><small id="hsub">Levantamiento georreferenciado</small></div><span class="sp"></span><span id="hst" class="mu" style="color:#bcd3f5;font-size:11.5px"></span></header>
+<main id="m"></main>
+<nav id="nv"><button data-s="pr"><i>🏗️</i>Proyecto</button><button data-s="pu"><i>📍</i>Puntos</button><button data-s="eq"><i>🔥</i>Equipos</button><button data-s="cr"><i>↔️</i>Cruces</button><button data-s="sg"><i>✍️</i>SGC</button><button data-s="en"><i>📤</i>Enviar</button></nav>
+<div class="ov" id="ov"><div class="sh" id="sh"></div></div>
+<div class="toast" id="to"></div>
+<script>
+/* Isoflux V21 · Colector de campo. Funciona sin señal (todo queda guardado en el celular). Exporta el formato
+   «isoflux-campo» (JSON), Excel con las mismas hojas de la plantilla y KML; con el enlace de campo del proyecto
+   (?campo=…) publica el levantamiento en la bitácora del proyecto del SGC. */
+(function(){
+const API='https://script.google.com/macros/s/AKfycbzPsHZ7TjSHExWu3dEboPC1_WXl5KMfisX3DKo4SOtQM2PYa66HF7ba0Ary8eET5N08/exec';
+const QS=new URLSearchParams(location.search),TOKEN=QS.get('campo')||'',$=id=>document.getElementById(id);
+const E=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const fx=(v,d=1)=>isFinite(v)&&v!==''&&v!=null?(+v).toLocaleString('es-CO',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
+const toast=m=>{const t=$('to');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',3200);};
+const RED={'Residencial':'🏠','Comercial':'🏪','Industrial':'🏭','Anillo de distribución':'⭕'};
+const FLU={GN:'Gas natural',GLP:'GLP',O2:'Oxígeno',Aire:'Aire comprimido',N2:'Nitrógeno'};
+const PT=[['Acometida / fuente de suministro','A','🚩'],['Acometida a usuario','U','🏠'],['Tanque / almacenamiento','TK','🛢️'],['Estación de regulación (ERM / ERP)','ERM','🏭'],['Regulador','R','🎛️'],['Medidor / centro de medición','M','🧮'],
+ ['Válvula de seccionamiento','VS','⛔'],['Válvula','V','🔧'],['Derivación / te','T','⊥'],['Cambio de dirección','C','↪️'],['Vértice de trazado','P','•'],['Elevador / transición','EL','↕️'],['Punto de consumo / equipo','E','🔥'],
+ ['Punto de prueba / toma de presión','PP','⏲️'],['Final de red / tapón','F','⏹️'],['Cruce con otra red','X','✖️'],['Hito / referencia (no es tubería)','H','📌']];
+const DIA=['1/4"','3/8"','1/2"','3/4"','1"','1 1/4"','1 1/2"','2"','2 1/2"','3"','4"','6"','8"','20 mm','25 mm','32 mm','40 mm','63 mm','90 mm','110 mm','160 mm'];
+const MAT=['Acero galvanizado','Acero al carbón','Acero inoxidable','PE-AL-PE','Polietileno (PE 100)','Cobre rígido','Cobre flexible','CSST'];
+const INST=['Enterrada','Bajo vía vehicular (enterrada)','Aérea / a la vista','Por fachada','Embebida en muro o piso','Encamisada / ducto'];
+const SUP=['Andén','Zona verde','Vía','Concreto','Asfalto','Tierra','Muro','Piso interior','Cubierta'];
+const DIRS=['NO','N','NE','Sube','','O','','E','Baja','','SO','S','SE','',''];
+const SERV=['Acueducto','Alcantarillado','Energía baja tensión','Energía media tensión','Telecomunicaciones','Gas existente','Alumbrado público','Otra'];
+const DOCS=[['CO-FO-03','Declaración de implementación del SIG','📣 Se informa'],['Ley 1581','Autorización de tratamiento de datos personales','✍️ Firma (abajo)'],['CO-FO-02','Revisión de requisitos del servicio','📝 Diligencia y firma'],
+ ['DI-FO-01','Planificación y datos de entrada del diseño','✍️ Valida los datos del levantamiento'],['CN-PL-01','Plan de calidad, SST y ambiente del proyecto','📣 Se informa',['Comercial','Industrial','Anillo de distribución']],['GI-MZ-04','Matriz de peligros del proyecto (GTC 45)','📣 Se informa',['Comercial','Industrial','Anillo de distribución']],
+ ['GI-FO-24','Permiso de excavación (si hay tramos enterrados)','📣 Se informa y coordina'],['GI-FO-20','Permiso de trabajo en alturas (2 m o más)','📣 Se informa'],['GI-FO-22','Permiso de trabajo en caliente','📣 Se informa'],['GI-FO-21','Ingreso a espacios confinados (si aplica)','📣 Se informa'],
+ ['DI-FO-05','Control de cambios del diseño','✍️ Aprueba cambios'],['CN-FO-04','Acta de prueba de hermeticidad','✍️ Firma como testigo'],['GI-FO-23','Registro de purga y puesta en servicio','✍️ Firma del usuario'],['DI-FO-04','Validación del diseño','✍️ Recibe a satisfacción']];
+/* ---------- almacenamiento (IndexedDB, sin señal) ---------- */
+const DB=new Promise(r=>{try{const q=indexedDB.open('isoflux_colector',1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>r(q.result);q.onerror=()=>r(null);}catch(e){r(null);}});
+const kvGet=async k=>{const d=await DB;if(!d)return null;return new Promise(r=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>r(q.result||null);q.onerror=()=>r(null);});};
+const kvSet=async(k,v)=>{const d=await DB;if(!d)return;return new Promise(r=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>r();t.onerror=()=>r();});};
+const nuevo=()=>({formato:'isoflux-campo',version:1,creado:new Date().toISOString(),proyecto:{tipoRed:QS.get('red')&&RED[QS.get('red')]?QS.get('red'):'Residencial',fluido:'GN',sistema:'Geográficas WGS84 / MAGNA-SIRGAS (lat, lon)',psumU:'mbar',fecha:new Date().toISOString().slice(0,10),equipoGps:'Celular (colector Isoflux)',nombre:QS.get('proyecto')||''},puntos:[],tramos:[],equipos:[],cruces:[],fotos:[],sgc:[],firmas:[],consent:false});
+let D=null,ST='pr',SEND=null;
+const guardar=()=>{D.mod=new Date().toISOString();kvSet('cur',D);$('hst').textContent='💾 guardado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});};
+/* ---------- geodesia (para el mapa) ---------- */
+const GA=6378137,GF=1/298.257223563,GE2=GF*(2-GF),RAD=Math.PI/180;
+const ecef=(la,lo,h)=>{const a=la*RAD,b=lo*RAD,s=Math.sin(a),N=GA/Math.sqrt(1-GE2*s*s);return[(N+h)*Math.cos(a)*Math.cos(b),(N+h)*Math.cos(a)*Math.sin(b),(N*(1-GE2)+h)*s];};
+const enu=(o,la,lo)=>{const p=ecef(la,lo,0),q=ecef(o.lat,o.lon,0),d=[p[0]-q[0],p[1]-q[1],p[2]-q[2]],a=o.lat*RAD,b=o.lon*RAD;return[-Math.sin(b)*d[0]+Math.cos(b)*d[1],-Math.sin(a)*Math.cos(b)*d[0]-Math.sin(a)*Math.sin(b)*d[1]+Math.cos(a)*d[2]];};
+const AZ={N:0,NE:45,E:90,SE:135,S:180,SO:225,O:270,NO:315};
+function posiciones(){const P={},by={};D.puntos.forEach(p=>by[p.id]=p);const g=D.puntos.find(p=>isFinite(+p.lat)&&p.lat!==''&&p.lat!=null);const o=g?{lat:+g.lat,lon:+g.lon}:null;
+ D.puntos.forEach(p=>{if(o&&p.lat!==''&&p.lat!=null&&isFinite(+p.lat)){const q=enu(o,+p.lat,+p.lon);P[p.id]=q;}});if(!o&&D.puntos.length)P[D.puntos[0].id]=[0,0];
+ for(let k=0;k<D.puntos.length+2;k++)D.puntos.forEach(p=>{if(P[p.id])return;const r=p.ref||p.viene;if(r&&P[r]&&isFinite(+p.dist)&&p.dir){const q=P[r];if(p.dir=='Sube'||p.dir=='Baja')P[p.id]=[q[0],q[1]];else{const a=(AZ[p.dir]!=null?AZ[p.dir]:+p.dir)*RAD;if(isFinite(a))P[p.id]=[q[0]+p.dist*Math.sin(a),q[1]+p.dist*Math.cos(a)];}}});return P;}
+function mapa(cv){const c=cv.getContext('2d'),k=devicePixelRatio||1,W=cv.width=cv.clientWidth*k,H=cv.height=cv.clientHeight*k;c.fillStyle='#0b1a2b';c.fillRect(0,0,W,H);const P=posiciones(),ids=Object.keys(P);
+ if(!ids.length){c.fillStyle='#8fa3b8';c.font=`${13*k}px sans-serif`;c.fillText('Aún no hay puntos ubicados',14*k,26*k);return;}
+ const xs=ids.map(i=>P[i][0]),ys=ids.map(i=>P[i][1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),m=26*k,s=Math.min((W-2*m)/Math.max(x1-x0,1),(H-2*m)/Math.max(y1-y0,1)),T=i=>[m+(P[i][0]-x0)*s,H-m-(P[i][1]-y0)*s];
+ c.strokeStyle='#4fa3ff';c.lineWidth=2.5*k;let last={};D.puntos.forEach(p=>{const r=String(p.ramal||'');const a=p.viene||last[r];if(a&&P[a]&&P[p.id]&&!/Hito/.test(p.tipo)){const A=T(a),B=T(p.id);c.beginPath();c.moveTo(A[0],A[1]);c.lineTo(B[0],B[1]);c.stroke();}if(!/Hito/.test(p.tipo))last[r]=p.id;});
+ D.tramos.forEach(t=>{if(P[t.desde]&&P[t.hasta]){const A=T(t.desde),B=T(t.hasta);c.setLineDash([6*k,4*k]);c.beginPath();c.moveTo(A[0],A[1]);c.lineTo(B[0],B[1]);c.stroke();c.setLineDash([]);}});
+ c.font=`${11*k}px sans-serif`;D.puntos.forEach(p=>{if(!P[p.id])return;const q=T(p.id);c.fillStyle=/Acometida \/ fuente/.test(p.tipo)?'#ff5252':/Hito/.test(p.tipo)?'#fff':'#ffd54f';c.beginPath();c.arc(q[0],q[1],4.5*k,0,7);c.fill();c.fillStyle='#dceaff';c.fillText(p.id,q[0]+6*k,q[1]-6*k);});
+ c.fillStyle='#dceaff';c.fillText('N ↑',W-34*k,18*k);const L0=[1,2,5,10,20,50,100,200,500].find(v=>v*s>50*k)||500;c.strokeStyle='#dceaff';c.lineWidth=1.5*k;c.beginPath();c.moveTo(10*k,H-10*k);c.lineTo(10*k+L0*s,H-10*k);c.stroke();c.fillText(L0+' m',10*k,H-16*k);}
+/* ---------- utilidades de formulario ---------- */
+const sel=(id,ops,v,ph)=>`<select id="${id}">${ph!=null?`<option value="">${E(ph)}</option>`:''}${ops.map(o=>{const[val,txt]=Array.isArray(o)?o:[o,o];return`<option value="${E(val)}"${String(v)==String(val)?' selected':''}>${E(txt)}</option>`;}).join('')}</select>`;
+const inp=(id,v,t,ph,ex)=>`<input id="${id}" value="${E(v==null?'':v)}" ${t?`type="${t}"`:''} ${t=='number'?'inputmode="decimal" step="any"':''} placeholder="${E(ph||'')}" ${ex||''}>`;
+const val=id=>{const e=$(id);return e?e.value.trim():'';};
+const nid=t=>{const pre=(PT.find(p=>p[0]==t)||PT[10])[1];let i=1;while(D.puntos.some(p=>p.id==pre+i))i++;return pre+i;};
+const ico=t=>(PT.find(p=>p[0]==t)||['','','•'])[2];
+/* ---------- pantallas ---------- */
+function pinta(){document.querySelectorAll('#nv button').forEach(b=>b.classList.toggle('on',b.dataset.s==ST));const m=$('m'),pr=D.proyecto;$('hsub').textContent=(pr.nombre||'Levantamiento georreferenciado')+' · '+(RED[pr.tipoRed]||'')+' '+pr.tipoRed;
+ if(ST=='pr'){m.innerHTML=`<div class="cd"><h2>🏗️ Proyecto y contratante</h2>
+  <label>Tipo de red</label><div class="seg" id="sred">${Object.keys(RED).map(r=>`<button data-r="${E(r)}" class="${pr.tipoRed==r?'on':''}">${RED[r]} ${E(r.replace(' de distribución',''))}</button>`).join('')}</div>
+  <label>Nombre del proyecto</label>${inp('p_nombre',pr.nombre)}<div class="g2"><div><label>Código</label>${inp('p_codigo',pr.codigo)}</div><div><label>Fluido</label>${sel('p_fluido',Object.keys(FLU).map(k=>[k,FLU[k]]),pr.fluido)}</div></div>
+  <label>Servicio solicitado</label>${sel('p_servicio',['Diseño','Diseño y construcción','Construcción','Mantenimiento','Reparación','Interventoría'],pr.servicio,'—')}
+  <label>Contratante / cliente</label>${inp('p_cliente',pr.cliente)}<div class="g2"><div><label>NIT / CC</label>${inp('p_nit',pr.nit)}</div><div><label>Contacto</label>${inp('p_contacto',pr.contacto)}</div><div><label>Teléfono</label>${inp('p_telefono',pr.telefono,'tel')}</div><div><label>Correo</label>${inp('p_correo',pr.correo,'email')}</div></div>
+  <label>Dirección</label>${inp('p_direccion',pr.direccion)}<div class="g2"><div><label>Municipio</label>${inp('p_municipio',pr.municipio)}</div><div><label>Departamento</label>${inp('p_departamento',pr.departamento)}</div></div>
+  <div class="g2"><div><label>Distribuidor</label>${inp('p_distribuidor',pr.distribuidor,'','Empresa de gas')}</div><div><label>Presión de suministro</label><div class="row" style="flex-wrap:nowrap">${inp('p_psum',pr.psum,'number')}${sel('p_psumU',['mbar','psi','bar','kPa'],pr.psumU)}</div></div>
+  <div><label>Altitud (msnm)</label>${inp('p_altitud',pr.altitud,'number')}</div><div><label>Temperatura (°C)</label>${inp('p_tamb',pr.tamb,'number')}</div><div><label>N.º unidades / usuarios</label>${inp('p_unidades',pr.unidades,'number')}</div><div><label>N.º de pisos</label>${inp('p_pisos',pr.pisos,'number')}</div>
+  <div><label>Crecimiento previsto (%)</label>${inp('p_crec',pr.crec==null?20:pr.crec,'number')}</div><div><label>Fecha</label>${inp('p_fecha',pr.fecha,'date')}</div></div>
+  <label>Sistema de coordenadas</label>${sel('p_sistema',['Geográficas WGS84 / MAGNA-SIRGAS (lat, lon)','Origen Nacional CTM12 (EPSG:9377)','UTM 18N (WGS84)','UTM 17N (WGS84)','UTM 19N (WGS84)','Plano local (m) sin georreferencia'],pr.sistema)}
+  <div class="g2"><div><label>Levantado por</label>${inp('p_levanto',pr.levanto,'','Nombre completo')}</div><div><label>Cargo / matrícula</label>${inp('p_cargo',pr.cargo)}</div></div><label>Equipo GPS / GNSS</label>${inp('p_equipoGps',pr.equipoGps)}
+  <label>Observaciones</label><textarea id="p_obs">${E(pr.obs||'')}</textarea></div>
+  ${SEND?`<div class="cd mu">🔗 Enlace de campo del proyecto <b>${E(SEND.proyecto.titulo)}</b> · vence ${E(String(SEND.expira).slice(0,10))}. Al terminar, publica el levantamiento en la bitácora desde «Enviar».</div>`:''}
+  <div class="cd"><div class="row"><button class="btn" id="bnu">🗑️ Nuevo levantamiento</button><label class="btn" style="margin:0">📂 Abrir archivo .json<input type="file" id="fop" accept=".json" hidden></label></div><p class="mu">Todo se guarda en este celular a medida que escribes, aunque no haya señal.</p></div>`;
+  m.querySelectorAll('[id^=p_]').forEach(e=>e.oninput=e.onchange=()=>{pr[e.id.slice(2)]=e.value;guardar();});
+  m.querySelectorAll('#sred button').forEach(b=>b.onclick=()=>{pr.tipoRed=b.dataset.r;guardar();pinta();});
+  $('bnu').onclick=async()=>{if(!confirm('¿Empezar un levantamiento nuevo? El actual se borra de este celular (expórtalo antes si lo necesitas).'))return;D=nuevo();guardar();pinta();};
+  $('fop').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());if(j.formato!=='isoflux-campo')throw Error('No es un levantamiento de Isoflux.');D=Object.assign(nuevo(),j);guardar();pinta();toast('Levantamiento abierto.');}catch(x){alert(x.message);}};return;}
+ if(ST=='pu'){m.innerHTML=`<div class="cd"><div class="row"><h2 style="flex:1;margin:0">📍 Puntos (${D.puntos.length})</h2><button class="btn pr" id="badd">＋ Punto</button></div>
+  <p class="mu">Recorre la red desde la acometida o la fuente. Un punto en cada accesorio, cambio de dirección, derivación, subida o bajada, equipo y final de red.</p><canvas class="map" id="cvm"></canvas></div>
+  <div class="cd">${D.puntos.length?D.puntos.map((p,i)=>`<div class="pt"><div class="ic">${ico(p.tipo)}</div><div class="tx"><b>${E(p.id)} · ${E(p.tipo)}</b><span>${p.lat?`🛰️ ${(+p.lat).toFixed(6)}, ${(+p.lon).toFixed(6)} ±${fx(p.prec,1)} m`:p.dist?`📏 ${fx(p.dist,2)} m ${E(p.dir)} desde ${E(p.ref||p.viene||'anterior')}`:'<span class="er">sin ubicación</span>'}${p.viene?' · viene de '+E(p.viene):''}${p.ramal?' · ramal '+E(p.ramal):''}<br>${E([p.dia,p.mat,p.inst,p.prof?'prof. '+p.prof+' m':''].filter(Boolean).join(' · '))}${p.desc?' · '+E(p.desc):''}${(p.fotos||[]).length?' · 📷 '+p.fotos.length:''}</span></div><button class="btn sm" data-e="${i}">✏️</button></div>`).join(''):'<p class="mu">Sin puntos. Empieza por la acometida o la fuente de suministro.</p>'}</div>`;
+  requestAnimationFrame(()=>mapa($('cvm')));$('badd').onclick=()=>editar(-1);m.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>editar(+b.dataset.e));return;}
+ if(ST=='eq'){const cons=D.puntos.filter(p=>/consumo|usuario|Tanque|ERM|Regulador/.test(p.tipo));m.innerHTML=`<div class="cd"><div class="row"><h2 style="flex:1;margin:0">🔥 Equipos y usuarios (${D.equipos.length})</h2><button class="btn pr" id="badd">＋ Equipo</button></div>
+  <p class="mu">${['O2','Aire','N2'].includes(D.proyecto.fluido)?'Caudal de diseño de cada toma o equipo en L/min.':'Potencia de cada gasodoméstico o equipo (kW o BTU/h, de la placa).'} Horario de uso, factor de uso, tipo de artefacto (A sin conexión a chimenea, B con chimenea, C de cámara estanca), recinto, volumen y ventilación. En anillos de distribución, el número de usuarios por acometida.</p></div>
+  <div class="cd">${D.equipos.length?D.equipos.map((e,i)=>`<div class="pt"><div class="ic">🔥</div><div class="tx"><b>${E(e.nombre||'Equipo')} ${e.cant>1?'× '+e.cant:''}</b><span>Punto ${E(e.punto||'—')} · ${e.kw?fx(e.kw,1)+' kW':e.btu?fx(e.btu,0)+' BTU/h':e.qlm?fx(e.qlm,0)+' L/min':'sin potencia'} · ${E(e.h0||'')}–${E(e.h1||'')} · ${E([e.cls,e.recinto,e.vol?e.vol+' m³':''].filter(Boolean).join(' · '))}</span></div><button class="btn sm" data-e="${i}">✏️</button></div>`).join(''):`<p class="mu">${cons.length?'Agrega los equipos de los puntos de consumo.':'Primero registra los puntos de consumo en «Puntos».'}</p>`}</div>`;
+  $('badd').onclick=()=>editEq(-1);m.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>editEq(+b.dataset.e));return;}
+ if(ST=='cr'){m.innerHTML=`<div class="cd"><div class="row"><h2 style="flex:1;margin:0">↔️ Cruces e interferencias (${D.cruces.length})</h2><button class="btn pr" id="badd">＋ Cruce</button></div><p class="mu">Cruces y paralelismos con otras redes: distancia horizontal (paralelo) o vertical (cruce) entre las tuberías, profundidad de la otra red y operador. Separación de referencia: 0,30 m en paralelo y 0,20 m en cruce (confírmala con el distribuidor).</p></div>
+  <div class="cd">${D.cruces.length?D.cruces.map((c,i)=>`<div class="pt"><div class="ic">↔️</div><div class="tx"><b>${E(c.serv||'Red')} · ${E(c.rel||'')}</b><span>En ${E(c.ref||'—')} · horizontal ${fx(c.dh,2)} m · vertical ${fx(c.dv,2)} m · ${E(c.op||'')}</span></div><button class="btn sm" data-e="${i}">✏️</button></div>`).join(''):'<p class="mu">Sin cruces registrados.</p>'}</div>`;
+  $('badd').onclick=()=>editCr(-1);m.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>editCr(+b.dataset.e));return;}
+ if(ST=='sg'){const red=D.proyecto.tipoRed,ds=DOCS.filter(d=>!d[3]||d[3].includes(red));
+  m.innerHTML=`<div class="cd"><h2>✍️ Documentos del SGC para el contratante</h2><p class="mu">Explica al contratante cada documento: los marcados 📣 se le informan, ✍️ los firma y 📝 los diligencia. Marca los que ya se cumplieron hoy.</p>
+  ${ds.map(d=>{const s=D.sgc.find(x=>x.codigo==d[0])||{};return`<div class="doc"><div class="ck"><input type="checkbox" data-sg="${E(d[0])}" ${/^s/i.test(s.ok||'')?'checked':''}><div><span class="c">${E(d[0])}</span> <b>${E(d[1])}</b><br><span class="mu">${E(d[2])}</span></div></div></div>`;}).join('')}</div>
+  <div class="cd"><h3>Autorización de datos personales</h3><div class="priv"><label><input type="checkbox" id="cons" ${D.consent?'checked':''}> Autorizo el tratamiento de los datos que entrego en este levantamiento (nombre, documento, firma, ubicación, fotos y videos) para registrar y evidenciar el servicio, atender auditorías y conservarlos según la tabla de retención del SIG.</label><p class="mu" style="margin:6px 0 0">Puedo conocer, actualizar, rectificar o pedir la supresión de mis datos y revocar esta autorización escribiendo al responsable del servicio. Los datos no se venden ni se usan para otros fines. Ley 1581 de 2012 · Decreto 1377 de 2013 · aviso AV-DP-01.</p></div></div>
+  ${['Levantó (técnico de campo)','Contratante / cliente'].map((r,i)=>{const f=D.firmas.find(x=>x.rol==r)||{};return`<div class="cd"><h3>${E(r)}</h3><div class="g2"><div><label>Nombre</label>${inp('fn'+i,f.nombre||(i==0?D.proyecto.levanto:D.proyecto.cliente))}</div><div><label>Documento</label>${inp('fd'+i,f.doc||(i==1?D.proyecto.nit:''))}</div></div><label>Firma</label><canvas class="sig" id="fs${i}"></canvas><div class="row" style="margin-top:6px"><button class="btn sm" data-cl="${i}">Borrar firma</button><span class="mu">${f.fecha?'Firmó '+E(f.fecha):''}</span></div></div>`;}).join('')}
+  <div class="cd"><button class="btn ok w" id="bsg">💾 Guardar firmas</button></div>`;
+  m.querySelectorAll('[data-sg]').forEach(c=>c.onchange=()=>{let s=D.sgc.find(x=>x.codigo==c.dataset.sg);if(!s){const d=DOCS.find(x=>x[0]==c.dataset.sg);s={codigo:d[0],titulo:d[1],rol:d[2]};D.sgc.push(s);}s.ok=c.checked?'Sí':'No';s.fecha=new Date().toISOString().slice(0,10);s.nombre=D.proyecto.cliente||'';guardar();});
+  $('cons').onchange=e=>{D.consent=e.target.checked;guardar();};
+  const pads=[0,1].map(i=>pad($('fs'+i),(D.firmas.find(x=>x.rol==['Levantó (técnico de campo)','Contratante / cliente'][i])||{}).firma));m.querySelectorAll('[data-cl]').forEach(b=>b.onclick=()=>pads[+b.dataset.cl].clear());
+  $('bsg').onclick=()=>{['Levantó (técnico de campo)','Contratante / cliente'].forEach((r,i)=>{let f=D.firmas.find(x=>x.rol==r);if(!f){f={rol:r};D.firmas.push(f);}f.nombre=val('fn'+i);f.doc=val('fd'+i);if(pads[i].touched)f.firma=pads[i].empty()?'':pads[i].data();if(f.firma)f.fecha=new Date().toISOString().slice(0,10);f.autoriza=i==1?(D.consent?'Sí':'No'):'Sí';});guardar();toast('Firmas guardadas.');pinta();};return;}
+ if(ST=='en'){const v=validar();m.innerHTML=`<div class="cd"><h2>📤 Revisar y enviar</h2><canvas class="map" id="cvm"></canvas><p><span class="tag">${D.puntos.length} puntos</span><span class="tag">${D.equipos.length} equipos</span><span class="tag">${D.cruces.length} cruces</span><span class="tag">${D.puntos.reduce((a,p)=>a+(p.fotos||[]).length,0)} fotos</span><span class="tag">${D.firmas.filter(f=>f.firma).length} firmas</span></p>
+  ${v.e.map(x=>`<div class="er">⛔ ${E(x)}</div>`).join('')}${v.w.map(x=>`<div class="wa">⚠️ ${E(x)}</div>`).join('')}${!v.e.length&&!v.w.length?'<div class="okc">✓ Levantamiento completo.</div>':''}</div>
+  ${SEND?`<div class="cd"><h3>☁️ Publicar en la bitácora del proyecto</h3><p class="mu">Proyecto <b>${E(SEND.proyecto.titulo)}</b>. Se publica un registro «Levantamiento georreferenciado» con el archivo para Isoflux y las fotos.</p><button class="btn pr w" id="bpub">☁️ Publicar en el SGC</button><p class="mu" id="pubm"></p></div>`:`<div class="cd mu">Para publicar directamente en el proyecto, abre este colector con el <b>enlace de campo</b> que envía el portal (ficha del proyecto ▸ Bitácora ▸ Enlaces para el personal de campo). Mientras tanto, descarga el archivo y súbelo a la bitácora o envíalo al diseñador.</div>`}
+  <div class="cd"><h3>Descargar</h3><div class="row"><button class="btn" id="bjs">💾 Archivo para Isoflux (.json)</button><button class="btn" id="bxl">📊 Excel (.xlsx)</button><button class="btn" id="bkm">🌍 KML (Google Earth)</button></div><label class="ck" style="color:var(--tx);margin-top:10px"><input type="checkbox" id="cfo" checked> Incluir las fotos dentro del .json</label></div>`;
+  requestAnimationFrame(()=>mapa($('cvm')));$('bjs').onclick=()=>bajar(json($('cfo').checked),nombre('json'),'application/json');$('bxl').onclick=excel;$('bkm').onclick=()=>bajar(kml(),nombre('kml'),'application/vnd.google-earth.kml+xml');
+  if($('bpub'))$('bpub').onclick=publicar;}}
+function validar(){const e=[],w=[],pr=D.proyecto;if(!pr.nombre)w.push('Falta el nombre del proyecto.');if(!pr.cliente)w.push('Falta el contratante.');if(!isFinite(+pr.psum)||pr.psum==='')w.push('Falta la presión de suministro.');
+ if(!D.puntos.length)e.push('No hay puntos.');if(D.puntos.length&&!D.puntos.some(p=>/fuente|Tanque/.test(p.tipo)))w.push('No hay acometida / fuente de suministro.');const P=posiciones();D.puntos.filter(p=>!P[p.id]&&!(p.lat)).forEach(p=>e.push(`Punto ${p.id} sin ubicación.`));
+ D.puntos.filter(p=>p.prec&&+p.prec>8).forEach(p=>w.push(`Punto ${p.id}: precisión GPS ±${fx(p.prec,0)} m; mídelo con cinta desde un punto cercano.`));
+ if(!D.consent)w.push('El contratante no ha autorizado el tratamiento de datos (SGC).');if(!D.firmas.some(f=>f.rol=='Contratante / cliente'&&f.firma))w.push('Falta la firma del contratante.');return{e,w};}
+/* ---------- editor de punto ---------- */
+function sheet(t,h,ok){$('sh').innerHTML=`<div class="hd"><b>${t}</b><button class="btn sm" id="shx">Cerrar</button></div>${h}`;$('ov').classList.add('on');$('shx').onclick=()=>{if(WATCH!=null){navigator.geolocation.clearWatch(WATCH);WATCH=null;FIN=null;}$('ov').classList.remove('on');};if(ok)ok();}
+let WATCH=null,FIN=null;
+function editar(i){const nv=i<0,last=D.puntos[D.puntos.length-1],p=nv?{tipo:D.puntos.length?'Cambio de dirección':'Acometida / fuente de suministro',ramal:last?last.ramal:'',dia:last?last.dia:'',mat:last?last.mat:'',inst:last?last.inst:'',prof:last?last.prof:'',sup:last?last.sup:'',fotos:[]}:JSON.parse(JSON.stringify(D.puntos[i]));
+ if(nv)p.id=nid(p.tipo);let modo=p.lat?'gps':p.dist?'cinta':(nv&&!D.puntos.length?'gps':'cinta');p.fotos=p.fotos||[];
+ const otros=D.puntos.filter((x,j)=>j!==i).map(x=>x.id);
+ sheet(nv?'＋ Punto nuevo':'✏️ Punto '+E(p.id),`<div class="cd"><label>Tipo de punto</label>${sel('e_tipo',PT.map(x=>[x[0],x[2]+' '+x[0]]),p.tipo)}<div class="g2"><div><label>ID</label>${inp('e_id',p.id)}</div><div><label>Ramal</label>${inp('e_ramal',p.ramal,'','R1')}</div></div>
+  <label>Viene de (la tubería llega desde)</label>${sel('e_viene',otros,p.viene||'',nv&&last?`El anterior (${last.id})`:'— (inicio de la red o del ramal)')}</div>
+  <div class="cd"><label style="margin-top:0">Ubicación</label><div class="seg" id="smo"><button data-m="gps">🛰️ GPS</button><button data-m="cinta">📏 Con cinta</button><button data-m="man">⌨️ Coordenadas</button></div><div id="umo"></div>
+  <label>Nivel (m) — sobre el piso o terreno; negativo si está enterrado</label>${inp('e_nivel',p.nivel,'number','vacío = automático')}</div>
+  <div class="cd"><h3>Tramo que llega a este punto</h3><div class="g2"><div><label>Ø</label>${sel('e_dia',DIA,p.dia,'—')}</div><div><label>Material</label>${sel('e_mat',MAT,p.mat,'—')}</div></div><label>Instalación</label>${sel('e_inst',INST,p.inst,'—')}
+  <div class="g3"><div><label>Profundidad (m)</label>${inp('e_prof',p.prof,'number')}</div><div><label>Superficie</label>${sel('e_sup',SUP,p.sup,'—')}</div><div><label>Long. medida (m)</label>${inp('e_lmed',p.lmed,'number')}</div></div>
+  <div class="g2"><div><label>Estado</label>${sel('e_estado',['Nueva','Existente'],p.estado||'Nueva')}</div><div><label>Etiqueta / tag</label>${inp('e_tag',p.tag)}</div></div></div>
+  <div class="cd"><label style="margin-top:0">Equipo / descripción</label>${inp('e_desc',p.desc)}<label>Observaciones</label><textarea id="e_obs">${E(p.obs||'')}</textarea>
+  <label>Fotos</label><label class="btn" style="margin:0">📷 Tomar o elegir foto<input type="file" id="e_foto" accept="image/*" capture="environment" multiple hidden></label><div class="ph" id="eph"></div></div>
+  <div class="row"><button class="btn pr" id="eok" style="flex:1">💾 Guardar punto</button>${nv?'':'<button class="btn" id="edel">🗑️</button>'}</div>`,()=>{
+  const umo=()=>{document.querySelectorAll('#smo button').forEach(b=>b.classList.toggle('on',b.dataset.m==modo));
+   $('umo').innerHTML=modo=='gps'?`<button class="btn pr w" id="bgps" style="margin-top:8px">🛰️ Capturar posición (promedio)</button><div class="gps" id="gpsv">${p.lat?`${(+p.lat).toFixed(7)}, ${(+p.lon).toFixed(7)} · <span class="acc">±${fx(p.prec,1)} m</span>${p.cota?' · cota '+fx(p.cota,1)+' m (GPS)':''} · ${E(p.nlec||1)} lecturas`:'Párate sobre el punto y pulsa capturar. Se promedian las lecturas hasta lograr ±3 m o 25 s.'}</div>`
+   :modo=='cinta'?`<label>Medido desde</label>${sel('e_ref',otros,p.ref||'',p.viene?'«Viene de»':(last?'El anterior ('+last.id+')':'—'))}<label>Distancia (m)</label>${inp('e_dist',p.dist,'number','Ej. 3.25')}<label>Dirección</label><div class="dirs">${DIRS.map(d=>d?`<button data-d="${d}" class="${p.dir==d?'on':''}">${d}</button>`:'<span></span>').join('')}</div><label>o azimut (°, 0 = norte, 90 = este)</label>${inp('e_az',isFinite(+p.dir)&&p.dir!==''?p.dir:'','number')}`
+   :`<div class="g2"><div><label>Latitud</label>${inp('e_lat',p.lat,'','4.636180')}</div><div><label>Longitud</label>${inp('e_lon',p.lon,'','-74.065420')}</div><div><label>Este (m)</label>${inp('e_este',p.este,'number')}</div><div><label>Norte (m)</label>${inp('e_norte',p.norte,'number')}</div><div><label>Cota (msnm)</label>${inp('e_cota',p.cota,'number')}</div><div><label>Precisión (m)</label>${inp('e_prec',p.prec,'number')}</div></div><p class="mu">Puedes pegar «lat, lon» copiado de Google Maps en Latitud.</p>`;
+   if($('bgps'))$('bgps').onclick=capturar;document.querySelectorAll('.dirs button').forEach(b=>b.onclick=()=>{p.dir=b.dataset.d;if($('e_az'))$('e_az').value='';document.querySelectorAll('.dirs button').forEach(x=>x.classList.toggle('on',x===b));});
+   if($('e_lat'))$('e_lat').onchange=e=>{const m=e.target.value.match(/(-?\d+(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[.,]\d+)?)/);if(m){e.target.value=m[1];$('e_lon').value=m[2];}};};
+  document.querySelectorAll('#smo button').forEach(b=>b.onclick=()=>{modo=b.dataset.m;umo();});umo();
+  $('e_tipo').onchange=e=>{if(nv)$('e_id').value=nid(e.target.value);};
+  const fotos=()=>{$('eph').innerHTML=p.fotos.map((f,j)=>`<div class="x"><img src="${f.data}" alt=""><b data-j="${j}">✕</b></div>`).join('');$('eph').querySelectorAll('[data-j]').forEach(b=>b.onclick=()=>{p.fotos.splice(+b.dataset.j,1);fotos();});};fotos();
+  $('e_foto').onchange=async e=>{for(const f of e.target.files){try{p.fotos.push({archivo:'',data:await reducir(f),fecha:new Date().toISOString()});}catch(x){}}e.target.value='';fotos();};
+  function capturar(){if(!navigator.geolocation){alert('Este dispositivo no permite ubicación.');return;}const L=[],t0=Date.now(),b=$('bgps');b.disabled=true;b.textContent='Capturando…';
+   const fin=()=>{if(WATCH==null&&!FIN)return;navigator.geolocation.clearWatch(WATCH);WATCH=null;FIN=null;b.disabled=false;b.textContent='🛰️ Volver a capturar';if(!L.length){$('gpsv').innerHTML='<span class="er">No se obtuvo posición. Activa la ubicación del celular, sal a cielo abierto o usa «Con cinta».</span>';return;}
+    let sw=0,la=0,lo=0,al=0,na=0;L.forEach(c=>{const w=1/Math.max(1,c.accuracy)**2;sw+=w;la+=c.latitude*w;lo+=c.longitude*w;if(c.altitude!=null){al+=c.altitude;na++;}});
+    p.lat=+(la/sw).toFixed(8);p.lon=+(lo/sw).toFixed(8);p.prec=+Math.min(...L.map(c=>c.accuracy)).toFixed(1);p.cota=na?+(al/na).toFixed(1):'';p.nlec=L.length;p.fechaGps=new Date().toISOString();p.dist='';p.dir='';
+    $('gpsv').innerHTML=`${p.lat.toFixed(7)}, ${p.lon.toFixed(7)} · <span class="acc">±${fx(p.prec,1)} m</span> · ${L.length} lecturas${p.prec>5?'<br><span class="wa">Precisión baja: para puntos cercanos o en interiores usa «Con cinta».</span>':''}`;};
+   FIN=fin;WATCH=navigator.geolocation.watchPosition(pos=>{const c=pos.coords;L.push(c);$('gpsv').innerHTML=`Lectura ${L.length} · <span class="acc">±${fx(c.accuracy,1)} m</span> · ${Math.round((Date.now()-t0)/1000)} s`;if((L.length>=5&&c.accuracy<=3)||Date.now()-t0>25000)fin();},er=>{$('gpsv').innerHTML='<span class="er">'+E(er.message)+'</span>';fin();},{enableHighAccuracy:true,maximumAge:0,timeout:30000});setTimeout(()=>{if(WATCH!=null)fin();},26000);}
+  $('eok').onclick=()=>{if(FIN)FIN();const id=val('e_id');if(!id){alert('Escribe el ID del punto.');return;}if(D.puntos.some((x,j)=>x.id==id&&j!==i)){alert('Ya existe un punto '+id+'.');return;}
+   Object.assign(p,{id,tipo:val('e_tipo'),ramal:val('e_ramal'),viene:val('e_viene'),nivel:val('e_nivel'),dia:val('e_dia'),mat:val('e_mat'),inst:val('e_inst'),prof:val('e_prof'),sup:val('e_sup'),lmed:val('e_lmed'),estado:val('e_estado'),tag:val('e_tag'),desc:val('e_desc'),obs:val('e_obs')});
+   if(modo=='cinta'){p.ref=val('e_ref');p.dist=val('e_dist');const az=val('e_az');if(az!=='')p.dir=az;p.lat='';p.lon='';p.este='';p.norte='';if(!p.dist||!p.dir){alert('Indica la distancia y la dirección.');return;}}
+   else if(modo=='man'){['lat','lon','este','norte','cota','prec'].forEach(k=>p[k]=val('e_'+k).replace(',','.'));p.dist='';p.dir='';}
+   p.fotos.forEach((f,j)=>f.archivo=p.id+'_'+(j+1)+'.jpg');if(!p.viene&&nv&&last&&!p.ramal)p.viene='';
+   if(nv)D.puntos.push(p);else{const old=D.puntos[i].id;D.puntos[i]=p;if(old!==id){D.puntos.forEach(x=>{if(x.viene==old)x.viene=id;if(x.ref==old)x.ref=id;});D.equipos.forEach(x=>{if(x.punto==old)x.punto=id;});}}
+   guardar();$('ov').classList.remove('on');pinta();toast('Punto '+id+' guardado.');};
+  if($('edel'))$('edel').onclick=()=>{if(!confirm('¿Eliminar el punto '+p.id+'?'))return;D.puntos.splice(i,1);guardar();$('ov').classList.remove('on');pinta();};});}
+function reducir(f){return new Promise((ok,ko)=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1600/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.74));};im.onerror=ko;im.src=r.result;};r.onerror=ko;r.readAsDataURL(f);});}
+function editEq(i){const e=i<0?{cant:1,fc:.7}:Object.assign({},D.equipos[i]),cons=D.puntos.map(p=>[p.id,p.id+' · '+p.tipo]),tec=['O2','Aire','N2'].includes(D.proyecto.fluido);
+ sheet(i<0?'＋ Equipo':'✏️ Equipo',`<div class="cd"><label>Punto</label>${sel('q_punto',cons,e.punto,'—')}<label>Equipo / artefacto (o usuarios)</label>${inp('q_nombre',e.nombre,'','Ej. Estufa 4 puestos con horno')}
+  <div class="g3"><div><label>Cantidad</label>${inp('q_cant',e.cant,'number')}</div>${tec?`<div><label>Caudal (L/min)</label>${inp('q_qlm',e.qlm,'number')}</div>`:`<div><label>Potencia (kW)</label>${inp('q_kw',e.kw,'number')}</div><div><label>o BTU/h</label>${inp('q_btu',e.btu,'number')}</div>`}</div>
+  <div class="g3"><div><label>Hora inicio</label>${inp('q_h0',e.h0,'time')}</div><div><label>Hora fin</label>${inp('q_h1',e.h1,'time')}</div><div><label>Factor de uso</label>${inp('q_fc',e.fc,'number')}</div></div>
+  <div class="g2"><div><label>Tipo (A/B/C)</label>${sel('q_cls',['A','B','C'],e.cls,'—')}</div><div><label>Presión requerida</label>${inp('q_pmin',e.pmin,'','Ej. 20 mbar')}</div><div><label>Recinto</label>${inp('q_recinto',e.recinto)}</div><div><label>Volumen recinto (m³)</label>${inp('q_vol',e.vol,'number')}</div></div>
+  <label>Ventilación</label>${inp('q_vent',e.vent,'','Rejillas, área (cm²), ducto')}<label>Observaciones</label>${inp('q_obs',e.obs)}</div><div class="row"><button class="btn pr" id="qok" style="flex:1">💾 Guardar</button>${i<0?'':'<button class="btn" id="qdel">🗑️</button>'}</div>`,()=>{
+  $('qok').onclick=()=>{['punto','nombre','cant','kw','btu','qlm','h0','h1','fc','cls','pmin','recinto','vol','vent','obs'].forEach(k=>{if($('q_'+k))e[k]=val('q_'+k);});if(!e.punto){alert('Elige el punto.');return;}if(i<0)D.equipos.push(e);else D.equipos[i]=e;guardar();$('ov').classList.remove('on');pinta();};
+  if($('qdel'))$('qdel').onclick=()=>{D.equipos.splice(i,1);guardar();$('ov').classList.remove('on');pinta();};});}
+function editCr(i){const c=i<0?{rel:'Cruce'}:Object.assign({},D.cruces[i]);
+ sheet(i<0?'＋ Cruce':'✏️ Cruce',`<div class="cd"><label>Punto o tramo</label>${sel('k_ref',D.puntos.map(p=>p.id),c.ref,'—')}<label>Red / servicio</label>${sel('k_serv',SERV,c.serv,'—')}<label>Relación</label>${sel('k_rel',['Cruce','Paralelo'],c.rel)}
+  <div class="g3"><div><label>Dist. horizontal (m)</label>${inp('k_dh',c.dh,'number')}</div><div><label>Dist. vertical (m)</label>${inp('k_dv',c.dv,'number')}</div><div><label>Prof. otra red (m)</label>${inp('k_prof',c.prof,'number')}</div></div><label>Operador</label>${inp('k_op',c.op)}<label>Observaciones</label>${inp('k_obs',c.obs)}</div>
+  <div class="row"><button class="btn pr" id="kok" style="flex:1">💾 Guardar</button>${i<0?'':'<button class="btn" id="kdel">🗑️</button>'}</div>`,()=>{
+  $('kok').onclick=()=>{['ref','serv','rel','dh','dv','prof','op','obs'].forEach(k=>c[k]=val('k_'+k));if(i<0)D.cruces.push(c);else D.cruces[i]=c;guardar();$('ov').classList.remove('on');pinta();};
+  if($('kdel'))$('kdel').onclick=()=>{D.cruces.splice(i,1);guardar();$('ov').classList.remove('on');pinta();};});}
+/* ---------- firma ---------- */
+function pad(cv,img){const k=devicePixelRatio||1;cv.width=cv.clientWidth*k;cv.height=cv.clientHeight*k;const c=cv.getContext('2d');c.lineWidth=2.2*k;c.lineCap='round';c.strokeStyle='#0f1f33';let dr=false,n=0;const o={touched:false};
+ if(img){const im=new Image();im.onload=()=>c.drawImage(im,0,0,cv.width,cv.height);im.src=img;n=1;}
+ const pt=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*k,(e.clientY-r.top)*k];};
+ cv.onpointerdown=e=>{dr=true;o.touched=true;const p=pt(e);c.beginPath();c.moveTo(p[0],p[1]);cv.setPointerCapture(e.pointerId);};cv.onpointermove=e=>{if(!dr)return;const p=pt(e);c.lineTo(p[0],p[1]);c.stroke();n++;};cv.onpointerup=()=>dr=false;
+ o.clear=()=>{c.clearRect(0,0,cv.width,cv.height);n=0;o.touched=true;};o.empty=()=>n<3;o.data=()=>{const t=document.createElement('canvas');t.width=480;t.height=Math.round(480*cv.height/cv.width);const x=t.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,t.width,t.height);x.drawImage(cv,0,0,t.width,t.height);return t.toDataURL('image/png');};return o;}
+/* ---------- exportar ---------- */
+const nombre=ext=>'campo_'+String(D.proyecto.codigo||D.proyecto.nombre||'levantamiento').replace(/[^\wáéíóúñ-]+/gi,'_').slice(0,40)+'_'+new Date().toISOString().slice(0,10)+'.'+ext;
+function json(conFotos){const o=JSON.parse(JSON.stringify(D));o.fotos=[];o.puntos.forEach(p=>{(p.fotos||[]).forEach(f=>o.fotos.push({archivo:f.archivo,ref:p.id,desc:p.desc||'',fecha:f.fecha,data:conFotos?f.data:undefined}));p.foto=(p.fotos||[]).map(f=>f.archivo).join(', ');delete p.fotos;});o.exportado=new Date().toISOString();o.colector='Isoflux V21';return JSON.stringify(o);}
+function bajar(txt,n,t){const a=document.createElement('a');a.href=URL.createObjectURL(txt instanceof Blob?txt:new Blob([txt],{type:t}));a.download=n;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},3000);}
+function kml(){const pm=D.puntos.filter(p=>p.lat).map(p=>`<Placemark><name>${E(p.id)}</name><description>${E(p.tipo+(p.desc?' · '+p.desc:''))}</description><Point><coordinates>${p.lon},${p.lat},0</coordinates></Point></Placemark>`).join('');
+ return`<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${E(D.proyecto.nombre||'Levantamiento')}</name>${pm}</Document></kml>`;}
+async function excel(){if(!window.XLSX){toast('Cargando el generador de Excel…');await new Promise((ok,ko)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=ok;s.onerror=()=>ko();document.head.appendChild(s);}).catch(()=>{});}
+ if(!window.XLSX){alert('Sin conexión no se puede generar el Excel: descarga el archivo .json (Isoflux lo lee igual).');return;}
+ const o=JSON.parse(json(false)),pr=o.proyecto,wb=XLSX.utils.book_new(),A=(n,r)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(r),n);
+ const KP=[['Nombre del proyecto','nombre'],['Código / consecutivo','codigo'],['Tipo de red','tipoRed'],['Fluido','fluido'],['Servicio solicitado','servicio'],['Contratante / cliente','cliente'],['NIT / CC','nit'],['Contacto','contacto'],['Teléfono','telefono'],['Correo','correo'],['Dirección','direccion'],['Municipio','municipio'],['Departamento','departamento'],['Distribuidor','distribuidor'],['Presión de suministro','psum'],['Unidad de presión','psumU'],['Altitud del sitio (msnm)','altitud'],['Temperatura ambiente (°C)','tamb'],['N.º de unidades / usuarios','unidades'],['N.º de pisos','pisos'],['Crecimiento previsto (%)','crec'],['Sistema de coordenadas','sistema'],['Equipo GPS / GNSS','equipoGps'],['Levantado por','levanto'],['Cargo / matrícula','cargo'],['Fecha del levantamiento','fecha'],['Observaciones','obs']];
+ A('Proyecto',[['Dato','Valor'],...KP.map(([l,k])=>[l,pr[k]==null?'':pr[k]])]);
+ const HP=['ID','Tipo de punto','Ramal','Viene de (ID)','Latitud','Longitud','Cota terreno (msnm)','Precisión (m)','Distancia (m)','Dirección','Nivel (m)','Ø tramo que llega','Material','Instalación','Profundidad (m)','Superficie / acabado','Long. medida (m)','Equipo / descripción','Foto(s)','Referencia (ID)','Este (m)','Norte (m)','Etiqueta / tag','Estado (Nueva / Existente)','Observaciones'],HK=['id','tipo','ramal','viene','lat','lon','cota','prec','dist','dir','nivel','dia','mat','inst','prof','sup','lmed','desc','foto','ref','este','norte','tag','estado','obs'];
+ A('Puntos',[HP,...o.puntos.map(p=>HK.map(k=>p[k]==null?'':p[k]))]);A('Tramos',[['ID tramo','Desde','Hasta','Ø','Material','Instalación','Profundidad (m)','Superficie / acabado','Long. medida (m)','Presión','Estado','Observaciones'],...o.tramos.map(t=>[t.id,t.desde,t.hasta,t.dia,t.mat,t.inst,t.prof,t.sup,t.lmed,t.press,t.estado,t.obs])]);
+ A('Equipos',[['Punto (ID)','Equipo / artefacto','Cantidad','Potencia (kW)','Caudal (L/min)','Hora inicio','Hora fin','Factor de uso','Tipo (A/B/C)','Recinto','Volumen recinto (m3)','Ventilación','Potencia (BTU/h)','Presión requerida','Observaciones'],...o.equipos.map(e=>[e.punto,e.nombre,e.cant,e.kw,e.qlm,e.h0,e.h1,e.fc,e.cls,e.recinto,e.vol,e.vent,e.btu,e.pmin,e.obs])]);
+ A('Cruces',[['Referencia (punto o tramo)','Red / servicio','Relación (Cruce / Paralelo)','Distancia horizontal (m)','Distancia vertical (m)','Profundidad de la otra red (m)','Operador','Observaciones'],...o.cruces.map(c=>[c.ref,c.serv,c.rel,c.dh,c.dv,c.prof,c.op,c.obs])]);
+ A('Fotos',[['Archivo','Punto / tramo','Descripción','Fecha'],...o.fotos.map(f=>[f.archivo,f.ref,f.desc,f.fecha])]);A('SGC contratante',[['Código','Documento','Qué hace el contratante','Momento','Cumplido (Sí / No)','Nombre','Fecha'],...o.sgc.map(s=>[s.codigo,s.titulo,s.rol,'',s.ok,s.nombre,s.fecha])]);
+ A('Firmas',[['Rol','Nombre','Documento','Cargo / empresa','Fecha','Firma','Autoriza tratamiento de datos (Sí / No)'],...o.firmas.map(f=>[f.rol,f.nombre,f.doc,'',f.fecha,f.firma?'Firmado en el colector':'',f.autoriza])]);
+ XLSX.writeFile(wb,nombre('xlsx'));}
+/* ---------- publicar en la bitácora (enlace de campo) ---------- */
+async function api(o){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(Object.assign({a:'sgcCampo',token:TOKEN},o))});const j=JSON.parse(await r.text());if(j&&j.error)throw Error(j.error);return j;}
+async function publicar(){const m=$('pubm'),b=$('bpub'),v=validar();if(v.e.length){alert('Corrige primero: '+v.e.join(' '));return;}if(!D.consent){alert('El contratante debe autorizar el tratamiento de datos (pestaña SGC) antes de publicar.');return;}
+ if(!navigator.onLine){alert('Sin conexión. El levantamiento queda guardado en el celular; publícalo cuando tengas señal.');return;}b.disabled=true;
+ try{const g=D.puntos.find(p=>p.lat),fotos=D.puntos.flatMap(p=>(p.fotos||[]).map(f=>({n:f.archivo||p.id+'.jpg',d:f.data})));
+  m.textContent='Creando el registro…';const pr=D.proyecto;
+  const r=await api({paso:'entrada',tipo:'Levantamiento georreferenciado',autor:pr.levanto||'Personal de campo',texto:`📍 Levantamiento georreferenciado · red ${pr.tipoRed} · ${FLU[pr.fluido]||pr.fluido}\n${D.puntos.length} puntos, ${D.equipos.length} equipos, ${D.cruces.length} cruces, ${fotos.length} fotos.\nContratante: ${pr.cliente||'—'}${D.consent?' (autorizó tratamiento de datos)':''}.\nAbrir en Isoflux: Gestión ▸ Proyecto ▸ 📍 Campo ▸ Importar ▸ Traer de la bitácora.`,gps:g?`${(+g.lat).toFixed(6)}, ${(+g.lon).toFixed(6)} (±${fx(g.prec,0)} m)`:'',conArchivos:true});
+  const b64=s=>btoa(unescape(encodeURIComponent(s)));m.textContent='Subiendo el levantamiento…';await api({paso:'archivo',entradaId:r.id,b64:b64(json(false)),mime:'application/json',nombre:nombre('json')});
+  for(let i=0;i<fotos.length;i++){m.textContent=`Subiendo foto ${i+1} de ${fotos.length}…`;await api({paso:'archivo',entradaId:r.id,b64:fotos[i].d.split(',')[1],mime:'image/jpeg',nombre:fotos[i].n});}
+  D.publicado=new Date().toISOString();guardar();m.innerHTML='<span class="okc">✓ Publicado en la bitácora del proyecto. El diseñador lo trae desde Isoflux.</span>';}
+ catch(e){m.innerHTML='<span class="er">'+E(e.message)+'</span>';}b.disabled=false;}
+/* ---------- inicio ---------- */
+document.getElementById('nv').onclick=e=>{const b=e.target.closest('button');if(!b)return;ST=b.dataset.s;pinta();scrollTo(0,0);};
+(async()=>{D=await kvGet('cur');if(!D||D.formato!=='isoflux-campo')D=nuevo();if(QS.get('red')&&RED[QS.get('red')]&&!D.puntos.length)D.proyecto.tipoRed=QS.get('red');
+ if(TOKEN){try{SEND=await api({});if(!D.proyecto.nombre)D.proyecto.nombre=SEND.proyecto.titulo||'';if(!D.proyecto.cliente)D.proyecto.cliente=SEND.proyecto.cliente||'';if(!D.proyecto.direccion)D.proyecto.direccion=SEND.proyecto.ubicacion||'';}catch(e){toast('Enlace de campo: '+e.message);}}
+ pinta();if(D.mod)$('hst').textContent='💾 guardado';})();
+addEventListener('beforeunload',()=>{if(WATCH!=null)navigator.geolocation.clearWatch(WATCH);});
+})();
+</script>
+</body>
+</html>

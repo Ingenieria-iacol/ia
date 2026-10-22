@@ -1046,7 +1046,7 @@ const sigFechaTxt_ = f => Utilities.formatDate(f instanceof Date ? f : new Date(
 //  fotos, videos y documentos) desde el portal o con un enlace de campo sin cuenta.
 //  Los archivos quedan en la carpeta del proyecto (Archivos y fotos) y entran al paquete.
 // =====================================================================================
-const SIG_CAMPO_TIPOS = ['Avance del día', 'Novedad', 'Incidente o casi accidente', 'Visita / reunión', 'Material o equipo', 'Prueba o medición', 'Entrega parcial', 'Otro'];
+const SIG_CAMPO_TIPOS = ['Avance del día', 'Novedad', 'Incidente o casi accidente', 'Visita / reunión', 'Material o equipo', 'Prueba o medición', 'Entrega parcial', 'Levantamiento georreferenciado', 'Otro'];
 const SIG_CAMPO_MAX = 30 * 1024 * 1024;
 function sigCampoEntradaDe_(id) { const e = sigLeer_('Campo').find(x => x.id === id); if (!e) throw new Error('Entrada no encontrada.'); return e; }
 function sigCampoJson_(e) {
