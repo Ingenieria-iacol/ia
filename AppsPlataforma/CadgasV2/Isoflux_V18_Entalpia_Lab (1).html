@@ -6131,7 +6131,7 @@ dD.classList.add('v43hid');
 const P=document.createElement('div');P.id='pal43';
 P.innerHTML=`<div class="band" title="Paleta del diseñador: pasa el puntero o toca para desplegar"><b>🎨 Paleta del diseñador</b><span class="cur" id="pal_cur"></span><span class="sp"></span><span style="opacity:.6">▾</span><button class="pin" title="Fijar la paleta abierta">📌</button></div><div class="body"><div class="cats"></div><div class="tiles"></div></div>`;
 const tb=g('tb');tb.appendChild(P);{const cs=getComputedStyle(tb);P.style.marginLeft='-'+cs.paddingLeft;P.style.marginRight='-'+cs.paddingRight;}
-let pin=false,cat=null,moved=null,tmo=0;try{pin=localStorage.getItem('isoflux_pal_pin')==='1';cat=localStorage.getItem('isoflux_pal_cat');}catch(e){}
+let pin=false,cat=null,moved=null,tmo=0;try{localStorage.removeItem('isoflux_pal_pin');cat=localStorage.getItem('isoflux_pal_cat');}catch(e){}/* la paleta siempre inicia recogida */
 const devolver=()=>{if(moved){moved.d.appendChild(moved.el);moved=null;}};
 const grupos=()=>{devolver();const L=[];[['comp',''],['par','⚙️'],['ann','🏷️']].forEach(([v])=>{const w=W(v);if(!w)return;[...w.querySelectorAll(':scope>details.acc')].forEach(d=>{if(d.style.display=='none')return;const s=d.querySelector('summary'),b=d.querySelector('.accb');if(!b)return;
   const sp=[...s.querySelectorAll('span')],ic=sp[0]?sp[0].textContent:'',t=sp[1]?sp[1].textContent:s.textContent,n=s.querySelector('small');L.push({k:v+':'+t,v,d,el:b,ic,t,n:n?n.textContent:''});});});return L;};
@@ -6954,7 +6954,13 @@ body.fs50 #cw{top:0!important;left:0!important;right:0!important;bottom:0!import
 body.fs50 #fs50bar{display:flex}#fs50bar button{border-radius:9px;padding:5px 10px;font-size:12.5px;white-space:nowrap}#fs50bar button.on{background:#1d5fd8;color:#fff}#fs50bar .sep{width:1px;height:22px;background:#2b5c94;margin:0 3px}
 #fs50bar.dim{opacity:.18}#fs50tit{position:fixed;left:16px;top:12px;z-index:80;display:none;font-size:13px;color:#cfe3f7;background:rgba(10,22,38,.75);border:1px solid #1f4c80;border-radius:10px;padding:5px 11px}body.fs50 #fs50tit{display:block}`;document.head.appendChild(css);
 /* 1 · paleta al borde inferior del lienzo */
-const ajusta=()=>{const P=g('pal43');if(!P)return;document.body.classList.toggle('palopen',P.classList.contains('open'));const b=P.querySelector('.body'),bd=P.querySelector('.band');if(b&&bd){b.style.minHeight=Math.max(0,bd.getBoundingClientRect().top)+'px';}};
+const ajusta=()=>{const P=g('pal43');if(!P)return;const pin=P.classList.contains('pin'),op=P.classList.contains('open');document.body.classList.toggle('palopen',op);const b=P.querySelector('.body'),bd=P.querySelector('.band');if(!b||!bd)return;const r=bd.getBoundingClientRect();
+ /* recogida por el puntero: se abre hacia arriba, sobre pestañas y menús, solo mientras el puntero está encima.
+    fijada (📌): se abre hacia abajo, sobre el lienzo, para que pestañas, menús y nombre del dibujo sigan a la vista */
+ const cr=g('cw').getBoundingClientRect();if(pin){b.style.setProperty('top',r.bottom+'px','important');b.style.minHeight='0px';b.style.left=cr.left+'px';b.style.right=Math.max(0,innerWidth-cr.right)+'px';}else{b.style.setProperty('top','0px','important');b.style.minHeight=Math.max(0,r.top)+'px';b.style.left='0px';b.style.right='0px';}};
+/* seguridad: si el puntero ya no está sobre la paleta (y no está fijada), se recoge; Esc también la recoge */
+let fuera=0;addEventListener('pointermove',e=>{const P=g('pal43');if(!P||!P.classList.contains('open')||P.classList.contains('pin'))return;if(P.contains(e.target)){clearTimeout(fuera);fuera=0;return;}if(!fuera)fuera=setTimeout(()=>{fuera=0;if(window.V43pal)V43pal.cerrar();},450);},{passive:true});
+addEventListener('keydown',e=>{const P=g('pal43');if(e.key=='Escape'&&P&&P.classList.contains('open')&&window.V43pal){V43pal.fijar(false);V43pal.cerrar();}},true);
 const mover=()=>{const P=g('pal43'),cw=g('cw');if(!P||!cw||P.parentNode===cw)return false;cw.appendChild(P);new MutationObserver(ajusta).observe(P,{attributes:true,attributeFilter:['class']});addEventListener('resize',ajusta);P.style.marginLeft=P.style.marginRight='';
  try{const tb=g('tb');document.documentElement.style.setProperty('--tbh',tb.offsetHeight+'px');}catch(e){}setTimeout(()=>{try{rs();}catch(e){}},30);return true;};
 if(!mover()){let k=0;const t=setInterval(()=>{if(mover()||++k>20)clearInterval(t);},300);}
