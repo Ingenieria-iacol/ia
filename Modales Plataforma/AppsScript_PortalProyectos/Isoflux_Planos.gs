@@ -55,6 +55,7 @@ function isoApi_(u, b) {
     case 'sgcPlanoNormasGuardar': return isoNormasGuardar_(u, b);
     case 'sgcPlanoNormasEliminar':return isoNormasEliminar_(u, b.id);
     case 'sgcPlanoMover':      return isoMover_(u, b.planoId, b.proyectoId);
+    case 'sgcPlanoCowork':     return isoCowork_(u, b);
   }
   return { error: 'Acción no permitida.' };
 }
@@ -335,6 +336,37 @@ function isoLive_(u, b) {
     return { rev: meta.rev, mine: mine, ops: resync ? [] : ops, resync: resync, usuarios: isoPresentes_(id).filter(x => x.email !== yo),
       plano: { version: +o.x.version, vigente: +o.x.vigente || +o.x.version, actualizado: isoFecha_(o.x.actualizado), actualizadoPor: o.x.actualizadoPor }, borrador: bd };
   } finally { lock.releaseLock(); }
+}
+// ---------- MODO COWORKING (V20) ----------
+/**
+ * Presentación en vivo de un plano a las personas del proyecto: quien presenta comparte su vista (cámara),
+ * su puntero y lo que selecciona; los demás lo siguen y hacen preguntas por el chat del plano.
+ * Todo vive en la caché (no se guarda en hojas); la bitácora registra el inicio de cada presentación.
+ */
+function isoCowork_(u, b) {
+  const o = isoPlano_(u, b.planoId), id = o.x.planoId, cache = CacheService.getScriptCache(), k = 'cw_' + id, yo = String(u.email).toLowerCase(), nom = String(u.nombre || u.email).slice(0, 60);
+  const leer = () => { try { return JSON.parse(cache.get(k) || '{}'); } catch (e) { return {}; } };
+  let st = leer(), escribir = false;
+  const vivo = p => p && Date.now() - p.t < 15000;
+  if (b.presentar || b.parar || b.chat || b.resp) {
+    const lock = LockService.getScriptLock(); lock.waitLock(10000);
+    try {
+      st = leer(); st.chat = Array.isArray(st.chat) ? st.chat : []; st.seq = +st.seq || 0;
+      if (b.presentar) {
+        const nuevo = !vivo(st.pres) || st.pres.email !== yo;
+        if (vivo(st.pres) && st.pres.email !== yo && !b.tomar) return { ocupado: true, pres: st.pres, chat: [], usuarios: isoPresentes_(id) };
+        const x = b.presentar;
+        st.pres = { email: yo, n: nom, t: Date.now(), cam: x.cam || null, ptr: x.ptr || null, sel: String(x.sel || '').slice(0, 40), nota: String(x.nota || '').slice(0, 140), hoja: String(x.hoja || '').slice(0, 80) };
+        if (nuevo) { sigBitacora_(u.email, o.p.miembroId || '', 'cowork_presentacion', { proyecto: String(o.p.id), plano: id, nombre: o.x.nombre }); st.chat.push({ id: ++st.seq, t: Date.now(), n: nom, email: yo, txt: '🎥 ' + nom + ' empezó a presentar.', sis: 1 }); }
+      }
+      if (b.parar && st.pres && st.pres.email === yo) { st.pres = null; st.chat.push({ id: ++st.seq, t: Date.now(), n: nom, email: yo, txt: '⏹ ' + nom + ' terminó la presentación.', sis: 1 }); }
+      if (b.chat) { const txt = String(b.chat).trim().slice(0, 600); if (txt) st.chat.push({ id: ++st.seq, t: Date.now(), n: nom, email: yo, txt: txt, q: !!b.q }); }
+      if (b.resp) { const m = st.chat.find(x => x.id === +b.resp); if (m) m.ok = nom; }
+      st.chat = st.chat.slice(-80); cache.put(k, JSON.stringify(st), 7200); escribir = true;
+    } finally { lock.releaseLock(); }
+  }
+  const desde = +b.desde || 0, ch = (st.chat || []).filter(x => x.id > desde || (b.resp && x.ok));
+  return { pres: vivo(st.pres) ? st.pres : null, chat: ch, seq: +st.seq || 0, usuarios: isoPresentes_(id) };
 }
 function isoBorrador_(u, b) {
   const o = isoPlano_(u, b.planoId);
