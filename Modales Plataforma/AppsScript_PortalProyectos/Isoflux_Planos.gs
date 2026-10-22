@@ -54,6 +54,7 @@ function isoApi_(u, b) {
     case 'sgcPlanoNormasLeer':    return isoNormasLeer_(u, b.id);
     case 'sgcPlanoNormasGuardar': return isoNormasGuardar_(u, b);
     case 'sgcPlanoNormasEliminar':return isoNormasEliminar_(u, b.id);
+    case 'sgcPlanoMover':      return isoMover_(u, b.planoId, b.proyectoId);
   }
   return { error: 'Acción no permitida.' };
 }
@@ -65,10 +66,21 @@ function isoVe_(u, p) {
   const v = sigVinculo_(u.email);
   return !!(v && p.miembroId && p.miembroId === v.miembroId);
 }
+/** «Mis dibujos»: espacio personal de cada usuario (proyecto virtual MD-<correo>). Solo lo ve su dueño y el administrador. */
+const isoMisId_ = email => 'MD-' + String(email || '').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+function isoProy_(u, proyectoId) {
+  const id = String(proyectoId || '');
+  if (id === 'MIS' || id.indexOf('MD-') === 0) {
+    const mio = isoMisId_(u.email), pid = id === 'MIS' ? mio : id;
+    if (pid !== mio && u.rol !== 'admin') throw new Error('No tienes acceso a esos dibujos.');
+    return { id: pid, titulo: pid === mio ? 'Mis dibujos' : 'Mis dibujos · ' + pid.slice(3), cliente: '', ubicacion: '', owner: pid === mio ? u.email : '', miembroId: '', personal: true };
+  }
+  return sigProyectoVisible_(u, id);
+}
 function isoPlano_(u, planoId) {
   const x = sigLeer_('Planos').find(r => r.planoId === planoId);
   if (!x) throw new Error('Plano no encontrado.');
-  const p = sigProyectoVisible_(u, x.proyectoId);
+  const p = isoProy_(u, x.proyectoId);
   return { x: x, p: p };
 }
 const isoFecha_ = f => f instanceof Date ? f.toISOString() : String(f || '');
@@ -91,14 +103,15 @@ function isoProyectos_(u) {
   sigLeer_('Planos').forEach(x => { if (x.estado !== 'archivado') cnt[x.proyectoId] = (cnt[x.proyectoId] || 0) + 1; });
   const ps = rows('Proyectos').filter(p => isoVe_(u, p)).map(p => ({ id: String(p.id), titulo: p.titulo, cliente: p.cliente || '', tipo: p.tipo || '',
     estado: p.estado || '', ubicacion: p.ubicacion || '', owner: p.owner, planos: cnt[String(p.id)] || 0, actualizado: isoFecha_(p.actualizado || p.creado) }));
-  return { proyectos: ps.reverse(), usuario: { email: u.email, nombre: u.nombre || u.email, rol: u.rol } };
+  const mis = isoMisId_(u.email);
+  return { proyectos: ps.reverse(), mis: { id: mis, titulo: 'Mis dibujos', planos: cnt[mis] || 0 }, usuario: { email: u.email, nombre: u.nombre || u.email, rol: u.rol } };
 }
 function isoListar_(u, proyectoId, archivados) {
-  const p = sigProyectoVisible_(u, proyectoId);
+  const p = isoProy_(u, proyectoId);
   const lista = sigLeer_('Planos').filter(x => String(x.proyectoId) === String(p.id) && (archivados || x.estado !== 'archivado'))
     .sort((a, b) => String(isoFecha_(b.actualizado)).localeCompare(String(isoFecha_(a.actualizado))))
     .map(x => Object.assign(isoMeta_(x), { puedeArchivar: isoPuedeArchivar_(u, x, p), puedeVigencia: isoPuedeVigencia_(u, x) }));
-  return { proyecto: { id: String(p.id), titulo: p.titulo, cliente: p.cliente || '', ubicacion: p.ubicacion || '' }, planos: lista };
+  return { proyecto: { id: String(p.id), titulo: p.titulo, cliente: p.cliente || '', ubicacion: p.ubicacion || '', personal: !!p.personal }, planos: lista };
 }
 function isoVersiones_(u, planoId) {
   const o = isoPlano_(u, planoId);
@@ -131,7 +144,7 @@ function isoCarpeta_(p) {
   return base.createFolder((nom + ' ' + String(p.titulo || '')).replace(/[\\/:*?"<>|]/g, '_').slice(0, 120));
 }
 function isoGuardar_(u, b) {
-  const p = sigProyectoVisible_(u, b.proyectoId);
+  const p = isoProy_(u, b.proyectoId);
   let bytes;
   if (b.z) bytes = Utilities.ungzip(Utilities.newBlob(Utilities.base64Decode(String(b.b64 || '')), 'application/x-gzip')).getBytes();
   else bytes = Utilities.newBlob(String(b.json || '')).getBytes();
@@ -174,6 +187,19 @@ function isoGuardar_(u, b) {
     const nuevo = sigLeer_('Planos').find(r => r.planoId === planoId);
     return { plano: isoMeta_(nuevo) };
   } finally { lock.releaseLock(); }
+}
+/** Pasa un plano (normalmente de «Mis dibujos») a un proyecto del SGC conservando todas sus versiones y su trazabilidad. */
+function isoMover_(u, planoId, proyectoId) {
+  const o = isoPlano_(u, planoId), dest = isoProy_(u, proyectoId);
+  if (String(dest.id) === String(o.x.proyectoId)) return { plano: isoMeta_(o.x) };
+  if (u.rol !== 'admin' && String(o.x.email).toLowerCase() !== String(u.email).toLowerCase()) throw new Error('Solo quien creó el plano o el administrador pueden moverlo a otro proyecto.');
+  if (sigLeer_('Planos').some(r => String(r.proyectoId) === String(dest.id) && r.estado !== 'archivado' && isoNom_(r.nombre) === isoNom_(o.x.nombre))) throw new Error('El proyecto destino ya tiene un plano llamado «' + o.x.nombre + '». Renómbralo antes de moverlo.');
+  const carp = isoCarpeta_(dest);
+  sigLeer_('PlanosVersiones').filter(v => v.planoId === planoId).forEach(v => { try { DriveApp.getFileById(v.fileId).moveTo(carp); } catch (e) {} });
+  sigActualizar_('Planos', o.x._fila, { proyectoId: String(dest.id) });
+  sigBitacora_(u.email, dest.miembroId || '', 'plano_movido', { plano: planoId, de: String(o.x.proyectoId), a: String(dest.id), nombre: o.x.nombre });
+  CacheService.getScriptCache().put('v_' + dest.id, String(Date.now()), 21600);
+  return { plano: isoMeta_(sigLeer_('Planos').find(r => r.planoId === planoId)), proyecto: { id: String(dest.id), titulo: dest.titulo } };
 }
 function isoRenombrar_(u, planoId, nombre) {
   const o = isoPlano_(u, planoId), n = String(nombre || '').trim().slice(0, 120);
