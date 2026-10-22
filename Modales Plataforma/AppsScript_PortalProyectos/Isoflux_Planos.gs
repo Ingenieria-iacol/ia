@@ -381,10 +381,10 @@ function isoPrecios_(u, b) {
  * Cada plantilla guarda sus criterios en JSON (o en un archivo de Drive si es muy grande).
  * Cualquier usuario con sesión puede usarlas; edita o elimina quien la creó o el administrador.
  */
-const ISO_NL_H = ['id', 'nombre', 'codigo', 'entidad', 'version', 'descripcion', 'n', 'criterios', 'autor', 'email', 'fecha', 'actualizado', 'eliminado'];
+const ISO_NL_H = ['id', 'nombre', 'codigo', 'entidad', 'version', 'descripcion', 'n', 'criterios', 'autor', 'email', 'fecha', 'actualizado', 'eliminado', 'fluido', 'escenarios'];
 function isoNormasHoja_() { if (!HOJAS.NormasLib) HOJAS.NormasLib = ISO_NL_H; return sigHoja_('NormasLib'); }
 function isoNormasMeta_(r) {
-  return { id: String(r.id), nombre: r.nombre, codigo: r.codigo, entidad: r.entidad, version: r.version, descripcion: r.descripcion, n: +r.n || 0,
+  return { id: String(r.id), nombre: r.nombre, codigo: r.codigo, entidad: r.entidad, version: r.version, descripcion: r.descripcion, fluido: r.fluido || 'General', escenarios: r.escenarios || '', n: +r.n || 0,
     autor: r.autor, email: r.email, fecha: isoFecha_(r.fecha), actualizado: isoFecha_(r.actualizado) };
 }
 function isoNormasListar_(u) {
@@ -416,7 +416,7 @@ function isoNormasGuardar_(u, b) {
       json = 'drive:' + carp.createFile(Utilities.newBlob(json, 'application/json', String(m.nombre).slice(0, 80) + '.json')).getId();
     }
     const fila = { nombre: String(m.nombre).slice(0, 160), codigo: String(m.codigo || '').slice(0, 60), entidad: String(m.entidad || '').slice(0, 120), version: String(m.version || '').slice(0, 30),
-      descripcion: String(m.descripcion || '').slice(0, 1000), n: C.length, criterios: json, actualizado: ahora };
+      descripcion: String(m.descripcion || '').slice(0, 1000), fluido: String(m.fluido || 'General').slice(0, 40), escenarios: String(m.escenarios || '').slice(0, 2000), n: C.length, criterios: json, actualizado: ahora };
     if (b.id) {
       const r = L.find(x => String(x.id) === String(b.id) && !x.eliminado);
       if (!r) throw new Error('La plantilla no existe.');
