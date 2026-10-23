@@ -11,7 +11,7 @@
  * ║  (compara ISO_BACKEND con la versión que espera).                         ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
  */
-const ISO_BACKEND = '21.1';
+const ISO_BACKEND = '21.2';
 /**
  * ============================================================================
  *  Isoflux_Planos.gs — Planos de Isoflux guardados dentro de los proyectos del
@@ -71,6 +71,9 @@ function isoApi_(u, b) {
     case 'sgcPlanoMover':      return isoMover_(u, b.planoId, b.proyectoId);
     case 'sgcPlanoCowork':     return isoCowork_(u, b);
     case 'sgcPlanoCampo':      return isoCampo_(u, b);
+    case 'sgcBilletera':       return isoBilletera_(u);
+    case 'sgcBilleteraRecarga':return isoBilleteraRecarga_(u, b);
+    case 'sgcBilleteraAdmin':  return isoBilleteraAdmin_(u, b);
     case 'sgcPlanoServidor':   return { version: ISO_BACKEND, implementacion: ScriptApp.getService().getUrl() };
   }
   return { error: 'Acción no permitida.' };
@@ -422,6 +425,10 @@ function isoPrecios_(u, b) {
     return { i: +x.i || i, item: String(x.item || '').slice(0, 160), especificacion: String(x.especificacion || '').slice(0, 160), unidad: String(x.unidad || '').slice(0, 16) };
   });
   if (!items.length) return { ok: true, precios: [] };
+  /* V21.2: la cotización Web no está incluida en ningún plan: se paga con la billetera (saldo prepagado) */
+  const cfg = isoBilCfg_(), cobrar = !u.__prueba;
+  if (cobrar && cfg.activa === false) return { error: 'La cotización Web está suspendida temporalmente por el administrador del software.' };
+  if (cobrar) { const sal = isoBilSaldo_(u.email); if (sal < cfg.precio) return { error: 'Saldo insuficiente en la billetera: la cotización Web cuesta $' + cfg.precio.toLocaleString('es-CO') + ' COP y tu saldo es $' + sal.toLocaleString('es-CO') + '. Recarga desde 💳 Billetera.', sinSaldo: true, saldo: sal, precio: cfg.precio }; }
   const C = CacheService.getScriptCache(), ck = 'px_' + Utilities.base64EncodeWebSafe(String(u.email)).slice(0, 60), n = +(C.get(ck) || 0);
   if (n >= 60) return { error: 'Se alcanzó el límite de consultas de precios de esta hora. Intenta más tarde.' };
   C.put(ck, String(n + 1), 3600);
@@ -445,7 +452,13 @@ function isoPrecios_(u, b) {
   try { arr = m ? JSON.parse(m[0]) : []; } catch (e) { arr = []; }
   arr = arr.filter(function (x) { return x && isFinite(+x.cop) && +x.cop > 0; }).map(function (x) { return { i: +x.i, cop: Math.round(+x.cop), nota: String(x.nota || '').slice(0, 200) }; });
   try { sigBitacora_(u.email, '', 'precios_web', { items: items.length, respuestas: arr.length, plano: String(b.planoId || ''), modelo: model }); } catch (e) {}
-  return { ok: true, precios: arr, modelo: model, fecha: new Date().toISOString() };
+  /* costo real de la consulta (tokens + búsquedas) y cobro solo si devolvió precios */
+  const us = (d && d.usage) || {}, bus = (us.server_tool_use && us.server_tool_use.web_search_requests) || 0;
+  const usd = ((+us.input_tokens || 0) + (+us.cache_creation_input_tokens || 0)) / 1e6 * cfg.usdIn + (+us.cache_read_input_tokens || 0) / 1e6 * cfg.usdIn * 0.1 + (+us.output_tokens || 0) / 1e6 * cfg.usdOut + bus * cfg.usdBusqueda;
+  let mov = null;
+  if (cobrar && arr.length) mov = isoBilMov_({ email: u.email, tipo: 'consumo', monto: -cfg.precio, estado: 'aprobada', medio: 'Cotización Web', referencia: String(b.planoId || ''),
+    nota: items.length + ' ítem(s) · ' + arr.length + ' precio(s)', detalle: JSON.stringify({ items: items.length, precios: arr.length, modelo: model, tokensIn: us.input_tokens || 0, tokensOut: us.output_tokens || 0, busquedas: bus, costoUSD: +usd.toFixed(4), costoCOP: Math.round(usd * cfg.trm), utilidadCOP: Math.round(cfg.precio - usd * cfg.trm) }) });
+  return { ok: true, precios: arr, modelo: model, fecha: new Date().toISOString(), cobrado: mov ? cfg.precio : 0, saldo: cobrar ? isoBilSaldo_(u.email) : null, costoUSD: +usd.toFixed(4) };
 }
 
 
@@ -470,7 +483,7 @@ function probarAPIPrecios() {
   const key = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY');
   if (!key) { Logger.log('❌ Falta ANTHROPIC_API_KEY en Configuración del proyecto ▸ Propiedades del script.'); return; }
   Logger.log('🔑 Clave registrada (' + key.length + ' caracteres, empieza por ' + key.slice(0, 7) + '…). Consultando un precio de prueba con búsqueda web…');
-  const r = isoPrecios_({ email: 'prueba-api@isoflux' }, { items: [{ i: 0, item: 'Válvula de bola 1/2" roscada para gas', especificacion: 'cuerpo en latón, 600 WOG', unidad: 'un' }] });
+  const r = isoPrecios_({ email: 'prueba-api@isoflux', __prueba: true }, { items: [{ i: 0, item: 'Válvula de bola 1/2" roscada para gas', especificacion: 'cuerpo en latón, 600 WOG', unidad: 'un' }] });
   if (r.error) { Logger.log('❌ ' + r.error); return; }
   if (!r.precios.length) { Logger.log('⚠️ La API respondió (modelo ' + r.modelo + ') pero no devolvió precios; intenta de nuevo.'); return; }
   Logger.log('✅ Cotización Web activa · modelo ' + r.modelo + ' · ejemplo: $' + r.precios[0].cop.toLocaleString('es-CO') + ' COP — ' + r.precios[0].nota);
@@ -557,4 +570,103 @@ function isoCampo_(u, b) {
   const f = DriveApp.getFileById(b.fid), bytes = f.getBlob().getBytes();
   if (bytes.length > 25 * 1024 * 1024) throw new Error('El archivo supera 25 MB.');
   return { n: f.getName().replace(/^\d{4}-\d{2}-\d{2} \d{4} · /, ''), m: f.getMimeType(), b64: Utilities.base64Encode(bytes) };
+}
+
+// ---------- BILLETERA DE LA COTIZACIÓN WEB (V21.2) ----------
+/**
+ * La cotización Web de precios (API de Claude con búsqueda web) tiene costo y no está incluida en ningún plan del Hub.
+ * Cada usuario la paga con un saldo prepagado en pesos (COP):
+ *  1) Recarga: transfiere por Nequi, Nu, Daviplata o llaves Bre-B a las cuentas que configura el administrador del
+ *     software, carga el comprobante y la recarga queda «pendiente».
+ *  2) El administrador revisa el comprobante y la aprueba o la rechaza (con nota). Solo lo aprobado suma saldo.
+ *  3) Cada cotización Web que devuelve precios descuenta el precio vigente. Se guarda el costo real de la API (tokens
+ *     + búsquedas) y la utilidad, para el informe del administrador.
+ * Precio sugerido = costo real promedio × TRM ÷ (1 − utilidad) si la utilidad es sobre el precio, o × (1 + utilidad)
+ * si es sobre el costo. Todo queda en la hoja BilleteraMov (sin borrar: los errores se corrigen con ajustes).
+ */
+const ISO_BIL_H = ['id', 'email', 'nombre', 'fecha', 'tipo', 'monto', 'estado', 'medio', 'referencia', 'fechaPago', 'comprobante', 'nota', 'revisadoPor', 'fechaRevision', 'detalle'];
+const ISO_BIL_MEDIOS = ['Nequi', 'Nu', 'Daviplata', 'Llave Bre-B'];
+function isoBilHoja_() { if (!HOJAS.BilleteraMov) HOJAS.BilleteraMov = ISO_BIL_H; return sigHoja_('BilleteraMov'); }
+function isoBilCfg_() {
+  let c = {}; try { c = JSON.parse(PropertiesService.getScriptProperties().getProperty('BILLETERA_CFG') || '{}'); } catch (e) {}
+  return Object.assign({ activa: true, precio: 3000, minimo: 10000, utilidad: 80, base: 'precio', trm: 4000, usdIn: 2, usdOut: 10, usdBusqueda: 0.01,
+    cuentas: ISO_BIL_MEDIOS.map(m => ({ medio: m, titular: '', numero: '', activa: false })), instrucciones: '' }, c);
+}
+function isoBilMovs_() { isoBilHoja_(); return sigLeer_('BilleteraMov'); }
+function isoBilSaldo_(email) { const e = String(email).toLowerCase(); return isoBilMovs_().filter(m => String(m.email).toLowerCase() === e && m.estado === 'aprobada').reduce((a, m) => a + (+m.monto || 0), 0); }
+function isoBilMov_(o) { isoBilHoja_(); const m = Object.assign({ id: 'BM' + Utilities.getUuid().slice(0, 8), fecha: sigAhora_() }, o); sigAgregar_('BilleteraMov', m); return m; }
+const isoBilJson_ = m => ({ id: m.id, email: m.email, nombre: m.nombre, fecha: isoFecha_(m.fecha), tipo: m.tipo, monto: +m.monto || 0, estado: m.estado, medio: m.medio, referencia: m.referencia,
+  fechaPago: m.fechaPago instanceof Date ? m.fechaPago.toISOString().slice(0, 10) : String(m.fechaPago || ''), comprobante: m.comprobante ? 'https://drive.google.com/file/d/' + m.comprobante + '/view' : '', nota: m.nota, revisadoPor: m.revisadoPor, fechaRevision: isoFecha_(m.fechaRevision),
+  detalle: (() => { try { return JSON.parse(m.detalle || '{}'); } catch (e) { return {}; } })() });
+function isoBilPublica_(c) { return { activa: c.activa !== false, precio: c.precio, minimo: c.minimo, cuentas: (c.cuentas || []).filter(x => x.activa && x.numero), instrucciones: c.instrucciones || '' }; }
+function isoBilletera_(u) {
+  const e = String(u.email).toLowerCase(), M = isoBilMovs_(), mios = M.filter(m => String(m.email).toLowerCase() === e).reverse();
+  const out = { saldo: isoBilSaldo_(u.email), cfg: isoBilPublica_(isoBilCfg_()), movimientos: mios.slice(0, 60).map(isoBilJson_), esAdmin: u.rol === 'admin', medios: ISO_BIL_MEDIOS };
+  if (out.esAdmin) out.pendientes = M.filter(m => m.estado === 'pendiente').length;
+  return out;
+}
+function isoBilCarpeta_() {
+  const raiz = DriveApp.getFolderById(SIG.CARPETA_RAIZ_ID), n = 'Isoflux · Billetera (comprobantes)', it = raiz.getFoldersByName(n);
+  return it.hasNext() ? it.next() : raiz.createFolder(n);
+}
+function isoBilleteraRecarga_(u, b) {
+  const c = isoBilCfg_(), monto = Math.round(+b.monto || 0);
+  if (!b.acepto) throw new Error('Debes autorizar el tratamiento de los datos del comprobante (Ley 1581 de 2012).');
+  if (!(monto >= c.minimo)) throw new Error('La recarga mínima es $' + c.minimo.toLocaleString('es-CO') + ' COP.');
+  if (ISO_BIL_MEDIOS.indexOf(b.medio) < 0) throw new Error('Medio de pago no válido.');
+  const ref = String(b.referencia || '').trim().slice(0, 60); if (!ref) throw new Error('Escribe el número de comprobante o referencia de la transferencia.');
+  if (isoBilMovs_().some(m => m.tipo === 'recarga' && m.medio === b.medio && String(m.referencia).trim() === ref && m.estado !== 'rechazada')) throw new Error('Ese comprobante ya fue registrado.');
+  const bytes = Utilities.base64Decode(String(b.b64 || '')); if (!bytes.length) throw new Error('Adjunta el comprobante (imagen o PDF).');
+  if (bytes.length > 8 * 1024 * 1024) throw new Error('El comprobante supera 8 MB.');
+  const mime = String(b.mime || ''); if (!/^image\/|application\/pdf/.test(mime)) throw new Error('El comprobante debe ser una imagen o un PDF.');
+  const f = isoBilCarpeta_().createFile(Utilities.newBlob(bytes, mime, (Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HHmm') + ' · ' + u.email + ' · ' + b.medio + ' · ' + ref).replace(/[\\/:*?"<>|]/g, '_').slice(0, 140)));
+  const m = isoBilMov_({ email: u.email, nombre: String(u.nombre || '').slice(0, 80), tipo: 'recarga', monto: monto, estado: 'pendiente', medio: b.medio, referencia: ref, fechaPago: String(b.fechaPago || '').slice(0, 10), comprobante: f.getId(), nota: String(b.nota || '').slice(0, 300) });
+  try { sigBitacora_(u.email, '', 'billetera_recarga', { id: m.id, monto: monto, medio: b.medio }); } catch (e) {}
+  try { const ad = rows('Usuarios').filter(x => x.rol === 'admin' && x.email).map(x => x.email); if (ad.length) MailApp.sendEmail({ to: ad.join(','), noReply: true, subject: 'Isoflux · recarga pendiente de ' + u.email + ' por $' + monto.toLocaleString('es-CO'),
+    htmlBody: '<p>Hay una recarga de la billetera de cotización Web pendiente de revisión.</p><p><b>' + u.email + '</b> · ' + b.medio + ' · ref. ' + ref + ' · $' + monto.toLocaleString('es-CO') + ' COP</p><p>Revísala en Isoflux ▸ 💳 Billetera ▸ Administración.</p>' }); } catch (e) {}
+  return { ok: true, id: m.id, saldo: isoBilSaldo_(u.email) };
+}
+function isoBilleteraAdmin_(u, b) {
+  if (u.rol !== 'admin') throw new Error('Solo el administrador del software puede hacer esto.');
+  const M = isoBilMovs_();
+  if (b.accion === 'listar') {
+    const per = String(b.periodo || '').slice(0, 7), cons = M.filter(m => m.tipo === 'consumo' && m.estado === 'aprobada' && (!per || isoFecha_(m.fecha).slice(0, 7) === per));
+    const det = m => { try { return JSON.parse(m.detalle || '{}'); } catch (e) { return {}; } };
+    const ing = cons.reduce((a, m) => a - (+m.monto || 0), 0), cost = cons.reduce((a, m) => a + (+det(m).costoCOP || 0), 0), usd = cons.reduce((a, m) => a + (+det(m).costoUSD || 0), 0);
+    const rec = M.filter(m => m.tipo === 'recarga' && m.estado === 'aprobada' && (!per || isoFecha_(m.fecha).slice(0, 7) === per)).reduce((a, m) => a + (+m.monto || 0), 0);
+    const usuarios = {}; M.filter(m => m.estado === 'aprobada').forEach(m => { const e = String(m.email).toLowerCase(); usuarios[e] = (usuarios[e] || 0) + (+m.monto || 0); });
+    return { pendientes: M.filter(m => m.estado === 'pendiente').map(isoBilJson_), recientes: M.slice(-120).reverse().map(isoBilJson_), cfg: isoBilCfg_(),
+      resumen: { periodo: per || 'todo', cotizaciones: cons.length, ingresosCOP: ing, costoCOP: cost, costoUSD: +usd.toFixed(2), utilidadCOP: ing - cost, margen: ing ? Math.round((ing - cost) / ing * 100) : 0, recargasCOP: rec, costoPromUSD: cons.length ? +(usd / cons.length).toFixed(4) : 0 },
+      saldos: Object.keys(usuarios).map(e => ({ email: e, saldo: usuarios[e] })).filter(x => x.saldo !== 0).sort((a, c) => c.saldo - a.saldo) };
+  }
+  if (b.accion === 'aprobar' || b.accion === 'rechazar') {
+    const lock = LockService.getScriptLock(); lock.waitLock(10000);
+    try {
+      const m = isoBilMovs_().find(x => x.id === b.id); if (!m) throw new Error('Movimiento no encontrado.'); if (m.estado !== 'pendiente') throw new Error('Ese movimiento ya fue revisado (' + m.estado + ').');
+      const est = b.accion === 'aprobar' ? 'aprobada' : 'rechazada', ch = { estado: est, revisadoPor: u.email, fechaRevision: sigAhora_(), nota: [m.nota, b.nota].filter(Boolean).join(' · ').slice(0, 300) };
+      if (b.accion === 'aprobar' && +b.monto > 0 && Math.round(+b.monto) !== +m.monto) { ch.monto = Math.round(+b.monto); ch.nota = (ch.nota ? ch.nota + ' · ' : '') + 'monto verificado $' + ch.monto.toLocaleString('es-CO'); }
+      sigActualizar_('BilleteraMov', m._fila, ch);
+      try { sigBitacora_(u.email, '', 'billetera_' + est, { id: m.id, email: m.email, monto: ch.monto || m.monto }); } catch (e) {}
+      try { MailApp.sendEmail({ to: m.email, noReply: true, subject: 'Isoflux · tu recarga fue ' + est, htmlBody: '<p>Tu recarga de la billetera de cotización Web por <b>$' + Number(ch.monto || m.monto).toLocaleString('es-CO') + ' COP</b> (' + m.medio + ', ref. ' + m.referencia + ') fue <b>' + est + '</b>.</p>' + (b.nota ? '<p>Nota: ' + String(b.nota).replace(/</g, '&lt;') + '</p>' : '') + '<p>Saldo disponible: $' + isoBilSaldo_(m.email).toLocaleString('es-CO') + ' COP.</p>' }); } catch (e) {}
+      return { ok: true };
+    } finally { lock.releaseLock(); }
+  }
+  if (b.accion === 'ajuste') {
+    const monto = Math.round(+b.monto || 0); if (!monto || !b.email) throw new Error('Indica el correo y el monto (positivo suma, negativo resta).');
+    isoBilMov_({ email: String(b.email).trim().toLowerCase(), tipo: 'ajuste', monto: monto, estado: 'aprobada', medio: 'Ajuste del administrador', referencia: '', nota: String(b.nota || '').slice(0, 300), revisadoPor: u.email, fechaRevision: sigAhora_() });
+    try { sigBitacora_(u.email, '', 'billetera_ajuste', { email: b.email, monto: monto }); } catch (e) {}
+    return { ok: true };
+  }
+  if (b.accion === 'config') {
+    const c = isoBilCfg_(), n = b.cfg || {};
+    ['precio', 'minimo', 'utilidad', 'trm', 'usdIn', 'usdOut', 'usdBusqueda'].forEach(k => { if (n[k] != null && isFinite(+n[k]) && +n[k] >= 0) c[k] = +n[k]; });
+    if (n.base === 'precio' || n.base === 'costo') c.base = n.base; if (typeof n.activa === 'boolean') c.activa = n.activa;
+    if (Array.isArray(n.cuentas)) c.cuentas = n.cuentas.slice(0, 8).map(x => ({ medio: ISO_BIL_MEDIOS.indexOf(x.medio) >= 0 ? x.medio : 'Nequi', titular: String(x.titular || '').slice(0, 80), numero: String(x.numero || '').slice(0, 60), activa: !!x.activa }));
+    if (n.instrucciones != null) c.instrucciones = String(n.instrucciones).slice(0, 600);
+    if (c.utilidad >= 100 && c.base === 'precio') throw new Error('La utilidad sobre el precio debe ser menor que 100 %.');
+    PropertiesService.getScriptProperties().setProperty('BILLETERA_CFG', JSON.stringify(c));
+    try { sigBitacora_(u.email, '', 'billetera_config', { precio: c.precio, utilidad: c.utilidad, base: c.base }); } catch (e) {}
+    return { ok: true, cfg: c };
+  }
+  return { error: 'Acción no válida.' };
 }
