@@ -274,6 +274,25 @@ function sigNuevoId_() {
   return 'MBR-' + ('000' + (Math.max(0, ...ids) + 1)).slice(-4);
 }
 
+/** Aviso por correo a los administradores del portal (función central) para validar y cambiar el estado del miembro. */
+function sigAvisarAdmins_(u, asunto, intro, filas, miembroId) {
+  try {
+    const to = rows('Usuarios').filter(x => x.rol === 'admin').map(x => String(x.email || '').trim()).filter(e => /^\S+@\S+\.\S+$/.test(e) && e !== u.email);
+    if (!to.length) return;
+    const e = x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    const link = SIG_DEC.PORTAL;
+    const html = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #dde3ee;border-radius:10px;overflow:hidden">' +
+      '<div style="background:#0a1a3d;color:#fff;padding:16px 20px"><b style="font-size:16px">' + e(asunto) + '</b><br><span style="font-size:12px;opacity:.8">' + e(SIG.RED) + ' · ' + e(SIG.TITULAR) + '</span></div>' +
+      '<div style="padding:18px 20px;color:#1b2333;font-size:14px;line-height:1.5"><p style="margin:0 0 12px">' + intro + '</p>' +
+      '<table cellpadding="6" style="border-collapse:collapse;width:100%;font-size:13px">' + filas.map((f, i) => '<tr' + (i % 2 ? '' : ' bgcolor="#f3f6fb"') + '><td style="color:#5b6577;width:42%">' + e(f[0]) + '</td><td><b>' + e(f[1]) + '</b></td></tr>').join('') + '</table>' +
+      '<p style="margin:16px 0 6px"><a href="' + link + '" style="background:#1d5bd8;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;display:inline-block">Abrir el portal</a></p>' +
+      '<p style="font-size:12px;color:#5b6577;margin:8px 0 0">En el portal: <b>Miembros SIG</b> → ' + e(miembroId) + ' → <b>Cambiar estado</b> (el cambio y su motivo quedan en la bitácora del SIG).</p></div></div>';
+    MailApp.sendEmail({ to: to[0], bcc: to.slice(1).join(','), subject: '[SIG] ' + asunto, htmlBody: html, name: 'SIG · ENTALPIA LABS', noReply: true,
+      body: intro.replace(/<[^>]+>/g, '') + '\n\n' + filas.map(f => f[0] + ': ' + f[1]).join('\n') + '\n\nPortal: ' + link });
+    sigBitacora_(u.email, miembroId || '', 'aviso_admin_enviado', { asunto: asunto, a: to.length });
+  } catch (x) { Logger.log('Aviso a administradores: ' + x.message); }
+}
+
 /** Se llama al crear una cuenta: deja registro; el miembro se crea desde "Mi empresa". */
 function sigAlRegistrar(email, nombre) {
   sigBitacora_(email, '', 'cuenta_creada', { nombre: nombre });
@@ -300,6 +319,12 @@ function sigCrearMiembro(u, b) {
     sigAgregar_('MiembroUsuarios', { miembroId: id, email: u.email, rolMiembro: 'responsable', estado: 'activo', fecha: ahora });
   } finally { lock.releaseLock(); }
   sigBitacora_(u.email, id, 'miembro_creado', { razonSocial: b.razonSocial, nit: nit });
+  sigAvisarAdmins_(u, 'Nueva organización por validar: ' + id + ' · ' + String(b.razonSocial).slice(0, 60),
+    'Se creó una cuenta oficial de organización en el SIG y quedó en estado <b>Aspirante</b>. Revise los datos y cambie su estado (por ejemplo a Implementación, tras firmar el convenio de adhesión) a la mayor brevedad.',
+    [['Código', id], ['Razón social / nombre', b.razonSocial], ['NIT / cédula', nit], ['Tipo de persona', b.tipoPersona], ['Representante', b.representante || '—'],
+     ['Correo de contacto', b.correoContacto || u.email], ['Teléfono', b.telefono || '—'], ['Ciudad', b.ciudad || '—'],
+     ['Servicios solicitados', String(Array.isArray(b.serviciosSolicitados) ? b.serviciosSolicitados.join(', ') : (b.serviciosSolicitados || '—')).replace(/\|/g, ', ')],
+     ['Creada por', (u.nombre || '') + ' <' + u.email + '>'], ['Estado', 'Aspirante']], id);
   return sigPerfil(u);
 }
 
@@ -400,6 +425,10 @@ function sigSolicitarAdmision(u) {
   if (faltan.length) throw new Error('Completa antes: ' + faltan.join(', ') + '.');
   sigActualizar_('Miembros', m._fila, { estadoSIG: 'Evaluación', motivoEstado: 'Solicitud de admisión (GI-PR-09)', fechaEstado: sigAhora_() });
   sigBitacora_(u.email, m.miembroId, 'admision_solicitada', '');
+  sigAvisarAdmins_(u, 'Solicitud de admisión: ' + m.miembroId + ' · ' + String(m.razonSocial).slice(0, 60),
+    'La organización solicitó su admisión al SIG (GI-PR-09) y pasó a estado <b>Evaluación</b>. Verifique los requisitos y decida si queda <b>Adscrita</b> a la mayor brevedad.',
+    [['Código', m.miembroId], ['Razón social / nombre', m.razonSocial], ['NIT / cédula', m.nit], ['Representante', m.representante || '—'],
+     ['Servicios solicitados', String(m.serviciosSolicitados || '—').replace(/\|/g, ', ')], ['Solicitada por', (u.nombre || '') + ' <' + u.email + '>'], ['Estado', 'Evaluación']], m.miembroId);
   return sigPerfil(u);
 }
 function sigCambiarEstado(u, miembroId, estado, motivo, alcance) {
