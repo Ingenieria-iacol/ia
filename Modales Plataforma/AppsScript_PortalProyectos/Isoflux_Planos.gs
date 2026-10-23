@@ -11,7 +11,7 @@
  * ║  (compara ISO_BACKEND con la versión que espera).                         ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
  */
-const ISO_BACKEND = '21.0';
+const ISO_BACKEND = '21.1';
 /**
  * ============================================================================
  *  Isoflux_Planos.gs — Planos de Isoflux guardados dentro de los proyectos del
@@ -434,7 +434,7 @@ function isoPrecios_(u, b) {
     const r = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
       headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' }, payload: JSON.stringify(body) });
     const code = r.getResponseCode(), tx = r.getContentText();
-    if (code !== 200) { let m = tx; try { m = JSON.parse(tx).error.message; } catch (e) {} return { error: 'El servicio de precios respondió ' + code + ': ' + String(m).slice(0, 200) }; }
+    if (code !== 200) { let m = tx; try { m = JSON.parse(tx).error.message; } catch (e) {} return { error: isoPreciosError_(code, String(m)), codigo: code }; }
     d = JSON.parse(tx);
     if (d.stop_reason !== 'pause_turn') break;
     msgs.push({ role: 'assistant', content: d.content });           // búsqueda larga: se continúa el turno
@@ -448,6 +448,33 @@ function isoPrecios_(u, b) {
   return { ok: true, precios: arr, modelo: model, fecha: new Date().toISOString() };
 }
 
+
+/** Mensaje claro para cada falla de la API de Claude (cotización Web). */
+function isoPreciosError_(code, m) {
+  const t = String(m || '');
+  if (code === 401) return 'La clave ANTHROPIC_API_KEY no es válida o fue revocada: crea una nueva en Claude Console ▸ API keys y reemplázala en Propiedades del script.';
+  if (code === 403) return 'La clave no tiene permiso para usar la API (revisa el espacio de trabajo de la clave en Claude Console).';
+  if (/credit balance|billing|purchase credits/i.test(t)) return 'La cuenta de la API no tiene saldo: recarga créditos en Claude Console ▸ Billing.';
+  if (/web search/i.test(t)) return 'La búsqueda web está desactivada para la organización: actívala en Claude Console ▸ Settings ▸ Capabilities (o Privacy).';
+  if (code === 404 || /model/i.test(t) && code === 400) return 'El modelo de ANTHROPIC_MODEL no existe o no está disponible: borra esa propiedad (se usa claude-sonnet-5-5) o corrige el nombre.';
+  if (code === 429) return 'Se alcanzó el límite de solicitudes de la API: espera un minuto e intenta de nuevo.';
+  if (code >= 500) return 'El servicio de la API está ocupado (' + code + '): intenta de nuevo en unos minutos.';
+  return 'El servicio de precios respondió ' + code + ': ' + t.slice(0, 200);
+}
+/**
+ * PRUEBA DE LA COTIZACIÓN WEB — ejecútala desde el editor (▶ Ejecutar ▸ probarAPIPrecios) después de registrar
+ * ANTHROPIC_API_KEY en Propiedades del script. La primera vez Google pide autorizar «conectarse a un servicio externo».
+ * El resultado aparece en el Registro de ejecución. No muestra la clave.
+ */
+function probarAPIPrecios() {
+  const key = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY');
+  if (!key) { Logger.log('❌ Falta ANTHROPIC_API_KEY en Configuración del proyecto ▸ Propiedades del script.'); return; }
+  Logger.log('🔑 Clave registrada (' + key.length + ' caracteres, empieza por ' + key.slice(0, 7) + '…). Consultando un precio de prueba con búsqueda web…');
+  const r = isoPrecios_({ email: 'prueba-api@isoflux' }, { items: [{ i: 0, item: 'Válvula de bola 1/2" roscada para gas', especificacion: 'cuerpo en latón, 600 WOG', unidad: 'un' }] });
+  if (r.error) { Logger.log('❌ ' + r.error); return; }
+  if (!r.precios.length) { Logger.log('⚠️ La API respondió (modelo ' + r.modelo + ') pero no devolvió precios; intenta de nuevo.'); return; }
+  Logger.log('✅ Cotización Web activa · modelo ' + r.modelo + ' · ejemplo: $' + r.precios[0].cop.toLocaleString('es-CO') + ' COP — ' + r.precios[0].nota);
+}
 
 // ---------- LIBRERÍA DE NORMAS DEL AUDITOR (V19.5) ----------
 /**

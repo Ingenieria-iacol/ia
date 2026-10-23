@@ -38,10 +38,25 @@ canvas.sig{width:100%;height:150px;border:1px dashed #9aa9bb;border-radius:10px;
 .sh .hd{display:flex;align-items:center;gap:8px;position:sticky;top:-12px;background:var(--bg);padding:6px 0;z-index:2}.sh .hd b{flex:1;font-size:16px}
 .priv{background:#fff8e6;border:1px solid #f0d58c;border-radius:10px;padding:10px;font-size:12.5px}.priv label{color:var(--tx);display:flex;gap:8px;align-items:flex-start;margin:0}.priv input{width:auto;margin-top:3px}
 .ck{display:flex;gap:8px;align-items:flex-start}.ck input{width:auto;margin-top:3px}
+/* ---- Tema Entalpía (portal SGC) ---- */
+:root{--bg:#0a0d14;--cd:#121826;--tx:#e8eefb;--mu:#8fa0bf;--b:#3d8bff;--bd:#26324d;--ok:#3ddc97;--wa:#ffb45c;--er:#ff6b7a;--hd:#0a0d14;--m:linear-gradient(135deg,#0a3a95,#3d8bff 38%,#cfe9ff 52%,#2a6fe0 70%,#0a2c75)}
+html,body{min-height:100vh;background:radial-gradient(900px 420px at 80% -10%,#12306b55,transparent),var(--bg);font-family:"Segoe UI",system-ui,Arial,sans-serif}
+header{background:#0a0d14ee;border-bottom:1px solid var(--bd);backdrop-filter:blur(6px)}header::after{content:'';position:absolute;left:0;right:0;bottom:-2px;height:2px;background:var(--m)}
+header img{height:34px;max-width:90px;object-fit:contain;border-radius:6px;background:#fff1}header b{letter-spacing:.6px}
+nav{background:#0d1220;border-top:1px solid var(--bd)}nav button.on{color:#7cc8ff}
+input,select,textarea{background:#0f1522;color:var(--tx);border-color:#2b3a5c}input:disabled,select:disabled,textarea:disabled{opacity:.8;background:#141b2c;color:#b9c6e0}
+.btn{background:#17203a;color:var(--tx);border-color:#2b3a5c}.btn.pr{background:var(--m);border-color:#3d8bff;color:#fff;text-shadow:0 1px 2px #0008}.btn.ok{background:#127a52;border-color:#3ddc97}
+.seg{border-color:#2b3a5c}.seg button{background:#0f1522;color:var(--tx)}.seg button.on{background:#1d5fd8}.seg button:disabled{opacity:.5}
+.dirs button{background:#0f1522;color:var(--tx);border-color:#2b3a5c}.pt .ic{background:#17203a}
+.gps{background:#0f2445;border-color:#24508f}.tag{background:#1b2440;color:var(--tx)}
+.priv{background:#2b2210;border-color:#7a5d1d}.priv label{color:var(--tx)}.toast{background:#e8eefb;color:#0a0d14}
+.lk{color:#ffcf6b;font-size:11.5px;font-weight:600}.ro{border:1px solid #7a5d1d;background:#2b2210;border-radius:10px;padding:8px 10px;font-size:12.5px;margin-bottom:10px}
+.gate{max-width:560px;margin:48px auto;text-align:center}.gate h2{font-size:18px}.gate .cd{padding:22px}
+.sut{font-size:10.5px;color:var(--mu);text-align:right;line-height:1.25}
 </style>
 </head>
 <body>
-<header><div style="font-size:24px">📍</div><div><b>ISOFLUX · COLECTOR DE CAMPO</b><small id="hsub">Levantamiento georreferenciado</small></div><span class="sp"></span><span id="hst" class="mu" style="color:#bcd3f5;font-size:11.5px"></span></header>
+<header><div id="hlogo" style="font-size:24px">📍</div><div><b>BITÁCORA DE CAMPO · LEVANTAMIENTO</b><small id="hsub">Levantamiento georreferenciado</small></div><span class="sp"></span><span id="hst" class="mu" style="color:#bcd3f5;font-size:11.5px"></span></header>
 <main id="m"></main>
 <nav id="nv"><button data-s="pr"><i>🏗️</i>Proyecto</button><button data-s="pu"><i>📍</i>Puntos</button><button data-s="eq"><i>🔥</i>Equipos</button><button data-s="cr"><i>↔️</i>Cruces</button><button data-s="sg"><i>✍️</i>SGC</button><button data-s="en"><i>📤</i>Enviar</button></nav>
 <div class="ov" id="ov"><div class="sh" id="sh"></div></div>
@@ -76,8 +91,12 @@ const DB=new Promise(r=>{try{const q=indexedDB.open('isoflux_colector',1);q.onup
 const kvGet=async k=>{const d=await DB;if(!d)return null;return new Promise(r=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>r(q.result||null);q.onerror=()=>r(null);});};
 const kvSet=async(k,v)=>{const d=await DB;if(!d)return;return new Promise(r=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>r();t.onerror=()=>r();});};
 const nuevo=()=>({formato:'isoflux-campo',version:1,creado:new Date().toISOString(),proyecto:{tipoRed:QS.get('red')&&RED[QS.get('red')]?QS.get('red'):'Residencial',fluido:'GN',sistema:'Geográficas WGS84 / MAGNA-SIRGAS (lat, lon)',psumU:'mbar',fecha:new Date().toISOString().slice(0,10),equipoGps:'Celular (colector Isoflux)',nombre:QS.get('proyecto')||''},puntos:[],tramos:[],equipos:[],cruces:[],fotos:[],sgc:[],firmas:[],consent:false});
-let D=null,ST='pr',SEND=null;
-const guardar=()=>{D.mod=new Date().toISOString();kvSet('cur',D);$('hst').textContent='💾 guardado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});};
+let D=null,ST='pr',SEND=null,OFF=false;const KEY='cur:'+TOKEN;
+/* datos registrados en el SGC por el administrador o el creador del proyecto: llegan bloqueados */
+const redDe=t=>/industr/i.test(t||'')?'Industrial':/comerc/i.test(t||'')?'Comercial':/anillo|extern|distribu|red pe|polietil/i.test(t||'')?'Anillo de distribución':/residen|vivien|domicil/i.test(t||'')?'Residencial':'';
+let LOCK={};function bloquear(){LOCK={};if(!SEND||!SEND.proyecto)return;const P=SEND.proyecto,pr=D.proyecto;const set=(k,v)=>{if(v!=null&&String(v).trim()!==''){pr[k]=String(v);LOCK[k]=1;}};
+ set('nombre',P.titulo);set('cliente',P.cliente);set('direccion',P.ubicacion);set('codigo',P.id);const r=redDe(P.tipo);if(r)set('tipoRed',r);}
+const guardar=()=>{D.mod=new Date().toISOString();kvSet(KEY,D);const h=$('hsv')||$('hst');if(h)h.textContent='💾 guardado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});};
 /* ---------- geodesia (para el mapa) ---------- */
 const GA=6378137,GF=1/298.257223563,GE2=GF*(2-GF),RAD=Math.PI/180;
 const ecef=(la,lo,h)=>{const a=la*RAD,b=lo*RAD,s=Math.sin(a),N=GA/Math.sqrt(1-GE2*s*s);return[(N+h)*Math.cos(a)*Math.cos(b),(N+h)*Math.cos(a)*Math.sin(b),(N*(1-GE2)+h)*s];};
@@ -94,7 +113,7 @@ function mapa(cv){const c=cv.getContext('2d'),k=devicePixelRatio||1,W=cv.width=c
  c.font=`${11*k}px sans-serif`;D.puntos.forEach(p=>{if(!P[p.id])return;const q=T(p.id);c.fillStyle=/Acometida \/ fuente/.test(p.tipo)?'#ff5252':/Hito/.test(p.tipo)?'#fff':'#ffd54f';c.beginPath();c.arc(q[0],q[1],4.5*k,0,7);c.fill();c.fillStyle='#dceaff';c.fillText(p.id,q[0]+6*k,q[1]-6*k);});
  c.fillStyle='#dceaff';c.fillText('N ↑',W-34*k,18*k);const L0=[1,2,5,10,20,50,100,200,500].find(v=>v*s>50*k)||500;c.strokeStyle='#dceaff';c.lineWidth=1.5*k;c.beginPath();c.moveTo(10*k,H-10*k);c.lineTo(10*k+L0*s,H-10*k);c.stroke();c.fillText(L0+' m',10*k,H-16*k);}
 /* ---------- utilidades de formulario ---------- */
-const sel=(id,ops,v,ph)=>`<select id="${id}">${ph!=null?`<option value="">${E(ph)}</option>`:''}${ops.map(o=>{const[val,txt]=Array.isArray(o)?o:[o,o];return`<option value="${E(val)}"${String(v)==String(val)?' selected':''}>${E(txt)}</option>`;}).join('')}</select>`;
+const sel=(id,ops,v,ph)=>`<select id="${id}">${ph!=null?`<option value="">${E(ph==='—'?'No aplica':ph)}</option>`:''}${ops.map(o=>{const[val,txt]=Array.isArray(o)?o:[o,o];return`<option value="${E(val)}"${String(v)==String(val)?' selected':''}>${E(txt)}</option>`;}).join('')}</select>`;
 const inp=(id,v,t,ph,ex)=>`<input id="${id}" value="${E(v==null?'':v)}" ${t?`type="${t}"`:''} ${t=='number'?'inputmode="decimal" step="any"':''} placeholder="${E(ph||'')}" ${ex||''}>`;
 const val=id=>{const e=$(id);return e?e.value.trim():'';};
 const nid=t=>{const pre=(PT.find(p=>p[0]==t)||PT[10])[1];let i=1;while(D.puntos.some(p=>p.id==pre+i))i++;return pre+i;};
@@ -115,10 +134,11 @@ function pinta(){document.querySelectorAll('#nv button').forEach(b=>b.classList.
   <label>Observaciones</label><textarea id="p_obs">${E(pr.obs||'')}</textarea></div>
   ${SEND?`<div class="cd mu">🔗 Enlace de campo del proyecto <b>${E(SEND.proyecto.titulo)}</b> · vence ${E(String(SEND.expira).slice(0,10))}. Al terminar, publica el levantamiento en la bitácora desde «Enviar».</div>`:''}
   <div class="cd"><div class="row"><button class="btn" id="bnu">🗑️ Nuevo levantamiento</button><label class="btn" style="margin:0">📂 Abrir archivo .json<input type="file" id="fop" accept=".json" hidden></label></div><p class="mu">Todo se guarda en este celular a medida que escribes, aunque no haya señal.</p></div>`;
-  m.querySelectorAll('[id^=p_]').forEach(e=>e.oninput=e.onchange=()=>{pr[e.id.slice(2)]=e.value;guardar();});
-  m.querySelectorAll('#sred button').forEach(b=>b.onclick=()=>{pr.tipoRed=b.dataset.r;guardar();pinta();});
-  $('bnu').onclick=async()=>{if(!confirm('¿Empezar un levantamiento nuevo? El actual se borra de este celular (expórtalo antes si lo necesitas).'))return;D=nuevo();guardar();pinta();};
-  $('fop').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());if(j.formato!=='isoflux-campo')throw Error('No es un levantamiento de Isoflux.');D=Object.assign(nuevo(),j);guardar();pinta();toast('Levantamiento abierto.');}catch(x){alert(x.message);}};return;}
+  m.querySelectorAll('[id^=p_]').forEach(e=>{const k=e.id.slice(2);if(LOCK[k]){e.disabled=true;e.title='Registrado en el SGC por el responsable del proyecto: no se puede modificar';const l=e.previousElementSibling&&e.previousElementSibling.tagName=='LABEL'?e.previousElementSibling:(e.parentElement&&e.parentElement.previousElementSibling);if(l&&l.tagName=='LABEL'&&!l.querySelector('.lk'))l.insertAdjacentHTML('beforeend',' <span class="lk">🔒 SGC</span>');return;}e.oninput=e.onchange=()=>{pr[k]=e.value;guardar();};});
+  if(LOCK.tipoRed)m.querySelectorAll('#sred button').forEach(b=>b.disabled=true);
+  m.querySelectorAll('#sred button').forEach(b=>b.onclick=()=>{if(LOCK.tipoRed)return;pr.tipoRed=b.dataset.r;guardar();pinta();});
+  $('bnu').onclick=async()=>{if(!confirm('¿Empezar un levantamiento nuevo? El actual se borra de este celular (expórtalo antes si lo necesitas).'))return;D=nuevo();bloquear();guardar();pinta();};
+  $('fop').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());if(j.formato!=='isoflux-campo')throw Error('No es un levantamiento de Isoflux.');D=Object.assign(nuevo(),j);bloquear();guardar();pinta();toast('Levantamiento abierto.');}catch(x){alert(x.message);}};return;}
  if(ST=='pu'){m.innerHTML=`<div class="cd"><div class="row"><h2 style="flex:1;margin:0">📍 Puntos (${D.puntos.length})</h2><button class="btn pr" id="badd">＋ Punto</button></div>
   <p class="mu">Recorre la red desde la acometida o la fuente. Un punto en cada accesorio, cambio de dirección, derivación, subida o bajada, equipo y final de red.</p><canvas class="map" id="cvm"></canvas></div>
   <div class="cd">${D.puntos.length?D.puntos.map((p,i)=>`<div class="pt"><div class="ic">${ico(p.tipo)}</div><div class="tx"><b>${E(p.id)} · ${E(p.tipo)}</b><span>${p.lat?`🛰️ ${(+p.lat).toFixed(6)}, ${(+p.lon).toFixed(6)} ±${fx(p.prec,1)} m`:p.dist?`📏 ${fx(p.dist,2)} m ${E(p.dir)} desde ${E(p.ref||p.viene||'anterior')}`:'<span class="er">sin ubicación</span>'}${p.viene?' · viene de '+E(p.viene):''}${p.ramal?' · ramal '+E(p.ramal):''}<br>${E([p.dia,p.mat,p.inst,p.prof?'prof. '+p.prof+' m':''].filter(Boolean).join(' · '))}${p.desc?' · '+E(p.desc):''}${(p.fotos||[]).length?' · 📷 '+p.fotos.length:''}</span></div><button class="btn sm" data-e="${i}">✏️</button></div>`).join(''):'<p class="mu">Sin puntos. Empieza por la acometida o la fuente de suministro.</p>'}</div>`;
@@ -189,7 +209,10 @@ function editar(i){const nv=i<0,last=D.puntos[D.puntos.length-1],p=nv?{tipo:D.pu
    p.fotos.forEach((f,j)=>f.archivo=p.id+'_'+(j+1)+'.jpg');if(!p.viene&&nv&&last&&!p.ramal)p.viene='';
    if(nv)D.puntos.push(p);else{const old=D.puntos[i].id;D.puntos[i]=p;if(old!==id){D.puntos.forEach(x=>{if(x.viene==old)x.viene=id;if(x.ref==old)x.ref=id;});D.equipos.forEach(x=>{if(x.punto==old)x.punto=id;});}}
    guardar();$('ov').classList.remove('on');pinta();toast('Punto '+id+' guardado.');};
-  if($('edel'))$('edel').onclick=()=>{if(!confirm('¿Eliminar el punto '+p.id+'?'))return;D.puntos.splice(i,1);guardar();$('ov').classList.remove('on');pinta();};});}
+  if($('edel'))$('edel').onclick=()=>{if(!confirm('¿Eliminar el punto '+p.id+'?'))return;D.puntos.splice(i,1);guardar();$('ov').classList.remove('on');pinta();};if(p.pub)soloLectura(p.pub);});}
+/* lo publicado en la bitácora del SGC no se modifica */
+function soloLectura(cuando){const sh=$('sh');sh.querySelectorAll('input,select,textarea').forEach(x=>x.disabled=true);['eok','edel','qok','qdel','kok','kdel','bgps'].forEach(id=>{const b=$(id);if(b)b.style.display='none';});sh.querySelectorAll('label.btn').forEach(x=>x.style.display='none');sh.querySelectorAll('.ph .x b').forEach(x=>x.remove());sh.querySelectorAll('.dirs button,.seg button').forEach(x=>x.disabled=true);
+ const hd=sh.querySelector('.hd');if(hd)hd.insertAdjacentHTML('afterend',`<div class="ro">🔒 Publicado en la bitácora del proyecto el ${E(String(cuando||'').slice(0,16).replace('T',' '))}: es un registro del SGC y no se puede modificar. Si hay una corrección, registra un punto o equipo nuevo y publícalo.</div>`);}
 function reducir(f){return new Promise((ok,ko)=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1600/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.74));};im.onerror=ko;im.src=r.result;};r.onerror=ko;r.readAsDataURL(f);});}
 function editEq(i){const e=i<0?{cant:1,fc:.7}:Object.assign({},D.equipos[i]),cons=D.puntos.map(p=>[p.id,p.id+' · '+p.tipo]),tec=['O2','Aire','N2'].includes(D.proyecto.fluido);
  sheet(i<0?'＋ Equipo':'✏️ Equipo',`<div class="cd"><label>Punto</label>${sel('q_punto',cons,e.punto,'—')}<label>Equipo / artefacto (o usuarios)</label>${inp('q_nombre',e.nombre,'','Ej. Estufa 4 puestos con horno')}
@@ -198,13 +221,13 @@ function editEq(i){const e=i<0?{cant:1,fc:.7}:Object.assign({},D.equipos[i]),con
   <div class="g2"><div><label>Tipo (A/B/C)</label>${sel('q_cls',['A','B','C'],e.cls,'—')}</div><div><label>Presión requerida</label>${inp('q_pmin',e.pmin,'','Ej. 20 mbar')}</div><div><label>Recinto</label>${inp('q_recinto',e.recinto)}</div><div><label>Volumen recinto (m³)</label>${inp('q_vol',e.vol,'number')}</div></div>
   <label>Ventilación</label>${inp('q_vent',e.vent,'','Rejillas, área (cm²), ducto')}<label>Observaciones</label>${inp('q_obs',e.obs)}</div><div class="row"><button class="btn pr" id="qok" style="flex:1">💾 Guardar</button>${i<0?'':'<button class="btn" id="qdel">🗑️</button>'}</div>`,()=>{
   $('qok').onclick=()=>{['punto','nombre','cant','kw','btu','qlm','h0','h1','fc','cls','pmin','recinto','vol','vent','obs'].forEach(k=>{if($('q_'+k))e[k]=val('q_'+k);});if(!e.punto){alert('Elige el punto.');return;}if(i<0)D.equipos.push(e);else D.equipos[i]=e;guardar();$('ov').classList.remove('on');pinta();};
-  if($('qdel'))$('qdel').onclick=()=>{D.equipos.splice(i,1);guardar();$('ov').classList.remove('on');pinta();};});}
+  if($('qdel'))$('qdel').onclick=()=>{D.equipos.splice(i,1);guardar();$('ov').classList.remove('on');pinta();};if(e.pub)soloLectura(e.pub);});}
 function editCr(i){const c=i<0?{rel:'Cruce'}:Object.assign({},D.cruces[i]);
  sheet(i<0?'＋ Cruce':'✏️ Cruce',`<div class="cd"><label>Punto o tramo</label>${sel('k_ref',D.puntos.map(p=>p.id),c.ref,'—')}<label>Red / servicio</label>${sel('k_serv',SERV,c.serv,'—')}<label>Relación</label>${sel('k_rel',['Cruce','Paralelo'],c.rel)}
   <div class="g3"><div><label>Dist. horizontal (m)</label>${inp('k_dh',c.dh,'number')}</div><div><label>Dist. vertical (m)</label>${inp('k_dv',c.dv,'number')}</div><div><label>Prof. otra red (m)</label>${inp('k_prof',c.prof,'number')}</div></div><label>Operador</label>${inp('k_op',c.op)}<label>Observaciones</label>${inp('k_obs',c.obs)}</div>
   <div class="row"><button class="btn pr" id="kok" style="flex:1">💾 Guardar</button>${i<0?'':'<button class="btn" id="kdel">🗑️</button>'}</div>`,()=>{
   $('kok').onclick=()=>{['ref','serv','rel','dh','dv','prof','op','obs'].forEach(k=>c[k]=val('k_'+k));if(i<0)D.cruces.push(c);else D.cruces[i]=c;guardar();$('ov').classList.remove('on');pinta();};
-  if($('kdel'))$('kdel').onclick=()=>{D.cruces.splice(i,1);guardar();$('ov').classList.remove('on');pinta();};});}
+  if($('kdel'))$('kdel').onclick=()=>{D.cruces.splice(i,1);guardar();$('ov').classList.remove('on');pinta();};if(c.pub)soloLectura(c.pub);});}
 /* ---------- firma ---------- */
 function pad(cv,img){const k=devicePixelRatio||1;cv.width=cv.clientWidth*k;cv.height=cv.clientHeight*k;const c=cv.getContext('2d');c.lineWidth=2.2*k;c.lineCap='round';c.strokeStyle='#0f1f33';let dr=false,n=0;const o={touched:false};
  if(img){const im=new Image();im.onload=()=>c.drawImage(im,0,0,cv.width,cv.height);im.src=img;n=1;}
@@ -238,13 +261,18 @@ async function publicar(){const m=$('pubm'),b=$('bpub'),v=validar();if(v.e.lengt
   const r=await api({paso:'entrada',tipo:'Levantamiento georreferenciado',autor:pr.levanto||'Personal de campo',texto:`📍 Levantamiento georreferenciado · red ${pr.tipoRed} · ${FLU[pr.fluido]||pr.fluido}\n${D.puntos.length} puntos, ${D.equipos.length} equipos, ${D.cruces.length} cruces, ${fotos.length} fotos.\nContratante: ${pr.cliente||'—'}${D.consent?' (autorizó tratamiento de datos)':''}.\nAbrir en Isoflux: Gestión ▸ Proyecto ▸ 📍 Campo ▸ Importar ▸ Traer de la bitácora.`,gps:g?`${(+g.lat).toFixed(6)}, ${(+g.lon).toFixed(6)} (±${fx(g.prec,0)} m)`:'',conArchivos:true});
   const b64=s=>btoa(unescape(encodeURIComponent(s)));m.textContent='Subiendo el levantamiento…';await api({paso:'archivo',entradaId:r.id,b64:b64(json(false)),mime:'application/json',nombre:nombre('json')});
   for(let i=0;i<fotos.length;i++){m.textContent=`Subiendo foto ${i+1} de ${fotos.length}…`;await api({paso:'archivo',entradaId:r.id,b64:fotos[i].d.split(',')[1],mime:'image/jpeg',nombre:fotos[i].n});}
-  D.publicado=new Date().toISOString();guardar();m.innerHTML='<span class="okc">✓ Publicado en la bitácora del proyecto. El diseñador lo trae desde Isoflux.</span>';}
+  D.publicado=new Date().toISOString();[...D.puntos,...D.equipos,...D.cruces].forEach(x=>{if(!x.pub)x.pub=D.publicado;});guardar();m.innerHTML='<span class="okc">✓ Publicado en la bitácora del proyecto. El diseñador lo trae desde Isoflux.</span>';}
  catch(e){m.innerHTML='<span class="er">'+E(e.message)+'</span>';}b.disabled=false;}
 /* ---------- inicio ---------- */
 document.getElementById('nv').onclick=e=>{const b=e.target.closest('button');if(!b)return;ST=b.dataset.s;pinta();scrollTo(0,0);};
-(async()=>{D=await kvGet('cur');if(!D||D.formato!=='isoflux-campo')D=nuevo();if(QS.get('red')&&RED[QS.get('red')]&&!D.puntos.length)D.proyecto.tipoRed=QS.get('red');
- if(TOKEN){try{SEND=await api({});if(!D.proyecto.nombre)D.proyecto.nombre=SEND.proyecto.titulo||'';if(!D.proyecto.cliente)D.proyecto.cliente=SEND.proyecto.cliente||'';if(!D.proyecto.direccion)D.proyecto.direccion=SEND.proyecto.ubicacion||'';}catch(e){toast('Enlace de campo: '+e.message);}}
- pinta();if(D.mod)$('hst').textContent='💾 guardado';})();
+function puerta(msg){$('nv').style.display='none';$('hsub').textContent='Acceso controlado por el SGC';$('m').innerHTML=`<div class="gate"><div class="cd"><div style="font-size:40px">🔒</div><h2>Colector de campo del SGC</h2><p>${msg}</p><p class="mu">El responsable del proyecto envía el enlace desde el Portal de Proyectos: ficha del proyecto ▸ Bitácora ▸ <b>Enlaces para el personal de campo</b> ▸ 📍 Colector. Cada enlace es personal, tiene vigencia y se puede anular.</p></div></div>`;}
+function cabecera(){if(!SEND)return;const l=$('hlogo');if(SEND.logo&&l)l.innerHTML=`<img src="${SEND.logo}" alt="">`;const st=$('hst');if(st)st.innerHTML=`<div class="sut">${E((SEND.miembro&&SEND.miembro.nombre)||SEND.titular||'')}<br>${OFF?'📴 sin conexión · ':''}vigente hasta ${E(String(SEND.expira||'').slice(0,10))}<br><span id="hsv"></span></div>`;}
+(async()=>{if(!TOKEN){puerta('Este colector solo funciona con un <b>enlace de campo vigente</b> del proyecto.');return;}
+ const SK='ses:'+TOKEN;let cache=await kvGet(SK);
+ try{if(!navigator.onLine)throw Object.assign(Error('offline'),{red:1});SEND=await api({});await kvSet(SK,{SEND,t:Date.now()});}
+ catch(e){const vivo=cache&&cache.SEND&&new Date(cache.SEND.expira)>new Date();if((e.red||e instanceof TypeError)&&vivo){SEND=cache.SEND;OFF=true;}else{if(cache)await kvSet(SK,null);puerta(E(e.message==='offline'?'Sin conexión y sin una sesión vigente guardada en este celular. Ábrelo con señal la primera vez.':e.message));return;}}
+ if(new Date(SEND.expira)<new Date()){puerta('El enlace de campo venció. Pide uno nuevo al responsable del proyecto.');return;}
+ D=await kvGet(KEY);if(!D||D.formato!=='isoflux-campo')D=nuevo();bloquear();cabecera();pinta();if(D.mod&&!OFF)toast('Levantamiento recuperado de este celular.');})();
 addEventListener('beforeunload',()=>{if(WATCH!=null)navigator.geolocation.clearWatch(WATCH);});
 })();
 </script>
