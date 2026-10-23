@@ -11,7 +11,7 @@
  * ║  (compara ISO_BACKEND con la versión que espera).                         ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
  */
-const ISO_BACKEND = '21.2';
+const ISO_BACKEND = '21.5';
 /**
  * ============================================================================
  *  Isoflux_Planos.gs — Planos de Isoflux guardados dentro de los proyectos del

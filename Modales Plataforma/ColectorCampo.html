@@ -45,7 +45,7 @@ header{background:#0a0d14ee;border-bottom:1px solid var(--bd);backdrop-filter:bl
 header img{height:34px;max-width:90px;object-fit:contain;border-radius:6px;background:#fff1}header b{letter-spacing:.6px}
 nav{background:#0d1220;border-top:1px solid var(--bd)}nav button.on{color:#7cc8ff}
 input,select,textarea{background:#0f1522;color:var(--tx);border-color:#2b3a5c}input:disabled,select:disabled,textarea:disabled{opacity:.8;background:#141b2c;color:#b9c6e0}
-.btn{background:#17203a;color:var(--tx);border-color:#2b3a5c}.btn.pr{background:var(--m);border-color:#3d8bff;color:#fff;text-shadow:0 1px 2px #0008}.btn.ok{background:#127a52;border-color:#3ddc97}
+.btn{background:#17203a;color:var(--tx);border-color:#2b3a5c}.nt0{background:#0f1522;border:1px dashed #3d8bff88;border-radius:10px;padding:8px 10px;margin:6px 0}.emj{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 6px}.emj button{width:38px;height:38px;font-size:20px;border-radius:8px;background:#17203a;border:1px solid #2b3a5c;padding:0}.emj button.on{border-color:#3d8bff;background:#1d3d7a}.btn.pr{background:var(--m);border-color:#3d8bff;color:#fff;text-shadow:0 1px 2px #0008}.btn.ok{background:#127a52;border-color:#3ddc97}
 .seg{border-color:#2b3a5c}.seg button{background:#0f1522;color:var(--tx)}.seg button.on{background:#1d5fd8}.seg button:disabled{opacity:.5}
 .dirs button{background:#0f1522;color:var(--tx);border-color:#2b3a5c}.pt .ic{background:#17203a}
 .gps{background:#0f2445;border-color:#24508f}.tag{background:#1b2440;color:var(--tx)}
@@ -73,9 +73,25 @@ const fx=(v,d=1)=>isFinite(v)&&v!==''&&v!=null?(+v).toLocaleString('es-CO',{mini
 const toast=m=>{const t=$('to');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',3200);};
 const RED={'Residencial':'🏠','Comercial':'🏪','Industrial':'🏭','Anillo de distribución':'⭕'};
 const FLU={GN:'Gas natural',GLP:'GLP',O2:'Oxígeno',Aire:'Aire comprimido',N2:'Nitrógeno'};
-const PT=[['Acometida / fuente de suministro','A','🚩'],['Acometida a usuario','U','🏠'],['Tanque / almacenamiento','TK','🛢️'],['Estación de regulación (ERM / ERP)','ERM','🏭'],['Regulador','R','🎛️'],['Medidor / centro de medición','M','🧮'],
+const PT0=[['Acometida / fuente de suministro','A','🚩'],['Acometida a usuario','U','🏠'],['Tanque / almacenamiento','TK','🛢️'],['Estación de regulación (ERM / ERP)','ERM','🏭'],['Regulador','R','🎛️'],['Medidor / centro de medición','M','🧮'],
  ['Válvula de seccionamiento','VS','⛔'],['Válvula','V','🔧'],['Derivación / te','T','⊥'],['Cambio de dirección','C','↪️'],['Vértice de trazado','P','•'],['Elevador / transición','EL','↕️'],['Punto de consumo / equipo','E','🔥'],
  ['Punto de prueba / toma de presión','PP','⏲️'],['Final de red / tapón','F','⏹️'],['Cruce con otra red','X','✖️'],['Hito / referencia (no es tubería)','H','📌']];
+/* tipos de punto agregados por el personal (compartidos en el SGC; el administrador elimina repetidos) */
+let PT=PT0.slice(),EXT=[],ALIAS={};
+const nrm=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+const EMOJIS=['📍','🔧','⛔','🧯','📡','🔌','🚰','🧰','📦','🪧','🕳️','🏗️','⚙️','🔥','💨','🫁','🧪','🛢️','🚧','🌳','🏠','🏭','🔩','⚡'];
+function emojiDe(n){const t=nrm(n);const M=[[/valvul|llave|registro/,'🔧'],[/sensor|sonda|transmis|medic/,'📡'],[/caja|camara|pozo|registro/,'🕳️'],[/poste|aviso|senal|placa|marca/,'🪧'],[/extint|incend/,'🧯'],[/electr|tablero|cable/,'⚡'],[/agua|hidra/,'🚰'],[/oxigen|medicinal|toma/,'🫁'],[/aire|compres|venteo|alivio/,'💨'],[/quemador|horno|estufa|calent|caldera/,'🔥'],[/tanque|cilindro|deposito/,'🛢️'],[/filtro|trampa/,'🧪'],[/soporte|anclaje|abrazadera/,'🔩'],[/arbol|zona verde/,'🌳'],[/obra|excav|zanja/,'🚧']];for(const[r,e]of M)if(r.test(t))return e;return '📍';}
+function pref(n){const base=new Set(PT0.map(x=>x[1]));let p=nrm(n).split(' ').filter(w=>w.length>2||/^\d/.test(w)).map(w=>w[0].toUpperCase()).join('').slice(0,3)||'O';if(base.has(p))p+='O';return p;}
+function refrescaPT(){const ex=(SEND&&SEND.ptExtra&&SEND.ptExtra.tipos)||[];ALIAS=(SEND&&SEND.ptExtra&&SEND.ptExtra.alias)||{};const loc=(D&&D.ptLocal)||[];const vistos=new Set(PT0.map(x=>nrm(x[0])));EXT=[];
+ ex.concat(loc).forEach(x=>{const k=nrm(x.nombre);if(!k||vistos.has(k)||ALIAS[x.nombre])return;vistos.add(k);EXT.push([x.nombre,pref(x.nombre),x.emoji||emojiDe(x.nombre),1]);});
+ PT=PT0.concat(EXT);if(D&&D.puntos)D.puntos.forEach(p=>{if(ALIAS[p.tipo])p.tipo=ALIAS[p.tipo];});}
+async function nuevoTipo(nombre,emoji){nombre=String(nombre||'').trim().replace(/\s+/g,' ').slice(0,60);if(nombre.length<3)throw Error('Escribe un nombre de al menos 3 letras.');const k=nrm(nombre);
+ const ya=PT.find(x=>nrm(x[0])===k);if(ya)return ya[0];
+ let r=null;if(!OFF&&navigator.onLine){try{r=await api({paso:'tipoPunto',nombre,emoji});}catch(e){}}
+ const t=r&&r.tipo?r.tipo:{nombre,emoji:emoji||emojiDe(nombre),pendiente:1};if(r&&r.tipos&&SEND)SEND.ptExtra=r.tipos;
+ if(!r){D.ptLocal=(D.ptLocal||[]).filter(x=>nrm(x.nombre)!==k).concat([t]);}
+ refrescaPT();guardar();return t.nombre;}
+async function subirTiposPendientes(){const L=(D&&D.ptLocal)||[];if(!L.length||OFF||!navigator.onLine)return;const quedan=[];for(const t of L){try{const r=await api({paso:'tipoPunto',nombre:t.nombre,emoji:t.emoji});if(r&&r.tipos&&SEND)SEND.ptExtra=r.tipos;if(r&&r.tipo&&r.tipo.nombre!==t.nombre)D.puntos.forEach(p=>{if(p.tipo===t.nombre)p.tipo=r.tipo.nombre;});}catch(e){quedan.push(t);}}D.ptLocal=quedan;refrescaPT();}
 const DIA=['1/4"','3/8"','1/2"','3/4"','1"','1 1/4"','1 1/2"','2"','2 1/2"','3"','4"','6"','8"','20 mm','25 mm','32 mm','40 mm','63 mm','90 mm','110 mm','160 mm'];
 const MAT=['Acero galvanizado','Acero al carbón','Acero inoxidable','PE-AL-PE','Polietileno (PE 100)','Cobre rígido','Cobre flexible','CSST'];
 const INST=['Enterrada','Bajo vía vehicular (enterrada)','Aérea / a la vista','Por fachada','Embebida en muro o piso','Encamisada / ducto'];
@@ -176,7 +192,7 @@ let WATCH=null,FIN=null;
 function editar(i){const nv=i<0,last=D.puntos[D.puntos.length-1],p=nv?{tipo:D.puntos.length?'Cambio de dirección':'Acometida / fuente de suministro',ramal:last?last.ramal:'',dia:last?last.dia:'',mat:last?last.mat:'',inst:last?last.inst:'',prof:last?last.prof:'',sup:last?last.sup:'',fotos:[]}:JSON.parse(JSON.stringify(D.puntos[i]));
  if(nv)p.id=nid(p.tipo);let modo=p.lat?'gps':p.dist?'cinta':(nv&&!D.puntos.length?'gps':'cinta');p.fotos=p.fotos||[];
  const otros=D.puntos.filter((x,j)=>j!==i).map(x=>x.id);
- sheet(nv?'＋ Punto nuevo':'✏️ Punto '+E(p.id),`<div class="cd"><label>Tipo de punto</label>${sel('e_tipo',PT.map(x=>[x[0],x[2]+' '+x[0]]),p.tipo)}<div class="g2"><div><label>ID</label>${inp('e_id',p.id)}</div><div><label>Ramal</label>${inp('e_ramal',p.ramal,'','R1')}</div></div>
+ sheet(nv?'＋ Punto nuevo':'✏️ Punto '+E(p.id),`<div class="cd"><label>Tipo de punto</label>${sel('e_tipo',PT.map(x=>[x[0],x[2]+' '+x[0]])).replace('</select>','<option value="__nuevo">➕ Otro tipo… (agregar a la lista)</option></select>')}<div id="e_nt" class="nt0" style="display:none"><label>Nombre del nuevo tipo</label><input id="e_ntn" type="text" maxlength="60" placeholder="Ej.: Caja de válvulas"><label>Emoji</label><div class="emj" id="e_nte">${EMOJIS.map(x=>`<button type="button" data-e="${x}">${x}</button>`).join('')}</div><div class="row"><button type="button" class="btn pr" id="e_ntok">Agregar a la lista</button><button type="button" class="btn sm" id="e_ntx">Cancelar</button></div><p class="mu" style="font-size:12px;margin:4px 0 0">Queda disponible para todo el personal de campo del SGC. Si se repite con otro nombre, el administrador lo unifica.</p></div><div class="g2"><div><label>ID</label>${inp('e_id',p.id)}</div><div><label>Ramal</label>${inp('e_ramal',p.ramal,'','R1')}</div></div>
   <label>Viene de (la tubería llega desde)</label>${sel('e_viene',otros,p.viene||'',nv&&last?`El anterior (${last.id})`:'— (inicio de la red o del ramal)')}</div>
   <div class="cd"><label style="margin-top:0">Ubicación</label><div class="seg" id="smo"><button data-m="gps">🛰️ GPS</button><button data-m="cinta">📏 Con cinta</button><button data-m="man">⌨️ Coordenadas</button></div><div id="umo"></div>
   <label>Nivel (m) — sobre el piso o terreno; negativo si está enterrado</label>${inp('e_nivel',p.nivel,'number','vacío = automático')}</div>
@@ -193,7 +209,13 @@ function editar(i){const nv=i<0,last=D.puntos[D.puntos.length-1],p=nv?{tipo:D.pu
    if($('bgps'))$('bgps').onclick=capturar;document.querySelectorAll('.dirs button').forEach(b=>b.onclick=()=>{p.dir=b.dataset.d;if($('e_az'))$('e_az').value='';document.querySelectorAll('.dirs button').forEach(x=>x.classList.toggle('on',x===b));});
    if($('e_lat'))$('e_lat').onchange=e=>{const m=e.target.value.match(/(-?\d+(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[.,]\d+)?)/);if(m){e.target.value=m[1];$('e_lon').value=m[2];}};};
   document.querySelectorAll('#smo button').forEach(b=>b.onclick=()=>{modo=b.dataset.m;umo();});umo();
-  $('e_tipo').onchange=e=>{if(nv)$('e_id').value=nid(e.target.value);};
+  {let em='';const nt=$('e_nt'),ts=$('e_tipo'),prev=()=>ts.dataset.prev||p.tipo||PT[0][0];ts.dataset.prev=ts.value;
+   const pinE=()=>$('e_nte').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.e===em));
+   $('e_ntn').oninput=e=>{if(!em||$('e_nte').dataset.auto){em=emojiDe(e.target.value);$('e_nte').dataset.auto=1;pinE();}};
+   $('e_nte').onclick=e=>{const b=e.target.closest('[data-e]');if(!b)return;em=b.dataset.e;delete $('e_nte').dataset.auto;pinE();};
+   $('e_ntx').onclick=()=>{nt.style.display='none';ts.value=prev();};
+   $('e_ntok').onclick=async()=>{const b=$('e_ntok');b.disabled=true;try{const n=await nuevoTipo($('e_ntn').value,em||emojiDe($('e_ntn').value));const o=document.createElement('option');const t=PT.find(x=>x[0]===n);if(![...ts.options].some(x=>x.value===n)){o.value=n;o.textContent=(t?t[2]:'📍')+' '+n;ts.insertBefore(o,ts.querySelector('option[value="__nuevo"]'));}ts.value=n;ts.dataset.prev=n;nt.style.display='none';if(nv)$('e_id').value=nid(n);toast('Tipo «'+n+'» agregado a la lista.');}catch(x){alert(x.message);}b.disabled=false;};
+   ts.onchange=e=>{if(e.target.value==='__nuevo'){nt.style.display='';$('e_ntn').value='';em='';$('e_nte').dataset.auto=1;pinE();$('e_ntn').focus();return;}ts.dataset.prev=e.target.value;nt.style.display='none';if(nv)$('e_id').value=nid(e.target.value);};}
   const fotos=()=>{$('eph').innerHTML=p.fotos.map((f,j)=>`<div class="x"><img src="${f.data}" alt=""><b data-j="${j}">✕</b></div>`).join('');$('eph').querySelectorAll('[data-j]').forEach(b=>b.onclick=()=>{p.fotos.splice(+b.dataset.j,1);fotos();});};fotos();
   $('e_foto').onchange=async e=>{for(const f of e.target.files){try{p.fotos.push({archivo:'',data:await reducir(f),fecha:new Date().toISOString()});}catch(x){}}e.target.value='';fotos();};
   function capturar(){if(!navigator.geolocation){alert('Este dispositivo no permite ubicación.');return;}const L=[],t0=Date.now(),b=$('bgps');b.disabled=true;b.textContent='Capturando…';
@@ -272,7 +294,7 @@ function cabecera(){if(!SEND)return;const l=$('hlogo');if(SEND.logo&&l)l.innerHT
  try{if(!navigator.onLine)throw Object.assign(Error('offline'),{red:1});SEND=await api({});await kvSet(SK,{SEND,t:Date.now()});}
  catch(e){const vivo=cache&&cache.SEND&&new Date(cache.SEND.expira)>new Date();if((e.red||e instanceof TypeError)&&vivo){SEND=cache.SEND;OFF=true;}else{if(cache)await kvSet(SK,null);puerta(E(e.message==='offline'?'Sin conexión y sin una sesión vigente guardada en este celular. Ábrelo con señal la primera vez.':e.message));return;}}
  if(new Date(SEND.expira)<new Date()){puerta('El enlace de campo venció. Pide uno nuevo al responsable del proyecto.');return;}
- D=await kvGet(KEY);if(!D||D.formato!=='isoflux-campo')D=nuevo();bloquear();cabecera();pinta();if(D.mod&&!OFF)toast('Levantamiento recuperado de este celular.');})();
+ D=await kvGet(KEY);if(!D||D.formato!=='isoflux-campo')D=nuevo();bloquear();refrescaPT();cabecera();pinta();if(!OFF)subirTiposPendientes().then(()=>{try{guardar();}catch(e){}});if(D.mod&&!OFF)toast('Levantamiento recuperado de este celular.');})();
 addEventListener('beforeunload',()=>{if(WATCH!=null)navigator.geolocation.clearWatch(WATCH);});
 })();
 </script>

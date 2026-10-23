@@ -84,6 +84,8 @@ const HOJAS = {
   DocsMarca: ['miembroId', 'docId', 'clave', 'pdfId', 'fecha'],
   Campo: ['id', 'proyectoId', 'fecha', 'tipo', 'texto', 'autor', 'email', 'origen', 'gps', 'archivos'],
   EnlacesCampo: ['token', 'proyectoId', 'email', 'expira', 'creadoPor', 'fecha', 'estado', 'mensaje'],
+  // Tipos de punto agregados en el colector de campo (compartidos; el administrador unifica repetidos)
+  TiposPunto: ['id', 'nombre', 'emoji', 'clave', 'creadoPor', 'proyectoId', 'fecha', 'estado', 'reemplazo', 'eliminadoPor', 'fechaElim'],
   // Planos de Isoflux asignados a proyectos (módulo Isoflux_Planos.gs)
   Planos: ['planoId', 'proyectoId', 'nombre', 'version', 'fileId', 'bytes', 'nodos', 'tuberias', 'fondos', 'sha256', 'autor', 'email', 'creado', 'actualizado', 'actualizadoPor', 'estado', 'miniatura', 'nota', 'vigente', 'vigentePor', 'vigenteFecha', 'vigenteFijada', 'borradorId', 'borradorRev', 'borradorFecha', 'borradorPor'],
   PlanTrabajo: ['proyectoId', 'planoId', 'version', 'orden', 'id', 'fase', 'actividad', 'dias', 'predecesora', 'inicio', 'fin', 'responsable', 'avance', 'autor', 'fecha'],
@@ -151,6 +153,7 @@ function sigApi(b, u) {
       case 'sgcCampoArchivo':    { const e = sigCampoEntradaDe_(b.entradaId); sigProyectoVisible_(u, e.proyectoId); return sigCampoArchivo_(e, b, u.nombre || u.email); }
       case 'sgcCampoEnlace':     return sigCampoEnlace(u, b);
       case 'sgcCampoRevocar':    return sigCampoRevocar(u, b.token);
+      case 'sgcCampoTiposPunto': return sigTiposPuntoAdmin(u, b, esAdmin);
       // ---- archivos de cualquier tipo y tamaño grande (por partes) ----
       case 'sgcSubirIni':        { const p = sigProyectoVisible_(u, b.proyectoId); if (p.ciclo === 'papelera' && !esAdmin) throw new Error('El proyecto está en la papelera.');
                                    const e = b.entradaId ? sigCampoEntradaDe_(b.entradaId) : null; if (e && String(e.proyectoId) !== String(p.id)) throw new Error('Entrada no válida.');
@@ -1202,6 +1205,53 @@ function sigCampoRevocar(u, token) {
   return sigCampoListar(u, x.proyectoId);
 }
 /** Pública (sin sesión): página de campo con enlace personal. Llamar ANTES de validar la sesión. */
+// ---------- TIPOS DE PUNTO DEL COLECTOR (lista compartida, unificación por el administrador) ----------
+function sigTpClave_(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
+/** Tipos activos y alias (nombre eliminado → nombre que lo reemplaza) para el colector. */
+function sigTiposPunto_() {
+  const L = sigLeer_('TiposPunto').filter(r => r.id), act = L.filter(r => r.estado !== 'eliminado'), byId = {}; L.forEach(r => byId[r.id] = r);
+  const alias = {}; L.filter(r => r.estado === 'eliminado' && r.reemplazo).forEach(r => { let d = byId[r.reemplazo], n = 0; while (d && d.estado === 'eliminado' && d.reemplazo && n++ < 10) d = byId[d.reemplazo]; if (d && d.estado !== 'eliminado') alias[r.nombre] = d.nombre; });
+  return { tipos: act.map(r => ({ id: r.id, nombre: r.nombre, emoji: r.emoji || '📍' })), alias: alias };
+}
+function sigTipoPuntoAgregar_(email, proyectoId, nombre, emoji) {
+  nombre = String(nombre || '').trim().replace(/\s+/g, ' ').slice(0, 60); emoji = String(emoji || '📍').slice(0, 8);
+  if (nombre.length < 3) return { error: 'El nombre del tipo de punto debe tener al menos 3 letras.' };
+  const k = sigTpClave_(nombre), lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const L = sigLeer_('TiposPunto').filter(r => r.id), ya = L.find(r => r.clave === k);
+    if (ya) { const t = sigTiposPunto_(); const nom = ya.estado === 'eliminado' ? (t.alias[ya.nombre] || ya.nombre) : ya.nombre; const v = t.tipos.find(x => x.nombre === nom); return { tipo: v || { nombre: nom, emoji: ya.emoji }, tipos: t, existente: true }; }
+    const r = { id: 'TP' + Utilities.getUuid().replace(/-/g, '').slice(0, 10), nombre: nombre, emoji: emoji, clave: k, creadoPor: email, proyectoId: String(proyectoId || ''), fecha: sigAhora_(), estado: 'activo', reemplazo: '', eliminadoPor: '', fechaElim: '' };
+    sigAgregar_('TiposPunto', r);
+    try { sigBitacora_(email, '', 'campo_tipo_punto', { nombre: nombre, emoji: emoji, proyecto: String(proyectoId || '') }); } catch (e) {}
+    return { tipo: { id: r.id, nombre: nombre, emoji: emoji }, tipos: sigTiposPunto_() };
+  } finally { lock.releaseLock(); }
+}
+/** Portal: listar (todos) y, solo administradores, renombrar / cambiar emoji / eliminar unificando con otro tipo. */
+function sigTiposPuntoAdmin(u, b, esAdmin) {
+  const op = String(b.op || 'listar');
+  if (op !== 'listar' && !esAdmin) throw new Error('Solo el administrador del software puede modificar los tipos de punto.');
+  if (op === 'eliminar' || op === 'editar') {
+    const lock = LockService.getScriptLock(); lock.waitLock(20000);
+    try {
+      const L = sigLeer_('TiposPunto').filter(r => r.id), x = L.find(r => r.id === b.id); if (!x) throw new Error('Tipo de punto no encontrado.');
+      if (op === 'eliminar') {
+        const rep = b.reemplazo ? L.find(r => r.id === b.reemplazo && r.estado !== 'eliminado') : null;
+        if (b.reemplazo && !rep) throw new Error('El tipo de reemplazo no existe o fue eliminado.');
+        if (rep && rep.id === x.id) throw new Error('Elige un tipo distinto para reemplazar.');
+        sigActualizar_('TiposPunto', x._fila, { estado: 'eliminado', reemplazo: rep ? rep.id : '', eliminadoPor: u.email, fechaElim: sigAhora_() });
+        L.filter(r => r.estado === 'eliminado' && r.reemplazo === x.id).forEach(r => sigActualizar_('TiposPunto', r._fila, { reemplazo: rep ? rep.id : '' }));
+        sigBitacora_(u.email, '', 'campo_tipo_punto_eliminado', { nombre: x.nombre, reemplazo: rep ? rep.nombre : '' });
+      } else {
+        const nom = String(b.nombre || x.nombre).trim().slice(0, 60), k = sigTpClave_(nom);
+        if (L.some(r => r.id !== x.id && r.clave === k && r.estado !== 'eliminado')) throw new Error('Ya existe un tipo con ese nombre: elimina este y unifícalo con aquel.');
+        sigActualizar_('TiposPunto', x._fila, { nombre: nom, clave: k, emoji: String(b.emoji || x.emoji).slice(0, 8) });
+        sigBitacora_(u.email, '', 'campo_tipo_punto_editado', { antes: x.nombre, ahora: nom });
+      }
+    } finally { lock.releaseLock(); }
+  }
+  const L = sigLeer_('TiposPunto').filter(r => r.id), byId = {}; L.forEach(r => byId[r.id] = r);
+  return { esAdmin: !!esAdmin, tipos: L.map(r => ({ id: r.id, nombre: r.nombre, emoji: r.emoji, creadoPor: r.creadoPor, fecha: r.fecha instanceof Date ? r.fecha.toISOString() : r.fecha, estado: r.estado || 'activo', reemplazo: r.reemplazo && byId[r.reemplazo] ? byId[r.reemplazo].nombre : '' })) };
+}
 function sigCampoPublico(q) {
   try {
     const C = CacheService.getScriptCache(), k = 'ca_' + q.token, f = +C.get(k) || 0;
@@ -1215,6 +1265,7 @@ function sigCampoPublico(q) {
     if (q.paso === 'entrada') return sigCampoEntrada_(p, String(q.autor || x.email).slice(0, 80), x.email, 'enlace', q);
     if (q.paso === 'subirIni') { const e = sigCampoEntradaDe_(q.entradaId); if (String(e.proyectoId) !== String(p.id) || e.email !== x.email) return { error: 'Entrada no válida.' }; return sigSubirIni_(p, e.autor, x.email, q, e); }
     if (q.paso === 'subirParte') return sigSubirParte_(x.email, q);
+    if (q.paso === 'tipoPunto') return sigTipoPuntoAgregar_(x.email, p.id, q.nombre, q.emoji);
     if (q.paso === 'archivo') { const e = sigCampoEntradaDe_(q.entradaId); if (String(e.proyectoId) !== String(p.id) || e.email !== x.email) return { error: 'Entrada no válida.' }; return sigCampoArchivo_(e, q, e.autor); }
     if (q.paso === 'form') {
       if (!m) return { error: 'Este proyecto no pertenece a una organización de la red.' };
@@ -1225,7 +1276,7 @@ function sigCampoPublico(q) {
     }
     const nf = String(q.n || '').length;
     return { proyecto: { id: p.id, titulo: p.titulo, cliente: p.cliente, ubicacion: p.ubicacion, tipo: p.tipo, estado: p.estado, avance: p.avance },
-      email: x.email, expira: x.expira instanceof Date ? x.expira.toISOString() : x.expira, mensaje: x.mensaje, tipos: SIG_CAMPO_TIPOS,
+      email: x.email, expira: x.expira instanceof Date ? x.expira.toISOString() : x.expira, mensaje: x.mensaje, tipos: SIG_CAMPO_TIPOS, ptExtra: sigTiposPunto_(),
       miembro: m ? { miembroId: m.miembroId, nombre: m.nombreComercial || m.razonSocial } : null, logo: m ? sigLogoDataUrl_(m) : '', titular: SIG.TITULAR,
       formularios: m ? Object.keys(sigForms_()) : [], entradas: sigCampoLista_(p.id).slice(0, 40) };
   } catch (e) { return { error: e.message }; }
