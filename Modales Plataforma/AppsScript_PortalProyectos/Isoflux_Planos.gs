@@ -11,7 +11,7 @@
  * ║  (compara ISO_BACKEND con la versión que espera).                         ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
  */
-const ISO_BACKEND = '21.5';
+const ISO_BACKEND = '22.1';
 /**
  * ============================================================================
  *  Isoflux_Planos.gs — Planos de Isoflux guardados dentro de los proyectos del
@@ -64,6 +64,8 @@ function isoApi_(u, b) {
     case 'sgcPlanoBorradorLeer': return isoBorradorLeer_(u, b.planoId);
     case 'sgcPlanoTrabajoLeer':    return isoPlanLeer_(u, b.proyectoId);
     case 'sgcPlanoPrecios':    return isoPrecios_(u, b);
+    case 'sgcPlanoPreciosHist': return isoPreciosHist_(u, b);
+    case 'sgcPlanoPreciosBase': return isoPreciosBase_(u, b);
     case 'sgcPlanoNormasListar':  return isoNormasListar_(u);
     case 'sgcPlanoNormasLeer':    return isoNormasLeer_(u, b.id);
     case 'sgcPlanoNormasGuardar': return isoNormasGuardar_(u, b);
@@ -670,3 +672,34 @@ function isoBilleteraAdmin_(u, b) {
   }
   return { error: 'Acción no válida.' };
 }
+
+// ---------- BASE DE PRECIOS HISTÓRICA (V22.1) ----------
+/**
+ * Cada precio unitario que se escribe en el Despiece o el Presupuesto de Isoflux (materiales, mano de obra, SST,
+ * equipos, obra civil…) o que llega de la cotización Web se registra aquí (hoja PreciosHist), con fecha, fuente,
+ * proyecto y usuario. Isoflux estima las cotizaciones nuevas con la mediana de los valores recientes, sin pagar
+ * la consulta Web. Cualquier usuario con sesión aporta y consulta; la hoja solo la edita el administrador.
+ */
+const ISO_PH_H = ['id', 'clave', 'categoria', 'descripcion', 'especificacion', 'unidad', 'valor', 'fuente', 'fecha', 'proyectoId', 'planoId', 'proyecto', 'usuario'];
+function isoPHHoja_() { if (!HOJAS.PreciosHist) HOJAS.PreciosHist = ISO_PH_H; return sigHoja_('PreciosHist'); }
+function isoPreciosHist_(u, b) {
+  const L = Array.isArray(b.items) ? b.items.slice(0, 500) : [];
+  const ahora = sigAhora_(), usr = String(u.email || '').slice(0, 120);
+  const filas = L.filter(x => x && x.clave && +x.valor > 0 && +x.valor < 1e12).map(x => {
+    const f = x.fecha ? new Date(x.fecha) : ahora;
+    return [Utilities.getUuid().slice(0, 8), String(x.clave).slice(0, 300), String(x.categoria || '').slice(0, 80), String(x.descripcion || '').slice(0, 200),
+      String(x.especificacion || '').slice(0, 200), String(x.unidad || '').slice(0, 20), Math.round(+x.valor * 100) / 100, String(x.fuente || 'manual').slice(0, 40),
+      isNaN(f) ? ahora : f, String(b.proyectoId || '').slice(0, 80), String(b.planoId || '').slice(0, 80), String(x.proyecto || '').slice(0, 120), usr];
+  });
+  if (!filas.length) return { ok: true, n: 0 };
+  const sh = isoPHHoja_(), lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try { sh.getRange(sh.getLastRow() + 1, 1, filas.length, ISO_PH_H.length).setValues(filas); } finally { lock.releaseLock(); }
+  return { ok: true, n: filas.length };
+}
+function isoPreciosBase_(u, b) {
+  isoPHHoja_();
+  const lim = new Date(Date.now() - 1000 * 86400 * 760);
+  const R = sigLeer_('PreciosHist').filter(r => r.clave && +r.valor > 0 && (!r.fecha || new Date(r.fecha) > lim));
+  return { precios: R.slice(-25000).map(r => [String(r.clave), +r.valor, String(r.fuente || ''), isoFecha_(r.fecha), r.categoria, r.descripcion, r.especificacion, r.unidad]), total: R.length };
+}
+
