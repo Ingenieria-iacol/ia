@@ -2046,6 +2046,11 @@ function orbitApply(){
   camera.getWorldDirection(_of);
   rig.rotation.set(0, 0, 0);
   rig.position.copy(ORB.T).addScaledVector(_of, -ORB.d); rig.position.y -= EYE;
+  // en maqueta la cámara no atraviesa la mesa
+  if (PLAN.mode === 'maqueta' && planView.visible){
+    const minY = planView.position.y + TABLE_H + Math.max(ORB.d * 0.02, 0.0015) - EYE;
+    if (rig.position.y < minY) rig.position.y = minY;
+  }
   rig.updateMatrixWorld(true);
   // planos de recorte y niebla según la distancia: se puede ver de cerca y de lejos sin cortes
   const n = THREE.MathUtils.clamp(ORB.d * 0.003, 0.000003, 0.05), f = THREE.MathUtils.clamp(ORB.d * 20000, 4, 30000);
