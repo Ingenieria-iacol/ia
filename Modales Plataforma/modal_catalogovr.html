@@ -138,6 +138,7 @@
     <a class="btn" href="https://desarrollosdeia.org/" target="_top" title="Volver a la página de inicio">⌂ <span class="txt">Inicio</span></a>
     <button class="btn" id="btn-planos" title="Ver tus planos de Isoflux en 3D">📐 <span class="txt">Mis planos</span></button>
     <button class="btn" id="btn-fs" title="Pantalla completa">⛶ <span class="txt">Pantalla completa</span></button>
+    <button class="btn" id="btn-panel" hidden title="Mostrar u ocultar el panel del plano (M)">📋 <span class="txt">Panel</span></button>
     <button class="btn btn-vr" id="btn-exit" hidden title="Salir y volver al catálogo (Esc)">✕ <span class="txt">Salir</span></button>
     <button class="btn" id="btn-cb" title="Usar un visor de celular (VR Box, Cardboard) con las mismas funciones de Meta Quest">📱 <span class="txt">Visor celular</span></button>
     <button class="btn btn-vr" id="btn-vr" disabled>👓 <span class="txt">Entrar en VR</span></button>
@@ -1880,6 +1881,7 @@ function stepSector(d){
 }
 function rebuildKeepMode(){
   releaseGrab(); buildPlan();
+  if (ORB.on){ orbitFrame(true); return; }
   if (PLAN.mode === 'real') teleportStart();
 }
 function drawPlanTitle(){
@@ -1912,8 +1914,8 @@ function drawPlanTitle(){
   planHint.userData.redraw((ctx, W, H) => {
     ctx.fillStyle = '#9a9ca8'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `500 ${H * 0.4}px ${FONT}`;
     ctx.fillText(P.mode === 'real'
-      ? (renderer.xr.isPresenting ? 'Joystick izq.: caminar · der.: girar / subir-bajar · A/X: traer este panel' : 'W A S D: caminar · Q / E: bajar / subir · Shift: rápido · M: traer este panel')
-      : (renderer.xr.isPresenting ? 'Agarra la maqueta con el grip · joystick der.: girar y escalar · apunta para ver datos' : 'Arrastra la maqueta para girarla · rueda: escala · apunta para ver datos'), W / 2, H / 2);
+      ? (renderer.xr.isPresenting ? 'Joystick izq.: caminar · der.: girar / subir-bajar · A/X: traer este panel' : 'Arrastrar: girar · rueda: acercar al cursor · doble clic: enfocar · W A S D Q E: mover · F: ver todo')
+      : (renderer.xr.isPresenting ? 'Agarra la maqueta con el grip · joystick der.: girar y escalar · apunta para ver datos' : 'Arrastrar: girar alrededor · rueda: acercar al cursor · doble clic: enfocar · F: ver todo'), W / 2, H / 2);
   });
   bMaq.userData.setText((P.mode === 'maqueta' ? '● ' : '') + '🧊 Maqueta');
   bReal.userData.setText((P.mode === 'real' ? '● ' : '') + '🚶 Recorrer 1:1');
@@ -1942,6 +1944,7 @@ function drawLegend(){
   });
 }
 function placePlanUI(front){
+  if (ORB.hud){ hudLayout(); ORB.hudOn = true; planUI.visible = true; return; }
   if (PLAN.mode === 'maqueta' && !front){
     planView.updateMatrixWorld();
     planUI.position.copy(planView.localToWorld(tmpV.set(1.75, 1.42, 0.55)));
@@ -1974,6 +1977,7 @@ function setPlanMode(m){
     if (!renderer.xr.isPresenting){ yaw = innerWidth / innerHeight < 1.2 ? 0.45 : 0.26; pitch = 0.32; }
     buildPlan(); placeTable(); placePlanUI(false); ajustarLuz();
   }
+  if (ORB.on) orbitFrame(false);
 }
 function placeTable(){
   // mesa a 2 m, corrida un poco a la izquierda para que el panel quede a la vista
@@ -2001,6 +2005,7 @@ function walk(sx, sy, k){
   rig.position.addScaledVector(_fw, sy * sp).addScaledVector(_rt, sx * sp);
 }
 function desktopWalk(dt){
+  if (ORB.on) return;
   if (renderer.xr.isPresenting || !PLAN || PLAN.mode !== 'real' || mode !== 'plano') return;
   const f = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0);
   const s = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0);
@@ -2009,6 +2014,211 @@ function desktopWalk(dt){
   if (f || s) walk(s, f, k);
   if (v) rig.position.y += v * 3 * k;
 }
+
+/* =====================================================================
+   12b. INSPECCIÓN TIPO CAD (PC / celular, fuera de las gafas)
+   Órbita alrededor de un punto, acercar hacia el cursor (hasta pocos cm),
+   desplazar, doble clic para enfocar, W A S D Q E para moverse.
+   ===================================================================== */
+const ORB = { on: false, T: new THREE.Vector3(), d: 5, anim: null, ptrs: new Map(), pinch: null, lastTap: 0, hud: false, hudOn: innerWidth >= innerHeight, hint0: null };
+const _of = new THREE.Vector3(), _or = new THREE.Vector3(), _ou = new THREE.Vector3(), _op = new THREE.Vector3(), _oh = new THREE.Vector3();
+const orbitWanted = () => mode === 'plano' && !!PLAN && !renderer.xr.isPresenting && !(typeof CB !== 'undefined' && CB.on);
+const ORB_MIN = () => (PLAN && PLAN.mode === 'maqueta') ? 0.0008 : 0.03;      // maqueta: <1 mm; 1:1: 3 cm
+const ORB_MAX = 6000;
+
+function planWorldBox(){
+  const set = planSet(); if (!set.box || set.box.isEmpty()) return null;
+  planContent.updateMatrixWorld(true);
+  return set.box.clone().applyMatrix4(planContent.matrixWorld);
+}
+function orbitFrame(anim){
+  const b = planWorldBox(); if (!b) return;
+  const c = b.getCenter(new THREE.Vector3()), r = Math.max(b.getSize(new THREE.Vector3()).length() / 2, 0.05);
+  const d = THREE.MathUtils.clamp(r / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.05, ORB_MIN(), ORB_MAX);
+  orbitGo(c, d, 0.62, 0.5, anim);
+}
+function orbitGo(T, d, y, p, anim){
+  if (anim){ ORB.anim = { t: 0, T0: ORB.T.clone(), d0: ORB.d, y0: yaw, p0: pitch, T1: T.clone(), d1: d, y1: y ?? yaw, p1: p ?? pitch }; return; }
+  ORB.anim = null; ORB.T.copy(T); ORB.d = d; if (y != null) yaw = y; if (p != null) pitch = p;
+}
+function orbitApply(){
+  camera.rotation.set(-pitch, -yaw, 0, 'YXZ'); camera.updateMatrixWorld();
+  camera.getWorldDirection(_of);
+  rig.rotation.set(0, 0, 0);
+  rig.position.copy(ORB.T).addScaledVector(_of, -ORB.d); rig.position.y -= EYE;
+  rig.updateMatrixWorld(true);
+  // planos de recorte y niebla según la distancia: se puede ver de cerca y de lejos sin cortes
+  const n = THREE.MathUtils.clamp(ORB.d * 0.003, 0.000003, 0.05), f = THREE.MathUtils.clamp(ORB.d * 20000, 4, 30000);
+  if (Math.abs(camera.near - n) > n * 0.1 || Math.abs(camera.far - f) > f * 0.1){ camera.near = n; camera.far = f; camera.updateProjectionMatrix(); }
+  scene.fog.far = Math.max(PLAN.mode === 'real' ? 400 : 30, ORB.d * 10); scene.fog.near = scene.fog.far * 0.45;
+}
+function orbitUpdate(dt){
+  if (ORB.anim){
+    const a = ORB.anim; a.t = Math.min(1, a.t + dt / 0.55); const u = 1 - Math.pow(1 - a.t, 3);
+    ORB.T.lerpVectors(a.T0, a.T1, u); ORB.d = Math.exp(THREE.MathUtils.lerp(Math.log(a.d0), Math.log(a.d1), u));
+    yaw = THREE.MathUtils.lerp(a.y0, a.y1, u); pitch = THREE.MathUtils.lerp(a.p0, a.p1, u);
+    if (a.t >= 1) ORB.anim = null;
+  }
+  // teclado: mover el punto de interés (velocidad proporcional a la distancia)
+  const f = (keys.has('KeyW') ? 1 : 0) - (keys.has('KeyS') ? 1 : 0);
+  const s = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0);
+  const v = (keys.has('KeyE') ? 1 : 0) - (keys.has('KeyQ') ? 1 : 0);
+  const zi = (keys.has('Equal') || keys.has('NumpadAdd') ? 1 : 0) - (keys.has('Minus') || keys.has('NumpadSubtract') ? 1 : 0);
+  if (f || s || v || zi){
+    ORB.anim = null;
+    const sp = Math.max(ORB.d, 0.3) * 0.9 * dt * (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 4 : 1);
+    _of.set(Math.sin(yaw), 0, -Math.cos(yaw)); _or.set(Math.cos(yaw), 0, Math.sin(yaw));
+    ORB.T.addScaledVector(_of, f * sp).addScaledVector(_or, s * sp); ORB.T.y += v * sp;
+    if (zi) ORB.d = THREE.MathUtils.clamp(ORB.d * Math.exp(-zi * dt * 1.6), ORB_MIN(), ORB_MAX);
+  }
+  orbitApply();
+}
+
+/* --- panel del plano como HUD pegado a la cámara (no se pierde al moverse) --- */
+function hudLayout(){
+  const asp = innerWidth / innerHeight, dist = 2.2, h = 2 * dist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), w = h * asp;
+  const sc = asp < 1 ? Math.min((w * 0.94) / PW, (h * 0.55) / 1.05) : Math.min((w * 0.27) / PW, (h * 0.72) / 1.05);
+  planUI.scale.setScalar(sc); planUI.userData.intro = 1;
+  if (asp < 1) planUI.position.set(0, -h / 2 + 0.16 + 0.47 * sc, -dist);                // celular vertical: abajo al centro
+  else planUI.position.set(w / 2 - (PW / 2) * sc - 0.05, -h * 0.03, -dist);              // PC: a la derecha
+  planUI.rotation.set(0, 0, 0);
+}
+function hudSet(on){
+  if (on === ORB.hud) return; ORB.hud = on;
+  planUI.traverse(o => { if (o.material){ o.material.depthTest = !on; o.renderOrder = on ? 40 : 0; } });
+  if (on){ camera.add(planUI); hudLayout(); planUI.visible = ORB.hudOn; }
+  else { scene.add(planUI); planUI.scale.setScalar(1); planUI.visible = mode === 'plano'; }
+}
+addEventListener('resize', () => { if (ORB.hud) hudLayout(); });
+function hudToggle(){ ORB.hudOn = !ORB.hudOn; if (ORB.hud) planUI.visible = ORB.hudOn; toast(ORB.hudOn ? 'Panel visible (M para ocultar)' : 'Panel oculto (M para mostrar)'); }
+
+const HINT_ORB = matchMedia('(pointer: coarse)').matches
+  ? '1 dedo: girar alrededor · 2 dedos: acercar y desplazar · Doble toque: enfocar ese punto'
+  : 'Arrastrar: girar · Clic der. o Shift+arrastrar: desplazar · Rueda: acercar al cursor · Doble clic: enfocar · W A S D Q E: mover · F: ver todo · M: panel';
+function orbitSync(){
+  const want = orbitWanted();
+  if (want === ORB.on) return;
+  ORB.on = want;
+  const hint = $('#hint');
+  if (want){
+    if (ORB.hint0 == null) ORB.hint0 = hint.textContent;
+    hint.textContent = HINT_ORB; $('#btn-panel').hidden = false;
+    hudSet(true); orbitFrame(false);
+  } else {
+    hudSet(false); ORB.anim = null; ORB.ptrs.clear(); ORB.pinch = null;
+    if (ORB.hint0 != null) hint.textContent = ORB.hint0; $('#btn-panel').hidden = true;
+    camera.near = 0.03; camera.far = 2500; camera.updateProjectionMatrix(); scene.fog.near = 9;
+    if (mode === 'plano' && PLAN){
+      scene.fog.far = PLAN.mode === 'real' ? 400 : 30;
+      rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0);
+      if (PLAN.mode === 'real') teleportStart(); else { placeTable(); placePlanUI(false); }
+    }
+  }
+}
+
+/* --- punto bajo el cursor (plano, mesa o piso) --- */
+function orbitPick(cx, cy){
+  ndc.set((cx / innerWidth) * 2 - 1, -(cy / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera); raycaster.far = camera.far;
+  const objs = [...planPickables]; if (PLAN.mode === 'maqueta') objs.push(table); else planContent.traverse(o => { if (o.userData.piso) objs.push(o); });
+  const h = raycaster.intersectObjects(objs, false).find(x => x.object.visible);
+  if (h) return { p: h.point.clone(), hit: h, ray: raycaster.ray.clone() };
+  // sin objeto: piso del plano o un punto a la distancia actual
+  const y0 = PLAN.mode === 'real' ? (planWorldBox()?.min.y ?? 0) : TABLE_H;
+  const r = raycaster.ray; const t = r.direction.y < -1e-3 ? (y0 - r.origin.y) / r.direction.y : -1;
+  return { p: t > 0 && t < ORB.d * 20 ? r.at(t, new THREE.Vector3()) : r.at(ORB.d, new THREE.Vector3()), hit: null, ray: r.clone() };
+}
+function orbitZoomAt(cx, cy, factor){
+  ORB.anim = null; if (PLAN) PLAN.spin = false;
+  const d1 = THREE.MathUtils.clamp(ORB.d * factor, ORB_MIN(), ORB_MAX), fk = d1 / ORB.d;
+  if (Math.abs(fk - 1) < 1e-4) return;
+  const pk = orbitPick(cx, cy);
+  camera.getWorldPosition(_op); camera.getWorldDirection(_of);
+  _oh.copy(pk.p);
+  // la cámara se mueve hacia el punto bajo el cursor; el punto de interés queda delante a la nueva distancia
+  _op.sub(_oh).multiplyScalar(fk).add(_oh);
+  ORB.d = d1; ORB.T.copy(_op).addScaledVector(_of, d1);
+}
+function orbitPan(dx, dy){
+  ORB.anim = null;
+  const s = 2 * ORB.d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / innerHeight;
+  _or.setFromMatrixColumn(camera.matrixWorld, 0); _ou.setFromMatrixColumn(camera.matrixWorld, 1);
+  ORB.T.addScaledVector(_or, -dx * s).addScaledVector(_ou, dy * s);
+}
+function orbitFocus(cx, cy){
+  const pk = orbitPick(cx, cy);
+  const k = PLAN.mode === 'maqueta' ? (PLAN.k || 1) * planPivot.scale.x : 1;
+  const d = pk.hit ? THREE.MathUtils.clamp(Math.min(ORB.d, 2.2 * k), ORB_MIN() * 4, ORB_MAX) : ORB.d;
+  orbitGo(pk.p, d, null, null, true);
+  if (pk.hit) toast('🎯 Enfocado · rueda para acercar más');
+}
+
+/* --- eventos (fase de captura: tienen prioridad sobre los del catálogo) --- */
+cv.addEventListener('contextmenu', e => { if (ORB.on) e.preventDefault(); });
+cv.addEventListener('pointerdown', e => {
+  if (!ORB.on) return; e.stopImmediatePropagation();
+  cv.setPointerCapture(e.pointerId); setNDC(e);
+  ORB.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (PLAN) PLAN.spin = false; ORB.anim = null;
+  const pan = e.button === 2 || e.button === 1 || e.shiftKey || e.ctrlKey;
+  if (ORB.ptrs.size === 2){
+    const [a, b] = [...ORB.ptrs.values()];
+    ORB.pinch = { dist: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
+    drag = null; return;
+  }
+  drag = { x: e.clientX, y: e.clientY, moved: 0, pan, id: e.pointerId };
+  cv.classList.add('dragging');
+}, true);
+cv.addEventListener('pointermove', e => {
+  if (!ORB.on) return; e.stopImmediatePropagation(); setNDC(e);
+  const pt = ORB.ptrs.get(e.pointerId); if (pt){ pt.x = e.clientX; pt.y = e.clientY; }
+  if (ORB.pinch && ORB.ptrs.size >= 2){
+    const [a, b] = [...ORB.ptrs.values()];
+    const dist = Math.hypot(a.x - b.x, a.y - b.y), cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+    if (dist > 0 && ORB.pinch.dist > 0) orbitZoomAt(cx, cy, ORB.pinch.dist / dist);
+    orbitPan(cx - ORB.pinch.cx, cy - ORB.pinch.cy);
+    ORB.pinch = { dist, cx, cy }; return;
+  }
+  if (!drag || drag.id !== e.pointerId) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  drag.moved += Math.abs(dx) + Math.abs(dy); drag.x = e.clientX; drag.y = e.clientY;
+  if (drag.pan) orbitPan(dx, dy);
+  else { const k = e.pointerType === 'touch' ? 0.007 : 0.005; yaw -= dx * k; pitch = THREE.MathUtils.clamp(pitch + dy * k, -1.45, 1.45); }
+}, true);
+function orbitUp(e){
+  if (!ORB.on) return; e.stopImmediatePropagation();
+  ORB.ptrs.delete(e.pointerId);
+  if (ORB.ptrs.size < 2) ORB.pinch = null;
+  if (!drag || drag.id !== e.pointerId) return;
+  cv.classList.remove('dragging');
+  const tap = drag.moved < 8 && e.type === 'pointerup'; drag = null;
+  if (!tap) return;
+  const now = performance.now();
+  setNDC(e); const r = rayFromCamera(); const h = castPointer(mouse, r.o, r.d);
+  if (h && h.object.userData.ui){ select(mouse); ORB.lastTap = 0; return; }       // botón del panel
+  if (now - ORB.lastTap < 350){ ORB.lastTap = 0; orbitFocus(e.clientX, e.clientY); }
+  else ORB.lastTap = now;
+}
+cv.addEventListener('pointerup', orbitUp, true);
+cv.addEventListener('pointercancel', orbitUp, true);
+cv.addEventListener('dblclick', e => { if (ORB.on) e.preventDefault(); });
+cv.addEventListener('wheel', e => {
+  if (!ORB.on) return; e.stopImmediatePropagation(); e.preventDefault();
+  const dy = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
+  orbitZoomAt(e.clientX, e.clientY, Math.exp(THREE.MathUtils.clamp(dy, -300, 300) * 0.0018));
+}, { passive: false, capture: true });
+addEventListener('keydown', e => {
+  if (!ORB.on || /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) return;
+  if (e.code === 'KeyF'){ orbitFrame(true); e.preventDefault(); }
+  if (e.code === 'KeyM'){ hudToggle(); e.stopImmediatePropagation(); }
+  if (e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'ArrowUp' || e.code === 'ArrowDown'){
+    e.stopImmediatePropagation(); e.preventDefault(); ORB.anim = null;
+    if (e.code === 'ArrowLeft') yaw += 0.12; if (e.code === 'ArrowRight') yaw -= 0.12;
+    if (e.code === 'ArrowUp') pitch = Math.max(-1.45, pitch - 0.1); if (e.code === 'ArrowDown') pitch = Math.min(1.45, pitch + 0.1);
+  }
+}, true);
+
+$('#btn-panel').addEventListener('click', () => hudToggle());
 
 /* --- Información al apuntar --- */
 const info = panel(0.62, 0.22, () => {}, 900);
@@ -2051,8 +2261,8 @@ function updateInfo(){
   camera.getWorldPosition(tmpV);
   const d = best.point.distanceTo(tmpV);
   info.position.copy(best.point).lerp(tmpV, Math.min(0.25, 0.3 / Math.max(d, 0.01)));
-  info.position.y += 0.06 * Math.min(Math.max(d, 0.5), 6);
-  info.scale.setScalar(THREE.MathUtils.clamp(d * 0.6, 0.35, 14));
+  info.position.y += 0.06 * THREE.MathUtils.clamp(d, 0.02, 6);
+  info.scale.setScalar(THREE.MathUtils.clamp(d * 0.6, 0.012, 14));
   info.lookAt(tmpV); info.visible = true;
 }
 
@@ -2079,7 +2289,8 @@ function closePlan(){
   env.userData.floor.visible = true; env.userData.grid.visible = true; scene.fog.far = 30;
   env.userData.arc.visible = true; env.userData.dust.visible = true;
   rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0);
-  if (!renderer.xr.isPresenting){ yaw = 0; pitch = 0; }
+  if (!renderer.xr.isPresenting){ yaw = 0; pitch = 0; camera.rotation.set(0, 0, 0); }
+  hudSet(false); scene.fog.near = 9; camera.near = 0.03; camera.far = 2500; camera.updateProjectionMatrix();
 }
 
 /* --- Recientes (fila "Mis planos") --- */
@@ -2585,6 +2796,7 @@ function loop(){
 }
 function frame(){
   const dt = Math.min(clock.getDelta(), 0.05); elapsed += dt;
+  orbitSync();
   if (mode !== lastMode){ lastMode = mode; btnExit2D.hidden = mode === 'menu'; }
   const inXR = renderer.xr.isPresenting;
 
@@ -2608,6 +2820,7 @@ function frame(){
     cbUpdate(dt);
   } else {
     camera.rotation.set(-pitch, -yaw, 0, 'YXZ');
+    if (ORB.on) orbitUpdate(dt);
     if (hasMouse && !drag){
       const r = rayFromCamera(); const h = castPointer(mouse, r.o, r.d);
       if (mode === 'plano' && !h) planHitFor(mouse, r); else planHits.delete(mouse);
