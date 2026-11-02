@@ -511,12 +511,39 @@ function run(force){
 }
 window.entIntro=run;
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>run(false));else run(false);
-})();</script><script>/* Enlace con Isoflux (modelador de redes): entrega el tanque calculado al detalle */(function(){
+})();</script><script>/* Enlace de doble vía con Isoflux (un solo sistema: no se repite información) */(function(){
+var $=function(id){return document.getElementById(id);};
+function setv(id,v){var e=$(id);if(e&&v!=null&&v!==''){e.value=v;}}
 function payload(){try{var s=rd(),c=calc(s),t=cTot(),C={};for(var k in c){if(typeof c[k]!=='function')C[k]=c[k];}
- return{src:'VaporGLP',v:5,fecha:new Date().toISOString(),proyecto:(document.getElementById('pn')||{}).value||'',cliente:(document.getElementById('pc')||{}).value||'',estado:(typeof pGet==='function'?pGet():null),tanque:C,demanda:t,consumos:(window.P&&P.cons)||[]};}catch(e){return{src:'VaporGLP',error:String(e)};}}
+ return{src:'VaporGLP',v:5,fecha:new Date().toISOString(),
+  proyecto:{nombre:($('pn')||{}).value||'',cliente:($('pc')||{}).value||''},
+  fluido:{gas:'GLP',wp:+($('wp')||{}).value||70,pci:t.pci,G:(+($('wp')||{}).value/100*1.552+(1-(+($('wp')||{}).value/100))*2.0665)},
+  condiciones:{Ta:+($('Ta')||{}).value,Pa:+($('Pa')||{}).value,Pm:+($('Pm')||{}).value,U:+($('U')||{}).value},
+  demanda:{kg_h:t.kg,ki:t.ki,ks:t.ks,pci:t.pci,consumos:(typeof P!=='undefined'&&P.cons)||[]},
+  tanque:C,estado:(typeof pGet==='function'?pGet():null),
+  /* compatibilidad con la versión anterior */cliente:($('pc')||{}).value||''};}catch(e){return{src:'VaporGLP',error:String(e)};}}
 window.vgPayload=payload;
 function enviar(){var p=payload(),ok=false;try{if(window.opener&&!window.opener.closed){window.opener.postMessage({__isofluxVapor:p},'*');ok=true;}}catch(e){}try{localStorage.setItem('isoflux_vapor_handoff',JSON.stringify({t:Date.now(),payload:p}));ok=true;}catch(e){}return ok;}
 window.vgEnviarIsoflux=enviar;
+/* RECIBIR desde Isoflux: demanda real de la red, proyecto, fluido y condiciones (sin reescribir) */
+function recibir(p){if(!p)return false;try{
+ if(p.proyecto){setv('pn',p.proyecto.nombre);setv('pc',p.proyecto.cliente);}
+ if(p.fluido){if(p.fluido.wp!=null)setv('wp',p.fluido.wp);}
+ if(p.condiciones){setv('Ta',p.condiciones.Ta);if(p.condiciones.Pa!=null)setv('Pa',p.condiciones.Pa);if(p.condiciones.Pm!=null)setv('Pm',p.condiciones.Pm);if(p.condiciones.U!=null)setv('U',p.condiciones.U);}
+ var d=p.demanda||{};
+ if(d.consumos&&d.consumos.length&&typeof P!=='undefined'&&P){P.cons=d.consumos.map(function(x){return{n:x.n||'Equipo',kw:+x.kw||0,q:+x.q||1,fs:+x.fs||100};});}
+ if(typeof pRefresh==='function')pRefresh();
+ if(d.kg_h!=null){setv('m',(+d.kg_h).toFixed(1));}/* la demanda de la red manda */
+ if(typeof go==='function')go();
+ if(typeof pMsg==='function')pMsg('↙ Datos recibidos desde Isoflux: demanda de la red '+((d.kg_h!=null)?(+d.kg_h).toFixed(1)+' kg/h':'')+'. Dimensiona el tanque y pulsa «Enviar el tanque a Isoflux».');
+ var av=document.createElement('div');av.textContent='↙ Datos cargados desde Isoflux';av.style.cssText='position:fixed;left:14px;bottom:14px;z-index:99999;background:#0f7a3a;color:#fff;border-radius:10px;padding:10px 14px;font:600 13px system-ui;box-shadow:0 8px 24px #0007';document.body.appendChild(av);setTimeout(function(){av.remove();},4000);
+ return true;}catch(e){return false;}}
+window.vgRecibirIsoflux=recibir;
+/* al cargar, revisar el relevo de Isoflux (localStorage) y escuchar mensajes del que la abrió */
+function revisar(){try{var raw=localStorage.getItem('vapor_from_isoflux');if(!raw)return;var o=JSON.parse(raw);if(o&&o.t&&Date.now()-o.t<600000&&o.t!=window.__vfi){window.__vfi=o.t;recibir(o.payload);}}catch(e){}}
+window.addEventListener('message',function(e){var d=e&&e.data;if(d&&d.__isofluxToVapor)recibir(d.__isofluxToVapor);},false);
+window.addEventListener('focus',function(){setTimeout(revisar,150);});setTimeout(revisar,400);
+/* botón para enviar el tanque a Isoflux */
 var quiere=/isoflux/i.test(location.hash+location.search)||(window.opener&&window.opener!==window);
 if(quiere){var b=document.createElement('button');b.id='vg2iso';b.textContent='⇄ Enviar el tanque a Isoflux';b.style.cssText='position:fixed;right:14px;bottom:14px;z-index:99999;background:#1f6fd1;color:#fff;border:none;border-radius:12px;padding:12px 16px;font:600 14px system-ui;box-shadow:0 10px 30px #0007;cursor:pointer';
  b.onclick=function(){if(enviar()){b.textContent='✓ Enviado a Isoflux';setTimeout(function(){try{window.close();}catch(e){}},700);}else{b.textContent='No se pudo enviar · usa Exportar JSON';}};
