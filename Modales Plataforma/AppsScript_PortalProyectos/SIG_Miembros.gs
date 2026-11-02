@@ -94,7 +94,7 @@ const HOJAS = {
   // Registro de eventos de uso de cada cuenta (ingresos, uso de herramientas, descargas, subidas).
   Consumos: ['n', 'fecha', 'email', 'miembroId', 'tipo', 'detalle', 'bytes', 'proyectoId', 'meta'],
   // Plan y límites de cada Organización; base para calcular la factura mensual.
-  Planes: ['miembroId', 'plan', 'tipo', 'moneda', 'mensualidad', 'limiteEspacioMB', 'incluidoDescargas', 'incluidoUsos', 'precioEspacioExtraGB', 'precioDescargaExtra', 'precioUsoExtra', 'nodosMax', 'capacidades', 'addons', 'notas', 'actualizadoPor', 'actualizado'],
+  Planes: ['miembroId', 'plan', 'tipo', 'moneda', 'mensualidad', 'limiteEspacioMB', 'incluidoDescargas', 'incluidoUsos', 'precioEspacioExtraGB', 'precioDescargaExtra', 'precioUsoExtra', 'nodosMax', 'vigenciaHasta', 'capacidades', 'addons', 'notas', 'actualizadoPor', 'actualizado'],
   // Facturas y resúmenes mensuales emitidos por el administrador.
   Facturas: ['numero', 'miembroId', 'periodo', 'emitida', 'emitidaPor', 'moneda', 'mensualidad', 'espacioMB', 'espacioExtraGB', 'cargoEspacio', 'descargas', 'descargasExtra', 'cargoDescargas', 'usos', 'usosExtra', 'cargoUsos', 'addonsTotal', 'subtotal', 'total', 'estado', 'detalleJson', 'sello', 'vence', 'fechaPago', 'medioPago', 'pagadoPor'],
 };
@@ -1985,7 +1985,7 @@ function sigAgrega_(desde, hasta) {
 function sigPlanDe_(miembroId) {
   const p = sigLeer_('Planes').find(x => x.miembroId === miembroId);
   if (p) return p;
-  return { miembroId: miembroId, plan: 'Sin plan', tipo: '', moneda: 'COP', mensualidad: 0, limiteEspacioMB: 0, incluidoDescargas: 0, incluidoUsos: 0, precioEspacioExtraGB: 0, precioDescargaExtra: 0, precioUsoExtra: 0, nodosMax: 0, capacidades: '', addons: '', notas: '' };
+  return { miembroId: miembroId, plan: 'Sin plan', tipo: '', moneda: 'COP', mensualidad: 0, limiteEspacioMB: 0, incluidoDescargas: 0, incluidoUsos: 0, precioEspacioExtraGB: 0, precioDescargaExtra: 0, precioUsoExtra: 0, nodosMax: 0, vigenciaHasta: '', capacidades: '', addons: '', notas: '' };
 }
 /** Capacidades (extensiones habilitadas) de una Organización, derivadas de su plan.
  *  Falla en abierto: sin plan/ tipo → acceso completo, para no bloquear a un usuario legítimo. */
@@ -1998,6 +1998,11 @@ function sigCapsDe_(miembroId) {
   else caps = Object.assign({}, full); // proyecto, membresia, sin plan → completo
   caps.nivel = tipo || 'completo';
   caps.nodosMax = tipo === 'proyecto' ? (+((p && p.nodosMax)) || 0) : 0;
+  // vigencia (licencia temporal): si venció, se trata como sin extensiones de pago
+  const vig = p && p.vigenciaHasta ? (p.vigenciaHasta instanceof Date ? p.vigenciaHasta.toISOString().slice(0, 10) : String(p.vigenciaHasta).slice(0, 10)) : '';
+  caps.vigenciaHasta = vig;
+  caps.vencida = !!(vig && new Date(vig + 'T23:59:59') < new Date());
+  if (caps.vencida) { caps.redesCerradas = false; caps.vaporizador = false; caps.selector = false; caps.vr = false; }
   if (p && p.capacidades) { try { Object.assign(caps, JSON.parse(p.capacidades)); } catch (e) {} } // overrides explícitos del admin
   return caps;
 }
@@ -2070,7 +2075,7 @@ function sigPlanGuardar(u, b) {
   const caps = typeof b.capacidades === 'string' ? b.capacidades : JSON.stringify(b.capacidades || {});
   const fila = [b.miembroId, b.plan || '', tipo, b.moneda || 'COP', +b.mensualidad || 0, +b.limiteEspacioMB || 0,
     +b.incluidoDescargas || 0, +b.incluidoUsos || 0, +b.precioEspacioExtraGB || 0, +b.precioDescargaExtra || 0,
-    +b.precioUsoExtra || 0, +b.nodosMax || 0, caps, typeof b.addons === 'string' ? b.addons : JSON.stringify(b.addons || []), b.notas || '', u.email, sigAhora_()];
+    +b.precioUsoExtra || 0, +b.nodosMax || 0, b.vigenciaHasta || '', caps, typeof b.addons === 'string' ? b.addons : JSON.stringify(b.addons || []), b.notas || '', u.email, sigAhora_()];
   if (i >= 0) sh.getRange(datos[i]._fila, 1, 1, fila.length).setValues([fila]);
   else sh.appendRow(fila);
   delete SIG_RD_['Planes'];
