@@ -169,4 +169,28 @@ function run(force){
 }
 window.entIntro=run;
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>run(false));else run(false);
-})();</script></body></html>
+})();</script><script>
+/* Candado por plan (V31.0): si la cuenta en sesión no incluye esta extensión, se bloquea con aviso.
+   Falla EN ABIERTO: sin sesión o sin respuesta del servidor no limita nada. */
+(function(){
+ var API="https://script.google.com/macros/s/AKfycbzPsHZ7TjSHExWu3dEboPC1_WXl5KMfisX3DKo4SOtQM2PYa66HF7ba0Ary8eET5N08/exec";
+ var CAP="selector", NOMBRE="el Selector de reguladores", PRECIOS="/Modales%20Plataforma/modal_precios.html";
+ function tok(){try{var s=JSON.parse(localStorage.getItem("isoflux_ses")||"null");if(s&&s.t&&(!s.exp||s.exp>Date.now()))return s.t;}catch(e){}
+  try{var h=JSON.parse(localStorage.getItem("isoflux_handoff")||"null");if(h&&h.t&&(!h.exp||h.exp>Date.now()))return h.t;}catch(e){} return null;}
+ var t=tok(); if(!t) return;
+ try{fetch(API,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({t:t,a:"sgcCapacidad"})})
+  .then(function(r){return r.json();}).then(function(j){var caps=j&&j.caps;if(!caps)return;if(caps[CAP]!==false)return;bloquear(caps.nivel);})
+  .catch(function(){});}catch(e){}
+ function bloquear(nivel){
+  var ov=document.createElement("div");
+  ov.style.cssText="position:fixed;inset:0;z-index:2147483646;background:rgba(7,13,22,.96);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui,-apple-system,Segoe UI,Arial";
+  ov.innerHTML='<div style="max-width:460px;background:#0e1826;border:1px solid #33465f;border-radius:16px;padding:26px;color:#dfe8f3;text-align:center;box-shadow:0 18px 60px #000a">'
+   +'<div style="font-size:38px">&#128274;</div><h2 style="color:#9fd0ff;margin:8px 0;font-size:19px">Extensi&oacute;n no incluida en tu plan</h2>'
+   +'<p style="font-size:14px;line-height:1.55;color:#c3d2e6">El acceso a <b>'+NOMBRE+'</b> no est&aacute; incluido en tu plan <b>'+(nivel||"")+'</b>. Mejora tu plan para habilitarlo.</p>'
+   +'<div style="margin-top:18px"><a href="'+PRECIOS+'" target="_blank" style="padding:10px 18px;border-radius:10px;background:#1f6fd1;color:#fff;text-decoration:none;font-weight:600;font-size:13px">Ver planes</a></div>'
+   +'<p style="font-size:11px;color:#6b86a6;margin-top:14px">Isoflux &middot; Hub de Ingenier&iacute;a Pioneer&#39;s &middot; ENTALPIA LABS</p></div>';
+  (document.body||document.documentElement).appendChild(ov);
+ }
+})();
+</script>
+</body></html>
