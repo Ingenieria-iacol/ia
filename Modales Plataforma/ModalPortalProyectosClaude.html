@@ -963,7 +963,7 @@ async function consumosCarga(){
     (res[1].planes||[]).forEach(p=>planes[p.miembroId]=p);
     (res[2].miembros||[]).forEach(m=>ident[m.miembroId]=m);
     const orgs={};(uso.miembros||[]).forEach(m=>{orgs[m.miembroId]=Object.assign({},m,{plan:planes[m.miembroId]||null,ident:ident[m.miembroId]||null})});
-    USOCACHE={orgs:orgs,periodo:USOPER};
+    USOCACHE={orgs:orgs,periodo:USOPER};try{MM=res[2]}catch(e){}
     const L=Object.values(orgs).sort((a,b)=>(b.espacioMB+b.ingresos*1e3)-(a.espacioMB+a.ingresos*1e3));
     if(!L.length){el.innerHTML=`<p class="mu">Aún no hay organizaciones registradas.</p>`;return}
     const tEsp=L.reduce((s,o)=>s+(+o.espacioMB||0),0),tIng=L.reduce((s,o)=>s+(+o.herramientas||0),0),tDes=L.reduce((s,o)=>s+(+o.descargas||0),0),tFac=L.reduce((s,o)=>s+(+o.mensualidad||0),0);
@@ -1001,7 +1001,7 @@ function fichaInt(mid){
     <div style="width:46px;height:46px;flex:0 0 46px;border-radius:12px;background:linear-gradient(135deg,#1f6fd1,#0a3a95);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:16px">${esc(ini)}</div>
     <div style="flex:1"><h3 style="margin:0">${esc(o.nombre)}</h3><div class="mu" style="font-size:12px">${esc(mid)} ${(typeof estTag==="function")?"· "+estTag(o.estadoSIG):""} · ${esc(mesNom(USOPER))}</div></div>
     <button class="btn ghost sm" onclick="consumos()">← Directorio</button></div>
-   <div class="fictabs" style="display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid #20304d;padding-bottom:8px;margin-bottom:10px">${tab("resumen","Resumen")}${tab("consumos","Consumos")}${tab("plan","Plan y límites")}${tab("facturas","Facturas")}</div>
+   <div class="fictabs" style="display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid #20304d;padding-bottom:8px;margin-bottom:10px">${tab("resumen","Resumen")}${tab("consumos","Consumos")}${tab("usuarios","Usuarios")}${tab("plan","Plan y límites")}${tab("facturas","Facturas")}${tab("organizacion","Organización")}${tab("bitacora","Bitácora")}${tab("documentos","Documentos")}</div>
    <div id="ficbody"></div>`});
   ficTab("resumen");
 }
@@ -1012,6 +1012,10 @@ function ficTab(t){
   else if(t==="consumos")ficConsumos(o);
   else if(t==="plan")ficPlan(o);
   else if(t==="facturas")ficFacturas(o);
+  else if(t==="usuarios")ficUsuarios(o);
+  else if(t==="organizacion")ficOrg(o);
+  else if(t==="bitacora")ficBita(o);
+  else if(t==="documentos")ficDocs(o);
 }
 function espBar(espMB,limMB){const lim=+limMB||0,pct=lim>0?Math.min(100,espMB/lim*100):0,sobre=lim>0&&espMB>lim;
   return `<div style="margin:6px 0"><div class="mu" style="font-size:12px">Espacio: <b>${mbF(espMB)}</b>${lim>0?` de ${mbF(lim)} · ${Math.round(pct)}%${sobre?" (excedido)":""}`:" · sin límite definido"}</div><div style="height:9px;border-radius:6px;background:#1b2740;overflow:hidden;margin-top:3px"><div style="height:100%;width:${lim>0?Math.min(100,pct):4}%;background:${sobre?"var(--er)":pct>85?"#ffc861":"var(--m)"}"></div></div></div>`}
@@ -1075,6 +1079,39 @@ async function ficFacturas(o){
   }catch(e){$("#ficfac").innerHTML=`<p class="err">${esc(e.message)}</p>`}
 }
 
+/* ---------- pestañas adicionales de la ficha: usuarios, organización (SIG), bitácora y documentos ---------- */
+function midxDe(mid){return (typeof MM!=="undefined"&&MM&&MM.miembros)?MM.miembros.findIndex(m=>m.miembroId===mid):-1}
+async function ficUact(mid,obj){try{await api(obj);D=await api({a:"lista"});const o=USOCACHE&&USOCACHE.orgs[mid];if(o)ficUsuarios(o)}catch(e){alert(e.message)}}
+function ficUnombre(mid,email){const cur=((D&&D.u)||[]).find(u=>u.email===email);const n=prompt("Nuevo nombre para "+email,cur&&cur.nombre||"");if(n)ficUact(mid,{a:"ajustar",email:email,nombre:n})}
+function ficUdel(mid,email){if(confirm("¿Eliminar a "+email+"? Sus proyectos se conservan."))ficUact(mid,{a:"eliminar",email:email})}
+function ficUsuarios(o){
+  const us=(o.ident&&o.ident.usuarios)||[],gu=(D&&D.u)||[],mid=o.miembroId;
+  const row=u=>{const acct=gu.find(x=>String(x.email).toLowerCase()===String(u.email).toLowerCase());const bloq=acct&&acct.estado==="bloqueado",esA=acct&&acct.rol==="admin";
+    return `<div class="lk"><span>${esc(u.email)} <span class="tag">${esc(u.rol||"")}</span>${bloq?' <span class="tag" style="background:#ff6b7a22;color:var(--er)">bloqueado</span>':''}</span>
+     <span class="acts" style="margin:0">${acct?`<button class="btn ghost sm" onclick="ficUnombre('${esc(mid)}','${esc(u.email)}')">Nombre</button><button class="btn ghost sm" onclick="claves('${esc(u.email)}')">Claves</button>${esA?"":`<button class="btn ghost sm" onclick="ficUact('${esc(mid)}',{a:'ajustar',email:'${esc(u.email)}',estado:'${bloq?"activo":"bloqueado"}'})">${bloq?"Desbloquear":"Bloquear"}</button><button class="btn ghost sm" onclick="ficUdel('${esc(mid)}','${esc(u.email)}')">Eliminar</button>`}`:'<small class="mu">sin cuenta de portal</small>'}</span></div>`};
+  $("#ficbody").innerHTML=`<div class="cm"><b>Usuarios de ${esc(o.nombre)}</b><div style="margin-top:6px">${us.length?us.map(row).join(""):'<span class="mu">Sin usuarios vinculados a esta organización.</span>'}</div></div>
+   <p class="mu" style="font-size:11.5px;margin-top:8px">Las cuentas nuevas se crean desde «Usuarios» en la barra superior; aquí gestionas las de esta organización (nombre, clave, bloqueo, eliminación).</p>`;
+}
+async function ficRecarga(mid){try{const r=await api({a:"sgcMiembros"});MM=r;const m=(r.miembros||[]).find(x=>x.miembroId===mid);if(m&&USOCACHE&&USOCACHE.orgs[mid]){USOCACHE.orgs[mid].ident=m;USOCACHE.orgs[mid].estadoSIG=m.estadoSIG}}catch(e){}}
+function ficOrg(o){
+  const id=o.ident||{},idx=midxDe(o.miembroId);
+  $("#ficbody").innerHTML=`<div class="cm"><b>Datos de la organización (SIG)</b>
+    <div class="g2" style="margin-top:6px"><div><label>Tipo de persona</label><input id="or_tp" value="${esc(id.tipoPersona||"")}"></div><div><label>NIT / documento</label><input id="or_nit" value="${esc(id.nit||"")}"></div></div>
+    <label>Razón social</label><input id="or_rs" value="${esc(id.razonSocial||"")}">
+    <div class="acts"><button class="btn ghost sm" id="or_leg">Guardar datos legales</button></div><div class="err" id="er3"></div>
+    <p class="mu" style="font-size:11.5px">Corrige los datos legales solo con soporte (RUT, cámara de comercio). El valor anterior queda en la bitácora.</p></div>
+   <div class="cm" style="margin-top:8px"><b>Estado en el SIG</b> ${(typeof estTag==="function")?estTag(o.estadoSIG):esc(o.estadoSIG||"")}
+    <div class="acts" style="margin-top:6px">${idx>=0?`<button class="btn sm" onclick="mEstado(${idx})">Cambiar estado</button><button class="btn ghost sm" onclick="mVideo(${idx})">🎬 Video de bienvenida</button>`:'<span class="mu">Carga la lista de miembros para gestionar el estado.</span>'}</div>
+    <p class="mu" style="font-size:11.5px">«Cambiar estado» abre el diálogo con motivo y alcance (queda en la bitácora encadenada).</p></div>`;
+  const bl=$("#or_leg");if(bl)bl.onclick=busy(bl,async()=>{await api({a:"sgcEditarLegal",miembroId:o.miembroId,campos:{tipoPersona:$("#or_tp").value,nit:$("#or_nit").value,razonSocial:$("#or_rs").value}});if(typeof msgOk==="function")msgOk("Datos legales actualizados.");await ficRecarga(o.miembroId);ficTab("organizacion")});
+}
+function ficBita(o){$("#ficbody").innerHTML=`<div id="ficbitabox"><p class="mu">Cargando bitácora…</p></div>`;try{bitacora(o.miembroId,"ficbitabox")}catch(e){const b=$("#ficbitabox");if(b)b.innerHTML='<p class="err">'+esc(e.message)+'</p>'}}
+async function ficDocs(o){
+  $("#ficbody").innerHTML='<div id="ficdocs"><p class="mu">Cargando documentos y registros…</p></div>';
+  try{const r=await api({a:"sgcRegistros",miembroId:o.miembroId});const R=(r&&r.registros)||[];
+    $("#ficdocs").innerHTML=R.length?R.map(x=>`<div class="lk"><span>${esc(x.codigo||x.titulo||x.registroId)} <small class="mu">${esc(x.estado||"")}${x.fecha?" · "+fm(new Date(x.fecha)):""}</small></span><button class="btn ghost sm" onclick="verReg('${esc(x.registroId||x.id)}')">Ver</button></div>`).join(""):'<p class="mu">Sin documentos ni registros cargados.</p>';
+  }catch(e){$("#ficdocs").innerHTML=noServidor(e)?'<p class="mu">El servidor no devolvió registros.</p>':'<p class="err">'+esc(e.message)+'</p>'}
+}
 async function genFactura(mid){try{const r=await api({a:"sgcFacturaGenerar",miembroId:mid,periodo:USOPER});if(r&&r.factura){verFactura(r.factura);if(FICMID===mid&&FICTAB==="facturas"&&USOCACHE)ficFacturas(USOCACHE.orgs[mid])}}catch(e){alert(noServidor(e)?"El módulo del servidor aún no está desplegado.":e.message)}}
 async function facturasList(mid){
   try{const r=await api({a:"sgcFacturaListar",miembroId:mid||undefined});const F=r.facturas||[];
