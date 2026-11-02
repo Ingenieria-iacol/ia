@@ -94,7 +94,7 @@ const HOJAS = {
   // Registro de eventos de uso de cada cuenta (ingresos, uso de herramientas, descargas, subidas).
   Consumos: ['n', 'fecha', 'email', 'miembroId', 'tipo', 'detalle', 'bytes', 'proyectoId', 'meta'],
   // Plan y límites de cada Organización; base para calcular la factura mensual.
-  Planes: ['miembroId', 'plan', 'moneda', 'mensualidad', 'limiteEspacioMB', 'incluidoDescargas', 'incluidoUsos', 'precioEspacioExtraGB', 'precioDescargaExtra', 'precioUsoExtra', 'addons', 'notas', 'actualizadoPor', 'actualizado'],
+  Planes: ['miembroId', 'plan', 'tipo', 'moneda', 'mensualidad', 'limiteEspacioMB', 'incluidoDescargas', 'incluidoUsos', 'precioEspacioExtraGB', 'precioDescargaExtra', 'precioUsoExtra', 'nodosMax', 'capacidades', 'addons', 'notas', 'actualizadoPor', 'actualizado'],
   // Facturas y resúmenes mensuales emitidos por el administrador.
   Facturas: ['numero', 'miembroId', 'periodo', 'emitida', 'emitidaPor', 'moneda', 'mensualidad', 'espacioMB', 'espacioExtraGB', 'cargoEspacio', 'descargas', 'descargasExtra', 'cargoDescargas', 'usos', 'usosExtra', 'cargoUsos', 'addonsTotal', 'subtotal', 'total', 'estado', 'detalleJson', 'sello', 'vence', 'fechaPago', 'medioPago', 'pagadoPor'],
 };
@@ -179,6 +179,7 @@ function sigApi(b, u) {
       case 'sgcFormRevocar':     return sigFormRevocar(u, b.token);
       // ---- consumos y facturación ----
       case 'sgcUsoEvento':       return sigUsoEvento(u, b);
+      case 'sgcCapacidad':       return sigCapacidad(u);
       case 'sgcUsoResumen':      if (!esAdmin) break; return sigUsoResumen(b);
       case 'sgcUsoMiembro':      return sigUsoMiembro(u, b);
       case 'sgcUsoReindexar':    if (!esAdmin) break; return sigUsoReindexar();
@@ -1984,7 +1985,29 @@ function sigAgrega_(desde, hasta) {
 function sigPlanDe_(miembroId) {
   const p = sigLeer_('Planes').find(x => x.miembroId === miembroId);
   if (p) return p;
-  return { miembroId: miembroId, plan: 'Sin plan', moneda: 'COP', mensualidad: 0, limiteEspacioMB: 0, incluidoDescargas: 0, incluidoUsos: 0, precioEspacioExtraGB: 0, precioDescargaExtra: 0, precioUsoExtra: 0, addons: '', notas: '' };
+  return { miembroId: miembroId, plan: 'Sin plan', tipo: '', moneda: 'COP', mensualidad: 0, limiteEspacioMB: 0, incluidoDescargas: 0, incluidoUsos: 0, precioEspacioExtraGB: 0, precioDescargaExtra: 0, precioUsoExtra: 0, nodosMax: 0, capacidades: '', addons: '', notas: '' };
+}
+/** Capacidades (extensiones habilitadas) de una Organización, derivadas de su plan.
+ *  Falla en abierto: sin plan/ tipo → acceso completo, para no bloquear a un usuario legítimo. */
+function sigCapsDe_(miembroId) {
+  const p = sigLeer_('Planes').find(x => x.miembroId === miembroId);
+  const tipo = p && p.tipo ? String(p.tipo) : '';
+  const full = { redesCerradas: true, vaporizador: true, selector: true, vr: true };
+  let caps;
+  if (tipo === 'basico') caps = { redesCerradas: false, vaporizador: false, selector: false, vr: false };
+  else caps = Object.assign({}, full); // proyecto, membresia, sin plan → completo
+  caps.nivel = tipo || 'completo';
+  caps.nodosMax = tipo === 'proyecto' ? (+((p && p.nodosMax)) || 0) : 0;
+  if (p && p.capacidades) { try { Object.assign(caps, JSON.parse(p.capacidades)); } catch (e) {} } // overrides explícitos del admin
+  return caps;
+}
+/** Capacidades del usuario en sesión (lo consulta Isoflux para habilitar/ocultar extensiones). */
+function sigCapacidad(u) {
+  if (u.rol === 'admin') return { caps: { nivel: 'admin', redesCerradas: true, vaporizador: true, selector: true, vr: true, nodosMax: 0 }, plan: 'Administrador' };
+  const v = sigVinculo_(u.email);
+  if (!v) return { caps: { nivel: 'sin_org', redesCerradas: true, vaporizador: true, selector: true, vr: true, nodosMax: 0 }, plan: '' };
+  const caps = sigCapsDe_(v.miembroId), p = sigPlanDe_(v.miembroId);
+  return { caps: caps, plan: p.plan || '', tipo: caps.nivel, miembroId: v.miembroId };
 }
 
 /** Resumen para el administrador: una fila por Organización con su plan y sus consumos. */
@@ -2043,9 +2066,11 @@ function sigPlanGuardar(u, b) {
   if (!b.miembroId) return { error: 'Falta la Organización.' };
   if (!sigMiembro_(b.miembroId)) return { error: 'La Organización no existe.' };
   const sh = sigHoja_('Planes'), datos = sigLeer_('Planes'), i = datos.findIndex(x => x.miembroId === b.miembroId);
-  const fila = [b.miembroId, b.plan || '', b.moneda || 'COP', +b.mensualidad || 0, +b.limiteEspacioMB || 0,
+  const tipo = ['proyecto', 'basico', 'membresia'].indexOf(String(b.tipo)) >= 0 ? String(b.tipo) : '';
+  const caps = typeof b.capacidades === 'string' ? b.capacidades : JSON.stringify(b.capacidades || {});
+  const fila = [b.miembroId, b.plan || '', tipo, b.moneda || 'COP', +b.mensualidad || 0, +b.limiteEspacioMB || 0,
     +b.incluidoDescargas || 0, +b.incluidoUsos || 0, +b.precioEspacioExtraGB || 0, +b.precioDescargaExtra || 0,
-    +b.precioUsoExtra || 0, typeof b.addons === 'string' ? b.addons : JSON.stringify(b.addons || []), b.notas || '', u.email, sigAhora_()];
+    +b.precioUsoExtra || 0, +b.nodosMax || 0, caps, typeof b.addons === 'string' ? b.addons : JSON.stringify(b.addons || []), b.notas || '', u.email, sigAhora_()];
   if (i >= 0) sh.getRange(datos[i]._fila, 1, 1, fila.length).setValues([fila]);
   else sh.appendRow(fila);
   delete SIG_RD_['Planes'];
