@@ -931,25 +931,26 @@ async function isoVersiones(pid,planoId){try{const r=await api({a:"sgcPlanoVersi
 modal({w:1,h:`<h3>🕘 ${esc(m.nombre)}</h3><p class="mu">Versión más reciente: v${m.version} · versión vigente: <b>v${r.vigente}</b>${m.vigentePor?` (definida por ${esc(m.vigentePor)})`:""}. Cada fila es un guardado con su huella SHA-256 (control de cambios del SGC). ${r.puedeVigencia?"Como desarrollador del plano puedes definir cuál versión es la vigente.":"Solo el desarrollador del plano ("+esc(m.autor)+") o el administrador definen la versión vigente."}</p>${r.versiones.map(x=>`<div class="lk"><span><b>v${x.version}</b>${x.version===r.vigente?` <span class="tag" style="background:#2fbf6233;color:#7ee2a8">✔ vigente</span>`:""}${x.version===m.version?` <span class="tag">más reciente</span>`:""} · ${fch(x.fecha)} · ${esc(x.autor)}${x.nota?`<br><small class="mu">${esc(x.nota)}</small>`:""}<br><small class="mu">${isoKb(x.bytes)} · SHA-256 ${esc(String(x.sha256).slice(0,16))}…</small></span><span><button class="btn ghost sm" onclick="isoAbrir('${esc(pid)}','${esc(planoId)}',${x.version===m.version?0:x.version})">Abrir</button> <button class="btn ghost sm" onclick="isoJson('${esc(planoId)}',${x.version},this)">⬇ .json</button>${r.puedeVigencia&&x.version!==r.vigente?` <button class="btn sm" onclick="isoVigente('${esc(pid)}','${esc(planoId)}',${x.version},this)">✔ Marcar vigente</button>`:""}</span></div>`).join("")}<div class="err" id="er"></div><div class="acts"><button class="btn ghost" onclick="det('${esc(pid)}')">Volver al proyecto</button></div>`})}catch(e){alert(e.message)}}
 
 /* ============================================================
-   ===== CONSUMOS Y FACTURACION · consola de administracion =====
-   Muestra, por Organizacion, el espacio usado frente al limite del plan,
-   los ingresos a las herramientas, las descargas (tipo y tamano), las
-   subidas y los usuarios; permite fijar el plan y generar la factura del
-   mes. Datos del modulo del servidor (sgcUso, sgcPlan, sgcFactura); si
-   aun no esta desplegado, se avisa con claridad.
+   CONSUMOS Y FACTURACION - consola de administracion (directorio + ficha)
+   Directorio compacto de organizaciones; al abrir una, una ficha tipo
+   "historia clinica" con pestanas: Resumen, Consumos, Plan y Facturas.
+   Datos del modulo del servidor (sgcUso, sgcPlan, sgcFactura, sgcMiembros).
    ============================================================ */
 const money=(v,m)=>{try{return new Intl.NumberFormat("es-CO",{style:"currency",currency:m||"COP",maximumFractionDigits:0}).format(+v||0)}catch(e){return (m||"COP")+" "+Math.round(+v||0).toLocaleString("es-CO")}};
 const mbF=v=>{v=+v||0;return v>=1024?(v/1024).toFixed(2)+" GB":v.toFixed(v<10?2:0)+" MB"};
 const mesActual=()=>new Date().toISOString().slice(0,7);
 const mesRango=p=>{const a=p.split("-").map(Number),y=a[0],m=a[1];return{d0:new Date(Date.UTC(y,m-1,1)).toISOString(),d1:new Date(Date.UTC(y,m,1)).toISOString()}};
 const mesNom=p=>{const a=p.split("-").map(Number);return new Date(Date.UTC(a[0],a[1]-1,1)).toLocaleDateString("es-CO",{month:"long",year:"numeric"})};
-let USOPER=mesActual();
+let USOPER=mesActual(),USOCACHE=null,FICMID=null,FICTAB="resumen",FICX={};
 function noServidor(e){return /no permitida|is not defined|no reconoc|Accion|Acción/i.test(e&&e.message||"")}
+const ICO={login:"🔑",herramienta:"🧰",descarga:"⬇",subida:"⬆",borrado:"🗑"};
+const chips=o=>Object.entries(o||{}).sort((a,b)=>b[1]-a[1]).map(e=>`<span class="tag">${esc(e[0])} ·${e[1]}</span>`).join("")||`<span class="mu">—</span>`;
+
 async function consumos(){
   modal({w:1,h:`<h3>📊 Consumos y facturación</h3>
    <div class="g2" style="align-items:end"><div><label>Periodo</label><input id="uper" type="month" value="${USOPER}"></div>
    <div class="acts" style="margin:0"><button class="btn ghost sm" onclick="reindexUso()" title="Recalcula el espacio ocupado recorriendo lo almacenado">↻ Recalcular espacio</button><button class="btn ghost sm" onclick="facturasList('')">🧾 Todas las facturas</button></div></div>
-   <div class="err" id="er"></div><div id="usobody"><p class="mu">Cargando consumos…</p></div>`});
+   <div class="err" id="er"></div><div id="usobody"><p class="mu">Cargando…</p></div>`});
   $("#uper").onchange=e=>{USOPER=e.target.value;consumosCarga()};
   consumosCarga();
 }
@@ -957,43 +958,100 @@ async function consumosCarga(){
   const el=$("#usobody");if(!el)return;el.innerHTML=`<p class="mu">Cargando consumos de ${esc(mesNom(USOPER))}…</p>`;
   try{
     const rg=mesRango(USOPER);
-    const res=await Promise.all([api({a:"sgcUsoResumen",desde:rg.d0,hasta:rg.d1}),api({a:"sgcPlanes"}).catch(()=>({planes:[]}))]);
-    const r=res[0],pl=res[1],planes={};(pl.planes||[]).forEach(p=>planes[p.miembroId]=p);
-    const M=(r.miembros||[]).slice().sort((a,b)=>(b.espacioMB+b.ingresos*1e3)-(a.espacioMB+a.ingresos*1e3));
-    if(!M.length){el.innerHTML=`<p class="mu">Aún no hay organizaciones registradas.</p>`;return}
-    el.innerHTML=`<div class="mu" style="margin:2px 0 10px">${esc(mesNom(USOPER))} · ${M.length} organización(es)</div>`+M.map(m=>usoCard(m,planes[m.miembroId])).join("");
+    const res=await Promise.all([api({a:"sgcUsoResumen",desde:rg.d0,hasta:rg.d1}),api({a:"sgcPlanes"}).catch(()=>({planes:[]})),api({a:"sgcMiembros"}).catch(()=>({miembros:[]}))]);
+    const uso=res[0],planes={},ident={};FICX={};
+    (res[1].planes||[]).forEach(p=>planes[p.miembroId]=p);
+    (res[2].miembros||[]).forEach(m=>ident[m.miembroId]=m);
+    const orgs={};(uso.miembros||[]).forEach(m=>{orgs[m.miembroId]=Object.assign({},m,{plan:planes[m.miembroId]||null,ident:ident[m.miembroId]||null})});
+    USOCACHE={orgs:orgs,periodo:USOPER};
+    const L=Object.values(orgs).sort((a,b)=>(b.espacioMB+b.ingresos*1e3)-(a.espacioMB+a.ingresos*1e3));
+    if(!L.length){el.innerHTML=`<p class="mu">Aún no hay organizaciones registradas.</p>`;return}
+    const tEsp=L.reduce((s,o)=>s+(+o.espacioMB||0),0),tIng=L.reduce((s,o)=>s+(+o.herramientas||0),0),tDes=L.reduce((s,o)=>s+(+o.descargas||0),0),tFac=L.reduce((s,o)=>s+(+o.mensualidad||0),0);
+    el.innerHTML=`<div class="kp" style="margin:4px 0 10px"><div class="k"><span class="mu">Organizaciones</span><b>${L.length}</b></div><div class="k"><span class="mu">Espacio total</span><b>${mbF(tEsp)}</b></div><div class="k"><span class="mu">Ingresos (mes)</span><b>${tIng}</b></div><div class="k"><span class="mu">Descargas (mes)</span><b>${tDes}</b></div><div class="k"><span class="mu">Mensualidades</span><b>${money(tFac,"COP")}</b></div></div>
+     <div class="mu" style="margin:0 0 6px;font-size:12px">${esc(mesNom(USOPER))} · haz clic en una organización para ver su ficha</div>`+L.map(dirRow).join("");
   }catch(e){
     el.innerHTML=noServidor(e)
-      ?`<div class="cob"><div><b>El módulo de consumos aún no está activo en el servidor.</b><div class="mu">Pega la versión nueva de <code>SIG_Miembros.gs</code> en Apps Script y vuelve a desplegar. Mientras tanto, la consola funciona pero no hay datos.</div></div></div>`
+      ?`<div class="cob"><div><b>El módulo de consumos aún no está activo en el servidor.</b><div class="mu">Pega la versión nueva de <code>SIG_Miembros.gs</code> en Apps Script y vuelve a desplegar.</div></div></div>`
       :`<p class="err">${esc(e.message)}</p>`;
   }
 }
-function usoCard(m,plan){
-  const lim=+m.limiteEspacioMB||0,pct=lim>0?Math.min(100,m.espacioMB/lim*100):0,sobre=lim>0&&m.espacioMB>lim;
+function dirRow(o){
+  const lim=+o.limiteEspacioMB||0,pct=lim>0?Math.min(100,o.espacioMB/lim*100):0,sobre=lim>0&&o.espacioMB>lim;
   const barcol=sobre?"var(--er)":pct>85?"#ffc861":"var(--m)";
-  const tipos=Object.entries(m.tiposDesc||{}).sort((a,b)=>b[1]-a[1]).slice(0,6).map(e=>`<span class="tag">${esc(e[0])} ·${e[1]}</span>`).join("")||`<span class="mu">—</span>`;
-  const tools=Object.entries(m.toolset||{}).sort((a,b)=>b[1]-a[1]).map(e=>`<span class="tag">${esc(e[0])} ·${e[1]}</span>`).join("")||`<span class="mu">—</span>`;
-  const ico={login:"🔑",herramienta:"🧰",descarga:"⬇",subida:"⬆",borrado:"🗑"};
-  const ult=(m.ultimos||[]).slice(0,12).map(x=>`<div class="lk"><span>${ico[x.tipo]||"·"} ${esc(x.detalle||x.tipo)}${x.bytes?` · ${mbF(x.bytes/1048576)}`:""}</span><small class="mu">${new Date(x.fecha).toLocaleString("es-CO",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</small></div>`).join("")||`<span class="mu">Sin actividad en el periodo.</span>`;
-  const et=(typeof estTag==="function")?estTag(m.estadoSIG):`<span class="tag">${esc(m.estadoSIG||"")}</span>`;
-  return `<div class="cm" style="margin:8px 0">
-   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:16px">${esc(m.nombre)}</b> ${et}<span class="tag" title="Plan">${esc(m.plan||"Sin plan")}</span><span class="sp" style="flex:1"></span><span class="mu">${esc(m.miembroId)}</span></div>
-   <div style="margin:8px 0 4px"><div class="mu" style="font-size:12px">Espacio: <b>${mbF(m.espacioMB)}</b>${lim>0?` de ${mbF(lim)} · ${Math.round(pct)}%${sobre?" (excedido)":""}`:" · sin límite definido"}</div>
-    <div style="height:8px;border-radius:6px;background:#1b2740;overflow:hidden;margin-top:3px"><div style="height:100%;width:${lim>0?Math.min(100,pct):4}%;background:${barcol}"></div></div></div>
-   <div class="kp" style="margin:8px 0"><div class="k"><span class="mu">Ingresos a herramientas</span><b>${m.herramientas||0}</b></div><div class="k"><span class="mu">Descargas</span><b>${m.descargas||0}</b><small class="mu">${mbF((m.bytesDesc||0)/1048576)}</small></div><div class="k"><span class="mu">Subidas</span><b>${m.subidas||0}</b></div><div class="k"><span class="mu">Inicios de sesión</span><b>${m.ingresos||0}</b></div><div class="k"><span class="mu">Usuarios activos</span><b>${m.usuarios||0}</b></div></div>
-   <div style="margin:4px 0"><span class="mu" style="font-size:12px">Herramientas:</span> ${tools}</div>
-   <div style="margin:4px 0"><span class="mu" style="font-size:12px">Tipos de archivo descargados:</span> ${tipos}</div>
-   <details class="acc" style="margin:6px 0"><summary><span class="ic">🕒</span><span>Actividad reciente<small>Últimos eventos del periodo</small></span></summary><div class="in">${ult}</div></details>
-   <div class="acts"><button class="btn ghost sm" onclick="planEditor('${esc(m.miembroId)}','${esc(String(m.nombre).replace(/'/g,"’"))}')">⚙ Plan y límites</button><button class="btn sm" onclick="genFactura('${esc(m.miembroId)}')">🧾 Generar factura del mes</button><button class="btn ghost sm" onclick="facturasList('${esc(m.miembroId)}')">Ver facturas</button></div>
+  const ini=(String(o.nombre||"?").trim().slice(0,2)||"?").toUpperCase();
+  return `<div class="dirow" onclick="fichaInt('${esc(o.miembroId)}')" style="display:flex;gap:12px;align-items:center;padding:10px 12px;margin:6px 0;border:1px solid var(--bd,#20304d);border-radius:12px;cursor:pointer;background:#0e1a2e;transition:background .15s" onmouseover="this.style.background='#13223c'" onmouseout="this.style.background='#0e1a2e'">
+   <div style="width:38px;height:38px;flex:0 0 38px;border-radius:10px;background:linear-gradient(135deg,#1f6fd1,#0a3a95);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:13px">${esc(ini)}</div>
+   <div style="flex:1;min-width:0">
+     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:14.5px">${esc(o.nombre)}</b> ${(typeof estTag==="function")?estTag(o.estadoSIG):""}<span class="tag">${esc(o.plan&&o.plan.plan||o.plan||"Sin plan")}</span></div>
+     <div style="height:6px;border-radius:5px;background:#1b2740;overflow:hidden;margin:5px 0 2px;max-width:320px"><div style="height:100%;width:${lim>0?Math.min(100,pct):4}%;background:${barcol}"></div></div>
+     <div class="mu" style="font-size:11.5px">${mbF(o.espacioMB)}${lim>0?` / ${mbF(lim)}`:""} · 🧰 ${o.herramientas||0} · ⬇ ${o.descargas||0} · ⬆ ${o.subidas||0} · 👥 ${o.usuarios||0}</div>
+   </div>
+   <div class="mu" style="font-size:18px">›</div>
   </div>`;
 }
 async function reindexUso(){const e=$("#er");if(e)e.textContent="Recalculando espacio…";try{await api({a:"sgcUsoReindexar"});if(e)e.textContent="";if(typeof msgOk==="function")msgOk("Espacio recalculado.");consumosCarga()}catch(x){if(e)e.textContent=noServidor(x)?"El módulo del servidor aún no está desplegado.":x.message}}
-async function planEditor(mid,nombre){
-  let pl={};try{const r=await api({a:"sgcPlanes"});pl=(r.planes||[]).find(p=>p.miembroId===mid)||{}}catch(e){}
+
+/* ---------- ficha del integrante (historia clínica) ---------- */
+function fichaInt(mid){
+  FICMID=mid;FICTAB="resumen";
+  const o=USOCACHE&&USOCACHE.orgs[mid];if(!o){consumos();return}
+  const ini=(String(o.nombre||"?").trim().slice(0,2)||"?").toUpperCase();
+  const tab=(id,t)=>`<button class="fictab btn ghost sm" data-t="${id}" onclick="ficTab('${id}')">${t}</button>`;
+  modal({w:1,h:`<div style="display:flex;gap:12px;align-items:center;margin:-4px 0 10px">
+    <div style="width:46px;height:46px;flex:0 0 46px;border-radius:12px;background:linear-gradient(135deg,#1f6fd1,#0a3a95);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:16px">${esc(ini)}</div>
+    <div style="flex:1"><h3 style="margin:0">${esc(o.nombre)}</h3><div class="mu" style="font-size:12px">${esc(mid)} ${(typeof estTag==="function")?"· "+estTag(o.estadoSIG):""} · ${esc(mesNom(USOPER))}</div></div>
+    <button class="btn ghost sm" onclick="consumos()">← Directorio</button></div>
+   <div class="fictabs" style="display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid #20304d;padding-bottom:8px;margin-bottom:10px">${tab("resumen","Resumen")}${tab("consumos","Consumos")}${tab("plan","Plan y límites")}${tab("facturas","Facturas")}</div>
+   <div id="ficbody"></div>`});
+  ficTab("resumen");
+}
+function ficTab(t){
+  FICTAB=t;document.querySelectorAll(".fictab").forEach(b=>{const on=b.dataset.t===t;b.style.background=on?"var(--m,#1f6fd1)":"";b.style.color=on?"#fff":""});
+  const o=USOCACHE&&USOCACHE.orgs[FICMID];if(!o)return;
+  if(t==="resumen")ficResumen(o);
+  else if(t==="consumos")ficConsumos(o);
+  else if(t==="plan")ficPlan(o);
+  else if(t==="facturas")ficFacturas(o);
+}
+function espBar(espMB,limMB){const lim=+limMB||0,pct=lim>0?Math.min(100,espMB/lim*100):0,sobre=lim>0&&espMB>lim;
+  return `<div style="margin:6px 0"><div class="mu" style="font-size:12px">Espacio: <b>${mbF(espMB)}</b>${lim>0?` de ${mbF(lim)} · ${Math.round(pct)}%${sobre?" (excedido)":""}`:" · sin límite definido"}</div><div style="height:9px;border-radius:6px;background:#1b2740;overflow:hidden;margin-top:3px"><div style="height:100%;width:${lim>0?Math.min(100,pct):4}%;background:${sobre?"var(--er)":pct>85?"#ffc861":"var(--m)"}"></div></div></div>`}
+function kpis(o){return `<div class="kp" style="margin:8px 0"><div class="k"><span class="mu">Ingresos a herramientas</span><b>${o.herramientas||0}</b></div><div class="k"><span class="mu">Descargas</span><b>${o.descargas||0}</b><small class="mu">${mbF((o.bytesDesc||0)/1048576)}</small></div><div class="k"><span class="mu">Subidas</span><b>${o.subidas||0}</b></div><div class="k"><span class="mu">Inicios de sesión</span><b>${o.ingresos||0}</b></div><div class="k"><span class="mu">Usuarios activos</span><b>${o.usuarios||0}</b></div></div>`}
+function ficResumen(o){
+  const id=o.ident||{},us=(id.usuarios||[]);
+  const serv=(id.serviciosSolicitados||id.alcanceAprobado||"");
+  const usH=us.length?us.map(u=>`<div class="lk"><span>${esc(u.email)} <span class="tag">${esc(u.rol||"")}</span></span><small class="mu">${esc(u.estado||"")}</small></div>`).join(""):`<span class="mu">Sin usuarios vinculados.</span>`;
+  $("#ficbody").innerHTML=`${espBar(o.espacioMB,o.limiteEspacioMB)}${kpis(o)}
+   <div class="g2"><div class="cm"><b>Identidad</b>
+     <div class="lk"><span class="mu">Razón social</span><span>${esc(id.razonSocial||o.nombre||"—")}</span></div>
+     <div class="lk"><span class="mu">NIT / documento</span><span>${esc(id.nit||"—")}</span></div>
+     <div class="lk"><span class="mu">Estado SIG</span><span>${(typeof estTag==="function")?estTag(o.estadoSIG):esc(o.estadoSIG||"—")}</span></div>
+     <div class="lk"><span class="mu">Servicios</span><span>${esc(serv||"—")}</span></div>
+     <div class="lk"><span class="mu">Plan</span><span>${esc(o.plan&&o.plan.plan||"Sin plan")} · ${money(o.mensualidad||0,o.moneda||"COP")}/mes</span></div>
+   </div><div class="cm"><b>Usuarios de la organización</b><div style="margin-top:6px">${usH}</div></div></div>
+   <div class="acts"><button class="btn sm" onclick="genFactura('${esc(o.miembroId)}')">🧾 Generar factura del mes</button><button class="btn ghost sm" onclick="ficTab('plan')">⚙ Editar plan</button></div>`;
+}
+function ficConsumos(o){
+  $("#ficbody").innerHTML=`${espBar(o.espacioMB,o.limiteEspacioMB)}${kpis(o)}
+   <div style="margin:6px 0"><span class="mu" style="font-size:12px">Herramientas usadas:</span> ${chips(o.toolset)}</div>
+   <div style="margin:6px 0"><span class="mu" style="font-size:12px">Tipos de archivo descargados:</span> ${chips(o.tiposDesc)}</div>
+   <div id="ficserie" class="mu" style="margin:8px 0;font-size:12px">Cargando tendencia…</div>
+   <div class="cm" style="margin-top:8px"><b>Actividad reciente</b><div style="margin-top:6px">${(o.ultimos||[]).slice(0,20).map(x=>`<div class="lk"><span>${ICO[x.tipo]||"·"} ${esc(x.detalle||x.tipo)}${x.bytes?` · ${mbF(x.bytes/1048576)}`:""} <small class="mu">${esc(x.email||"")}</small></span><small class="mu">${new Date(x.fecha).toLocaleString("es-CO",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</small></div>`).join("")||`<span class="mu">Sin actividad en el periodo.</span>`}</div></div>`;
+  // tendencia mensual (lazy)
+  ficSerie(o.miembroId);
+}
+async function ficSerie(mid){
+  const el=$("#ficserie");if(!el)return;
+  try{let x=FICX[mid];if(!x){x=await api({a:"sgcUsoMiembro"});FICX[mid]=x}
+    const serie=x.serie||{};const keys=Object.keys(serie).sort().slice(-12);
+    if(!keys.length){el.textContent="Sin histórico todavía.";return}
+    const mx=Math.max(1,...keys.map(k=>serie[k].herramienta||0));
+    el.innerHTML=`<b>Ingresos por mes</b><div style="display:flex;align-items:flex-end;gap:4px;height:60px;margin-top:4px">${keys.map(k=>`<div title="${k}: ${serie[k].herramienta||0} ingresos" style="flex:1;text-align:center"><div style="height:${Math.round((serie[k].herramienta||0)/mx*48)}px;min-height:2px;background:var(--m,#1f6fd1);border-radius:3px 3px 0 0"></div><small style="font-size:9px" class="mu">${k.slice(5)}</small></div>`).join("")}</div>`;
+  }catch(e){el.textContent=noServidor(e)?"":"No se pudo cargar la tendencia."}
+}
+function ficPlan(o){
+  const pl=o.plan||{},V=(k,d)=>pl[k]!=null&&pl[k]!==""?pl[k]:d;
   let addons=[];try{addons=typeof pl.addons==="string"?JSON.parse(pl.addons||"[]"):(pl.addons||[])}catch(e){addons=[]}
-  const V=(k,d)=>pl[k]!=null&&pl[k]!==""?pl[k]:d;
-  modal(`<h3>Plan y límites · ${esc(nombre)}</h3>
-   <div class="g2"><div><label>Nombre del plan</label><input id="pl_plan" value="${esc(V("plan","Membresía mensual"))}"></div><div><label>Moneda</label><input id="pl_mon" value="${esc(V("moneda","COP"))}"></div></div>
+  $("#ficbody").innerHTML=`<div class="g2"><div><label>Nombre del plan</label><input id="pl_plan" value="${esc(V("plan","Membresía mensual"))}"></div><div><label>Moneda</label><input id="pl_mon" value="${esc(V("moneda","COP"))}"></div></div>
    <div class="g2"><div><label>Mensualidad (incluye el modelador)</label><input id="pl_men" type="number" min="0" value="${V("mensualidad",0)}"></div><div><label>Límite de espacio (MB)</label><input id="pl_lim" type="number" min="0" value="${V("limiteEspacioMB",0)}"></div></div>
    <div class="g2"><div><label>Descargas incluidas / mes</label><input id="pl_idc" type="number" min="0" value="${V("incluidoDescargas",0)}"></div><div><label>Usos incluidos / mes</label><input id="pl_ius" type="number" min="0" value="${V("incluidoUsos",0)}"></div></div>
    <div class="g2"><div><label>Precio por GB extra</label><input id="pl_peg" type="number" min="0" value="${V("precioEspacioExtraGB",0)}"></div><div><label>Precio por descarga extra</label><input id="pl_pde" type="number" min="0" value="${V("precioDescargaExtra",0)}"></div></div>
@@ -1001,34 +1059,41 @@ async function planEditor(mid,nombre){
    <label>Adicionales fijos (add-ons) — uno por línea: <i>nombre = valor</i></label>
    <textarea id="pl_add" rows="3" placeholder="Cotizador web = 30000">${esc(addons.map(a=>`${a.nombre} = ${a.valor}`).join("\n"))}</textarea>
    <label>Notas</label><input id="pl_not" value="${esc(V("notas",""))}">
-   <div class="err" id="er"></div><div class="acts"><button class="btn ghost" onclick="cerrar()">Cancelar</button><button class="btn" id="go">Guardar plan</button></div>`);
-  const go=$("#go");go.onclick=busy(go,async()=>{
+   <div class="err" id="er2"></div><div class="acts"><button class="btn" id="plgo">Guardar plan</button></div>`;
+  const go=$("#plgo");go.onclick=busy(go,async()=>{
     const add=($("#pl_add").value||"").split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{const i=l.lastIndexOf("=");return{nombre:(i<0?l:l.slice(0,i)).trim(),valor:+((i<0?"0":l.slice(i+1)).replace(/[^\d.-]/g,""))||0}});
-    await api({a:"sgcPlanGuardar",miembroId:mid,plan:$("#pl_plan").value,moneda:$("#pl_mon").value,mensualidad:$("#pl_men").value,limiteEspacioMB:$("#pl_lim").value,incluidoDescargas:$("#pl_idc").value,incluidoUsos:$("#pl_ius").value,precioEspacioExtraGB:$("#pl_peg").value,precioDescargaExtra:$("#pl_pde").value,precioUsoExtra:$("#pl_pue").value,addons:add,notas:$("#pl_not").value});
-    if(typeof msgOk==="function")msgOk("Plan guardado.");consumos();
+    await api({a:"sgcPlanGuardar",miembroId:o.miembroId,plan:$("#pl_plan").value,moneda:$("#pl_mon").value,mensualidad:$("#pl_men").value,limiteEspacioMB:$("#pl_lim").value,incluidoDescargas:$("#pl_idc").value,incluidoUsos:$("#pl_ius").value,precioEspacioExtraGB:$("#pl_peg").value,precioDescargaExtra:$("#pl_pde").value,precioUsoExtra:$("#pl_pue").value,addons:add,notas:$("#pl_not").value});
+    if(typeof msgOk==="function")msgOk("Plan guardado.");
+    try{const r=await api({a:"sgcPlanes"});o.plan=(r.planes||[]).find(p=>p.miembroId===o.miembroId)||o.plan;o.limiteEspacioMB=+(o.plan&&o.plan.limiteEspacioMB)||0;o.mensualidad=+(o.plan&&o.plan.mensualidad)||0}catch(e){}
+    ficTab("resumen");
   });
 }
-async function genFactura(mid){try{const r=await api({a:"sgcFacturaGenerar",miembroId:mid,periodo:USOPER});if(r&&r.factura)verFactura(r.factura);}catch(e){alert(noServidor(e)?"El módulo del servidor aún no está desplegado.":e.message)}}
+async function ficFacturas(o){
+  $("#ficbody").innerHTML=`<div class="acts" style="margin:0 0 8px"><button class="btn sm" onclick="genFactura('${esc(o.miembroId)}')">🧾 Generar factura del mes (${esc(USOPER)})</button></div><div id="ficfac"><p class="mu">Cargando facturas…</p></div>`;
+  try{const r=await api({a:"sgcFacturaListar",miembroId:o.miembroId});const F=r.facturas||[];
+    $("#ficfac").innerHTML=F.length?F.map(f=>`<div class="lk"><span><b>${esc(f.numero)}</b> · ${esc(f.periodo)} · ${esc(f.estado)}</span><span><b>${money(f.total,f.moneda)}</b> <button class="btn ghost sm" onclick="verFacturaNum('${esc(f.numero)}')">Ver</button></span></div>`).join(""):`<p class="mu">Sin facturas emitidas.</p>`;
+  }catch(e){$("#ficfac").innerHTML=`<p class="err">${esc(e.message)}</p>`}
+}
+
+async function genFactura(mid){try{const r=await api({a:"sgcFacturaGenerar",miembroId:mid,periodo:USOPER});if(r&&r.factura){verFactura(r.factura);if(FICMID===mid&&FICTAB==="facturas"&&USOCACHE)ficFacturas(USOCACHE.orgs[mid])}}catch(e){alert(noServidor(e)?"El módulo del servidor aún no está desplegado.":e.message)}}
 async function facturasList(mid){
   try{const r=await api({a:"sgcFacturaListar",miembroId:mid||undefined});const F=r.facturas||[];
     modal({w:1,h:`<h3>🧾 Facturas${mid?" · "+esc(mid):""}</h3>${F.length?F.map(f=>`<div class="lk"><span><b>${esc(f.numero)}</b> · ${esc(f.nombre||f.miembroId)} · ${esc(f.periodo)} · ${esc(f.estado)}</span><span><b>${money(f.total,f.moneda)}</b> <button class="btn ghost sm" onclick="verFacturaNum('${esc(f.numero)}')">Ver</button></span></div>`).join(""):'<p class="mu">Sin facturas emitidas.</p>'}<div class="acts"><button class="btn ghost" onclick="consumos()">Volver a consumos</button></div>`});
   }catch(e){alert(noServidor(e)?"El módulo del servidor aún no está desplegado.":e.message)}
 }
 async function verFacturaNum(n){try{const r=await api({a:"sgcFacturaVer",numero:n});if(r&&r.factura)verFactura(r.factura)}catch(e){alert(e.message)}}
+
 async function misConsumos(){
   modal({w:1,h:`<h3>📊 Mis consumos</h3><div id="miuso"><p class="mu">Cargando tu consumo…</p></div>`});
   try{
     const rg=mesRango(mesActual());
     const r=await api({a:"sgcUsoMiembro",desde:rg.d0,hasta:rg.d1});
-    const c=r.consumo||{},pl=r.plan||{},lim=+pl.limiteEspacioMB||0,pct=lim>0?Math.min(100,r.espacioMB/lim*100):0,sobre=lim>0&&r.espacioMB>lim;
-    const tipos=Object.entries(c.tiposDesc||{}).sort((a,b)=>b[1]-a[1]).slice(0,8).map(e=>`<span class="tag">${esc(e[0])} ·${e[1]}</span>`).join("")||`<span class="mu">—</span>`;
-    const tools=Object.entries(c.toolset||{}).sort((a,b)=>b[1]-a[1]).map(e=>`<span class="tag">${esc(e[0])} ·${e[1]}</span>`).join("")||`<span class="mu">—</span>`;
-    const fac=r.factura;
+    const c=r.consumo||{},pl=r.plan||{},fac=r.factura;
     $("#miuso").innerHTML=`<div class="mu" style="margin:-4px 0 8px">${esc(r.miembro&&r.miembro.nombre||"")} · ${esc(mesNom(mesActual()))} · plan <b>${esc(pl.plan||"Sin plan")}</b></div>
-     <div style="margin:6px 0"><div class="mu" style="font-size:12px">Espacio usado: <b>${mbF(r.espacioMB)}</b>${lim>0?` de ${mbF(lim)} · ${Math.round(pct)}%${sobre?" (excedido)":""}`:" · sin límite"}</div><div style="height:8px;border-radius:6px;background:#1b2740;overflow:hidden;margin-top:3px"><div style="height:100%;width:${lim>0?Math.min(100,pct):4}%;background:${sobre?"var(--er)":"var(--m)"}"></div></div></div>
+     ${espBar(r.espacioMB,pl.limiteEspacioMB)}
      <div class="kp" style="margin:8px 0"><div class="k"><span class="mu">Ingresos a herramientas</span><b>${c.herramientas||0}</b></div><div class="k"><span class="mu">Descargas</span><b>${c.descargas||0}</b><small class="mu">${mbF((c.bytesDesc||0)/1048576)}</small></div><div class="k"><span class="mu">Subidas</span><b>${c.subidas||0}</b></div><div class="k"><span class="mu">Inicios de sesión</span><b>${c.ingresos||0}</b></div></div>
-     <div style="margin:4px 0"><span class="mu" style="font-size:12px">Herramientas usadas:</span> ${tools}</div>
-     <div style="margin:4px 0"><span class="mu" style="font-size:12px">Tipos de archivo descargados:</span> ${tipos}</div>
+     <div style="margin:4px 0"><span class="mu" style="font-size:12px">Herramientas usadas:</span> ${chips(c.toolset)}</div>
+     <div style="margin:4px 0"><span class="mu" style="font-size:12px">Tipos de archivo descargados:</span> ${chips(c.tiposDesc)}</div>
      ${fac?`<div class="cob" style="margin-top:10px"><div style="flex:1"><b>Factura ${esc(fac.numero)} · ${esc(fac.periodo)}</b><div class="mu">Total: ${money(fac.total,fac.moneda)} · ${esc(fac.estado)}</div></div><button class="btn sm" onclick="verFacturaNum('${esc(fac.numero)}')">Ver / descargar</button></div>`:`<p class="mu" style="margin-top:10px">Aún no tienes una factura emitida.</p>`}`;
   }catch(e){$("#miuso").innerHTML=noServidor(e)?`<p class="mu">El módulo de consumos aún no está activo en el servidor.</p>`:`<p class="err">${esc(e.message)}</p>`}
 }
