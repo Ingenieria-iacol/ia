@@ -112,7 +112,7 @@ if(!/^https/.test(API)){a.innerHTML=`<div class="wrap"><h2>Falta conectar el ser
 if(FTK&&!me){if(!FX)formPage();return}if(CTK&&!me){if(!CX)campoPage();return}if(AUD&&!me){AX?audView():audPage();return}if(INV&&!me){guestPage();return}
 if(!me){a.innerHTML=`<div class="nav"><img src="${L.ent}" alt=""><b>PORTAL DE PROYECTOS</b><span class="sp"></span><a class="btn ghost sm" href="https://desarrollosdeia.org/" target="_top" title="Volver a la página de inicio" style="text-decoration:none;display:inline-flex;align-items:center">⌂ Inicio</a><button class="btn ghost sm" onclick="verificar()">Verificar miembro</button><button class="btn ghost sm" onclick="help()">Instrucciones</button><button class="btn" onclick="ask1()">Ingresar</button></div><section class="hero"><div><span class="sgcc">🛡️ SIG HSEQ + I+D+i · Red Hub de Ingeniería Pioneer's</span><h1>Tus proyectos de ingeniería, <span>ahora bajo el SGC</span></h1><p>Desde la adscripción de tu organización, cada proyecto nuevo de redes de gas o desarrollo tecnológico se gestiona con el <b class="sgcb">Sistema de Gestión De Calidad</b>: sellado con tu organización, guiado fase a fase con sus documentos y formatos, y con la evidencia lista para auditoría. Ingresa con tu correo y tu clave para ver únicamente tu información.</p><div class="hb"><button class="btn" onclick="ask1()">Ingresar al portal</button><button class="btn ghost" onclick="sgcCompromiso(1)">¿Qué cambia con el SGC?</button></div><small class="mu hn">El sistema no es retroactivo: los proyectos anteriores a la adscripción conservan su registro.</small></div><img src="${L.pio}" alt=""></section><section class="hsg"><h2>Así se gestiona ahora cada proyecto</h2><p class="mu">Un mismo sistema para toda la red; tu organización, tu marca y tus datos separados.</p>${sgcPasosHtml()}</section><div class="foot"><img src="${L.par}" alt=""><span>Un desarrollo de Industrias I.A. Col · Hub de Ingeniería Pioneer's · Parque Tecnológico – Software ENTALPIA LABS</span></div>`;return}
 const adm=me.rol==="admin",PA=(D.p||[]).filter(p=>!pCic(p)||pCic(p)==="eliminacion_solicitada"),P=pFiltra(D.p||[]),ent=PA.filter(p=>p.estado==="Entregado").length,av=PA.length?Math.round(PA.reduce((s,p)=>s+(+p.avance||0),0)/PA.length):0;
-a.innerHTML=`<div class="nav">${navMarca()}<span class="sp"></span><span class="mu">${esc(me.nombre)}${adm?" · Administrador":""}</span>${adm?`<button class="btn ghost sm" onclick="users()">Usuarios</button><button class="btn ghost sm" onclick="miembros()">Miembros SIG</button>`:""}<button class="btn ghost sm" onclick="empresa()">Mi organización</button><button class="btn ghost sm" onclick="documentos()">Documentos SIG</button><button class="btn ghost sm" onclick="help()">Instrucciones</button><button class="btn ghost sm" onclick="claves('')">Mi clave</button><button class="btn ghost sm" onclick="rep()">Reporte CSV</button><button class="btn ghost sm" onclick="misDibujos()" title="Tus dibujos de Isoflux guardados fuera de un proyecto">🗂️ Mis dibujos</button><button class="btn sm" onclick="newP()">+ Nuevo proyecto</button><a class="btn ghost sm" href="https://desarrollosdeia.org/" target="_top" title="Volver a la página de inicio" style="text-decoration:none;display:inline-flex;align-items:center">⌂ Inicio</a><button class="btn ghost sm" onclick="out()">Salir</button></div>
+a.innerHTML=`<div class="nav">${navMarca()}<span class="sp"></span><span class="mu">${esc(me.nombre)}${adm?" · Administrador":""}</span>${adm?`<button class="btn ghost sm" onclick="users()">Usuarios</button><button class="btn ghost sm" onclick="miembros()">Miembros SIG</button><button class="btn ghost sm" onclick="consumos()">📊 Consumos</button>`:""}<button class="btn ghost sm" onclick="empresa()">Mi organización</button>${adm?"":`<button class="btn ghost sm" onclick="misConsumos()">📊 Mis consumos</button>`}<button class="btn ghost sm" onclick="documentos()">Documentos SIG</button><button class="btn ghost sm" onclick="help()">Instrucciones</button><button class="btn ghost sm" onclick="claves('')">Mi clave</button><button class="btn ghost sm" onclick="rep()">Reporte CSV</button><button class="btn ghost sm" onclick="misDibujos()" title="Tus dibujos de Isoflux guardados fuera de un proyecto">🗂️ Mis dibujos</button><button class="btn sm" onclick="newP()">+ Nuevo proyecto</button><a class="btn ghost sm" href="https://desarrollosdeia.org/" target="_top" title="Volver a la página de inicio" style="text-decoration:none;display:inline-flex;align-items:center">⌂ Inicio</a><button class="btn ghost sm" onclick="out()">Salir</button></div>
 <div class="wrap">${sigBanda()}<div class="kp"><div class="k"><span class="mu">Proyectos</span><b>${PA.length}</b></div><div class="k"><span class="mu">En proceso</span><b>${PA.length-ent}</b></div><div class="k"><span class="mu">Entregados</span><b>${ent}</b></div><div class="k"><span class="mu">Avance promedio</span><b>${av}%</b></div></div>
 ${pTabs()}<div class="grid">${P.map(p=>`<div class="pc${pCic(p)?" pc-"+pCic(p):""}" onclick="det('${p.id}')">${pBtn(p)}${pCicTag(p)}<span class="tag">${esc(p.estado)}</span> <span class="tag">${esc(p.tipo)}</span> ${sigTag(p)}<h3 style="margin:8px 0 2px;font-size:17px">${esc(p.titulo)}</h3><span class="mu">${esc(p.cliente||"")}${p.ubicacion?" · "+esc(p.ubicacion):""}</span><div class="bar"><i style="width:${+p.avance||0}%"></i></div><small class="mu">${+p.avance||0}% de avance${adm?" · "+esc(p.owner):""}</small></div>`).join("")||pVacio()}</div></div><div class="foot"><img src="${L.par}" alt=""><span>Industrias I.A. Col · ENTALPIA LABS</span></div>`}
 async function load(){const r=await Promise.all([api({a:"lista"}),sigLoad()]);D=r[0];render()}
@@ -148,7 +148,7 @@ return gro("Proyecto",fm(t0)+" → "+fm(t1),0,100,av,1)+FZ.map((n,i)=>gro(n,fm(n
 function actH(fs,cs){const hoy=Date.now(),wk=[0,0,0,0,0,0];[...cs,...fs].forEach(x=>{const w=Math.floor((hoy-new Date(x.fecha))/(7*DAY));if(w>=0&&w<6)wk[5-w]++});const mx=Math.max(1,...wk);
 return `<div style="display:flex;align-items:flex-end;gap:8px;height:100px">${wk.map((n,i)=>`<div style="flex:1;text-align:center"><small>${n}</small><div style="height:${n/mx*60}px;min-height:3px;background:var(--m);border-radius:4px 4px 0 0"></div><small class="mu">${i===5?"Esta":"S-"+(5-i)}</small></div>`).join("")}</div>`}
 function fcH(fs,ro){return fs.map(f=>ro?`<a class="fc" href="#" onclick="gdl('${esc(f.id)}');return false"><div class="th"><span>${esc(ext(f.nombre))}</span>${MC[f.id]?`<img src="${MC[f.id]}" alt="">`:""}</div><small>${esc(f.nombre)}</small><small class="mu">${esc(f.autor)} · ${fm(new Date(f.fecha))}</small><small style="color:var(--b2)">⬇ Descargar</small></a>`
-:`<a class="fc" href="https://drive.google.com/file/d/${f.fid}/view" target="_blank" rel="noopener"><div class="th"><span>${esc(ext(f.nombre))}</span><img src="https://drive.google.com/thumbnail?id=${f.fid}&sz=w320" alt="" loading="lazy" onerror="this.remove()"></div><small>${esc(f.nombre)}</small><small class="mu">${esc(f.autor)} · ${fm(new Date(f.fecha))}</small></a>`).join("")||`<span class="mu">Aún no hay archivos.</span>`}
+:`<a class="fc" href="https://drive.google.com/file/d/${f.fid}/view" target="_blank" rel="noopener" data-n="${esc(f.nombre)}" data-b="${+f.bytes||+f.size||0}" data-p="${esc(f.proyecto||"")}" onclick="usoLog('descarga',this.dataset.n,+this.dataset.b,this.dataset.p)"><div class="th"><span>${esc(ext(f.nombre))}</span><img src="https://drive.google.com/thumbnail?id=${f.fid}&sz=w320" alt="" loading="lazy" onerror="this.remove()"></div><small>${esc(f.nombre)}</small><small class="mu">${esc(f.autor)} · ${fm(new Date(f.fecha))}</small></a>`).join("")||`<span class="mu">Aún no hay archivos.</span>`}
 function chatH(cs){return cs.map(c=>`<div class="bu ${me&&c.autor===me.nombre?"me":""}"><b>${esc(c.autor)}</b><div>${esc(c.texto)}</div><small>${new Date(c.fecha).toLocaleString()}</small></div>`).join("")||`<span class="mu">Sin comentarios todavía.</span>`}
 function paint(p,fs,cs,ro){const s=(i,h)=>{const e=$("#"+i);if(e)e.innerHTML=h};s("top",topH(p,fs,cs));s("gantt",ganttH(p));s("act",actH(fs,cs));s("fcs",fcH(fs,ro));const c=$("#chat");if(c){const nb=c.scrollHeight-c.scrollTop-c.clientHeight<80;c.innerHTML=chatH(cs);if(nb)c.scrollTop=c.scrollHeight}if(ro)loadMinis()}
 function startLive(id){clearInterval(live);ver="";live=setInterval(async()=>{if(document.hidden)return;try{const r=G?await api({a:"invpulso",token:INV,email:GE}):await api({a:"pulso",id});if(r.v===ver)return;ver=r.v;
@@ -326,7 +326,8 @@ onp&&onp(0);const r=await llamar({paso:"subirIni",nombre:f.name,mime:fMime(f),ta
 while(off<f.size){const b64=await b64Leer(f.slice(off,Math.min(f.size,off+P)));for(let k=1;;k++){try{x=await llamar({paso:"subirParte",id:r.id,off,b64});break}catch(e){if(k>=3)throw e;await new Promise(s=>setTimeout(s,1500*k))}}
 off=x.off||Math.min(f.size,off+P);onp&&onp(off/f.size)}return x}
 /* Archivo del proyecto (Archivos y fotos): fotos se ajustan; los demás tipos van tal cual; los grandes, por partes. */
-async function subirProy(f,id,onp){if(esFoto(f)&&f.size<=UP_SIMPLE){const {b,m,n}=await prep(f);return api({a:"subir",id,b,m,n})}
+async function subirProy(f,id,onp){const _r=await subirProy0(f,id,onp);try{usoLog("subida",f.name,f.size,id)}catch(e){}return _r}
+async function subirProy0(f,id,onp){if(esFoto(f)&&f.size<=UP_SIMPLE){const {b,m,n}=await prep(f);return api({a:"subir",id,b,m,n})}
 if(f.size<=UP_SIMPLE)return api({a:"subir",id,b:await b64Leer(f),m:fMime(f),n:f.name});
 return subirPartes(f,o=>api({...o,a:o.paso==="subirIni"?"sgcSubirIni":"sgcSubirParte",proyectoId:id}),onp)}
 /* Para acciones que el servidor reconoce como repetidas (clave k): si Google responde con una página de error
@@ -533,7 +534,9 @@ const go=$("#go");go.onclick=busy(go,async()=>{await api({a:"sgcEditarLegal",mie
 function verificar(c){modal(`<img class="l" src="${L.pio}" alt=""><h3>Verificar miembro del SIG</h3><span class="mu">Escribe el código de la leyenda (ej. MBR-0007-A1B2C3D4E5) o de una declaración (ej. DEC-0007-A1B2C3).</span><label>Código</label><input id="vq" value="${esc(c||"")}"><div id="vr"></div><div class="err" id="er"></div><div class="acts"><button class="btn" id="go">Verificar</button><button class="btn ghost" onclick="cerrar()">Cerrar</button></div>`);
 const go=$("#go");go.onclick=busy(go,async()=>{const r=await api({a:"sgcVerificar",codigo:$("#vq").value.trim()});$("#vr").innerHTML=`<div class="cd" style="border-color:${r.valido?"var(--ok)":"var(--er)"}"><b style="color:${r.valido?"var(--ok)":"var(--er)"}">${esc(r.mensaje)}</b>${r.tipo==="declaracion"?`<div><b>Declaración del SIG</b> emitida por ${esc(r.miembro)} (${esc(r.miembroId)}) para <b>${esc(r.destinatario)}</b> el ${fch(r.emitida)} · fase declarada: ${esc(r.fase)}</div><div>Estado actual de la organización: ${estTag(r.estado)}</div><small class="mu">Huella del PDF original (SHA-256): ${esc(r.sha256||"")}</small>`:""}${r.miembro&&r.tipo!=="declaracion"?`<div>${esc(r.miembro)} · ${esc(r.miembroId)} · ${estTag(r.estado)}</div><small class="mu">Alcance: ${esc((r.alcance||[]).join(", "))}${r.desde?" · desde "+fm(new Date(r.desde)):""} · SIG administrado por ${esc(r.titular)}</small>`:""}</div>`});$("#vq").onkeydown=e=>{if(e.key==="Enter")go.click()};if(c)go.click()}
 // ---------- INGRESO: un solo paso y confirmación visible de la cuenta ----------
-async function entrar(){cerrar();introAbrir();try{await load()}catch(e){introCerrar();throw e}bump();introRecordar();await introVid();bienvenida();sgcAviso();if(S&&!S.miembro&&!S.solicitudPendiente&&me.rol!=="admin")empresa(1)}
+async function entrar(){cerrar();introAbrir();try{await load()}catch(e){introCerrar();throw e}bump();usoLog("login","portal");introRecordar();await introVid();bienvenida();sgcAviso();if(S&&!S.miembro&&!S.solicitudPendiente&&me.rol!=="admin")empresa(1)}
+/* registra un evento de consumo de la cuenta en sesión (silencioso; no interrumpe) */
+function usoLog(tipo,detalle,bytes,proyectoId){try{if(!me)return;api({a:"sgcUsoEvento",tipo:tipo,detalle:detalle||"",bytes:bytes||0,proyectoId:proyectoId||""}).catch(()=>{})}catch(e){}}
 function bienvenida(){const m=S?.miembro,d=document.createElement("div");d.className="toast";const ini=String(me.nombre||"?").split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();
 d.innerHTML=`<div class="tav">${m&&S.logo?`<img src="${S.logo}" alt="">`:`<b>${esc(ini)}</b>`}</div><div class="ttx"><small>Ingresaste como</small><b>${esc(me.nombre)}</b><small>${esc(me.email||"")}</small>${me.rol==="admin"?`<span class="tag">Administrador</span>`:m?`<span class="tag">${esc(nomM(m))} · ${esc(m.miembroId)}</span>`:""}<a href="#" class="tno">¿No eres tú? Cerrar sesión</a></div><button type="button" class="tx" title="Cerrar" aria-label="Cerrar">✕</button><i class="tbar"></i>`;
 const quita=()=>{d.classList.remove("on");setTimeout(()=>d.remove(),400)};d.querySelector(".tx").onclick=quita;d.querySelector(".tno").onclick=e=>{e.preventDefault();d.remove();out()};
@@ -926,6 +929,141 @@ async function isoArchivar(pid,planoId,arch){if(arch&&!confirm("¿Archivar este 
 async function isoVigente(pid,planoId,v,b){if(!confirm("¿Definir la versión v"+v+" como vigente? Será la que entra al paquete de entrega. Queda registrado en la bitácora del SGC."))return;if(b)b.disabled=true;try{await api({a:"sgcPlanoVigente",planoId,version:v});isoVersiones(pid,planoId)}catch(e){alert(e.message);if(b)b.disabled=false}}
 async function isoVersiones(pid,planoId){try{const r=await api({a:"sgcPlanoVersiones",planoId}),m=r.plano;
 modal({w:1,h:`<h3>🕘 ${esc(m.nombre)}</h3><p class="mu">Versión más reciente: v${m.version} · versión vigente: <b>v${r.vigente}</b>${m.vigentePor?` (definida por ${esc(m.vigentePor)})`:""}. Cada fila es un guardado con su huella SHA-256 (control de cambios del SGC). ${r.puedeVigencia?"Como desarrollador del plano puedes definir cuál versión es la vigente.":"Solo el desarrollador del plano ("+esc(m.autor)+") o el administrador definen la versión vigente."}</p>${r.versiones.map(x=>`<div class="lk"><span><b>v${x.version}</b>${x.version===r.vigente?` <span class="tag" style="background:#2fbf6233;color:#7ee2a8">✔ vigente</span>`:""}${x.version===m.version?` <span class="tag">más reciente</span>`:""} · ${fch(x.fecha)} · ${esc(x.autor)}${x.nota?`<br><small class="mu">${esc(x.nota)}</small>`:""}<br><small class="mu">${isoKb(x.bytes)} · SHA-256 ${esc(String(x.sha256).slice(0,16))}…</small></span><span><button class="btn ghost sm" onclick="isoAbrir('${esc(pid)}','${esc(planoId)}',${x.version===m.version?0:x.version})">Abrir</button> <button class="btn ghost sm" onclick="isoJson('${esc(planoId)}',${x.version},this)">⬇ .json</button>${r.puedeVigencia&&x.version!==r.vigente?` <button class="btn sm" onclick="isoVigente('${esc(pid)}','${esc(planoId)}',${x.version},this)">✔ Marcar vigente</button>`:""}</span></div>`).join("")}<div class="err" id="er"></div><div class="acts"><button class="btn ghost" onclick="det('${esc(pid)}')">Volver al proyecto</button></div>`})}catch(e){alert(e.message)}}
+
+/* ============================================================
+   ===== CONSUMOS Y FACTURACION · consola de administracion =====
+   Muestra, por Organizacion, el espacio usado frente al limite del plan,
+   los ingresos a las herramientas, las descargas (tipo y tamano), las
+   subidas y los usuarios; permite fijar el plan y generar la factura del
+   mes. Datos del modulo del servidor (sgcUso, sgcPlan, sgcFactura); si
+   aun no esta desplegado, se avisa con claridad.
+   ============================================================ */
+const money=(v,m)=>{try{return new Intl.NumberFormat("es-CO",{style:"currency",currency:m||"COP",maximumFractionDigits:0}).format(+v||0)}catch(e){return (m||"COP")+" "+Math.round(+v||0).toLocaleString("es-CO")}};
+const mbF=v=>{v=+v||0;return v>=1024?(v/1024).toFixed(2)+" GB":v.toFixed(v<10?2:0)+" MB"};
+const mesActual=()=>new Date().toISOString().slice(0,7);
+const mesRango=p=>{const a=p.split("-").map(Number),y=a[0],m=a[1];return{d0:new Date(Date.UTC(y,m-1,1)).toISOString(),d1:new Date(Date.UTC(y,m,1)).toISOString()}};
+const mesNom=p=>{const a=p.split("-").map(Number);return new Date(Date.UTC(a[0],a[1]-1,1)).toLocaleDateString("es-CO",{month:"long",year:"numeric"})};
+let USOPER=mesActual();
+function noServidor(e){return /no permitida|is not defined|no reconoc|Accion|Acción/i.test(e&&e.message||"")}
+async function consumos(){
+  modal({w:1,h:`<h3>📊 Consumos y facturación</h3>
+   <div class="g2" style="align-items:end"><div><label>Periodo</label><input id="uper" type="month" value="${USOPER}"></div>
+   <div class="acts" style="margin:0"><button class="btn ghost sm" onclick="reindexUso()" title="Recalcula el espacio ocupado recorriendo lo almacenado">↻ Recalcular espacio</button><button class="btn ghost sm" onclick="facturasList('')">🧾 Todas las facturas</button></div></div>
+   <div class="err" id="er"></div><div id="usobody"><p class="mu">Cargando consumos…</p></div>`});
+  $("#uper").onchange=e=>{USOPER=e.target.value;consumosCarga()};
+  consumosCarga();
+}
+async function consumosCarga(){
+  const el=$("#usobody");if(!el)return;el.innerHTML=`<p class="mu">Cargando consumos de ${esc(mesNom(USOPER))}…</p>`;
+  try{
+    const rg=mesRango(USOPER);
+    const res=await Promise.all([api({a:"sgcUsoResumen",desde:rg.d0,hasta:rg.d1}),api({a:"sgcPlanes"}).catch(()=>({planes:[]}))]);
+    const r=res[0],pl=res[1],planes={};(pl.planes||[]).forEach(p=>planes[p.miembroId]=p);
+    const M=(r.miembros||[]).slice().sort((a,b)=>(b.espacioMB+b.ingresos*1e3)-(a.espacioMB+a.ingresos*1e3));
+    if(!M.length){el.innerHTML=`<p class="mu">Aún no hay organizaciones registradas.</p>`;return}
+    el.innerHTML=`<div class="mu" style="margin:2px 0 10px">${esc(mesNom(USOPER))} · ${M.length} organización(es)</div>`+M.map(m=>usoCard(m,planes[m.miembroId])).join("");
+  }catch(e){
+    el.innerHTML=noServidor(e)
+      ?`<div class="cob"><div><b>El módulo de consumos aún no está activo en el servidor.</b><div class="mu">Pega la versión nueva de <code>SIG_Miembros.gs</code> en Apps Script y vuelve a desplegar. Mientras tanto, la consola funciona pero no hay datos.</div></div></div>`
+      :`<p class="err">${esc(e.message)}</p>`;
+  }
+}
+function usoCard(m,plan){
+  const lim=+m.limiteEspacioMB||0,pct=lim>0?Math.min(100,m.espacioMB/lim*100):0,sobre=lim>0&&m.espacioMB>lim;
+  const barcol=sobre?"var(--er)":pct>85?"#ffc861":"var(--m)";
+  const tipos=Object.entries(m.tiposDesc||{}).sort((a,b)=>b[1]-a[1]).slice(0,6).map(e=>`<span class="tag">${esc(e[0])} ·${e[1]}</span>`).join("")||`<span class="mu">—</span>`;
+  const tools=Object.entries(m.toolset||{}).sort((a,b)=>b[1]-a[1]).map(e=>`<span class="tag">${esc(e[0])} ·${e[1]}</span>`).join("")||`<span class="mu">—</span>`;
+  const ico={login:"🔑",herramienta:"🧰",descarga:"⬇",subida:"⬆",borrado:"🗑"};
+  const ult=(m.ultimos||[]).slice(0,12).map(x=>`<div class="lk"><span>${ico[x.tipo]||"·"} ${esc(x.detalle||x.tipo)}${x.bytes?` · ${mbF(x.bytes/1048576)}`:""}</span><small class="mu">${new Date(x.fecha).toLocaleString("es-CO",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</small></div>`).join("")||`<span class="mu">Sin actividad en el periodo.</span>`;
+  const et=(typeof estTag==="function")?estTag(m.estadoSIG):`<span class="tag">${esc(m.estadoSIG||"")}</span>`;
+  return `<div class="cm" style="margin:8px 0">
+   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:16px">${esc(m.nombre)}</b> ${et}<span class="tag" title="Plan">${esc(m.plan||"Sin plan")}</span><span class="sp" style="flex:1"></span><span class="mu">${esc(m.miembroId)}</span></div>
+   <div style="margin:8px 0 4px"><div class="mu" style="font-size:12px">Espacio: <b>${mbF(m.espacioMB)}</b>${lim>0?` de ${mbF(lim)} · ${Math.round(pct)}%${sobre?" (excedido)":""}`:" · sin límite definido"}</div>
+    <div style="height:8px;border-radius:6px;background:#1b2740;overflow:hidden;margin-top:3px"><div style="height:100%;width:${lim>0?Math.min(100,pct):4}%;background:${barcol}"></div></div></div>
+   <div class="kp" style="margin:8px 0"><div class="k"><span class="mu">Ingresos a herramientas</span><b>${m.herramientas||0}</b></div><div class="k"><span class="mu">Descargas</span><b>${m.descargas||0}</b><small class="mu">${mbF((m.bytesDesc||0)/1048576)}</small></div><div class="k"><span class="mu">Subidas</span><b>${m.subidas||0}</b></div><div class="k"><span class="mu">Inicios de sesión</span><b>${m.ingresos||0}</b></div><div class="k"><span class="mu">Usuarios activos</span><b>${m.usuarios||0}</b></div></div>
+   <div style="margin:4px 0"><span class="mu" style="font-size:12px">Herramientas:</span> ${tools}</div>
+   <div style="margin:4px 0"><span class="mu" style="font-size:12px">Tipos de archivo descargados:</span> ${tipos}</div>
+   <details class="acc" style="margin:6px 0"><summary><span class="ic">🕒</span><span>Actividad reciente<small>Últimos eventos del periodo</small></span></summary><div class="in">${ult}</div></details>
+   <div class="acts"><button class="btn ghost sm" onclick="planEditor('${esc(m.miembroId)}','${esc(String(m.nombre).replace(/'/g,"’"))}')">⚙ Plan y límites</button><button class="btn sm" onclick="genFactura('${esc(m.miembroId)}')">🧾 Generar factura del mes</button><button class="btn ghost sm" onclick="facturasList('${esc(m.miembroId)}')">Ver facturas</button></div>
+  </div>`;
+}
+async function reindexUso(){const e=$("#er");if(e)e.textContent="Recalculando espacio…";try{await api({a:"sgcUsoReindexar"});if(e)e.textContent="";if(typeof msgOk==="function")msgOk("Espacio recalculado.");consumosCarga()}catch(x){if(e)e.textContent=noServidor(x)?"El módulo del servidor aún no está desplegado.":x.message}}
+async function planEditor(mid,nombre){
+  let pl={};try{const r=await api({a:"sgcPlanes"});pl=(r.planes||[]).find(p=>p.miembroId===mid)||{}}catch(e){}
+  let addons=[];try{addons=typeof pl.addons==="string"?JSON.parse(pl.addons||"[]"):(pl.addons||[])}catch(e){addons=[]}
+  const V=(k,d)=>pl[k]!=null&&pl[k]!==""?pl[k]:d;
+  modal(`<h3>Plan y límites · ${esc(nombre)}</h3>
+   <div class="g2"><div><label>Nombre del plan</label><input id="pl_plan" value="${esc(V("plan","Membresía mensual"))}"></div><div><label>Moneda</label><input id="pl_mon" value="${esc(V("moneda","COP"))}"></div></div>
+   <div class="g2"><div><label>Mensualidad (incluye el modelador)</label><input id="pl_men" type="number" min="0" value="${V("mensualidad",0)}"></div><div><label>Límite de espacio (MB)</label><input id="pl_lim" type="number" min="0" value="${V("limiteEspacioMB",0)}"></div></div>
+   <div class="g2"><div><label>Descargas incluidas / mes</label><input id="pl_idc" type="number" min="0" value="${V("incluidoDescargas",0)}"></div><div><label>Usos incluidos / mes</label><input id="pl_ius" type="number" min="0" value="${V("incluidoUsos",0)}"></div></div>
+   <div class="g2"><div><label>Precio por GB extra</label><input id="pl_peg" type="number" min="0" value="${V("precioEspacioExtraGB",0)}"></div><div><label>Precio por descarga extra</label><input id="pl_pde" type="number" min="0" value="${V("precioDescargaExtra",0)}"></div></div>
+   <div class="g2"><div><label>Precio por uso extra</label><input id="pl_pue" type="number" min="0" value="${V("precioUsoExtra",0)}"></div><div></div></div>
+   <label>Adicionales fijos (add-ons) — uno por línea: <i>nombre = valor</i></label>
+   <textarea id="pl_add" rows="3" placeholder="Cotizador web = 30000">${esc(addons.map(a=>`${a.nombre} = ${a.valor}`).join("\n"))}</textarea>
+   <label>Notas</label><input id="pl_not" value="${esc(V("notas",""))}">
+   <div class="err" id="er"></div><div class="acts"><button class="btn ghost" onclick="cerrar()">Cancelar</button><button class="btn" id="go">Guardar plan</button></div>`);
+  const go=$("#go");go.onclick=busy(go,async()=>{
+    const add=($("#pl_add").value||"").split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{const i=l.lastIndexOf("=");return{nombre:(i<0?l:l.slice(0,i)).trim(),valor:+((i<0?"0":l.slice(i+1)).replace(/[^\d.-]/g,""))||0}});
+    await api({a:"sgcPlanGuardar",miembroId:mid,plan:$("#pl_plan").value,moneda:$("#pl_mon").value,mensualidad:$("#pl_men").value,limiteEspacioMB:$("#pl_lim").value,incluidoDescargas:$("#pl_idc").value,incluidoUsos:$("#pl_ius").value,precioEspacioExtraGB:$("#pl_peg").value,precioDescargaExtra:$("#pl_pde").value,precioUsoExtra:$("#pl_pue").value,addons:add,notas:$("#pl_not").value});
+    if(typeof msgOk==="function")msgOk("Plan guardado.");consumos();
+  });
+}
+async function genFactura(mid){try{const r=await api({a:"sgcFacturaGenerar",miembroId:mid,periodo:USOPER});if(r&&r.factura)verFactura(r.factura);}catch(e){alert(noServidor(e)?"El módulo del servidor aún no está desplegado.":e.message)}}
+async function facturasList(mid){
+  try{const r=await api({a:"sgcFacturaListar",miembroId:mid||undefined});const F=r.facturas||[];
+    modal({w:1,h:`<h3>🧾 Facturas${mid?" · "+esc(mid):""}</h3>${F.length?F.map(f=>`<div class="lk"><span><b>${esc(f.numero)}</b> · ${esc(f.nombre||f.miembroId)} · ${esc(f.periodo)} · ${esc(f.estado)}</span><span><b>${money(f.total,f.moneda)}</b> <button class="btn ghost sm" onclick="verFacturaNum('${esc(f.numero)}')">Ver</button></span></div>`).join(""):'<p class="mu">Sin facturas emitidas.</p>'}<div class="acts"><button class="btn ghost" onclick="consumos()">Volver a consumos</button></div>`});
+  }catch(e){alert(noServidor(e)?"El módulo del servidor aún no está desplegado.":e.message)}
+}
+async function verFacturaNum(n){try{const r=await api({a:"sgcFacturaVer",numero:n});if(r&&r.factura)verFactura(r.factura)}catch(e){alert(e.message)}}
+async function misConsumos(){
+  modal({w:1,h:`<h3>📊 Mis consumos</h3><div id="miuso"><p class="mu">Cargando tu consumo…</p></div>`});
+  try{
+    const rg=mesRango(mesActual());
+    const r=await api({a:"sgcUsoMiembro",desde:rg.d0,hasta:rg.d1});
+    const c=r.consumo||{},pl=r.plan||{},lim=+pl.limiteEspacioMB||0,pct=lim>0?Math.min(100,r.espacioMB/lim*100):0,sobre=lim>0&&r.espacioMB>lim;
+    const tipos=Object.entries(c.tiposDesc||{}).sort((a,b)=>b[1]-a[1]).slice(0,8).map(e=>`<span class="tag">${esc(e[0])} ·${e[1]}</span>`).join("")||`<span class="mu">—</span>`;
+    const tools=Object.entries(c.toolset||{}).sort((a,b)=>b[1]-a[1]).map(e=>`<span class="tag">${esc(e[0])} ·${e[1]}</span>`).join("")||`<span class="mu">—</span>`;
+    const fac=r.factura;
+    $("#miuso").innerHTML=`<div class="mu" style="margin:-4px 0 8px">${esc(r.miembro&&r.miembro.nombre||"")} · ${esc(mesNom(mesActual()))} · plan <b>${esc(pl.plan||"Sin plan")}</b></div>
+     <div style="margin:6px 0"><div class="mu" style="font-size:12px">Espacio usado: <b>${mbF(r.espacioMB)}</b>${lim>0?` de ${mbF(lim)} · ${Math.round(pct)}%${sobre?" (excedido)":""}`:" · sin límite"}</div><div style="height:8px;border-radius:6px;background:#1b2740;overflow:hidden;margin-top:3px"><div style="height:100%;width:${lim>0?Math.min(100,pct):4}%;background:${sobre?"var(--er)":"var(--m)"}"></div></div></div>
+     <div class="kp" style="margin:8px 0"><div class="k"><span class="mu">Ingresos a herramientas</span><b>${c.herramientas||0}</b></div><div class="k"><span class="mu">Descargas</span><b>${c.descargas||0}</b><small class="mu">${mbF((c.bytesDesc||0)/1048576)}</small></div><div class="k"><span class="mu">Subidas</span><b>${c.subidas||0}</b></div><div class="k"><span class="mu">Inicios de sesión</span><b>${c.ingresos||0}</b></div></div>
+     <div style="margin:4px 0"><span class="mu" style="font-size:12px">Herramientas usadas:</span> ${tools}</div>
+     <div style="margin:4px 0"><span class="mu" style="font-size:12px">Tipos de archivo descargados:</span> ${tipos}</div>
+     ${fac?`<div class="cob" style="margin-top:10px"><div style="flex:1"><b>Factura ${esc(fac.numero)} · ${esc(fac.periodo)}</b><div class="mu">Total: ${money(fac.total,fac.moneda)} · ${esc(fac.estado)}</div></div><button class="btn sm" onclick="verFacturaNum('${esc(fac.numero)}')">Ver / descargar</button></div>`:`<p class="mu" style="margin-top:10px">Aún no tienes una factura emitida.</p>`}`;
+  }catch(e){$("#miuso").innerHTML=noServidor(e)?`<p class="mu">El módulo de consumos aún no está activo en el servidor.</p>`:`<p class="err">${esc(e.message)}</p>`}
+}
+function verFactura(f){
+  const d=f.detalle||{},mon=f.moneda||"COP",logo=(typeof L!=="undefined"&&L.ent)||"";
+  const fila=(c,q,val)=>`<tr><td>${esc(c)}</td><td style="text-align:center">${q==null?"":esc(String(q))}</td><td style="text-align:right">${money(val,mon)}</td></tr>`;
+  const addFilas=(d.addons||[]).map(a=>fila(a.nombre||"Adicional",1,a.valor||0)).join("");
+  const w=window.open("","_blank");if(!w){alert("Permite las ventanas emergentes para ver la factura.");return}
+  const H=`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(f.numero)}</title>
+   <style>:root{--az:#1f6fd1;--ac:#f59e0b}*{box-sizing:border-box}body{margin:0;font:13px/1.5 system-ui,Segoe UI,Arial;color:#0f1a2b}
+   .hd{background:linear-gradient(120deg,#0b1222,#13223c);color:#eaf1fb;padding:18px 26px;display:flex;align-items:center;gap:14px}.hd img{height:40px}.hd b{font-size:16px}.hd span{opacity:.8;font-size:12px}
+   .acb{height:5px;background:linear-gradient(90deg,var(--az),var(--ac))}.wrap{padding:22px 26px;max-width:820px;margin:auto}
+   h1{font-size:18px;margin:0}.mu{color:#5a6b82}.row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:14px 0}
+   table{width:100%;border-collapse:collapse;margin:12px 0}th,td{padding:7px 8px;border-bottom:1px solid #e6ebf2}th{text-align:left;color:var(--az);font-size:12px}
+   .tot{display:flex;justify-content:flex-end;margin-top:8px}.tot table{width:auto;min-width:280px}.tot .g{font-size:17px;font-weight:700;color:#0b1222}
+   .pay{margin-top:16px;border:1px solid #e6ebf2;border-radius:10px;padding:10px 14px;background:#f7fafc}.pay b{color:var(--az)}
+   .ft{margin-top:18px;border-top:1px solid #e6ebf2;padding-top:10px;color:#64748b;font-size:11px;display:flex;justify-content:space-between}
+   @media print{.no{display:none}}</style></head><body>
+   <div class="hd">${logo?`<img src="${logo}">`:""}<div><b>${esc(f.titular||"Industrias I.A. Col")}</b><br><span>${esc(f.red||"")}</span></div></div><div class="acb"></div>
+   <div class="wrap"><div class="row"><div><h1>Cuenta de cobro ${esc(f.numero)}</h1><div class="mu">Periodo ${esc(f.periodo)} · emitida ${esc(String(f.emitida).slice(0,10))}</div></div>
+    <div style="text-align:right"><b>${esc(f.nombre||f.miembroId)}</b><div class="mu">${esc(f.miembroId)}${f.nit?" · NIT "+esc(f.nit):""}</div></div></div>
+   <table><thead><tr><th>Concepto</th><th style="text-align:center">Cant.</th><th style="text-align:right">Valor</th></tr></thead><tbody>
+    ${fila("Membresía mensual (incluye el modelador Isoflux)",1,f.mensualidad)}
+    ${(+f.espacioExtraGB>0)?fila(`Espacio adicional (${d.extraGB||f.espacioExtraGB} GB sobre ${mbF(d.limMB||0)})`,d.extraGB||f.espacioExtraGB,f.cargoEspacio):""}
+    ${(+f.descargasExtra>0)?fila("Descargas adicionales",f.descargasExtra,f.cargoDescargas):""}
+    ${(+f.usosExtra>0)?fila("Usos de herramientas adicionales",f.usosExtra,f.cargoUsos):""}
+    ${addFilas}
+   </tbody></table>
+   <div class="tot"><table><tr><td class="mu">Subtotal</td><td style="text-align:right">${money(f.subtotal,mon)}</td></tr><tr><td class="g">Total a pagar</td><td style="text-align:right" class="g">${money(f.total,mon)}</td></tr></table></div>
+   <div class="pay"><b>Medios de pago:</b> Nequi · Nu · Daviplata · llaves Bre-B. El administrador confirma el pago. <div class="mu" style="font-size:11px;margin-top:4px">Consumos del periodo: ${d.consumo?`${d.consumo.ingresos||0} inicios · ${d.consumo.herramientas||0} usos · ${d.consumo.descargas||0} descargas · ${d.consumo.subidas||0} subidas · espacio ${mbF(d.espMB||f.espacioMB)}`:""}</div></div>
+   <div class="ft"><span>${esc(f.titular||"Industrias I.A. Col")} · ENTALPIA LABS</span><span>Sello ${esc(f.sello||"")}</span></div>
+   <div class="acts no" style="text-align:center;margin-top:16px"><button onclick="print()" style="padding:9px 16px;border-radius:8px;border:0;background:var(--az);color:#fff;font-size:13px;cursor:pointer">Imprimir / Guardar PDF</button></div>
+   </div></body></html>`;
+  w.document.write(H);w.document.close();
+}
 
 render();if(INV)gask();else if(VER)verificar(VER);else if(AUD)audAsk();
 </script></body></html>

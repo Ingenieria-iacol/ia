@@ -90,6 +90,13 @@ const HOJAS = {
   Planos: ['planoId', 'proyectoId', 'nombre', 'version', 'fileId', 'bytes', 'nodos', 'tuberias', 'fondos', 'sha256', 'autor', 'email', 'creado', 'actualizado', 'actualizadoPor', 'estado', 'miniatura', 'nota', 'vigente', 'vigentePor', 'vigenteFecha', 'vigenteFijada', 'borradorId', 'borradorRev', 'borradorFecha', 'borradorPor'],
   PlanTrabajo: ['proyectoId', 'planoId', 'version', 'orden', 'id', 'fase', 'actividad', 'dias', 'predecesora', 'inicio', 'fin', 'responsable', 'avance', 'autor', 'fecha'],
   PlanosVersiones: ['planoId', 'version', 'fileId', 'bytes', 'sha256', 'autor', 'email', 'fecha', 'nota'],
+  // ---- Consumos y facturación (módulo de administración de recursos por cuenta) ----
+  // Registro de eventos de uso de cada cuenta (ingresos, uso de herramientas, descargas, subidas).
+  Consumos: ['n', 'fecha', 'email', 'miembroId', 'tipo', 'detalle', 'bytes', 'proyectoId', 'meta'],
+  // Plan y límites de cada Organización; base para calcular la factura mensual.
+  Planes: ['miembroId', 'plan', 'moneda', 'mensualidad', 'limiteEspacioMB', 'incluidoDescargas', 'incluidoUsos', 'precioEspacioExtraGB', 'precioDescargaExtra', 'precioUsoExtra', 'addons', 'notas', 'actualizadoPor', 'actualizado'],
+  // Facturas y resúmenes mensuales emitidos por el administrador.
+  Facturas: ['numero', 'miembroId', 'periodo', 'emitida', 'emitidaPor', 'moneda', 'mensualidad', 'espacioMB', 'espacioExtraGB', 'cargoEspacio', 'descargas', 'descargasExtra', 'cargoDescargas', 'usos', 'usosExtra', 'cargoUsos', 'addonsTotal', 'subtotal', 'total', 'estado', 'detalleJson', 'sello'],
 };
 
 // ---------- ROUTER ----------
@@ -170,6 +177,18 @@ function sigApi(b, u) {
       case 'sgcFormEnviar':      return sigFormEnviar(u, b);
       case 'sgcFormSolicitudes': return sigFormSolicitudes(u);
       case 'sgcFormRevocar':     return sigFormRevocar(u, b.token);
+      // ---- consumos y facturación ----
+      case 'sgcUsoEvento':       return sigUsoEvento(u, b);
+      case 'sgcUsoResumen':      if (!esAdmin) break; return sigUsoResumen(b);
+      case 'sgcUsoMiembro':      return sigUsoMiembro(u, b);
+      case 'sgcUsoReindexar':    if (!esAdmin) break; return sigUsoReindexar();
+      case 'sgcPlanes':          if (!esAdmin) break; return sigPlanes();
+      case 'sgcPlanGuardar':     if (!esAdmin) break; return sigPlanGuardar(u, b);
+      case 'sgcFacturaGenerar':  if (!esAdmin) break; return sigFacturaGenerar(u, b);
+      case 'sgcFacturaListar':   if (!esAdmin) break; return sigFacturaListar(b);
+      case 'sgcFacturaMia':      return sigFacturaMia(u);
+      case 'sgcFacturaVer':      return sigFacturaVer(u, b.numero);
+      case 'sgcFacturaEstado':   if (!esAdmin) break; return sigFacturaEstado(u, b);
     }
     return { error: 'Acción no permitida.' };
   } catch (e) {
@@ -1879,4 +1898,233 @@ function sigLlenarCopia_(file, codigo, pj, m) {
     });
   }
   return n;
+}
+
+// ======================================================================
+// ===== MÓDULO · CONSUMOS Y FACTURACIÓN (administración de recursos) ====
+// Mide, por cuenta/Organización, el espacio usado, las descargas (tipo,
+// fecha, tamaño), las subidas y cuántas veces se ingresa al modelador u
+// otras herramientas; con eso el administrador fija los límites del plan,
+// genera el resumen y la factura mensual, y cada integrante ve su reporte.
+// La demanda de uso se registra con eventos autenticados por token, de modo
+// que cada evento queda atado a la cuenta real (no se puede falsear otra).
+// ======================================================================
+const USO_TIPOS = ['login', 'herramienta', 'descarga', 'subida', 'borrado'];
+const USO_GB = 1024 * 1024 * 1024, USO_MB = 1024 * 1024;
+
+/** Registra un evento de consumo. Uso interno (hooks del servidor) y público (sgcUsoEvento). */
+function sigUsoLog_(email, miembroId, tipo, detalle, bytes, proyectoId, meta) {
+  if (!email || USO_TIPOS.indexOf(tipo) < 0) return;
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(20000); } catch (e) { return; }
+  try {
+    const sh = sigHoja_('Consumos'), n = sh.getLastRow();  // consecutivo
+    sh.appendRow([n, sigAhora_(), String(email).toLowerCase(), miembroId || '', tipo,
+      String(detalle || '').slice(0, 300), Math.max(0, Math.round(+bytes || 0)),
+      proyectoId || '', meta ? (typeof meta === 'string' ? meta : JSON.stringify(meta)).slice(0, 500) : '']);
+    delete SIG_RD_['Consumos'];
+  } finally { lock.releaseLock(); }
+}
+
+/** Acción pública: el cliente (portal o Isoflux) reporta un evento de la cuenta en sesión. */
+function sigUsoEvento(u, b) {
+  const tipo = String(b.tipo || '');
+  if (USO_TIPOS.indexOf(tipo) < 0) return { error: 'Tipo de evento no válido.' };
+  const v = sigVinculo_(u.email), mid = v ? v.miembroId : '';
+  sigUsoLog_(u.email, mid, tipo, b.detalle, b.bytes, b.proyectoId, b.meta);
+  return { ok: true };
+}
+
+/** proyectoId -> miembroId (según la hoja Proyectos). */
+function sigMapaProyectoMiembro_() {
+  const m = {};
+  try { rows('Proyectos').forEach(p => { m[String(p.id)] = p.miembroId || ''; }); } catch (e) {}
+  return m;
+}
+
+/** Espacio ocupado por Organización (bytes), autoritativo desde lo que guarda el SIG:
+ *  planos vigentes + versiones, registros (PDF/fuente), logos vigentes y archivos de la
+ *  bitácora de campo; se complementa con las subidas/borrados registrados de otros orígenes. */
+function sigEspacioPorMiembro_() {
+  const esp = {}, add = (mid, by) => { if (mid) esp[mid] = (esp[mid] || 0) + (+by || 0); };
+  const pm = sigMapaProyectoMiembro_();
+  try { sigLeer_('Planos').forEach(p => add(pm[String(p.proyectoId)], p.bytes)); } catch (e) {}
+  try { sigLeer_('PlanosVersiones').forEach(p => { const pl = sigLeer_('Planos').find(x => x.planoId === p.planoId); add(pl ? pm[String(pl.proyectoId)] : '', p.bytes); }); } catch (e) {}
+  try { sigLeer_('Logos').filter(l => String(l.vigente) === 'sí' || l.vigente === true).forEach(l => add(l.miembroId, l.bytes)); } catch (e) {}
+  try {
+    sigLeer_('Registros').forEach(r => { if (!r.miembroId) return; try { const f = DriveApp.getFileById(r.pdfId || r.fileId); add(r.miembroId, f.getSize()); } catch (e) {} });
+  } catch (e) {}
+  return esp;
+}
+
+/** Agrega los eventos del periodo por Organización. desde/hasta en ISO (o vacío = histórico). */
+function sigAgrega_(desde, hasta) {
+  const d0 = desde ? new Date(desde) : null, d1 = hasta ? new Date(hasta) : null;
+  const vin = {}; sigLeer_('MiembroUsuarios').forEach(v => { vin[String(v.email).toLowerCase()] = v.miembroId; });
+  const acc = {};
+  const base = () => ({ login: 0, herramienta: 0, descarga: 0, subida: 0, borrado: 0, bytesDesc: 0, bytesSub: 0, tipos: {}, toolset: {}, usuarios: {}, ultimos: [] });
+  sigLeer_('Consumos').forEach(e => {
+    const f = e.fecha instanceof Date ? e.fecha : new Date(e.fecha);
+    if (d0 && f < d0) return; if (d1 && f > d1) return;
+    const mid = e.miembroId || vin[String(e.email).toLowerCase()] || '(sin organización)';
+    const a = acc[mid] || (acc[mid] = base());
+    if (a[e.tipo] != null) a[e.tipo]++;
+    if (e.tipo === 'descarga') { a.bytesDesc += (+e.bytes || 0); const t = (String(e.detalle).split('.').pop() || '?').toUpperCase().slice(0, 5); a.tipos[t] = (a.tipos[t] || 0) + 1; }
+    if (e.tipo === 'subida') a.bytesSub += (+e.bytes || 0);
+    if (e.tipo === 'herramienta') { const t = String(e.detalle || 'App'); a.toolset[t] = (a.toolset[t] || 0) + 1; }
+    a.usuarios[String(e.email).toLowerCase()] = 1;
+    a.ultimos.push({ fecha: f.toISOString(), tipo: e.tipo, detalle: String(e.detalle || ''), bytes: +e.bytes || 0, email: e.email });
+  });
+  Object.keys(acc).forEach(k => { acc[k].ultimos = acc[k].ultimos.sort((x, y) => y.fecha.localeCompare(x.fecha)).slice(0, 40); acc[k].usuarios = Object.keys(acc[k].usuarios).length; });
+  return acc;
+}
+
+function sigPlanDe_(miembroId) {
+  const p = sigLeer_('Planes').find(x => x.miembroId === miembroId);
+  if (p) return p;
+  return { miembroId: miembroId, plan: 'Sin plan', moneda: 'COP', mensualidad: 0, limiteEspacioMB: 0, incluidoDescargas: 0, incluidoUsos: 0, precioEspacioExtraGB: 0, precioDescargaExtra: 0, precioUsoExtra: 0, addons: '', notas: '' };
+}
+
+/** Resumen para el administrador: una fila por Organización con su plan y sus consumos. */
+function sigUsoResumen(b) {
+  const esp = sigEspacioPorMiembro_(), agg = sigAgrega_(b.desde, b.hasta);
+  const planes = {}; sigLeer_('Planes').forEach(p => planes[p.miembroId] = p);
+  const miembros = sigLeer_('Miembros').map(m => {
+    const a = agg[m.miembroId] || { login: 0, herramienta: 0, descarga: 0, subida: 0, bytesDesc: 0, bytesSub: 0, tipos: {}, toolset: {}, usuarios: 0, ultimos: [] };
+    const plan = sigPlanDe_(m.miembroId), espMB = (esp[m.miembroId] || 0) / USO_MB;
+    return {
+      miembroId: m.miembroId, nombre: m.nombreComercial || m.razonSocial || m.miembroId, estadoSIG: m.estadoSIG,
+      espacioMB: Math.round(espMB * 100) / 100, limiteEspacioMB: +plan.limiteEspacioMB || 0,
+      ingresos: a.login, herramientas: a.herramienta, toolset: a.toolset,
+      descargas: a.descarga, bytesDesc: a.bytesDesc, tiposDesc: a.tipos,
+      subidas: a.subida, usuarios: a.usuarios, plan: plan.plan || 'Sin plan',
+      mensualidad: +plan.mensualidad || 0, moneda: plan.moneda || 'COP', ultimos: a.ultimos,
+    };
+  });
+  return { periodo: { desde: b.desde || '', hasta: b.hasta || '' }, miembros: miembros, generado: sigAhora_() };
+}
+
+/** Reporte de una Organización (el propio integrante, o el admin indicando miembroId). */
+function sigUsoMiembro(u, b) {
+  const esAdmin = u.rol === 'admin';
+  let mid = b.miembroId;
+  if (!esAdmin) { const v = sigVinculo_(u.email); if (!v) return { error: 'Tu cuenta no está vinculada a una organización.' }; mid = v.miembroId; }
+  if (!mid) return { error: 'Organización no indicada.' };
+  const m = sigMiembro_(mid) || { miembroId: mid, nombreComercial: mid };
+  const esp = (sigEspacioPorMiembro_()[mid] || 0), plan = sigPlanDe_(mid);
+  const agg = sigAgrega_(b.desde, b.hasta)[mid] || { login: 0, herramienta: 0, descarga: 0, subida: 0, bytesDesc: 0, bytesSub: 0, tipos: {}, toolset: {}, usuarios: 0, ultimos: [] };
+  // serie mensual (12 meses) de ingresos y descargas
+  const serie = {};
+  sigLeer_('Consumos').forEach(e => {
+    if ((e.miembroId || '') !== mid) return;
+    const f = e.fecha instanceof Date ? e.fecha : new Date(e.fecha), k = f.toISOString().slice(0, 7);
+    const s = serie[k] || (serie[k] = { login: 0, herramienta: 0, descarga: 0, subida: 0, bytesSub: 0 });
+    if (s[e.tipo] != null) s[e.tipo]++; if (e.tipo === 'subida') s.bytesSub += (+e.bytes || 0);
+  });
+  return {
+    miembro: { miembroId: mid, nombre: m.nombreComercial || m.razonSocial || mid, estadoSIG: m.estadoSIG },
+    plan: plan, espacioMB: Math.round(esp / USO_MB * 100) / 100,
+    consumo: { ingresos: agg.login, herramientas: agg.herramienta, toolset: agg.toolset, descargas: agg.descarga, bytesDesc: agg.bytesDesc, tiposDesc: agg.tipos, subidas: agg.subida, usuarios: agg.usuarios, ultimos: agg.ultimos },
+    serie: serie, factura: sigFacturaUltima_(mid), periodo: { desde: b.desde || '', hasta: b.hasta || '' }, generado: sigAhora_(),
+  };
+}
+
+/** Recorre lo almacenado y deja una foto del espacio por Organización (informativo). */
+function sigUsoReindexar() {
+  const esp = sigEspacioPorMiembro_(), r = Object.keys(esp).map(k => ({ miembroId: k, espacioMB: Math.round(esp[k] / USO_MB * 100) / 100 }));
+  return { ok: true, espacios: r, generado: sigAhora_() };
+}
+
+function sigPlanes() { return { planes: sigLeer_('Planes'), generado: sigAhora_() }; }
+
+function sigPlanGuardar(u, b) {
+  if (!b.miembroId) return { error: 'Falta la Organización.' };
+  if (!sigMiembro_(b.miembroId)) return { error: 'La Organización no existe.' };
+  const sh = sigHoja_('Planes'), datos = sigLeer_('Planes'), i = datos.findIndex(x => x.miembroId === b.miembroId);
+  const fila = [b.miembroId, b.plan || '', b.moneda || 'COP', +b.mensualidad || 0, +b.limiteEspacioMB || 0,
+    +b.incluidoDescargas || 0, +b.incluidoUsos || 0, +b.precioEspacioExtraGB || 0, +b.precioDescargaExtra || 0,
+    +b.precioUsoExtra || 0, typeof b.addons === 'string' ? b.addons : JSON.stringify(b.addons || []), b.notas || '', u.email, sigAhora_()];
+  if (i >= 0) sh.getRange(datos[i]._fila, 1, 1, fila.length).setValues([fila]);
+  else sh.appendRow(fila);
+  delete SIG_RD_['Planes'];
+  sigBitacora_(u.email, b.miembroId, 'plan_actualizado', { plan: b.plan, mensualidad: +b.mensualidad || 0 });
+  return { ok: true };
+}
+
+/** Rango [desde, hasta) de un periodo 'AAAA-MM'. */
+function sigPeriodoRango_(periodo) {
+  const [y, m] = String(periodo).split('-').map(Number);
+  const d0 = new Date(Date.UTC(y, m - 1, 1)), d1 = new Date(Date.UTC(y, m, 1));
+  return { d0: d0.toISOString(), d1: d1.toISOString() };
+}
+
+/** Genera (o recalcula) la factura del mes de una Organización aplicando su plan. */
+function sigFacturaGenerar(u, b) {
+  const mid = b.miembroId, periodo = b.periodo || sigAhora_().slice(0, 7);
+  if (!mid) return { error: 'Falta la Organización.' };
+  const m = sigMiembro_(mid); if (!m) return { error: 'La Organización no existe.' };
+  const plan = sigPlanDe_(mid), { d0, d1 } = sigPeriodoRango_(periodo);
+  const agg = sigAgrega_(d0, d1)[mid] || { login: 0, herramienta: 0, descarga: 0, subida: 0 };
+  const espMB = Math.round((sigEspacioPorMiembro_()[mid] || 0) / USO_MB * 100) / 100;
+  // adicionales medidos (sobre lo incluido en el plan)
+  const limMB = +plan.limiteEspacioMB || 0, extraGB = limMB > 0 ? Math.max(0, (espMB - limMB) / 1024) : 0;
+  const cargoEspacio = Math.round(extraGB * (+plan.precioEspacioExtraGB || 0));
+  const descExtra = Math.max(0, agg.descarga - (+plan.incluidoDescargas || 0));
+  const cargoDesc = Math.round(descExtra * (+plan.precioDescargaExtra || 0));
+  const usosExtra = Math.max(0, agg.herramienta - (+plan.incluidoUsos || 0));
+  const cargoUsos = Math.round(usosExtra * (+plan.precioUsoExtra || 0));
+  let addons = []; try { addons = typeof plan.addons === 'string' ? JSON.parse(plan.addons || '[]') : (plan.addons || []); } catch (e) { addons = []; }
+  const addonsTotal = addons.reduce((s, a) => s + (+a.valor || 0), 0);
+  const mensualidad = +plan.mensualidad || 0;
+  const subtotal = mensualidad + cargoEspacio + cargoDesc + cargoUsos + addonsTotal;
+  const total = subtotal;  // sin impuestos por ahora (empresa en constitución)
+  const detalle = { espMB: espMB, limMB: limMB, extraGB: Math.round(extraGB * 100) / 100, descExtra: descExtra, usosExtra: usosExtra, addons: addons, consumo: { ingresos: agg.login, herramientas: agg.herramienta, descargas: agg.descarga, subidas: agg.subida } };
+  const sh = sigHoja_('Facturas'), datos = sigLeer_('Facturas');
+  const existe = datos.find(x => x.miembroId === mid && String(x.periodo) === String(periodo) && x.estado !== 'anulada');
+  const numero = existe ? existe.numero : ('FAC-' + periodo.replace('-', '') + '-' + String(datos.length + 1).padStart(3, '0'));
+  const sello = sigSha_([numero, mid, periodo, total, sigAhora_()].join('|')).slice(0, 16);
+  const fila = [numero, mid, periodo, sigAhora_(), u.email, plan.moneda || 'COP', mensualidad, espMB,
+    Math.round(extraGB * 100) / 100, cargoEspacio, agg.descarga, descExtra, cargoDesc, agg.herramienta, usosExtra, cargoUsos,
+    addonsTotal, subtotal, total, 'emitida', JSON.stringify(detalle), sello];
+  if (existe) sh.getRange(existe._fila, 1, 1, fila.length).setValues([fila]);
+  else sh.appendRow(fila);
+  delete SIG_RD_['Facturas'];
+  sigBitacora_(u.email, mid, 'factura_emitida', { numero: numero, periodo: periodo, total: total });
+  return { ok: true, factura: sigFacturaObj_(sh, numero) };
+}
+
+function sigFacturaObj_(sh, numero) {
+  const f = sigLeer_('Facturas').find(x => x.numero === numero); if (!f) return null;
+  let detalle = {}; try { detalle = JSON.parse(f.detalleJson || '{}'); } catch (e) {}
+  const m = sigMiembro_(f.miembroId) || {};
+  return Object.assign({}, f, { _fila: undefined, detalle: detalle, nombre: m.nombreComercial || m.razonSocial || f.miembroId, nit: m.nit || '', titular: SIG.TITULAR, red: SIG.RED });
+}
+function sigFacturaUltima_(mid) {
+  const fs = sigLeer_('Facturas').filter(x => x.miembroId === mid && x.estado !== 'anulada').sort((a, b) => String(b.periodo).localeCompare(String(a.periodo)));
+  return fs.length ? sigFacturaObj_(sigHoja_('Facturas'), fs[0].numero) : null;
+}
+function sigFacturaListar(b) {
+  let fs = sigLeer_('Facturas');
+  if (b && b.miembroId) fs = fs.filter(x => x.miembroId === b.miembroId);
+  fs = fs.sort((a, b2) => String(b2.emitida).localeCompare(String(a.emitida)));
+  const nom = {}; sigLeer_('Miembros').forEach(m => nom[m.miembroId] = m.nombreComercial || m.razonSocial || m.miembroId);
+  return { facturas: fs.map(f => ({ numero: f.numero, miembroId: f.miembroId, nombre: nom[f.miembroId] || f.miembroId, periodo: f.periodo, emitida: f.emitida instanceof Date ? f.emitida.toISOString() : f.emitida, moneda: f.moneda, total: f.total, estado: f.estado })) };
+}
+function sigFacturaMia(u) {
+  const v = sigVinculo_(u.email); if (!v) return { error: 'Tu cuenta no está vinculada a una organización.' };
+  return { factura: sigFacturaUltima_(v.miembroId) };
+}
+function sigFacturaVer(u, numero) {
+  const f = sigLeer_('Facturas').find(x => x.numero === numero); if (!f) return { error: 'Factura no encontrada.' };
+  if (u.rol !== 'admin') { const v = sigVinculo_(u.email); if (!v || v.miembroId !== f.miembroId) return { error: 'No tienes acceso a esa factura.' }; }
+  return { factura: sigFacturaObj_(sigHoja_('Facturas'), numero) };
+}
+function sigFacturaEstado(u, b) {
+  const sh = sigHoja_('Facturas'), datos = sigLeer_('Facturas'), f = datos.find(x => x.numero === b.numero);
+  if (!f) return { error: 'Factura no encontrada.' };
+  const col = HOJAS.Facturas.indexOf('estado') + 1;
+  sh.getRange(f._fila, col).setValue(b.estado || 'emitida');
+  delete SIG_RD_['Facturas'];
+  sigBitacora_(u.email, f.miembroId, 'factura_estado', { numero: b.numero, estado: b.estado });
+  return { ok: true };
 }
