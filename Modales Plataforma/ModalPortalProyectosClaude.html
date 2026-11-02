@@ -941,7 +941,7 @@ const mbF=v=>{v=+v||0;return v>=1024?(v/1024).toFixed(2)+" GB":v.toFixed(v<10?2:
 const mesActual=()=>new Date().toISOString().slice(0,7);
 const mesRango=p=>{const a=p.split("-").map(Number),y=a[0],m=a[1];return{d0:new Date(Date.UTC(y,m-1,1)).toISOString(),d1:new Date(Date.UTC(y,m,1)).toISOString()}};
 const mesNom=p=>{const a=p.split("-").map(Number);return new Date(Date.UTC(a[0],a[1]-1,1)).toLocaleDateString("es-CO",{month:"long",year:"numeric"})};
-let USOPER=mesActual(),USOCACHE=null,FICMID=null,FICTAB="resumen",FICX={};
+let USOPER=mesActual(),USOCACHE=null,USOCACHE_CART=null,FICMID=null,FICTAB="resumen",FICX={};
 function noServidor(e){return /no permitida|is not defined|no reconoc|Accion|Acción/i.test(e&&e.message||"")}
 const ICO={login:"🔑",herramienta:"🧰",descarga:"⬇",subida:"⬆",borrado:"🗑"};
 const chips=o=>Object.entries(o||{}).sort((a,b)=>b[1]-a[1]).map(e=>`<span class="tag">${esc(e[0])} ·${e[1]}</span>`).join("")||`<span class="mu">—</span>`;
@@ -958,16 +958,18 @@ async function consumosCarga(){
   const el=$("#usobody");if(!el)return;el.innerHTML=`<p class="mu">Cargando consumos de ${esc(mesNom(USOPER))}…</p>`;
   try{
     const rg=mesRango(USOPER);
-    const res=await Promise.all([api({a:"sgcUsoResumen",desde:rg.d0,hasta:rg.d1}),api({a:"sgcPlanes"}).catch(()=>({planes:[]})),api({a:"sgcMiembros"}).catch(()=>({miembros:[]}))]);
+    const res=await Promise.all([api({a:"sgcUsoResumen",desde:rg.d0,hasta:rg.d1}),api({a:"sgcPlanes"}).catch(()=>({planes:[]})),api({a:"sgcMiembros"}).catch(()=>({miembros:[]})),api({a:"sgcCartera"}).catch(()=>({cartera:[]}))]);
     const uso=res[0],planes={},ident={};FICX={};
     (res[1].planes||[]).forEach(p=>planes[p.miembroId]=p);
     (res[2].miembros||[]).forEach(m=>ident[m.miembroId]=m);
-    const orgs={};(uso.miembros||[]).forEach(m=>{orgs[m.miembroId]=Object.assign({},m,{plan:planes[m.miembroId]||null,ident:ident[m.miembroId]||null})});
+    const cart={};((res[3]&&res[3].cartera)||[]).forEach(c=>cart[c.miembroId]=c);
+    const orgs={};(uso.miembros||[]).forEach(m=>{const cc=cart[m.miembroId]||{};orgs[m.miembroId]=Object.assign({},m,{plan:planes[m.miembroId]||null,ident:ident[m.miembroId]||null,saldo:+cc.saldo||0,vencido:+cc.vencido||0,estadoDeuda:cc.estadoDeuda||"al_dia"})});
+    USOCACHE_CART=res[3]||{cartera:[]};
     USOCACHE={orgs:orgs,periodo:USOPER};try{MM=res[2]}catch(e){}
     const L=Object.values(orgs).sort((a,b)=>(b.espacioMB+b.ingresos*1e3)-(a.espacioMB+a.ingresos*1e3));
     if(!L.length){el.innerHTML=`<p class="mu">Aún no hay organizaciones registradas.</p>`;return}
-    const tEsp=L.reduce((s,o)=>s+(+o.espacioMB||0),0),tIng=L.reduce((s,o)=>s+(+o.herramientas||0),0),tDes=L.reduce((s,o)=>s+(+o.descargas||0),0),tFac=L.reduce((s,o)=>s+(+o.mensualidad||0),0);
-    el.innerHTML=`<div class="kp" style="margin:4px 0 10px"><div class="k"><span class="mu">Organizaciones</span><b>${L.length}</b></div><div class="k"><span class="mu">Espacio total</span><b>${mbF(tEsp)}</b></div><div class="k"><span class="mu">Ingresos (mes)</span><b>${tIng}</b></div><div class="k"><span class="mu">Descargas (mes)</span><b>${tDes}</b></div><div class="k"><span class="mu">Mensualidades</span><b>${money(tFac,"COP")}</b></div></div>
+    const tEsp=L.reduce((s,o)=>s+(+o.espacioMB||0),0),tIng=L.reduce((s,o)=>s+(+o.herramientas||0),0),tDes=L.reduce((s,o)=>s+(+o.descargas||0),0),tFac=L.reduce((s,o)=>s+(+o.mensualidad||0),0),tCob=(USOCACHE_CART&&USOCACHE_CART.totalPorCobrar)||0,tVen=(USOCACHE_CART&&USOCACHE_CART.totalVencido)||0;
+    el.innerHTML=`<div class="kp" style="margin:4px 0 10px"><div class="k"><span class="mu">Organizaciones</span><b>${L.length}</b></div><div class="k"><span class="mu">Espacio total</span><b>${mbF(tEsp)}</b></div><div class="k"><span class="mu">Ingresos (mes)</span><b>${tIng}</b></div><div class="k"><span class="mu">Descargas (mes)</span><b>${tDes}</b></div><div class="k"><span class="mu">Mensualidades</span><b>${money(tFac,"COP")}</b></div><div class="k"><span class="mu">Por cobrar</span><b style="${tCob>0?"color:#ffc861":""}">${money(tCob,"COP")}</b>${tVen>0?`<small style="color:var(--er)">vencido ${money(tVen,"COP")}</small>`:""}</div></div>
      <div class="mu" style="margin:0 0 6px;font-size:12px">${esc(mesNom(USOPER))} · haz clic en una organización para ver su ficha</div>`+L.map(dirRow).join("");
   }catch(e){
     el.innerHTML=noServidor(e)
@@ -982,7 +984,7 @@ function dirRow(o){
   return `<div class="dirow" onclick="fichaInt('${esc(o.miembroId)}')" style="display:flex;gap:12px;align-items:center;padding:10px 12px;margin:6px 0;border:1px solid var(--bd,#20304d);border-radius:12px;cursor:pointer;background:#0e1a2e;transition:background .15s" onmouseover="this.style.background='#13223c'" onmouseout="this.style.background='#0e1a2e'">
    <div style="width:38px;height:38px;flex:0 0 38px;border-radius:10px;background:linear-gradient(135deg,#1f6fd1,#0a3a95);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:13px">${esc(ini)}</div>
    <div style="flex:1;min-width:0">
-     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:14.5px">${esc(o.nombre)}</b> ${(typeof estTag==="function")?estTag(o.estadoSIG):""}<span class="tag">${esc(o.plan&&o.plan.plan||o.plan||"Sin plan")}</span></div>
+     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:14.5px">${esc(o.nombre)}</b> ${(typeof estTag==="function")?estTag(o.estadoSIG):""}<span class="tag">${esc(o.plan&&o.plan.plan||o.plan||"Sin plan")}</span>${deudaBadge(o)}</div>
      <div style="height:6px;border-radius:5px;background:#1b2740;overflow:hidden;margin:5px 0 2px;max-width:320px"><div style="height:100%;width:${lim>0?Math.min(100,pct):4}%;background:${barcol}"></div></div>
      <div class="mu" style="font-size:11.5px">${mbF(o.espacioMB)}${lim>0?` / ${mbF(lim)}`:""} · 🧰 ${o.herramientas||0} · ⬇ ${o.descargas||0} · ⬆ ${o.subidas||0} · 👥 ${o.usuarios||0}</div>
    </div>
@@ -1075,7 +1077,7 @@ function ficPlan(o){
 async function ficFacturas(o){
   $("#ficbody").innerHTML=`<div class="acts" style="margin:0 0 8px"><button class="btn sm" onclick="genFactura('${esc(o.miembroId)}')">🧾 Generar factura del mes (${esc(USOPER)})</button></div><div id="ficfac"><p class="mu">Cargando facturas…</p></div>`;
   try{const r=await api({a:"sgcFacturaListar",miembroId:o.miembroId});const F=r.facturas||[];
-    $("#ficfac").innerHTML=F.length?F.map(f=>`<div class="lk"><span><b>${esc(f.numero)}</b> · ${esc(f.periodo)} · ${esc(f.estado)}</span><span><b>${money(f.total,f.moneda)}</b> <button class="btn ghost sm" onclick="verFacturaNum('${esc(f.numero)}')">Ver</button></span></div>`).join(""):`<p class="mu">Sin facturas emitidas.</p>`;
+    $("#ficfac").innerHTML=F.length?F.map(facRow).join(""):`<p class="mu">Sin facturas emitidas.</p>`;
   }catch(e){$("#ficfac").innerHTML=`<p class="err">${esc(e.message)}</p>`}
 }
 
@@ -1112,11 +1114,27 @@ async function ficDocs(o){
     $("#ficdocs").innerHTML=R.length?R.map(x=>`<div class="lk"><span>${esc(x.codigo||x.titulo||x.registroId)} <small class="mu">${esc(x.estado||"")}${x.fecha?" · "+fm(new Date(x.fecha)):""}</small></span><button class="btn ghost sm" onclick="verReg('${esc(x.registroId||x.id)}')">Ver</button></div>`).join(""):'<p class="mu">Sin documentos ni registros cargados.</p>';
   }catch(e){$("#ficdocs").innerHTML=noServidor(e)?'<p class="mu">El servidor no devolvió registros.</p>':'<p class="err">'+esc(e.message)+'</p>'}
 }
+const facCol={pagada:["#123a24","#4ad98a"],vencida:["#3a1414","#f0756c"],pendiente:["#3a2f12","#f5c24e"],emitida:["#3a2f12","#f5c24e"],anulada:["#1b2740","#8aa6c8"]};
+function facChip(ep){const c=facCol[ep]||facCol.pendiente;const t={pagada:"pagada",vencida:"vencida",pendiente:"pendiente",emitida:"pendiente",anulada:"anulada"}[ep]||ep;return `<span class="tag" style="background:${c[0]};color:${c[1]}">${esc(t)}</span>`}
+function deudaBadge(o){const e=o.estadoDeuda||"al_dia";if(e==="al_dia")return ` <span class="tag" style="background:#123a24;color:#4ad98a">al día</span>`;const col=e==="en_mora"?["#3a1414","#f0756c","en mora"]:["#3a2f12","#f5c24e","debe"];return ` <span class="tag" style="background:${col[0]};color:${col[1]}" title="Saldo pendiente">${col[2]} ${money(o.saldo||0,"COP")}</span>`}
+const MEDIOS=["Nequi","Nu","Daviplata","Bre-B","Transferencia","Efectivo","Otro"];
+function facRow(f){const ep=f.estadoPago||f.estado;const venc=f.vence?` · vence ${fm(new Date(f.vence))}`:"";const pag=ep==="pagada";
+  return `<div class="lk"><span><b>${esc(f.numero)}</b> · ${esc(f.periodo)} ${facChip(ep)}<small class="mu">${venc}${pag&&f.medioPago?" · "+esc(f.medioPago):""}</small></span>
+   <span style="white-space:nowrap"><b>${money(f.total,f.moneda)}</b> <button class="btn ghost sm" onclick="verFacturaNum('${esc(f.numero)}')">Ver</button>${pag?`<button class="btn ghost sm" onclick="pagarFactura('${esc(f.numero)}',true)">Revertir</button>`:`<button class="btn sm" onclick="pagarFactura('${esc(f.numero)}')">Registrar pago</button>`}</span></div>`}
+function pagarFactura(numero,revertir){
+  if(revertir){if(!confirm("¿Revertir el pago de "+numero+" y volver a dejarla pendiente?"))return;
+    api({a:"sgcFacturaPagar",numero:numero,revertir:true}).then(()=>{if(typeof msgOk==="function")msgOk("Pago revertido.");facRefresh()}).catch(e=>alert(e.message));return}
+  modal(`<h3>Registrar pago · ${esc(numero)}</h3><label>Medio de pago</label><select id="pg_m">${MEDIOS.map(x=>`<option>${x}</option>`).join("")}</select>
+   <label>Fecha del pago</label><input id="pg_f" type="date" value="${new Date().toISOString().slice(0,10)}">
+   <div class="err" id="er"></div><div class="acts"><button class="btn ghost" onclick="cerrar()">Cancelar</button><button class="btn" id="go">Confirmar pago</button></div>`);
+  const go=$("#go");go.onclick=busy(go,async()=>{await api({a:"sgcFacturaPagar",numero:numero,medio:$("#pg_m").value,fecha:$("#pg_f").value});if(typeof msgOk==="function")msgOk("Pago registrado.");cerrar();facRefresh()});
+}
+function facRefresh(){try{if(FICMID&&USOCACHE&&USOCACHE.orgs[FICMID]){fichaInt(FICMID);setTimeout(()=>{try{ficTab("facturas")}catch(e){}},60)}else{consumos()}}catch(e){}}
 async function verifBitacora(){try{const r=await api({a:"sgcVerificarCadena"});alert(r.ok?("✔ "+(r.mensaje||"Cadena íntegra.")):("⚠ "+(r.mensaje||"La bitácora fue alterada.")))}catch(e){alert(noServidor(e)?"Función no disponible en el servidor.":e.message)}}
 async function genFactura(mid){try{const r=await api({a:"sgcFacturaGenerar",miembroId:mid,periodo:USOPER});if(r&&r.factura){verFactura(r.factura);if(FICMID===mid&&FICTAB==="facturas"&&USOCACHE)ficFacturas(USOCACHE.orgs[mid])}}catch(e){alert(noServidor(e)?"El módulo del servidor aún no está desplegado.":e.message)}}
 async function facturasList(mid){
   try{const r=await api({a:"sgcFacturaListar",miembroId:mid||undefined});const F=r.facturas||[];
-    modal({w:1,h:`<h3>🧾 Facturas${mid?" · "+esc(mid):""}</h3>${F.length?F.map(f=>`<div class="lk"><span><b>${esc(f.numero)}</b> · ${esc(f.nombre||f.miembroId)} · ${esc(f.periodo)} · ${esc(f.estado)}</span><span><b>${money(f.total,f.moneda)}</b> <button class="btn ghost sm" onclick="verFacturaNum('${esc(f.numero)}')">Ver</button></span></div>`).join(""):'<p class="mu">Sin facturas emitidas.</p>'}<div class="acts"><button class="btn ghost" onclick="consumos()">Volver a consumos</button></div>`});
+    modal({w:1,h:`<h3>🧾 Facturas${mid?" · "+esc(mid):""}</h3>${F.length?F.map(f=>`<div class="lk"><span><b>${esc(f.numero)}</b> · ${esc(f.nombre||f.miembroId)} · ${esc(f.periodo)} ${facChip(f.estadoPago||f.estado)}</span><span><b>${money(f.total,f.moneda)}</b> <button class="btn ghost sm" onclick="verFacturaNum('${esc(f.numero)}')">Ver</button>${(f.estadoPago||f.estado)==="pagada"?"":`<button class="btn sm" onclick="pagarFactura('${esc(f.numero)}')">Pago</button>`}</span></div>`).join(""):'<p class="mu">Sin facturas emitidas.</p>'}<div class="acts"><button class="btn ghost" onclick="consumos()">Volver a consumos</button></div>`});
   }catch(e){alert(noServidor(e)?"El módulo del servidor aún no está desplegado.":e.message)}
 }
 async function verFacturaNum(n){try{const r=await api({a:"sgcFacturaVer",numero:n});if(r&&r.factura)verFactura(r.factura)}catch(e){alert(e.message)}}

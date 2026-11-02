@@ -1,402 +1,185 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planes de Suscripción - Hub de Ingeniería</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #141414; /* Fondo oscuro estilo Netflix */
-            overflow-x: hidden;
-        }
-
-        /* Efecto Metálico Azul */
-        .metallic-blue-text {
-            background: linear-gradient(to bottom, #60a5fa, #2563eb);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .metallic-btn {
-            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #1d4ed8 100%);
-            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5);
-            transition: all 0.3s ease;
-        }
-
-        .metallic-btn:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #60a5fa 50%, #2563eb 100%);
-            transform: scale(1.02);
-            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.6);
-        }
-
-        /* Tarjetas Oscuras */
-        .netflix-card {
-            background: linear-gradient(180deg, #1f1f1f 0%, #181818 100%);
-            border: 1px solid #333;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-        }
-
-        .netflix-card:hover {
-            border-color: #3b82f6;
-            box-shadow: 0 0 25px rgba(59, 130, 246, 0.2);
-        }
-
-        /* Checkmark azul brillante */
-        .check-icon {
-            color: #60a5fa;
-            text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
-        }
-
-        /* CONFIGURACIÓN Y CONTENEDORES PARA EL CARRUSEL 3D */
-        .carousel-perspective {
-            perspective: 1200px;
-            perspective-origin: center -10%;
-        }
-
-        .carousel-container {
-            position: relative;
-            width: 290px;
-            height: 480px;
-            transform-style: preserve-3d;
-            transition: transform 0.1s cubic-bezier(0.25, 1, 0.5, 1);
-            cursor: grab;
-        }
-
-        .carousel-container:active {
-            cursor: grabbing;
-        }
-
-        .carousel-item {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            left: 0;
-            top: 0;
-        }
-
-        /* Distribución geométrica precisa en 3D para 5 elementos (360 / 5 = 72 grados) */
-        /* translateZ se calcula basado en el ancho de la tarjeta para un espaciado óptimo */
-        .carousel-item:nth-child(1) { transform: rotateY(0deg) translateZ(260px); }
-        .carousel-item:nth-child(2) { transform: rotateY(72deg) translateZ(260px); }
-        .carousel-item:nth-child(3) { transform: rotateY(144deg) translateZ(260px); }
-        .carousel-item:nth-child(4) { transform: rotateY(216deg) translateZ(260px); }
-        .carousel-item:nth-child(5) { transform: rotateY(288deg) translateZ(260px); }
-
-        /* Botones de navegación */
-        .nav-btn {
-            background: rgba(31, 31, 31, 0.8);
-            border: 1px solid #444;
-            transition: all 0.3s ease;
-        }
-        .nav-btn:hover {
-            background: #2563eb;
-            border-color: #60a5fa;
-            color: white;
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planes · Isoflux · ENTALPÍA LABS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  :root{--az:#3b82f6;--az2:#1d4ed8;--ac:#f59e0b}
+  body{background:#0b0f16;color:#e6edf6;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;overflow-x:hidden}
+  .metal{background:linear-gradient(to bottom,#7cc0ff,#2563eb);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .card{background:linear-gradient(180deg,#121a28 0%,#0e1521 100%);border:1px solid #223049;border-radius:18px;transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease}
+  .card:hover{border-color:#3b82f6;box-shadow:0 0 34px rgba(59,130,246,.18);transform:translateY(-4px)}
+  .card.pop{border-color:#3b82f6;box-shadow:0 0 40px rgba(59,130,246,.25)}
+  .btn{background:linear-gradient(135deg,#1e40af,#3b82f6 55%,#1d4ed8);box-shadow:0 6px 16px -6px rgba(59,130,246,.6);transition:all .25s ease}
+  .btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+  .chk{color:#58b0ff;text-shadow:0 0 10px rgba(59,130,246,.5)}
+  .no{color:#4a586e}
+  .tag{background:#13223c;border:1px solid #27406a;color:#9fc6ff}
+  table th,table td{border-bottom:1px solid #1c2740;padding:.6rem .5rem}
+  .glow{text-shadow:0 0 18px rgba(59,130,246,.35)}
+  input[type=range]{accent-color:#3b82f6}
+  .seg{background:#0e1521;border:1px solid #223049;border-radius:999px;padding:3px}
+  .seg button{border-radius:999px;padding:.3rem .9rem;font-size:.8rem}
+  .seg button.on{background:linear-gradient(135deg,#1e40af,#3b82f6)}
+</style>
 </head>
-<body class="text-white min-h-screen flex flex-col items-center py-12 px-4 relative justify-start">
+<body class="min-h-screen">
 
-    <a href="../Modales Plataforma/interfazDeOpcionInicio.html" class="absolute top-4 right-4 md:top-8 md:right-8 px-6 py-2 border border-red-600 text-red-500 rounded hover:bg-red-600 hover:text-white transition-all duration-300 font-bold text-sm uppercase tracking-wider z-50 flex items-center gap-2">
-        <i class="fa-solid fa-right-from-bracket"></i> Salir
-    </a>
+<header class="max-w-6xl mx-auto px-5 pt-10 pb-6 text-center">
+  <div class="inline-flex items-center gap-2 tag rounded-full px-3 py-1 text-xs mb-4"><i class="fa-solid fa-bolt chk"></i> ENTALPÍA LABS · Hub de Ingeniería Pioneer's</div>
+  <h1 class="text-3xl md:text-4xl font-extrabold glow">Elige cómo usar <span class="metal">Isoflux</span></h1>
+  <p class="text-slate-400 mt-3 max-w-2xl mx-auto text-sm md:text-base">Tres formas de acceder al modelador de redes de fluidos a presión y a sus herramientas. Desde un solo proyecto hasta la capacidad total con acuerdo de permanencia.</p>
+</header>
 
-    <header class="w-full max-w-[90rem] mx-auto pt-12 pb-4 text-center">
-        <div class="mb-4">
-             <i class="fa-solid fa-layer-group text-5xl text-blue-500 drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]"></i>
-        </div>
-        <h1 class="text-3xl md:text-5xl font-bold mb-4 px-2">Selecciona el plan ideal para tu ingeniería</h1>
-        <p class="text-base md:text-lg text-gray-400 max-w-2xl mx-auto px-4">
-            Accede a herramientas avanzadas de cálculo, redes de gas, simuladores y automatizaciones. Arrastra o usa las flechas para girar el carrusel.
-        </p>
-    </header>
+<!-- PLANES -->
+<section class="max-w-6xl mx-auto px-5 grid md:grid-cols-3 gap-6 items-stretch">
 
-    <div class="w-full max-w-[90rem] flex flex-col items-center justify-center my-8 relative h-[560px] carousel-perspective select-none">
-        
-        <div id="carousel" class="carousel-container">
-
-            <div class="carousel-item">
-                <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between h-full w-full">
-                    <div>
-                        <div class="mb-4">
-                            <h3 class="text-xl font-bold mb-1">Libre</h3>
-                            <p class="text-xs text-gray-400 font-medium">Acceso esencial inicial</p>
-                            <div class="mt-3 flex items-baseline">
-                                <span class="text-3xl font-bold">$0</span>
-                            </div>
-                        </div>
-                        <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Portal Acceso I.A. (App Móvil)
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Calculadora de Ventilación
-                            </li>
-                            <li class="flex items-start text-gray-600 line-through">
-                                <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Gmail Chat: Centro Mandos
-                            </li>
-                            <li class="flex items-start text-gray-600 line-through">
-                                <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Asistencia Técnica e Investigación
-                            </li>
-                            <li class="flex items-start text-gray-600 line-through">
-                                <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Modelador de Flujo & Simuladores
-                            </li>
-                        </ul>
-                    </div>
-                    <button class="w-full py-2.5 border border-gray-500 rounded text-white hover:bg-white hover:text-black font-semibold transition-colors uppercase tracking-wide text-xs">
-                        Continuar con Libre
-                    </button>
-                </div>
-            </div>
-
-            <div class="carousel-item">
-                <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between h-full w-full">
-                    <div>
-                        <div class="mb-4">
-                            <h3 class="text-xl font-bold mb-1">Técnico</h3>
-                            <p class="text-xs text-gray-400 font-medium">Asistencia y bases operativas</p>
-                            <div class="mt-3 flex items-baseline">
-                                <span class="text-3xl font-bold">$15.500</span>
-                                <span class="ml-1 text-gray-500 text-xs">/mes</span>
-                            </div>
-                        </div>
-                        <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Portal Acceso I.A. (App)
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Gmail Chat & Comunidad Hub
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Calculadora de Ventilación
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Asistencia Técnica y Asesoría
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Generador de Cuentas de Cobro
-                            </li>
-                            <li class="flex items-start text-gray-600 line-through">
-                                <i class="fa-solid fa-xmark text-gray-600 mt-0.5 mr-2 pl-0.5"></i> Investigaciones Especializadas
-                            </li>
-                        </ul>
-                    </div>
-                    <button class="w-full py-2.5 metallic-btn rounded text-white font-bold uppercase tracking-wide text-xs">
-                        Seleccionar Técnico
-                    </button>
-                </div>
-            </div>
-
-            <div class="carousel-item">
-                <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between h-full w-full border-t-4 border-blue-500 bg-[#1e1e1e]">
-                    <div class="absolute -top-3.5 left-0 w-full text-center">
-                         <span class="bg-blue-600 text-white text-[10px] font-bold px-3 py-0.5 rounded shadow-lg tracking-widest uppercase">Recomendado</span>
-                    </div>
-                    <div>
-                        <div class="mb-4 mt-1">
-                            <h3 class="text-xl font-bold mb-1 metallic-blue-text">Profesional</h3>
-                            <p class="text-xs text-gray-400 font-medium">Potencia en Gas Residencial/Comercial</p>
-                            <div class="mt-3 flex items-baseline">
-                                <span class="text-3xl font-bold text-white">$77.500</span>
-                                <span class="ml-1 text-gray-500 text-xs">/mes</span>
-                            </div>
-                        </div>
-                        <ul class="space-y-3 mb-6 border-t border-gray-600 pt-4 text-xs">
-                            <li class="flex items-start text-white font-medium">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Sistemas de Combustión/Gas Res/Com
-                            </li>
-                            <li class="flex items-start text-white font-medium">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Perfil Investigador Reconocido
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Modelador de Flujo Mueller
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Cuenta Pioneer's & Google Workspace
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Módulos Pedagógicos / Competencias
-                            </li>
-                        </ul>
-                    </div>
-                    <button class="w-full py-3 metallic-btn rounded text-white font-bold uppercase tracking-wide text-xs shadow-[0_0_15px_rgba(37,99,235,0.3)]">
-                        Seleccionar Profesional
-                    </button>
-                </div>
-            </div>
-
-            <div class="carousel-item">
-                <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between h-full w-full">
-                    <div>
-                        <div class="mb-4">
-                            <h3 class="text-xl font-bold mb-1 text-gray-200">Empresarial</h3>
-                            <p class="text-xs text-gray-400 font-medium">Automatización y Flujos Web</p>
-                            <div class="mt-3 flex items-baseline">
-                                <span class="text-3xl font-bold">$248.000</span>
-                                <span class="ml-1 text-gray-500 text-xs">/mes</span>
-                            </div>
-                        </div>
-                        <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Sistemas de Combustión Industrial
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Extensiones y Apps Móviles
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Conexiones Sistemas Físicos y Control
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Creación de Flujos de Trabajo Web
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Acceso a ERP y CRM de Negocios
-                            </li>
-                        </ul>
-                    </div>
-                    <button class="w-full py-2.5 border border-gray-600 rounded text-gray-200 hover:bg-gray-800 font-semibold transition-colors uppercase tracking-wide text-xs">
-                        Seleccionar Empresa
-                    </button>
-                </div>
-            </div>
-
-            <div class="carousel-item">
-                <div class="netflix-card rounded-xl p-5 flex flex-col relative justify-between h-full w-full">
-                    <div>
-                        <div class="mb-4">
-                            <h3 class="text-xl font-bold mb-1 text-blue-400">Interventoría / OEC</h3>
-                            <p class="text-xs text-gray-400 font-medium">Acceso Total & Simulación Avanzada</p>
-                            <div class="mt-3 flex items-baseline">
-                                <span class="text-3xl font-bold">$310.000</span>
-                                <span class="ml-1 text-gray-500 text-xs">/mes</span>
-                            </div>
-                        </div>
-                        <ul class="space-y-3 mb-6 border-t border-gray-700 pt-4 text-xs">
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Todo lo Comercial, Res. e Industrial
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Acceso Simulador Vaporización Gas LP
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Modelador de Flujo Mueller Completo
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Suite Google Workspace & Pioneer's
-                            </li>
-                            <li class="flex items-start text-gray-300">
-                                <i class="fa-solid fa-check check-icon mt-0.5 mr-2"></i> Auditoría, Módulos ERP, CRM y API
-                            </li>
-                        </ul>
-                    </div>
-                    <button class="w-full py-2.5 border border-blue-600 rounded text-blue-400 hover:bg-blue-600 hover:text-white font-bold transition-all uppercase tracking-wide text-xs">
-                        Contactar Ventas
-                    </button>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="flex gap-4 mt-6 z-40">
-            <button id="prevBtn" class="nav-btn w-10 h-10 rounded-full flex items-center justify-center text-gray-400 font-bold">
-                <i class="fa-solid fa-chevron-left"></i>
-            </button>
-            <button id="nextBtn" class="nav-btn w-10 h-10 rounded-full flex items-center justify-center text-gray-400 font-bold">
-                <i class="fa-solid fa-chevron-right"></i>
-            </button>
-        </div>
+  <!-- 1 · POR PROYECTO -->
+  <div class="card p-6 flex flex-col">
+    <div class="flex items-center gap-2 text-xs tag rounded-full px-3 py-1 w-max"><i class="fa-solid fa-diagram-project"></i> Licencia temporal</div>
+    <h3 class="text-xl font-bold mt-3">Por proyecto</h3>
+    <p class="text-slate-400 text-xs mt-1">Paga por lo que modelas. Ideal para un trabajo puntual.</p>
+    <div class="mt-4 flex items-baseline gap-1"><span class="text-3xl font-extrabold" id="pp_precio">$70.000</span><span class="text-slate-500 text-xs">/ proyecto</span></div>
+    <div class="mt-4 p-3 rounded-xl" style="background:#0c1420;border:1px solid #1c2740">
+      <div class="flex items-center justify-between text-xs text-slate-400"><span>Nodos del proyecto</span><span class="font-bold text-slate-200" id="pp_nodos">30</span></div>
+      <input id="pp_rng" type="range" min="10" max="600" step="5" value="30" class="w-full mt-2">
+      <p class="text-[11px] text-slate-500 mt-1">Desde $70.000 hasta 30 nodos · +$1.200 por nodo adicional.</p>
     </div>
-    
-    <footer class="text-gray-500 text-xs mt-4 pb-8 text-center">
-        <p>Precios expresados en moneda local de acuerdo a los beneficios estipulados. Aplican Términos, Regulaciones y Condiciones del Hub de Ingeniería.</p>
-    </footer>
+    <ul class="space-y-2.5 mt-5 text-xs text-slate-300 border-t border-slate-800 pt-4 flex-1">
+      <li><i class="fa-solid fa-check chk mr-2"></i>1 proyecto, vigencia mientras dure</li>
+      <li><i class="fa-solid fa-check chk mr-2"></i>Isométricos de redes abiertas y cerradas</li>
+      <li><i class="fa-solid fa-check chk mr-2"></i>Cálculo de flujo, despiece y soportería</li>
+      <li><i class="fa-solid fa-check chk mr-2"></i>Exportaciones (PDF, Excel, DXF)</li>
+      <li class="no"><i class="fa-solid fa-xmark mr-2"></i>Vaporizador, selector y VR no incluidos</li>
+    </ul>
+    <button class="btn w-full py-2.5 rounded-lg font-bold text-sm mt-5" onclick="elegir('proyecto')">Comprar este proyecto</button>
+  </div>
 
-    <script>
-        const carousel = document.getElementById('carousel');
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        
-        let currentRotation = 0;
-        let isDragging = false;
-        let startX = 0;
-        let initialRotation = 0;
+  <!-- 2 · MEMBRESÍA (destacado, al centro) -->
+  <div class="card pop p-6 flex flex-col relative">
+    <div class="absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-bold px-3 py-1 rounded-full" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">RECOMENDADO</div>
+    <div class="flex items-center gap-2 text-xs tag rounded-full px-3 py-1 w-max"><i class="fa-solid fa-crown"></i> Capacidad total</div>
+    <h3 class="text-xl font-bold mt-3">Membresía</h3>
+    <p class="text-slate-400 text-xs mt-1">Acuerdo de permanencia con pago anual. Todo el sistema, sin límites de extensiones.</p>
+    <div class="mt-4 flex items-baseline gap-1"><span class="text-3xl font-extrabold metal" id="mem_precio">$250.000</span><span class="text-slate-500 text-xs" id="mem_u">/ mes</span></div>
+    <div class="seg flex gap-1 w-max mt-3 text-slate-300">
+      <button class="on" id="mem_m" onclick="memCiclo('mes')">Mensual</button>
+      <button id="mem_a" onclick="memCiclo('anual')">Anual −10%</button>
+    </div>
+    <ul class="space-y-2.5 mt-5 text-xs text-slate-200 border-t border-slate-800 pt-4 flex-1">
+      <li><i class="fa-solid fa-check chk mr-2"></i>Redes abiertas y cerradas (Hardy Cross)</li>
+      <li><i class="fa-solid fa-check chk mr-2"></i>Simulador de vaporización de GLP</li>
+      <li><i class="fa-solid fa-check chk mr-2"></i>Selector de reguladores GN / GLP</li>
+      <li><i class="fa-solid fa-check chk mr-2"></i>Entornos VR (Meta Quest)</li>
+      <li><i class="fa-solid fa-check chk mr-2"></i>Soportería, planos en planta y obra civil</li>
+      <li><i class="fa-solid fa-check chk mr-2"></i>Portal de proyectos, SIG, ERP/CRM y API</li>
+      <li><i class="fa-solid fa-check chk mr-2"></i>Proyectos y nodos ilimitados · soporte prioritario</li>
+    </ul>
+    <button class="btn w-full py-2.5 rounded-lg font-bold text-sm mt-5" onclick="elegir('membresia')">Quiero la membresía</button>
+  </div>
 
-        // Función para actualizar la rotación del contenedor central en el eje Y
-        function updateCarousel() {
-            carousel.style.transform = `rotateY(${currentRotation}deg)`;
-        }
+  <!-- 3 · SUSCRIPCIÓN BÁSICA -->
+  <div class="card p-6 flex flex-col">
+    <div class="flex items-center gap-2 text-xs tag rounded-full px-3 py-1 w-max"><i class="fa-solid fa-calendar-days"></i> Suscripción</div>
+    <h3 class="text-xl font-bold mt-3">Básico mes / año</h3>
+    <p class="text-slate-400 text-xs mt-1">Uso continuo para lo esencial, con extensiones limitadas.</p>
+    <div class="mt-4 flex items-baseline gap-1"><span class="text-3xl font-extrabold" id="sus_precio">$90.000</span><span class="text-slate-500 text-xs" id="sus_u">/ mes</span></div>
+    <div class="seg flex gap-1 w-max mt-3 text-slate-300">
+      <button class="on" id="sus_m" onclick="susCiclo('mes')">Mensual</button>
+      <button id="sus_a" onclick="susCiclo('anual')">Anual 2 meses gratis</button>
+    </div>
+    <ul class="space-y-2.5 mt-5 text-xs text-slate-300 border-t border-slate-800 pt-4 flex-1">
+      <li><i class="fa-solid fa-check chk mr-2"></i>Isométricos de <b>redes abiertas</b></li>
+      <li><i class="fa-solid fa-check chk mr-2"></i>Cálculo de flujo y despiece</li>
+      <li><i class="fa-solid fa-check chk mr-2"></i>Proyectos ilimitados (básicos)</li>
+      <li class="no"><i class="fa-solid fa-xmark mr-2"></i>Sin redes cerradas (anillos)</li>
+      <li class="no"><i class="fa-solid fa-xmark mr-2"></i>Sin simulador de vaporización</li>
+      <li class="no"><i class="fa-solid fa-xmark mr-2"></i>Sin selector de reguladores</li>
+      <li class="no"><i class="fa-solid fa-xmark mr-2"></i>Acceso a entornos VR restringido</li>
+    </ul>
+    <button class="btn w-full py-2.5 rounded-lg font-bold text-sm mt-5" onclick="elegir('basico')">Suscribirme</button>
+  </div>
+</section>
 
-        // --- Eventos para Escritorio (Mouse) ---
-        carousel.addEventListener('mousedown', (e) => {
-            // Evitar gatillar arrastre si se hace clic directamente en botones de los planes
-            if (e.target.closest('button')) return;
-            isDragging = true;
-            startX = e.clientX;
-            initialRotation = currentRotation;
-            carousel.style.transition = 'none'; // Elimina transición para respuesta instantánea al dedo/mouse
-        });
+<!-- MATRIZ COMPARATIVA -->
+<section class="max-w-5xl mx-auto px-5 mt-14">
+  <h2 class="text-xl font-bold text-center mb-5">Compara las capacidades</h2>
+  <div class="card p-2 md:p-4 overflow-x-auto">
+    <table class="w-full text-sm min-w-[560px]">
+      <thead><tr class="text-slate-300">
+        <th class="text-left">Capacidad</th>
+        <th class="text-center">Por proyecto</th>
+        <th class="text-center text-blue-300">Membresía</th>
+        <th class="text-center">Básico</th>
+      </tr></thead>
+      <tbody id="matriz" class="text-slate-300"></tbody>
+    </table>
+  </div>
+  <p class="text-center text-slate-500 text-xs mt-3">Valores de referencia en COP, ajustables por el administrador. Las capacidades reflejan las extensiones del sistema.</p>
+</section>
 
-        window.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            const deltaX = e.clientX - startX;
-            // Sensibilidad de rotación (0.5 grados por píxel movido)
-            currentRotation = initialRotation + (deltaX * 0.5);
-            updateCarousel();
-        });
+<!-- PAGOS -->
+<section class="max-w-4xl mx-auto px-5 mt-12">
+  <div class="card p-6 text-center">
+    <h3 class="font-bold">Medios de pago</h3>
+    <p class="text-slate-400 text-sm mt-2">Nequi · Nu · Daviplata · llaves <b>Bre-B</b> · Transferencia. El administrador confirma el pago y activa el acceso.</p>
+    <div class="flex flex-wrap justify-center gap-2 mt-4 text-xs">
+      <span class="tag rounded-full px-3 py-1">Nequi</span><span class="tag rounded-full px-3 py-1">Nu</span>
+      <span class="tag rounded-full px-3 py-1">Daviplata</span><span class="tag rounded-full px-3 py-1">Bre-B</span><span class="tag rounded-full px-3 py-1">Transferencia</span>
+    </div>
+  </div>
+</section>
 
-        window.addEventListener('mouseup', () => {
-            if (!isDragging) return;
-            isDragging = false;
-            carousel.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
-            // Ajustar al plan más cercano automáticamente al soltar
-            currentRotation = Math.round(currentRotation / 72) * 72;
-            updateCarousel();
-        });
+<footer class="text-slate-500 text-xs mt-10 pb-10 text-center max-w-3xl mx-auto px-5">
+  <p>Isoflux es software licenciado del Hub de Ingeniería Pioneer's · un desarrollo de Industrias I.A. Col · ENTALPÍA LABS. Aplican términos, regulaciones y condiciones del Hub. Precios de referencia; el acuerdo final y la activación los define el administrador.</p>
+</footer>
 
-        // --- Eventos para Dispositivos Móviles (Touch) ---
-        carousel.addEventListener('touchstart', (e) => {
-            if (e.target.closest('button')) return;
-            isDragging = true;
-            startX = e.touches[0].clientX;
-            initialRotation = currentRotation;
-            carousel.style.transition = 'none';
-        });
-
-        carousel.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            const deltaX = e.touches[0].clientX - startX;
-            currentRotation = initialRotation + (deltaX * 0.6);
-            updateCarousel();
-        });
-
-        carousel.addEventListener('touchend', () => {
-            if (!isDragging) return;
-            isDragging = false;
-            carousel.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
-            currentRotation = Math.round(currentRotation / 72) * 72;
-            updateCarousel();
-        });
-
-        // --- Eventos de los Botones de Navegación Alternativa ---
-        prevBtn.addEventListener('click', () => {
-            carousel.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
-            currentRotation += 72; // Rota un segmento exacto a la izquierda
-            updateCarousel();
-        });
-
-        nextBtn.addEventListener('click', () => {
-            carousel.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
-            currentRotation -= 72; // Rota un segmento exacto a la derecha
-            updateCarousel();
-        });
-    </script>
+<script>
+  const fmt=v=>new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(Math.round(v));
+  // --- estimador por proyecto ---
+  const PP_BASE=70000, PP_NODOS_BASE=30, PP_NODO=1200;
+  const rng=document.getElementById("pp_rng");
+  function ppCalc(){const n=+rng.value;document.getElementById("pp_nodos").textContent=n;
+    const extra=Math.max(0,n-PP_NODOS_BASE)*PP_NODO;document.getElementById("pp_precio").textContent=fmt(PP_BASE+extra);}
+  rng.addEventListener("input",ppCalc);ppCalc();
+  // --- membresía mensual/anual ---
+  const MEM_MES=250000, MEM_ANUAL=Math.round(250000*12*0.9);
+  function memCiclo(c){const m=c==="mes";document.getElementById("mem_m").classList.toggle("on",m);document.getElementById("mem_a").classList.toggle("on",!m);
+    document.getElementById("mem_precio").textContent=fmt(m?MEM_MES:MEM_ANUAL);document.getElementById("mem_u").textContent=m?"/ mes":"/ año";}
+  // --- suscripción básica mensual/anual ---
+  const SUS_MES=90000, SUS_ANUAL=90000*10;
+  function susCiclo(c){const m=c==="mes";document.getElementById("sus_m").classList.toggle("on",m);document.getElementById("sus_a").classList.toggle("on",!m);
+    document.getElementById("sus_precio").textContent=fmt(m?SUS_MES:SUS_ANUAL);document.getElementById("sus_u").textContent=m?"/ mes":"/ año";}
+  // --- matriz comparativa ---
+  const SI='<i class="fa-solid fa-check chk"></i>', NO='<i class="fa-solid fa-xmark no"></i>';
+  const FILAS=[
+    ["Isométricos de redes abiertas",SI,SI,SI],
+    ["Redes cerradas (anillos / Hardy Cross)",SI,SI,NO],
+    ["Cálculo de flujo, despiece y soportería",SI,SI,"parcial"],
+    ["Simulador de vaporización de GLP",NO,SI,NO],
+    ["Selector de reguladores GN / GLP",NO,SI,NO],
+    ["Entornos VR (Meta Quest)",NO,SI,NO],
+    ["Portal de proyectos y SIG",SI,SI,SI],
+    ["ERP, CRM y API",NO,SI,NO],
+    ["Proyectos / nodos",'1 proyecto','Ilimitado','Ilimitado (básico)'],
+    ["Exportaciones (PDF, Excel, DXF)",SI,SI,SI],
+    ["Soporte",'Por proyecto','Prioritario','Estándar'],
+    ["Compromiso",'Ninguno','Permanencia anual','Mensual o anual'],
+  ];
+  const cel=v=>v==="parcial"?'<span class="text-amber-400 text-xs">parcial</span>':(v===SI||v===NO?v:`<span class="text-slate-300 text-xs">${v}</span>`);
+  document.getElementById("matriz").innerHTML=FILAS.map(r=>`<tr><td class="text-left text-slate-300">${r[0]}</td><td class="text-center">${cel(r[1])}</td><td class="text-center" style="background:rgba(59,130,246,.06)">${cel(r[2])}</td><td class="text-center">${cel(r[3])}</td></tr>`).join("");
+  // --- acción de compra: avisa al contenedor (portal) o abre correo ---
+  function elegir(plan){
+    const detalle={proyecto:{plan:"Por proyecto",nodos:+rng.value,precio:document.getElementById("pp_precio").textContent},
+      membresia:{plan:"Membresía",ciclo:document.getElementById("mem_m").classList.contains("on")?"mensual":"anual",precio:document.getElementById("mem_precio").textContent},
+      basico:{plan:"Básico",ciclo:document.getElementById("sus_m").classList.contains("on")?"mensual":"anual",precio:document.getElementById("sus_precio").textContent}}[plan];
+    try{if(window.parent&&window.parent!==window)window.parent.postMessage({__isofluxPlan:detalle},"*");}catch(e){}
+    const cuerpo=encodeURIComponent(`Hola, quiero el plan ${detalle.plan} (${detalle.precio}${detalle.nodos?`, ${detalle.nodos} nodos`:detalle.ciclo?`, ${detalle.ciclo}`:""}).`);
+    window.open("mailto:ingenieriaiacol@gmail.com?subject="+encodeURIComponent("Plan Isoflux: "+detalle.plan)+"&body="+cuerpo,"_blank");
+  }
+</script>
 </body>
 </html>

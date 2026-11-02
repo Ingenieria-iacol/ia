@@ -96,7 +96,7 @@ const HOJAS = {
   // Plan y límites de cada Organización; base para calcular la factura mensual.
   Planes: ['miembroId', 'plan', 'moneda', 'mensualidad', 'limiteEspacioMB', 'incluidoDescargas', 'incluidoUsos', 'precioEspacioExtraGB', 'precioDescargaExtra', 'precioUsoExtra', 'addons', 'notas', 'actualizadoPor', 'actualizado'],
   // Facturas y resúmenes mensuales emitidos por el administrador.
-  Facturas: ['numero', 'miembroId', 'periodo', 'emitida', 'emitidaPor', 'moneda', 'mensualidad', 'espacioMB', 'espacioExtraGB', 'cargoEspacio', 'descargas', 'descargasExtra', 'cargoDescargas', 'usos', 'usosExtra', 'cargoUsos', 'addonsTotal', 'subtotal', 'total', 'estado', 'detalleJson', 'sello'],
+  Facturas: ['numero', 'miembroId', 'periodo', 'emitida', 'emitidaPor', 'moneda', 'mensualidad', 'espacioMB', 'espacioExtraGB', 'cargoEspacio', 'descargas', 'descargasExtra', 'cargoDescargas', 'usos', 'usosExtra', 'cargoUsos', 'addonsTotal', 'subtotal', 'total', 'estado', 'detalleJson', 'sello', 'vence', 'fechaPago', 'medioPago', 'pagadoPor'],
 };
 
 // ---------- ROUTER ----------
@@ -189,6 +189,8 @@ function sigApi(b, u) {
       case 'sgcFacturaMia':      return sigFacturaMia(u);
       case 'sgcFacturaVer':      return sigFacturaVer(u, b.numero);
       case 'sgcFacturaEstado':   if (!esAdmin) break; return sigFacturaEstado(u, b);
+      case 'sgcFacturaPagar':    if (!esAdmin) break; return sigFacturaPagar(u, b);
+      case 'sgcCartera':         if (!esAdmin) break; return sigCartera();
     }
     return { error: 'Acción no permitida.' };
   } catch (e) {
@@ -2083,9 +2085,18 @@ function sigFacturaGenerar(u, b) {
   const existe = datos.find(x => x.miembroId === mid && String(x.periodo) === String(periodo) && x.estado !== 'anulada');
   const numero = existe ? existe.numero : ('FAC-' + periodo.replace('-', '') + '-' + String(datos.length + 1).padStart(3, '0'));
   const sello = sigSha_([numero, mid, periodo, total, sigAhora_()].join('|')).slice(0, 16);
+  // vencimiento y conservación del estado de pago si ya estaba pagada
+  const diasVence = +plan.diasVence || 15;
+  const pagada = existe && existe.estado === 'pagada';
+  const vence = (existe && existe.vence) ? (existe.vence instanceof Date ? existe.vence.toISOString() : existe.vence)
+    : new Date(Date.now() + diasVence * 86400000).toISOString();
+  const estado = pagada ? 'pagada' : 'emitida';
+  const fechaPago = pagada ? (existe.fechaPago instanceof Date ? existe.fechaPago.toISOString() : existe.fechaPago) : '';
+  const medioPago = pagada ? (existe.medioPago || '') : '';
+  const pagadoPor = pagada ? (existe.pagadoPor || '') : '';
   const fila = [numero, mid, periodo, sigAhora_(), u.email, plan.moneda || 'COP', mensualidad, espMB,
     Math.round(extraGB * 100) / 100, cargoEspacio, agg.descarga, descExtra, cargoDesc, agg.herramienta, usosExtra, cargoUsos,
-    addonsTotal, subtotal, total, 'emitida', JSON.stringify(detalle), sello];
+    addonsTotal, subtotal, total, estado, JSON.stringify(detalle), sello, vence, fechaPago, medioPago, pagadoPor];
   if (existe) sh.getRange(existe._fila, 1, 1, fila.length).setValues([fila]);
   else sh.appendRow(fila);
   delete SIG_RD_['Facturas'];
@@ -2093,11 +2104,50 @@ function sigFacturaGenerar(u, b) {
   return { ok: true, factura: sigFacturaObj_(sh, numero) };
 }
 
+/** Estado de pago efectivo: pagada | vencida | pendiente (anulada se conserva). */
+function sigEstadoPago_(f) {
+  if (f.estado === 'pagada') return 'pagada';
+  if (f.estado === 'anulada') return 'anulada';
+  const v = f.vence ? new Date(f.vence) : null;
+  if (v && !isNaN(v) && Date.now() > v.getTime()) return 'vencida';
+  return 'pendiente';
+}
 function sigFacturaObj_(sh, numero) {
   const f = sigLeer_('Facturas').find(x => x.numero === numero); if (!f) return null;
   let detalle = {}; try { detalle = JSON.parse(f.detalleJson || '{}'); } catch (e) {}
   const m = sigMiembro_(f.miembroId) || {};
-  return Object.assign({}, f, { _fila: undefined, detalle: detalle, nombre: m.nombreComercial || m.razonSocial || f.miembroId, nit: m.nit || '', titular: SIG.TITULAR, red: SIG.RED });
+  const iso = d => d instanceof Date ? d.toISOString() : d;
+  return Object.assign({}, f, { _fila: undefined, detalle: detalle, estadoPago: sigEstadoPago_(f),
+    vence: iso(f.vence), fechaPago: iso(f.fechaPago), emitida: iso(f.emitida),
+    nombre: m.nombreComercial || m.razonSocial || f.miembroId, nit: m.nit || '', titular: SIG.TITULAR, red: SIG.RED });
+}
+/** Marca una factura como pagada (o revierte a emitida) y registra el medio y la fecha. */
+function sigFacturaPagar(u, b) {
+  const sh = sigHoja_('Facturas'), datos = sigLeer_('Facturas'), f = datos.find(x => x.numero === b.numero);
+  if (!f) return { error: 'Factura no encontrada.' };
+  const revertir = b.revertir === true || b.estado === 'emitida';
+  const set = (col, val) => sh.getRange(f._fila, HOJAS.Facturas.indexOf(col) + 1).setValue(val);
+  if (revertir) { set('estado', 'emitida'); set('fechaPago', ''); set('medioPago', ''); set('pagadoPor', ''); }
+  else { set('estado', 'pagada'); set('fechaPago', b.fecha || sigAhora_()); set('medioPago', b.medio || 'Otro'); set('pagadoPor', u.email); }
+  delete SIG_RD_['Facturas'];
+  sigBitacora_(u.email, f.miembroId, revertir ? 'pago_revertido' : 'factura_pagada', { numero: b.numero, medio: b.medio || '' });
+  return { ok: true, factura: sigFacturaObj_(sh, b.numero) };
+}
+/** Cartera: saldo y estado de deuda por Organización (al_dia | pendiente | en_mora). */
+function sigCartera() {
+  const fs = sigLeer_('Facturas').filter(x => x.estado !== 'anulada');
+  const nom = {}; sigLeer_('Miembros').forEach(m => nom[m.miembroId] = m.nombreComercial || m.razonSocial || m.miembroId);
+  const acc = {};
+  fs.forEach(f => {
+    const a = acc[f.miembroId] || (acc[f.miembroId] = { miembroId: f.miembroId, nombre: nom[f.miembroId] || f.miembroId, saldo: 0, vencido: 0, pendientes: 0, vencidas: 0, ultima: '', moneda: f.moneda || 'COP' });
+    const ep = sigEstadoPago_(f);
+    if (ep !== 'pagada') { a.saldo += (+f.total || 0); a.pendientes++; if (ep === 'vencida') { a.vencido += (+f.total || 0); a.vencidas++; } }
+    if (String(f.periodo) > String(a.ultima)) a.ultima = f.periodo;
+  });
+  // incluir organizaciones sin facturas
+  sigLeer_('Miembros').forEach(m => { if (!acc[m.miembroId]) acc[m.miembroId] = { miembroId: m.miembroId, nombre: nom[m.miembroId], saldo: 0, vencido: 0, pendientes: 0, vencidas: 0, ultima: '', moneda: 'COP' }; });
+  const cartera = Object.values(acc).map(a => Object.assign(a, { estadoDeuda: a.vencidas > 0 ? 'en_mora' : a.saldo > 0 ? 'pendiente' : 'al_dia' }));
+  return { cartera: cartera, totalPorCobrar: cartera.reduce((s, a) => s + a.saldo, 0), totalVencido: cartera.reduce((s, a) => s + a.vencido, 0), generado: sigAhora_() };
 }
 function sigFacturaUltima_(mid) {
   const fs = sigLeer_('Facturas').filter(x => x.miembroId === mid && x.estado !== 'anulada').sort((a, b) => String(b.periodo).localeCompare(String(a.periodo)));
@@ -2108,7 +2158,7 @@ function sigFacturaListar(b) {
   if (b && b.miembroId) fs = fs.filter(x => x.miembroId === b.miembroId);
   fs = fs.sort((a, b2) => String(b2.emitida).localeCompare(String(a.emitida)));
   const nom = {}; sigLeer_('Miembros').forEach(m => nom[m.miembroId] = m.nombreComercial || m.razonSocial || m.miembroId);
-  return { facturas: fs.map(f => ({ numero: f.numero, miembroId: f.miembroId, nombre: nom[f.miembroId] || f.miembroId, periodo: f.periodo, emitida: f.emitida instanceof Date ? f.emitida.toISOString() : f.emitida, moneda: f.moneda, total: f.total, estado: f.estado })) };
+  return { facturas: fs.map(f => ({ numero: f.numero, miembroId: f.miembroId, nombre: nom[f.miembroId] || f.miembroId, periodo: f.periodo, emitida: f.emitida instanceof Date ? f.emitida.toISOString() : f.emitida, vence: f.vence instanceof Date ? f.vence.toISOString() : f.vence, moneda: f.moneda, total: f.total, estado: f.estado, estadoPago: sigEstadoPago_(f), medioPago: f.medioPago || '' })) };
 }
 function sigFacturaMia(u) {
   const v = sigVinculo_(u.email); if (!v) return { error: 'Tu cuenta no está vinculada a una organización.' };
