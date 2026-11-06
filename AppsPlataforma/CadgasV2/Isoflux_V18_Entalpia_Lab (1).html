@@ -11565,7 +11565,7 @@ function botonTab(){if(g('captab')){toggleOn();return true;}
  const vis=[...document.querySelectorAll('#tb>details.ac')].find(d=>/^\s*Vista/.test((d.querySelector('summary')||{}).textContent||''));
  if(!vis||!vis.parentNode)return false;
  const det=document.createElement('details');det.className='ac';det.id='captab';
- det.innerHTML='<summary data-ic="🗂">Capas ▾</summary>';
+ det.innerHTML='<summary data-ic="🗂">Capas</summary>';
  vis.parentNode.insertBefore(det,vis.nextSibling);          /* queda entre Vista y Control */
  const sm=det.querySelector('summary');
  sm.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();
@@ -11583,6 +11583,7 @@ const css=document.createElement('style');css.textContent=`#cap96{position:fixed
 #cap96 .f96{display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap}#cap96 .f96 input:not([type=checkbox]){flex:1;min-width:120px}#cap96 .f96 button{width:auto}#cap96 .f96 label{display:flex;gap:4px;align-items:center;font-size:11px}#cap96 .f96 label input{width:auto}
 #pp .cp96{margin:4px 0 8px}#pp .cp96 select{flex:1}
 #captab>summary.on{background:var(--metal)!important;border-color:#8fc9ff!important;color:#fff}#captab{position:relative}
+#tb>#captab>summary{padding:6px 9px 6px;gap:4px}#tb>#captab>summary::before{font-size:13px}
 @media(max-width:760px){#cap96{right:10px;left:10px;width:auto;top:90px}}`;document.head.appendChild(css);
 })();
 
