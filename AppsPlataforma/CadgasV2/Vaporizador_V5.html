@@ -549,4 +549,35 @@ if(quiere){var b=document.createElement('button');b.id='vg2iso';b.textContent='�
  b.onclick=function(){if(enviar()){b.textContent='✓ Enviado a Isoflux';setTimeout(function(){try{window.close();}catch(e){}},700);}else{b.textContent='No se pudo enviar · usa Exportar JSON';}};
  (document.body||document.documentElement).appendChild(b);}
 })();</script>
+<script>
+/* ===== Etiquetas de equivalencias en vivo bajo los campos de entrada ===== */
+(function(){
+ var $=function(i){return document.getElementById(i);};
+ var st=document.createElement('style');
+ st.textContent='.eqv{color:#7f91ad;font-size:10px;line-height:1.35;margin:3px 1px 0;letter-spacing:.01em}.eqv b{color:#9cc2ff;font-weight:600}';
+ document.head.appendChild(st);
+ function ins(id,eid){var el=$(id);if(!el)return;var p=el.parentNode;if(!p||$(eid))return;var s=document.createElement('div');s.className='eqv';s.id=eid;p.appendChild(s);}
+ [['D','e_D'],['L','e_L'],['Ta','e_Ta'],['m','e_m'],['Pa','e_Pa'],['Pm','e_Pm'],['wp','e_wp']].forEach(function(d){ins(d[0],d[1]);});
+ var nf=function(v,n){v=+v;return isFinite(v)?v.toLocaleString('es-CO',{minimumFractionDigits:n,maximumFractionDigits:n}):'—';};
+ function set(id,h){var e=$(id);if(e)e.innerHTML=h;}
+ function g(i){return +(($(i)||{}).value)||0;}
+ function calc(){
+  var w=Math.max(0,Math.min(1,g('wp')/100));
+  var G=w*1.552+(1-w)*2.0665, rG=1.225*G;                 /* densidad gas kg/m³ */
+  var pci=w*46.35+(1-w)*45.75;                             /* PCI másico MJ/kg */
+  var rL=w*0.508+(1-w)*0.585;                              /* densidad líquido kg/L */
+  var D=g('D'),L=g('L'),Ta=g('Ta'),m=g('m'),Pa=g('Pa'),Pm=g('Pm');
+  set('e_D','= <b>'+nf(D*3.28084,2)+'</b> ft · <b>'+nf(D*39.3701,1)+'</b> in · <b>'+nf(D*100,0)+'</b> cm');
+  set('e_L','= <b>'+nf(L*3.28084,2)+'</b> ft · <b>'+nf(L*39.3701,1)+'</b> in');
+  set('e_Ta','= <b>'+nf(Ta*9/5+32,1)+'</b> °F · <b>'+nf(Ta+273.15,1)+'</b> K');
+  var m3=rG>0?m/rG:0, Lh=rL>0?m/rL:0, gal=Lh/3.78541, kw=m*pci/3.6, lb=m*2.20462;
+  set('e_m','= <b>'+nf(m3,2)+'</b> m³/h gas · <b>'+nf(gal,2)+'</b> gal/h líq · <b>'+nf(lb,1)+'</b> lb/h · ≈ <b>'+nf(kw,0)+'</b> kW');
+  set('e_Pa','= <b>'+nf(Pa*14.5038,2)+'</b> psi · <b>'+nf(Pa*100,1)+'</b> kPa · <b>'+nf(Pa*1000,0)+'</b> mbar');
+  set('e_Pm','= <b>'+nf(Pm*14.5038,2)+'</b> psi · <b>'+nf(Pm*1000,0)+'</b> mbar man · <b>'+nf(Pm*10197,0)+'</b> mmca');
+  set('e_wp','GLP '+nf(w*100,0)+'/'+nf((1-w)*100,0)+' propano/butano · densidad gas <b>'+nf(rG,3)+'</b> kg/m³ · PCI <b>'+nf(pci,1)+'</b> MJ/kg');
+ }
+ ['D','L','Ta','m','wp','Pa','Pm'].forEach(function(i){var e=$(i);if(e)e.addEventListener('input',calc);});
+ calc();
+})();
+</script>
 </body></html>
