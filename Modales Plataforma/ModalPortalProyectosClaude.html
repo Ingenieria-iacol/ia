@@ -515,7 +515,23 @@ modal(`<h3>Estado de ${esc(m.miembroId)}</h3><span class="mu">${esc(m.razonSocia
 <div id="alc"><label>Alcance aprobado (solo al adscribir)</label>${srvH(m.alcanceAprobado||m.serviciosSolicitados)}</div>
 <div class="err" id="er"></div><div class="acts"><button class="btn" id="go">Aplicar</button><button class="btn ghost" onclick="miembros()">Volver</button></div>`);
 const al=()=>$("#alc").style.display=$("#ne").value==="Adscrito"?"":"none";$("#ne").onchange=al;al();
-const go=$("#go");go.onclick=busy(go,async()=>{await api({a:"sgcEstado",miembroId:m.miembroId,estado:$("#ne").value,motivo:$("#mo").value,alcance:srvV()});miembros()})}
+const go=$("#go");go.onclick=async()=>{go.disabled=true;$("#er").textContent="";
+const ctx={estado:$("#ne").value,motivo:$("#mo").value,alcance:srvV()};
+try{await api({a:"sgcEstado",miembroId:m.miembroId,estado:ctx.estado,motivo:ctx.motivo,alcance:ctx.alcance});okEstado(m.miembroId,ctx.estado)}
+catch(e){if(ctx.estado==="Adscrito"&&/logo/i.test(e.message)){faltaLogo(i,ctx)}else{$("#er").textContent=e.message;go.disabled=false}}}}
+function okEstado(id,estado){modal(`<h3>✓ Cambio aplicado</h3><p class="mu">El estado de <b>${esc(id)}</b> ahora es <b>${esc(estado)}</b>. El cambio quedó registrado en la bitácora del SIG.</p><div class="acts"><button class="btn" onclick="miembros()">Aceptar</button></div>`)}
+function faltaLogo(i,ctx){const m=MM.miembros[i];
+modal(`<h3>Falta información para adscribir</h3><span class="mu">${esc(m.miembroId)} · ${esc(m.razonSocial)}</span>
+<p class="mu">Para quedar <b>Adscrito</b>, el miembro normalmente debe tener su logo cargado. Como administrador puedes <b>cargarlo ahora</b> o <b>adscribir de todos modos</b> sin logo (quedará en la bitácora que se omitió el requisito).</p>
+<label>Cargar logo del miembro (PNG, JPG o WEBP)</label><input type="file" id="lf" accept="image/png,image/jpeg,image/webp"><div class="mu" id="lm"></div>
+<div class="err" id="er"></div>
+<div class="acts"><button class="btn ghost" id="omit">Omitir y adscribir sin logo</button><button class="btn ghost" onclick="mEstado(${i})">Volver</button></div>`);
+$("#lf").onchange=async e=>{const fl=e.target.files[0];if(!fl)return;$("#lm").textContent="Procesando y subiendo el logo…";$("#er").textContent="";
+try{const d=await logoPrep(fl);await api({a:"sgcLogoMiembro",miembroId:m.miembroId,base64:d});await api({a:"sgcEstado",miembroId:m.miembroId,estado:ctx.estado,motivo:ctx.motivo,alcance:ctx.alcance});okEstado(m.miembroId,ctx.estado)}
+catch(x){$("#lm").textContent="";$("#er").textContent=x.message}};
+const ob=$("#omit");ob.onclick=async()=>{ob.disabled=true;$("#er").textContent="";
+try{await api({a:"sgcEstado",miembroId:m.miembroId,estado:ctx.estado,motivo:ctx.motivo,alcance:ctx.alcance,forzar:1});okEstado(m.miembroId,ctx.estado)}
+catch(x){$("#er").textContent=x.message;ob.disabled=false}}}
 function mVideo(i){const m=MM.miembros[i];
 modal({w:1,h:`<h3>Video de bienvenida · ${esc(m.miembroId)}</h3><span class="mu">${esc(m.razonSocial)}. Es lo primero que verán sus usuarios al ingresar, junto con su logo. Carga un archivo <b>.mp4</b> de máximo 30 MB (recomendado: 720p y menos de 2 minutos). Cada carga queda como versión nueva en la carpeta del miembro, con su huella SHA-256.</span>
 <div class="vb" id="vp" style="margin-top:12px">${m.introVideo?vidEmbed(m.introVideo,false):`<span class="mu" style="padding:20px;display:block">Sin video de bienvenida</span>`}</div>

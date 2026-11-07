@@ -142,7 +142,8 @@ function sigApi(b, u) {
       case 'sgcCompartir':       return sigCompartir(u, b);
       // ---- solo administrador (función central) ----
       case 'sgcMiembros':        if (!esAdmin) break; return sigListaMiembros();
-      case 'sgcEstado':          if (!esAdmin) break; return sigCambiarEstado(u, b.miembroId, b.estado, b.motivo, b.alcance);
+      case 'sgcEstado':          if (!esAdmin) break; return sigCambiarEstado(u, b.miembroId, b.estado, b.motivo, b.alcance, b.forzar);
+      case 'sgcLogoMiembro':     if (!esAdmin) break; return sigLogoMiembro(u, b.miembroId, b.base64);
       case 'sgcEditarLegal':     if (!esAdmin) break; return sigEditarLegal(u, b.miembroId, b.campos);
       case 'sgcVerificarCadena': if (!esAdmin) break; return sigVerificarCadena();
       case 'sgcVideo':           if (!esAdmin) break; return sigVideo(u, b.miembroId, b.url);
@@ -453,18 +454,49 @@ function sigSolicitarAdmision(u) {
      ['Servicios solicitados', String(m.serviciosSolicitados || '—').replace(/\|/g, ', ')], ['Solicitada por', (u.nombre || '') + ' <' + u.email + '>'], ['Estado', 'Evaluación']], m.miembroId);
   return sigPerfil(u);
 }
-function sigCambiarEstado(u, miembroId, estado, motivo, alcance) {
+function sigCambiarEstado(u, miembroId, estado, motivo, alcance, forzar) {
   if (SIG.ESTADOS.indexOf(estado) < 0) throw new Error('Estado no válido.');
   if (!motivo || String(motivo).trim().length < 5) throw new Error('Escribe el motivo del cambio (queda en la bitácora).');
   const m = sigMiembro_(miembroId); if (!m) throw new Error('Miembro no encontrado.');
   const c = { estadoSIG: estado, motivoEstado: String(motivo).slice(0, 300), fechaEstado: sigAhora_() };
+  var sinLogo = false;
   if (estado === 'Adscrito') {
-    if (!m.logoFileId) throw new Error('El miembro no tiene logo cargado.');
+    // El logo es obligatorio para adscribir, pero el administrador puede omitir el requisito (queda en la bitácora).
+    if (!m.logoFileId) { if (!forzar) throw new Error('El miembro no tiene logo cargado.'); sinLogo = true; }
     if (!m.fechaIngresoSIG) c.fechaIngresoSIG = sigAhora_();     // sin retroactividad
     c.alcanceAprobado = sigLimpio_('serviciosSolicitados', alcance || m.serviciosSolicitados);
   }
   sigActualizar_('Miembros', m._fila, c);
-  sigBitacora_(u.email, miembroId, 'estado_cambiado', { de: m.estadoSIG, a: estado, motivo: motivo, alcance: c.alcanceAprobado || '' });
+  var datos = { de: m.estadoSIG, a: estado, motivo: motivo, alcance: c.alcanceAprobado || '' };
+  if (sinLogo) datos.requisitoOmitido = 'logo';
+  sigBitacora_(u.email, miembroId, 'estado_cambiado', datos);
+  return sigListaMiembros();
+}
+// El administrador carga el logo de un miembro (versionado, nunca se sobrescribe). Solo admin (lo valida el enrutador).
+function sigLogoMiembro(u, miembroId, base64) {
+  const m = sigMiembro_(miembroId); if (!m) throw new Error('Miembro no encontrado.');
+  if (m.estadoSIG === 'Retirado') throw new Error('El miembro está retirado.');
+  const bytes = Utilities.base64Decode(String(base64 || '').replace(/^data:[^,]+,/, ''));
+  if (!bytes.length) throw new Error('No llegó la imagen.');
+  if (bytes.length > SIG.LOGO_MAX_BYTES) throw new Error('El logo supera 500 KB.');
+  const B = i => bytes[i] & 0xff;
+  let mime = null;
+  if (B(0) === 0x89 && B(1) === 0x50 && B(2) === 0x4e && B(3) === 0x47) mime = 'image/png';
+  else if (B(0) === 0xff && B(1) === 0xd8 && B(2) === 0xff) mime = 'image/jpeg';
+  else if (B(0) === 0x52 && B(1) === 0x49 && B(2) === 0x46 && B(3) === 0x46 && B(8) === 0x57 && B(9) === 0x45 && B(10) === 0x42 && B(11) === 0x50) mime = 'image/webp';
+  if (!mime) throw new Error('Formato no permitido. Usa PNG, JPG o WEBP.');
+  const sha = sigShaBytes_(bytes);
+  if (sha === String(m.logoSha256)) return sigListaMiembros();
+  const version = (+m.logoVersion || 0) + 1;
+  const ext = mime.split('/')[1].replace('jpeg', 'jpg');
+  const nombre = m.miembroId + '_logo_v' + ('0' + version).slice(-2) + '.' + ext;
+  const archivo = DriveApp.getFolderById(m.carpetaId).createFile(Utilities.newBlob(bytes, mime, nombre));
+  archivo.setDescription('Logo ' + m.miembroId + ' v' + version + ' · SHA-256 ' + sha + ' · cargado por ' + u.email + ' (administrador)');
+  const logos = sigLeer_('Logos').filter(l => l.miembroId === m.miembroId && l.vigente === 'sí');
+  logos.forEach(l => sigActualizar_('Logos', l._fila, { vigente: 'no' }));
+  sigAgregar_('Logos', { miembroId: m.miembroId, version: version, fileId: archivo.getId(), sha256: sha, mime: mime, bytes: bytes.length, cargadoPor: u.email, fecha: sigAhora_(), vigente: 'sí' });
+  sigActualizar_('Miembros', m._fila, { logoVersion: version, logoFileId: archivo.getId(), logoSha256: sha, actualizado: sigAhora_() });
+  sigBitacora_(u.email, m.miembroId, 'logo_cargado', { version: version, sha256: sha, bytes: bytes.length, porAdmin: true });
   return sigListaMiembros();
 }
 function sigEditarLegal(u, miembroId, campos) {
