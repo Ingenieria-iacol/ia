@@ -353,20 +353,18 @@ function sigCorreoEstado_(u, m, estado, x) {
     const filas = [['Organización', m.razonSocial], ['Código de miembro', m.miembroId], ['Estado', estado + (x.anterior ? ' (antes: ' + x.anterior + ')' : '')], ['Fecha', fecha(m.fechaEstado)]];
     if (estado === 'Adscrito') { filas.push(['Miembro desde', fecha(m.fechaIngresoSIG)]); filas.push(['Alcance aprobado', String(m.alcanceAprobado || m.serviciosSolicitados || '—').replace(/\|/g, ', ')]); }
     if ((estado === 'Suspendido' || estado === 'Retirado') && x.motivo) filas.push(['Motivo', x.motivo]);
-    const link = SIG_DEC.PORTAL;
-    const html = '<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;border:1px solid #dde3ee;border-radius:12px;overflow:hidden;color:#1b2333">' +
-      '<div style="background:#0a1a3d;color:#fff;padding:18px 22px"><div style="font-size:12px;opacity:.8">' + e(SIG.RED) + '</div><div style="font-size:18px;font-weight:bold;margin-top:4px">' + e(C.t) + '</div></div>' +
-      '<div style="height:4px;background:' + C.c + '"></div>' +
+    const link = SIG_DEC.PORTAL, L = sigMarcaLogos_(), MK = sigMarcaHtml_(L, 'mail', C.t, m.miembroId + ' · ' + fecha(m.fechaEstado));
+    const inl = {}; Object.keys(L).forEach(k => inl[k] = Utilities.newBlob(Utilities.base64Decode(L[k]), 'image/jpeg', k + '.jpg'));
+    const html = '<div style="max-width:640px;margin:auto;border:1px solid ' + SIG_MARCA.BORDE + ';border-radius:10px;overflow:hidden;font-family:Arial,sans-serif;color:#282d37">' + MK.cab +
       '<div style="padding:20px 22px;font-size:14px;line-height:1.55"><p style="margin:0 0 12px">Hola, equipo de <b>' + e(nombre) + '</b>:</p>' +
-      C.p.map(t => '<p style="margin:0 0 12px">' + t + '</p>').join('') +
-      '<table cellpadding="7" style="border-collapse:collapse;width:100%;font-size:13px;margin:6px 0 16px">' + filas.map((f, i) => '<tr' + (i % 2 ? '' : ' bgcolor="#f3f6fb"') + '><td style="color:#5b6577;width:38%">' + e(f[0]) + '</td><td><b>' + e(f[1]) + '</b></td></tr>').join('') + '</table>' +
-      '<div style="font-weight:bold;margin:0 0 6px;color:' + C.c + '">¿Qué sigue?</div><ol style="margin:0 0 16px;padding-left:20px">' + C.s.map(t => '<li style="margin:0 0 6px">' + t + '</li>').join('') + '</ol>' +
-      '<p style="margin:0 0 16px"><a href="' + link + '" style="background:#1d5bd8;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;display:inline-block">Ir al Portal de Proyectos</a></p>' +
+      C.p.map(t => '<p style="margin:0 0 12px">' + t + '</p>').join('') + sigMarcaTabla_(filas) +
+      sigMarcaH_('¿Qué sigue?') + '<ol style="margin:8px 0 16px;padding-left:20px">' + C.s.map(t => '<li style="margin:0 0 6px">' + t + '</li>').join('') + '</ol>' +
+      '<p style="margin:0 0 16px"><a href="' + link + '" style="background:' + SIG_MARCA.AZ + ';color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;display:inline-block">Ir al Portal de Proyectos</a></p>' +
       '<p style="margin:0;color:#5b6577;font-size:12px">Si tiene preguntas, responda a la función central desde el portal. Este mensaje se generó automáticamente y quedó registrado en la bitácora del SIG.</p>' +
-      '<p style="margin:14px 0 0">Cordialmente,<br><b>Función central del SIG</b><br>' + e(SIG.TITULAR) + ' · ENTALPIA LABS</p></div></div>';
+      '<p style="margin:14px 0 0">Cordialmente,<br><b>Función central del SIG</b><br>' + e(SIG.TITULAR) + ' · ENTALPIA LABS</p>' + MK.pie + '</div></div>';
     const texto = 'Hola, equipo de ' + nombre + ':\n\n' + C.p.map(t => t.replace(/<[^>]+>/g, '')).join('\n\n') + '\n\n' + filas.map(f => f[0] + ': ' + f[1]).join('\n') +
       '\n\n¿Qué sigue?\n' + C.s.map((t, i) => (i + 1) + '. ' + t.replace(/<[^>]+>/g, '')).join('\n') + '\n\nPortal: ' + link + '\n\nCordialmente,\nFunción central del SIG · ' + SIG.TITULAR;
-    MailApp.sendEmail({ to: dest[0], bcc: dest.slice(1).join(','), subject: '[SIG] ' + C.t + ' · ' + m.miembroId, htmlBody: html, body: texto, name: 'SIG · ENTALPIA LABS', noReply: true });
+    MailApp.sendEmail({ to: dest[0], bcc: dest.slice(1).join(','), subject: '[SIG] ' + C.t + ' · ' + m.miembroId, htmlBody: html, inlineImages: inl, body: texto, name: 'SIG · ENTALPIA LABS', noReply: true });
     sigBitacora_(u.email, m.miembroId, 'correo_estado_enviado', { estado: estado, a: dest.length });
   } catch (err) { Logger.log('Correo de estado: ' + err.message); }
 }
@@ -376,12 +374,58 @@ function sigCorreoEstado_(u, m, estado, x) {
 //  Cada usuario registrado recibe un correo con una constancia en PDF de su estatus en el Hub:
 //  su cuenta, su organización, el estado frente al SIG y qué sigue. Modo prueba: solo al administrador.
 // =====================================================================================
+// ---------- MARCA ISOFLUX / ENTALPÍA LAB (logos y formato de los documentos de Isoflux) ----------
+const SIG_MARCA = { OSC: '#0c111a', NAR: '#ffaa3c', CEL: '#96c8ff', AZ: '#1b4a9a', BORDE: '#d0d8e4', ALT: '#f5f8fc',
+  PIE: "Hub de Ingeniería Pioneer's · un desarrollo de Industrias I.A. Col",
+  LOGOS: { ent: 'marca_entalpia.jpg', pio: 'marca_pioneers.jpg' } };
+/** Logos de la marca (los mismos de Isoflux), leídos del repositorio del portal y guardados en caché 6 h. */
+function sigMarcaLogos_() {
+  const C = CacheService.getScriptCache(), out = {};
+  Object.keys(SIG_MARCA.LOGOS).forEach(k => {
+    const ck = 'marca_' + k; let b64 = C.get(ck);
+    if (!b64) {
+      const f = SIG_MARCA.LOGOS[k];
+      for (const u of ['https://raw.githubusercontent.com/Ingenieria-iacol/ia/main/Modales%20Plataforma/img/' + f, 'https://desarrollosdeia.org/Modales%20Plataforma/img/' + f]) {
+        try { const r = UrlFetchApp.fetch(u, { muteHttpExceptions: true }); if (r.getResponseCode() === 200) { b64 = Utilities.base64Encode(r.getContent()); break; } } catch (e) {}
+      }
+      if (b64) try { C.put(ck, b64, 21600); } catch (e) {}
+    }
+    if (b64) out[k] = b64;
+  });
+  return out;
+}
+/** Encabezado y pie con el formato de los documentos de Isoflux. modo 'pdf' usa data URI; 'mail' usa cid:ent / cid:pio. */
+function sigMarcaHtml_(L, modo, titulo, sub) {
+  const M = SIG_MARCA, e = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const src = k => !L[k] ? '' : modo === 'mail' ? 'cid:' + k : 'data:image/jpeg;base64,' + L[k];
+  const cab = '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr><td bgcolor="' + M.OSC + '" style="padding:16px 20px">' +
+    '<table cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>' +
+    (src('ent') ? '<td width="66" valign="middle"><img src="' + src('ent') + '" width="62" height="59" style="display:block;width:62px;height:59px;border-radius:6px"></td>' : '') +
+    '<td valign="middle" style="padding-left:14px;font-family:Arial,sans-serif"><font color="' + M.NAR + '"><b style="font-size:17px;letter-spacing:.5px">Isoflux · ENTALPÍA LAB</b></font><br>' +
+    '<font color="#ffffff"><b style="font-size:19px">' + e(titulo) + '</b></font><br><font color="' + M.CEL + '" style="font-size:11px">' + e(sub || '') + '</font></td></tr></table></td></tr>' +
+    '<tr><td bgcolor="' + M.AZ + '" height="4" style="height:4px;font-size:1px;line-height:1px">&nbsp;</td></tr></table>';
+  const pie = '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:18px"><tr><td colspan="2" bgcolor="' + M.AZ + '" height="1" style="height:1px;font-size:1px;line-height:1px">&nbsp;</td></tr>' +
+    '<tr><td style="padding-top:6px;font-family:Arial,sans-serif;font-size:9px;color:#5f5f5f">Documento elaborado en ENTALPÍA LAB · Portal de Proyectos del SIG</td>' +
+    '<td align="right" style="padding-top:6px;font-family:Arial,sans-serif;font-size:9px;color:#6e6e6e;white-space:nowrap">' +
+    (src('pio') ? '<img src="' + src('pio') + '" width="20" height="18" style="width:20px;height:18px;vertical-align:middle;margin-right:5px">' : '') + e(M.PIE) + '</td></tr></table>';
+  return { cab: cab, pie: pie };
+}
+/** Prueba desde el editor: confirma que los logos de la marca se pueden leer (no envía correos). */
+function probarMarca() { CacheService.getScriptCache().removeAll(['marca_ent', 'marca_pio']); const L = sigMarcaLogos_(); const r = Object.keys(L).map(k => k + ': ' + Math.round(L[k].length * 3 / 4) + ' bytes'); Logger.log(r.join(' · ') || 'Sin logos'); return r; }
+function sigMarcaTabla_(filas) {
+  const M = SIG_MARCA, e = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  return '<table width="100%" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px;border:1px solid ' + M.BORDE + '">' +
+    filas.map((f, i) => '<tr' + (i % 2 ? '' : ' bgcolor="' + M.ALT + '"') + '><td width="38%" style="border-bottom:1px solid ' + M.BORDE + '"><font color="#3c4655"><b>' + e(f[0]) + '</b></font></td><td style="border-bottom:1px solid ' + M.BORDE + '"><font color="#282d37">' + e(f[1]) + '</font></td></tr>').join('') + '</table>';
+}
+function sigMarcaH_(t) { return '<p style="margin:16px 0 6px;font-family:Arial,sans-serif"><font color="' + SIG_MARCA.AZ + '"><b style="font-size:14px">' + t + '</b></font></p>' +
+  '<table width="100%" cellpadding="0" cellspacing="0"><tr><td bgcolor="' + SIG_MARCA.AZ + '" height="1" style="height:1px;font-size:1px;line-height:1px">&nbsp;</td></tr></table>'; }
+
 function sigEstatusDe_(email) {
   const v = sigVinculo_(email), m = v ? sigMiembro_(v.miembroId) : null;
   const pend = !v && sigLeer_('MiembroUsuarios').find(x => x.email === email && x.estado === 'pendiente');
   return { v: v, m: m, pend: pend ? sigMiembro_(pend.miembroId) : null };
 }
-function sigConstanciaHtml_(usr, st, fecha, mensaje) {
+function sigConstanciaHtml_(usr, st, fecha, mensaje, L, docId) {
   const e = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const f = v => { const d = new Date(v); return v && !isNaN(d) ? Utilities.formatDate(d, Session.getScriptTimeZone(), 'dd/MM/yyyy') : '—'; };
   const m = st.m, est = m ? m.estadoSIG : '';
@@ -398,15 +442,18 @@ function sigConstanciaHtml_(usr, st, fecha, mensaje) {
   const desc = { 'Aspirante': 'Primer paso de la adhesión: registro recibido, pendiente del convenio de adhesión.', 'Implementación': 'Convenio firmado: la organización está implementando el SIG en sus proyectos.',
     'Evaluación': 'Solicitud de admisión en revisión por la función central.', 'Adscrito': 'Miembro de pleno derecho del SIG dentro del alcance aprobado.',
     'Suspendido': 'Membresía suspendida temporalmente: no puede usar la leyenda ni declarar el SIG.', 'Retirado': 'La organización ya no pertenece al SIG.' }[est] || 'Usuario registrado en el portal, aún sin organización adherida al SIG.';
-  return '<html><body style="font-family:Arial,sans-serif;color:#1b2333;font-size:10.5pt">' +
-    '<table width="100%" cellpadding="10" style="border-collapse:collapse"><tr><td bgcolor="#0a1a3d"><font color="#ffffff"><b style="font-size:14pt">Constancia de estatus en el Hub</b><br><span style="font-size:9pt">' + e(SIG.RED) + ' · ' + e(SIG.TITULAR) + '</span></font></td></tr></table>' +
-    '<p style="font-size:9pt;color:#5b6577">Fecha de emisión: ' + e(fecha) + ' · Emitida por la función central del SIG a través del Portal de Proyectos de ENTALPIA LABS.</p>' +
-    (mensaje ? '<p style="border-left:3px solid #1d5bd8;padding-left:8px">' + e(mensaje).replace(/\n/g, '<br>') + '</p>' : '') +
-    '<p><b>Estatus:</b> ' + e(m ? est : 'Usuario registrado') + ' — ' + desc + '</p>' +
-    '<table width="100%" cellpadding="6" style="border-collapse:collapse;font-size:10pt">' + filas.map((x, i) => '<tr' + (i % 2 ? '' : ' bgcolor="#eef2f8"') + '><td width="38%"><font color="#5b6577">' + e(x[0]) + '</font></td><td><b>' + e(x[1]) + '</b></td></tr>').join('') + '</table>' +
-    '<p style="margin-top:14px"><b>¿Qué sigue?</b></p><ol>' + sigue.map(t => '<li style="margin-bottom:4px">' + t + '</li>').join('') + '</ol>' +
-    '<p style="font-size:8.5pt;color:#5b6577;margin-top:18px">Esta constancia refleja la información registrada en el portal en la fecha de emisión. El estado vigente de una organización puede verificarse en el portal: ' + e(SIG_DEC.PORTAL) + '. El envío queda registrado en la bitácora del SIG.</p></body></html>';
+  const MK = sigMarcaHtml_(L || {}, 'pdf', 'Constancia de estatus en el Hub', 'Documento ' + (docId || '') + ' · ' + fecha + ' · Sistema Integrado de Gestión');
+  return '<html><body style="font-family:Arial,sans-serif;color:#282d37;font-size:10.5pt;margin:0">' + MK.cab +
+    '<div style="padding:4px 2px">' +
+    (mensaje ? '<table width="100%" cellpadding="8" style="border-collapse:collapse;margin-top:12px"><tr><td bgcolor="#eef3fb" style="border-left:3px solid ' + SIG_MARCA.AZ + ';font-size:10.5pt">' + e(mensaje).replace(/\n/g, '<br>') + '</td></tr></table>' : '') +
+    sigMarcaH_('Estatus actual') +
+    '<p style="margin:8px 0 10px"><font color="' + SIG_MARCA.AZ + '"><b style="font-size:13pt">' + e(m ? est : 'Usuario registrado') + '</b></font><br><font color="#5a6070">' + desc + '</font></p>' +
+    sigMarcaH_('Datos registrados') + '<div style="height:6px"></div>' + sigMarcaTabla_(filas) +
+    sigMarcaH_('¿Qué sigue?') + '<ol style="margin:8px 0 0;padding-left:20px">' + sigue.map(t => '<li style="margin-bottom:5px">' + t + '</li>').join('') + '</ol>' +
+    '<p style="font-size:8.5pt;color:#5b6577;margin-top:16px">Esta constancia refleja la información registrada en el portal en la fecha de emisión. El estado vigente de una organización puede verificarse en el portal: ' + e(SIG_DEC.PORTAL) + '. El envío queda registrado en la bitácora del SIG.</p>' +
+    MK.pie + '</div></body></html>';
 }
+
 function sigRecordatorioEstados(u, b) {
   const C = CacheService.getScriptCache(), prueba = !!b.prueba;
   if (!prueba && C.get('rec_envio')) throw new Error('Ya hay un envío de recordatorios en curso o recién hecho. Espera unos minutos.');
@@ -417,24 +464,29 @@ function sigRecordatorioEstados(u, b) {
   if (!lista.length) throw new Error('No hay usuarios a quienes enviar.');
   const cuota = MailApp.getRemainingDailyQuota();
   if (!prueba) C.put('rec_envio', '1', 600);
-  const fecha = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+  const fecha = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm"), L = sigMarcaLogos_();
+  const dia = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd');
+  const inl = {}; Object.keys(L).forEach(k => inl[k] = Utilities.newBlob(Utilities.base64Decode(L[k]), 'image/jpeg', k + '.jpg'));
   const out = { enviados: 0, fallidos: [], pendientes: 0, total: lista.length, cuota: cuota }, quedan = [];
   const t0 = Date.now();
   lista.forEach((usr, i) => {
     if (i >= cuota || Date.now() - t0 > 300000) { out.pendientes++; quedan.push(usr.email); return; }
     try {
       const st = sigEstatusDe_(usr.email), m = st.m;
-      const pdf = Utilities.newBlob(sigConstanciaHtml_(usr, st, fecha, mensaje), 'text/html', 'c.html').getAs('application/pdf')
-        .setName(('Constancia de estatus - ' + (m ? m.miembroId + ' ' + String(m.razonSocial).slice(0, 40) : String(usr.nombre || usr.email).slice(0, 40))).replace(/[\\/:*?"<>|]/g, '') + '.pdf');
-      const estado = m ? m.estadoSIG : 'Usuario registrado';
-      const html = '<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.55;color:#1b2333;max-width:600px">' +
-        '<p>Hola' + (usr.nombre ? ', ' + String(usr.nombre).replace(/[<>&]/g, '') : '') + ':</p>' +
-        '<p>Le compartimos un recordatorio de su estatus en la ' + SIG.RED + '. Su estatus actual es <b>' + estado + '</b>' + (m ? ' (' + m.miembroId + ' · ' + String(m.razonSocial).replace(/[<>&]/g, '') + ')' : '') + '.</p>' +
-        (mensaje ? '<p style="border-left:3px solid #1d5bd8;padding-left:10px">' + mensaje.replace(/[<>&]/g, '').replace(/\n/g, '<br>') + '</p>' : '') +
-        '<p>En el PDF adjunto encontrará la constancia con sus datos y los siguientes pasos que aplican a su caso.</p>' +
-        '<p><a href="' + SIG_DEC.PORTAL + '" style="background:#1d5bd8;color:#fff;text-decoration:none;padding:9px 16px;border-radius:8px;display:inline-block">Ir al Portal de Proyectos</a></p>' +
-        '<p>Cordialmente,<br><b>Función central del SIG</b><br>' + SIG.TITULAR + ' · ENTALPIA LABS</p></div>';
-      MailApp.sendEmail({ to: usr.email, subject: '[SIG] Recordatorio de su estatus en el Hub · ' + estado + (prueba ? ' (prueba)' : ''), htmlBody: html,
+      const docId = 'CE-' + dia + '-' + sigShaBytes_(Utilities.newBlob(usr.email + dia).getBytes()).slice(0, 6).toUpperCase();
+      const pdf = Utilities.newBlob(sigConstanciaHtml_(usr, st, fecha, mensaje, L, docId), 'text/html', 'c.html').getAs('application/pdf')
+        .setName(('Constancia de estatus ' + docId + ' - ' + (m ? m.miembroId + ' ' + String(m.razonSocial).slice(0, 40) : String(usr.nombre || usr.email).slice(0, 40))).replace(/[\\/:*?"<>|]/g, '') + '.pdf');
+      const estado = m ? m.estadoSIG : 'Usuario registrado', MK = sigMarcaHtml_(L, 'mail', 'Recordatorio de su estatus en el Hub', 'Documento ' + docId + ' · ' + fecha);
+      const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+      const html = '<div style="max-width:640px;margin:auto;border:1px solid ' + SIG_MARCA.BORDE + ';border-radius:10px;overflow:hidden;font-family:Arial,sans-serif;color:#282d37">' + MK.cab +
+        '<div style="padding:18px 22px;font-size:14px;line-height:1.55">' +
+        '<p style="margin:0 0 12px">Hola' + (usr.nombre ? ', ' + esc(usr.nombre) : '') + ':</p>' +
+        '<p style="margin:0 0 12px">Le compartimos un recordatorio de su estatus en la ' + esc(SIG.RED) + '. Su estatus actual es <font color="' + SIG_MARCA.AZ + '"><b>' + esc(estado) + '</b></font>' + (m ? ' (' + esc(m.miembroId) + ' · ' + esc(m.razonSocial) + ')' : '') + '.</p>' +
+        (mensaje ? '<table width="100%" cellpadding="10" style="border-collapse:collapse;margin:0 0 12px"><tr><td bgcolor="#eef3fb" style="border-left:3px solid ' + SIG_MARCA.AZ + '">' + esc(mensaje).replace(/\n/g, '<br>') + '</td></tr></table>' : '') +
+        '<p style="margin:0 0 14px">En el PDF adjunto encontrará la constancia con sus datos y los siguientes pasos que aplican a su caso.</p>' +
+        '<p style="margin:0 0 16px"><a href="' + SIG_DEC.PORTAL + '" style="background:' + SIG_MARCA.AZ + ';color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;display:inline-block">Ir al Portal de Proyectos</a></p>' +
+        '<p style="margin:0">Cordialmente,<br><b>Función central del SIG</b><br>' + esc(SIG.TITULAR) + ' · ENTALPIA LABS</p>' + MK.pie + '</div></div>';
+      MailApp.sendEmail({ to: usr.email, subject: '[SIG] Recordatorio de su estatus en el Hub · ' + estado + (prueba ? ' (prueba)' : ''), htmlBody: html, inlineImages: inl,
         body: 'Su estatus actual es ' + estado + '. Encontrará el detalle en el PDF adjunto.\nPortal: ' + SIG_DEC.PORTAL, attachments: [pdf], name: 'SIG · ENTALPIA LABS', noReply: true });
       out.enviados++;
     } catch (x) { out.fallidos.push(usr.email + ': ' + x.message); }
