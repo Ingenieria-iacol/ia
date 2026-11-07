@@ -14588,7 +14588,16 @@ window.VSIM29={abrir,fisica,transitorio,demanda,autonomia,veredicto,repaint};
      n.qmaxVap=true;n.qfuente=n.qfuente||'man';});
   }catch(e){}}
 
- try{if(typeof solve=='function'){const _s=solve;solve=function(){sincronizar();const R=_s.apply(this,arguments);
+ /* saneo: una presión de fuente físicamente imposible (dato corrupto) dispara presiones
+    absurdas en todo el cálculo; se descarta y se usa la del distribuidor, avisando. */
+ const PMAX=200000; /* mbar ≈ 2900 psi ≈ 200 bar: techo físico para redes de gas */
+ function sanearPresion(){try{S.nodes.forEach(n=>{
+   if(n.src&&isFinite(+n.ps0)&&Math.abs(+n.ps0)>PMAX){n.__ps0bad=+n.ps0;n.ps0=0;}
+   if(typeof n.press=='string'&&n.press){const m=n.press.match(/^[\d.,]+/);if(m){const v=parseFloat(m[0].replace(/\./g,'').replace(',','.'));if(isFinite(v)&&Math.abs(v)>PMAX*10)n.press='';}}
+  });}catch(e){}}
+
+ try{if(typeof solve=='function'){const _s=solve;solve=function(){sanearPresion();sincronizar();const R=_s.apply(this,arguments);
+   try{const bad=S.nodes.filter(n=>n.src&&n.__ps0bad);if(bad.length&&R&&!R.err){const Wp=bad.map(n=>`${n.tag}: la presión de la fuente tenía un valor inválido (${num(n.__ps0bad,0)} mbar) y se usó la del distribuidor; vuelve a escribir la presión correcta.`);R.warn=Wp.concat(R.warn||[]);R.coh=(R.coh||[]).concat(Wp);}}catch(e){}
    try{if(R&&!R.err&&!esForzada()&&typeof CF!='undefined'&&CF.gas=='GLP'){
      const W=[],tags=new Set();
      S.nodes.forEach(n=>{if(!(n.type=='tanque'&&n.src))return;const c=cap(n);if(!c)return;
