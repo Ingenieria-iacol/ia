@@ -214,9 +214,17 @@ function sigHoja_(nombre) {
     sh.getRange(1, 1, 1, HOJAS[nombre].length).setValues([HOJAS[nombre]]).setFontWeight('bold');
     sh.setFrozenRows(1);
     if (nombre === 'BitacoraSIG') sh.protect().setDescription('Bitácora SIG: no editar manualmente').setWarningOnly(true);
-  } else if (sh.getLastColumn() < HOJAS[nombre].length) {
-    // Columnas nuevas del módulo: se agregan al final sin mover las existentes
-    sh.getRange(1, 1, 1, HOJAS[nombre].length).setValues([HOJAS[nombre]]).setFontWeight('bold');
+  } else {
+    // Columnas nuevas del módulo: se insertan en su posición y los datos existentes se corren con ellas
+    // (nunca se reescribe el encabezado encima de datos, para no desalinear columnas).
+    const leer = () => sh.getRange(1, 1, 1, Math.max(1, sh.getLastColumn())).getValues()[0].map(String);
+    if (HOJAS[nombre].some(h => leer().indexOf(h) < 0)) {
+      HOJAS[nombre].forEach((h, k) => {
+        const act = leer(); if (act.indexOf(h) >= 0) return;
+        if (k < act.length && act.slice(k).some(x => x !== '')) sh.insertColumnBefore(k + 1);
+        sh.getRange(1, k + 1).setValue(h).setFontWeight('bold');
+      });
+    }
   }
   SIG_SH_[nombre] = sh;
   return sh;
