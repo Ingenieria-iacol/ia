@@ -14555,21 +14555,22 @@ window.VSIM29={abrir,fisica,transitorio,demanda,autonomia,veredicto,repaint};
 
 </script>
 <script>
-/* ===== V33.16 · Coherencia tanque GLP ↔ capacidad de vaporización (VaporGLP) =====
-   Un tanque de GLP solo entrega el gas que alcanza a vaporizar de forma natural. Esa
-   capacidad (kg/h sostenibles) la calcula la física de VaporGLP (VSIM29.fisica) a partir
-   del recipiente (galones, llenado, temperatura) o del vínculo con VaporGLP. Aquí se
-   compara esa capacidad con lo que la red realmente pide: si el tanque no vaporiza lo
-   suficiente, se advierte en el cálculo de ISOFLUX (antes el tanque usaba un qmax fijo y
-   no lo reflejaba). No aplica si hay un vaporizador forzado o una estación de GLP. */
+/* ===== V33.16 · ISOFLUX + VaporGLP como una sola unidad (en tanques manda VaporGLP) =====
+   La capacidad de suministro de un tanque de GLP NO es un dato aparte: es la que VaporGLP
+   calcula por vaporización natural (VSIM29.fisica, el mismo motor del simulador), a partir
+   del recipiente o del vínculo con VaporGLP. Aquí se hace que ISOFLUX adopte esa capacidad
+   como el caudal máximo de la fuente (predomina VaporGLP), de modo que todo el modelador
+   (cálculo, avisos, ficha, reportes) use el mismo número. Si la red pide más, se advierte.
+   No aplica cuando hay un vaporizador forzado o una estación de GLP (la vaporización deja
+   de ser el límite). */
 (function(){
- const RG=()=>{const g=(typeof CF!='undefined'&&+CF.g)||.6;const r=1.225*g;return r>0?r:1.9;}; /* densidad del gas kg/m³ */
+ const RG=()=>{const g=(typeof CF!='undefined'&&+CF.g)||.6;const r=1.225*g;return r>0?r:1.9;};
  const num=(v,d=1)=>{try{return typeof nf=='function'?nf(v,d):(+v).toFixed(d);}catch(e){return (+v).toFixed(d);}};
  function esForzada(){try{
    if(S.nodes.some(n=>n.type=='vaporizador'))return true;
    if((S.blocks||[]).some(b=>/sis_glp|vaporiz/i.test(b.kind||b.tipo||'')))return true;
   }catch(e){}return false;}
- /* capacidad de vaporización natural de un tanque de GLP (kg/h y m³/h de gas) */
+ /* capacidad de vaporización (motor de VaporGLP) → kg/h y m³/h de gas; vinc = con vínculo VaporGLP */
  function cap(n){
   if(!n||n.type!='tanque'||!n.src)return null;
   if(typeof CF=='undefined'||CF.gas!='GLP')return null;
@@ -14578,24 +14579,26 @@ window.VSIM29={abrir,fisica,transitorio,demanda,autonomia,veredicto,repaint};
   return {mmax:fis.mmax,qvap:fis.mmax/RG(),vinc:!!fis.vinc};}
  window.VAPORCAP=cap;
 
- /* se añade al resultado del cálculo una advertencia cuando la red supera la vaporización */
- try{if(typeof solve=='function'){const _s=solve;solve=function(){const R=_s.apply(this,arguments);
-   try{if(R&&!R.err&&!esForzada()){const W=[];
-    S.nodes.forEach(n=>{if(!(n.type=='tanque'&&n.src))return;const c=cap(n);if(!c)return;
-     const q=R.pn&&R.pn[n.id]&&R.pn[n.id].Q;if(!(q>0))return;
-     if(q>c.qvap*1.001){W.push(`${n.tag}: el tanque vaporiza de forma natural ≈ ${num(c.qvap,1)} m³/h (${num(c.mmax,1)} kg/h)${c.vinc?' según VaporGLP':''}, pero la red pide ${num(q,1)} m³/h — la vaporización NO alcanza (×${num(c.qvap/q,2)}). Requiere un vaporizador forzado, un tanque mayor o más tanques en paralelo.`);
-      n.__vapNo=true;}
-     else{n.__vapNo=false;n.__vapCap=c.qvap;}});
-    if(W.length){R.warn=W.concat(R.warn||[]);R.coh=(R.coh||[]).concat(W);R.vapWarn=W;}}
-   }catch(e){}return R;};}}catch(e){}
+ /* ISOFLUX adopta la capacidad de VaporGLP como el caudal máximo de la fuente (una sola unidad) */
+ function sincronizar(){try{
+   if(typeof CF=='undefined'||CF.gas!='GLP'||esForzada())return;
+   S.nodes.forEach(n=>{if(!(n.type=='tanque'&&n.src))return;const c=cap(n);if(!c)return;
+     const v=+c.qvap.toFixed(2);
+     if(Math.abs((+n.qmax||0)-v)>0.05){n.qmax=v;}        /* predomina VaporGLP */
+     n.qmaxVap=true;n.qfuente=n.qfuente||'man';});
+  }catch(e){}}
 
- /* además, muestra la capacidad de vaporización en la tarjeta/ficha del tanque */
- try{if(typeof datos=='function'){const _d=datos;window.datos=datos=function(n){const F=_d.apply(this,arguments);
-   try{if(n&&n.type=='tanque'&&n.src&&typeof CF!='undefined'&&CF.gas=='GLP'){const c=cap(n);
-    if(c&&Array.isArray(F)){const q=(typeof calcR!='undefined'&&calcR&&calcR.pn&&calcR.pn[n.id])?calcR.pn[n.id].Q:null;
-     F.push(['Vaporización natural',`${num(c.qvap,1)} m³/h · ${num(c.mmax,1)} kg/h`]);
-     if(q>0)F.push([(q>c.qvap*1.001?'⚠ ':'')+'Suministro vs demanda',`pide ${num(q,1)} m³/h · ${q>c.qvap*1.001?'insuficiente':'OK'}`]);}}
-   }catch(e){}return F;};}}catch(e){}
+ try{if(typeof solve=='function'){const _s=solve;solve=function(){sincronizar();const R=_s.apply(this,arguments);
+   try{if(R&&!R.err&&!esForzada()&&typeof CF!='undefined'&&CF.gas=='GLP'){
+     const W=[],tags=new Set();
+     S.nodes.forEach(n=>{if(!(n.type=='tanque'&&n.src))return;const c=cap(n);if(!c)return;
+       const q=R.pn&&R.pn[n.id]&&R.pn[n.id].Q;if(!(q>0))return;
+       if(q>c.qvap*1.001){tags.add(n.tag);
+         W.push(`${n.tag}: el tanque vaporiza ≈ ${num(c.qvap,1)} m³/h (${num(c.mmax,1)} kg/h)${c.vinc?' según VaporGLP':' con la física de VaporGLP'}, pero la red pide ${num(q,1)} m³/h — la vaporización NO alcanza (×${num(c.qvap/q,2)}). Requiere un vaporizador forzado, un tanque mayor o más tanques en paralelo.`);}});
+     /* evita el aviso genérico duplicado de «caudal máximo disponible» para esos tanques */
+     if(tags.size)R.warn=(R.warn||[]).filter(w=>!(/caudal máximo disponible/.test(w)&&[...tags].some(t=>w.indexOf(t+':')===0)));
+     if(W.length){R.warn=W.concat(R.warn||[]);R.coh=(R.coh||[]).concat(W);R.vapWarn=W;}
+   }}catch(e){}return R;};}}catch(e){}
 })();
 
 </script>
