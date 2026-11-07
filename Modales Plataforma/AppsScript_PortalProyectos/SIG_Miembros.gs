@@ -429,7 +429,7 @@ function sigRecordatorioEstados(u, b) {
       const estado = m ? m.estadoSIG : 'Usuario registrado';
       const html = '<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.55;color:#1b2333;max-width:600px">' +
         '<p>Hola' + (usr.nombre ? ', ' + String(usr.nombre).replace(/[<>&]/g, '') : '') + ':</p>' +
-        '<p>Le compartimos un recordatorio de su estatus en el ' + SIG.RED + '. Su estatus actual es <b>' + estado + '</b>' + (m ? ' (' + m.miembroId + ' · ' + String(m.razonSocial).replace(/[<>&]/g, '') + ')' : '') + '.</p>' +
+        '<p>Le compartimos un recordatorio de su estatus en la ' + SIG.RED + '. Su estatus actual es <b>' + estado + '</b>' + (m ? ' (' + m.miembroId + ' · ' + String(m.razonSocial).replace(/[<>&]/g, '') + ')' : '') + '.</p>' +
         (mensaje ? '<p style="border-left:3px solid #1d5bd8;padding-left:10px">' + mensaje.replace(/[<>&]/g, '').replace(/\n/g, '<br>') + '</p>' : '') +
         '<p>En el PDF adjunto encontrará la constancia con sus datos y los siguientes pasos que aplican a su caso.</p>' +
         '<p><a href="' + SIG_DEC.PORTAL + '" style="background:#1d5bd8;color:#fff;text-decoration:none;padding:9px 16px;border-radius:8px;display:inline-block">Ir al Portal de Proyectos</a></p>' +
