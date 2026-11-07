@@ -523,7 +523,7 @@ function payload(){try{var s=rd(),c=calc(s),t=cTot(),C={};for(var k in c){if(typ
   tanque:C,estado:(typeof pGet==='function'?pGet():null),
   /* compatibilidad con la versión anterior */cliente:($('pc')||{}).value||''};}catch(e){return{src:'VaporGLP',error:String(e)};}}
 window.vgPayload=payload;
-function enviar(){var p=payload(),ok=false;try{if(window.opener&&!window.opener.closed){window.opener.postMessage({__isofluxVapor:p},'*');ok=true;}}catch(e){}try{localStorage.setItem('isoflux_vapor_handoff',JSON.stringify({t:Date.now(),payload:p}));ok=true;}catch(e){}return ok;}
+function enviar(){var p=payload(),ok=false;try{if(window.opener&&!window.opener.closed){window.opener.postMessage({__isofluxVapor:p},'*');ok=true;}}catch(e){}try{if(window.parent&&window.parent!==window){window.parent.postMessage({__isofluxVapor:p},'*');ok=true;}}catch(e){}try{localStorage.setItem('isoflux_vapor_handoff',JSON.stringify({t:Date.now(),payload:p}));ok=true;}catch(e){}return ok;}
 window.vgEnviarIsoflux=enviar;
 /* RECIBIR desde Isoflux: demanda real de la red, proyecto, fluido y condiciones (sin reescribir) */
 function recibir(p){if(!p)return false;try{
