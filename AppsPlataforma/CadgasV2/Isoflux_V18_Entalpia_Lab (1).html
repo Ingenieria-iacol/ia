@@ -937,17 +937,8 @@ const SYMB=(()=>{
   if(D){c.shadowColor='rgba(0,0,0,.5)';c.shadowBlur=3;c.shadowOffsetY=1.2;}
   DRAW[t](c,n,D,ext);c.restore();return true;};
 })();
-const SYM_UP={manometro:1,medidor:1,consumo:1,ptopres:1,electrocorrector:1};
-/* orientación 3D del tanque: gira y se escorza con la vista (se ve desde el ángulo del observador),
-   en lugar de quedar siempre de frente. Eje = horizontal del mundo (según sus conexiones, o X) para
-   tanques horizontales, Z para verticales; se proyecta con la cámara actual. */
-function tankOrient(n){let u;const ori=(n.sp&&n.sp.rec&&/Vertical/i.test(n.sp.rec.ori||''))?'V':'H';
- if(ori=='V')u=[0,0,1];
- else{let ax=0,ay=0;ADJ(n.id).forEach(p=>{const o=N(p.a==n.id?p.b:p.a);if(o){const dx=o.x-n.x,dy=o.y-n.y,h=Math.hypot(dx,dy);if(h>1e-3){ax+=dx/h;ay+=dy/h;}}});const h=Math.hypot(ax,ay);u=h>1e-3?[ax/h,ay/h,0]:[1,0,0];}
- const A=P(n.x,n.y,n.z),B=P(n.x+u[0],n.y+u[1],n.z+u[2]),s=V.s||1;let dx=B[0]-A[0],dy=B[1]-A[1],len=Math.hypot(dx,dy)/s,ang=Math.atan2(dy,dx);
- while(ang>Math.PI/2+1e-6)ang-=Math.PI;while(ang<=-Math.PI/2+1e-6)ang+=Math.PI;
- return {ang,axf:Math.max(.34,Math.min(1,len)),u};}
-function symAng(n){const t=n.type;if(t=='tanque')return tankOrient(n).ang;if(SYM_UP[t]&&!(t=='medidor'&&window.MED_INL&&MED_INL.test((n.sp||{}).tipo||'')))return 0;const con=(ADJ(n.id).length>0);n._con=con;
+const SYM_UP={manometro:1,medidor:1,consumo:1,tanque:1,ptopres:1,electrocorrector:1};
+function symAng(n){const t=n.type;if(SYM_UP[t]&&!(t=='medidor'&&window.MED_INL&&MED_INL.test((n.sp||{}).tipo||'')))return 0;const con=(ADJ(n.id).length>0);n._con=con;
  if(!con)return t=='valvula'&&n.ori=='Vertical'?Math.PI/2:0;
  if(t=='reduccion')return bigAng(n);let a=nAng(n);
  if(t=='tee_red'){const ps=ADJ(n.id);if(ps.length>=2){const v=ps.map(q=>{const o=N(q.a==n.id?q.b:q.a);return[q,o,[o.x-n.x,o.y-n.y,o.z-n.z]];});let bp=null,best=2;
@@ -5967,7 +5958,7 @@ nodeK=function(n){let pwm=0;ADJ(n.id).forEach(p=>{if(true){const v=pw(p);if(v>pw
  let Lw=r[0]>0?r[0]*Dm*E:(n.type=='manometro'||n.type=='electrocorrector'||n.type=='multivalvula')?Math.max(n.type=='manometro'?.07:r[1],2.4*Dm)*E:Math.max(r[1],6*Dm*E);
  let px=Lw*V.s;
  /* V21: tamaño real — nunca se recorta por el vecino; la longitud axial sale de las dimensiones normalizadas (RLEN, ASME) y la sección del dibujo de la pieza */
- (window.AXF=window.AXF||{})[n.id]=n.type=='tanque'?tankOrient(n).axf:((window.RLEN&&r[0]>0&&RLEN(n))?RLEN(n)/(r[0]*Dm):1);
+ (window.AXF=window.AXF||{})[n.id]=(window.RLEN&&r[0]>0&&RLEN(n))?RLEN(n)/(r[0]*Dm):1;
  return Math.max(px,.4)/18;};
 /* ---------- CAD unifilar ---------- */
 const MCc=m=>(typeof MC!='undefined'&&MC[m])||'#9fb3c8';
