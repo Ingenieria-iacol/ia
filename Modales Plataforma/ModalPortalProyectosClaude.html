@@ -500,10 +500,25 @@ const pinta=()=>$("#dl").innerHTML=docsLista(x.docs,x.tipos,$("#dq").value,{ver:
 async function audDoc(id){const d=AX.docs.find(z=>z.id===id);try{$("#er").textContent="Abriendo…";visor(await marcaAgua(await api({a:"sgcAud",token:AUD,email:AE,paso:"doc",id}),AX.logo,AX.miembro?nomM(AX.miembro):""),d?.nombre);$("#er").textContent=""}catch(e){$("#er").textContent=e.message}}
 async function audReg(id){try{$("#er").textContent="Abriendo…";visor(await marcaAgua(await api({a:"sgcAud",token:AUD,email:AE,paso:"registro",id}),AX.logo,AX.miembro?nomM(AX.miembro):""),"Registro "+id);$("#er").textContent=""}catch(e){$("#er").textContent=e.message}}
 
+// ---------- ADMINISTRADOR: recordatorio de estatus a todos los usuarios (constancia PDF por correo) ----------
+function recordarEstatus(){modal({w:1,h:`<h3>📨 Recordar estatus a todos los usuarios</h3>
+<p class="mu">Cada usuario registrado en el portal, sin importar su estado, recibe un correo con una <b>constancia en PDF</b> de su estatus en el Hub: su cuenta, su organización y su estado frente al SIG, y qué sigue en su caso. El envío queda en la bitácora.</p>
+<label>Mensaje adicional (opcional, aparece en el correo y en la constancia)</label><textarea id="rmsg" rows="3" maxlength="1000" placeholder="Ej.: Recuerden actualizar sus registros antes del cierre de mes."></textarea>
+<p class="mu" style="margin-top:6px">Google limita los correos por día de la cuenta (unos 100 en cuentas personales). Si se alcanza el límite, el resultado dirá cuántos quedaron pendientes.</p>
+<div class="err" id="rer"></div><div class="mu" id="rok"></div>
+<div class="acts"><button class="btn ghost" id="rpr">Enviarme una prueba</button><button class="btn ghost" id="rpe" hidden>Enviar pendientes</button><button class="btn" id="rgo">Enviar a todos</button></div>`});
+const pend=n=>{const x=$("#rpe");x.hidden=!n;x.textContent="Enviar pendientes ("+n+")"};
+const env=async(prueba,pendientes)=>{$("#rer").textContent="";$("#rok").textContent=prueba?"Enviando la prueba…":"Enviando… puede tardar unos minutos.";
+const r=await api({a:"sgcRecordatorio",prueba:prueba?1:0,pendientes:pendientes?1:0,mensaje:$("#rmsg").value});
+$("#rok").innerHTML=`✅ Enviados: <b>${r.enviados}</b> de ${r.total}`+(r.pendientes?` · ⏳ Quedaron <b>${r.pendientes}</b> pendientes por el límite diario de Google: usa «Enviar pendientes» mañana (no se repite a quienes ya lo recibieron)`:"")+(r.fallidos.length?` · ⚠️ Fallidos: ${r.fallidos.map(esc).join("; ")}`:"")+` · Cupo de correos restante hoy: ${r.cuotaRestante}`;pend(r.porEnviar||0)};
+const pr=$("#rpr"),go=$("#rgo"),pe=$("#rpe");
+pe.onclick=busy(pe,async()=>{try{await env(0,1)}catch(e){$("#rok").textContent="";$("#rer").textContent=e.message}});
+pr.onclick=busy(pr,async()=>{try{await env(1)}catch(e){$("#rok").textContent="";$("#rer").textContent=e.message}});
+go.onclick=busy(go,async()=>{if(!confirm("¿Enviar el recordatorio de estatus a TODOS los usuarios registrados?"))return;try{await env(0)}catch(e){$("#rok").textContent="";$("#rer").textContent=e.message}})}
 // ---------- ADMINISTRADOR (función central): miembros de la red ----------
 async function miembros(){try{MM=await api({a:"sgcMiembros"})}catch(e){return alert(e.message)}
 modal({w:1,h:`<h3>Miembros de la red</h3><span class="mu">Función central · ${esc(S?.titular||"Industrias I.A. Col")}. Todo cambio exige motivo y queda en la bitácora encadenada.</span>
-<div class="acts"><button class="btn ghost sm" id="vc">Verificar integridad de la bitácora</button><button class="btn ghost sm" onclick="documentos('aud')">🔎 Auditorías</button><span class="mu" id="vcm"></span></div>
+<div class="acts"><button class="btn ghost sm" id="vc">Verificar integridad de la bitácora</button><button class="btn ghost sm" onclick="documentos('aud')">🔎 Auditorías</button><button class="btn ghost sm" onclick="recordarEstatus()" title="Envía a todos los usuarios registrados un correo con la constancia en PDF de su estatus">📨 Recordar estatus a todos</button><span class="mu" id="vcm"></span></div>
 ${MM.miembros.map((m,i)=>acc(estTag(m.estadoSIG),esc(m.miembroId)+" · "+esc(m.razonSocial),esc(m.tipoPersona)+" · NIT "+esc(m.nit)+(m.introVideo?" · 🎬 con video":""),`<small class="mu">${esc(m.motivoEstado||"")}${m.fechaIngresoSIG?" · adscrito desde "+fm(new Date(m.fechaIngresoSIG)):""} · logo v${esc(m.logoVersion||0)} · servicios: ${esc(String(m.serviciosSolicitados||"—").split("|").join(", "))}${m.alcanceAprobado?" · alcance aprobado: "+esc(String(m.alcanceAprobado).split("|").join(", ")):""}</small>
 <div class="mu" style="font-size:12px">${m.usuarios.map(u=>esc(u.email)+" ("+esc(u.rol)+", "+esc(u.estado)+")").join(" · ")}</div>
 <div class="acts"><button class="btn sm" onclick="mEstado(${i})">Cambiar estado</button><button class="btn ghost sm" onclick="mVideo(${i})">🎬 Video de bienvenida</button><button class="btn ghost sm" onclick="mLegal(${i})">Corregir datos legales</button><button class="btn ghost sm" onclick="bitacora('${esc(m.miembroId)}','mb${i}')">Bitácora</button></div><div id="mb${i}"></div>`)).join("")||`<p class="mu">Aún no hay miembros registrados.</p>`}

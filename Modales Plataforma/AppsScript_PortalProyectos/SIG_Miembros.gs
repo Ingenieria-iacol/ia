@@ -144,6 +144,7 @@ function sigApi(b, u) {
       case 'sgcMiembros':        if (!esAdmin) break; return sigListaMiembros();
       case 'sgcEstado':          if (!esAdmin) break; return sigCambiarEstado(u, b.miembroId, b.estado, b.motivo, b.alcance, b.forzar);
       case 'sgcLogoMiembro':     if (!esAdmin) break; return sigLogoMiembro(u, b.miembroId, b.base64);
+      case 'sgcRecordatorio':    if (!esAdmin) break; return sigRecordatorioEstados(u, b);
       case 'sgcEditarLegal':     if (!esAdmin) break; return sigEditarLegal(u, b.miembroId, b.campos);
       case 'sgcVerificarCadena': if (!esAdmin) break; return sigVerificarCadena();
       case 'sgcVideo':           if (!esAdmin) break; return sigVideo(u, b.miembroId, b.url);
@@ -297,6 +298,146 @@ function sigNuevoId_() {
   return 'MBR-' + ('000' + (Math.max(0, ...ids) + 1)).slice(-4);
 }
 
+// =====================================================================================
+//  CORREO AL MIEMBRO EN CADA ESTADO DEL SIG (bienvenida + qué sigue)
+//  Se envía al crear la organización (Aspirante) y cada vez que la función central cambia
+//  su estado. Llega a los usuarios activos de la organización (responsable y equipo).
+// =====================================================================================
+const SIG_CORREO_ESTADO = {
+  'Aspirante': { t: 'Bienvenida a la red: recibimos el registro de su organización', c: '#2563eb',
+    p: ['Gracias por registrar su organización en el Sistema Integrado de Gestión de la red. Desde hoy cuenta con un espacio propio en el Portal de Proyectos de ENTALPIA LABS, con su código de miembro y una bitácora que registra cada paso.',
+        'Su organización está en estado <b>Aspirante</b>: es el primer paso del proceso de adhesión. Todavía no puede usar la leyenda "Miembro del SIG" ni declarar el sistema ante sus clientes.'],
+    s: ['Revisaremos los datos de su organización.', 'Complete su perfil en <b>Mi empresa</b>: representante, datos de contacto, servicios que desea incluir en el alcance y logo.',
+        'Le contactaremos para firmar el convenio de adhesión (CE-CO-01). Con el convenio firmado su organización pasa a <b>Implementación</b>.'] },
+  'Implementación': { t: 'Su organización inicia la implementación del SIG', c: '#0891b2',
+    p: ['Su organización avanzó al estado <b>Implementación</b>. A partir de ahora tiene acceso a los documentos y formatos del Sistema Integrado de Gestión para ponerlos en práctica en sus proyectos.',
+        'El sistema no es retroactivo: aplica a los proyectos y actividades que se registren desde esta etapa en adelante.'],
+    s: ['Consulte en el portal los procedimientos, instructivos y formatos que aplican a sus servicios.', 'Registre sus proyectos y diligencie los formatos en línea; cada registro queda con su huella y fecha.',
+        'Use la <b>preauditoría</b> del portal para ver qué le falta antes de la evaluación.', 'Cuando esté listo, solicite la admisión desde <b>Mi empresa</b>; su organización pasará a <b>Evaluación</b>.'] },
+  'Evaluación': { t: 'Recibimos su solicitud de admisión: su organización está en evaluación', c: '#d97706',
+    p: ['Su organización está en estado <b>Evaluación</b>. La función central verificará que el sistema esté implementado conforme al procedimiento de admisión (GI-PR-09).',
+        'Durante esta etapa la razón social, el NIT y el tipo de persona quedan bloqueados; si necesita corregirlos, solicítelo a la función central.'],
+    s: ['Revisaremos sus registros, evidencias y el alcance solicitado (lista de admisión GI-FO-09).', 'Si hace falta alguna evidencia o aclaración, se la pediremos por este medio o por el portal.',
+        'Al terminar le comunicaremos la decisión. Si es favorable, su organización quedará <b>Adscrita</b>.'] },
+  'Adscrito': { t: '¡Felicitaciones! Su organización ya es miembro adscrito del SIG', c: '#059669',
+    p: ['Nos complace informarle que su organización quedó <b>Adscrita</b> al Sistema Integrado de Gestión de la red. Es el resultado del trabajo de su equipo y le damos la bienvenida como miembro de pleno derecho.'],
+    s: ['Puede usar la leyenda "Miembro del SIG" con su código verificable, solo dentro del alcance aprobado.', 'Puede emitir a sus clientes la declaración de implementación del SIG (CO-FO-03) desde el portal.',
+        'Los proyectos que cree desde su fecha de ingreso quedarán sellados bajo el SIG (sin retroactividad).', 'Mantenga sus registros al día: la función central hará seguimiento y auditorías internas periódicas.'] },
+  'Suspendido': { t: 'Aviso importante: la membresía de su organización está suspendida', c: '#dc2626',
+    p: ['Le informamos que la membresía de su organización en el Sistema Integrado de Gestión quedó <b>Suspendida</b>. Mientras dure la suspensión no podrá usar la leyenda "Miembro del SIG" ni emitir declaraciones del sistema; su información y registros se conservan.'],
+    s: ['Revise el motivo indicado arriba y las acciones necesarias para subsanarlo.', 'Puede responder a la función central para aclarar la situación o presentar sus evidencias.',
+        'Una vez atendidas las causas, la función central podrá levantar la suspensión.'] },
+  'Retirado': { t: 'Confirmación de retiro de su organización del SIG', c: '#4b5563',
+    p: ['Le confirmamos que su organización quedó en estado <b>Retirado</b> del Sistema Integrado de Gestión. Agradecemos el tiempo y el trabajo compartidos en la red.',
+        'Desde esta fecha la organización no puede usar la leyenda "Miembro del SIG" ni emitir declaraciones del sistema. Los registros y la bitácora se conservan según las reglas de retención documental.'],
+    s: ['Retire la leyenda "Miembro del SIG" de sus documentos y comunicaciones.', 'Si en el futuro desea volver a la red, puede iniciar de nuevo el proceso de adhesión desde el portal.'] }
+};
+function sigCorreoEstado_(u, m, estado, x) {
+  try {
+    const C = SIG_CORREO_ESTADO[estado]; if (!C || !m) return;
+    const to = sigLeer_('MiembroUsuarios').filter(v => v.miembroId === m.miembroId && v.estado === 'activo').map(v => String(v.email || '').trim());
+    if (m.creadoPor && !to.length) to.push(String(m.creadoPor).trim());
+    const dest = to.filter((e, i) => /^\S+@\S+\.\S+$/.test(e) && to.indexOf(e) === i);
+    if (!dest.length) return;
+    const e = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    const fecha = v => { const d = new Date(v || Date.now()); return isNaN(d) ? '' : Utilities.formatDate(d, Session.getScriptTimeZone(), 'dd/MM/yyyy'); };
+    const nombre = m.nombreComercial || m.razonSocial || m.miembroId;
+    const filas = [['Organización', m.razonSocial], ['Código de miembro', m.miembroId], ['Estado', estado + (x.anterior ? ' (antes: ' + x.anterior + ')' : '')], ['Fecha', fecha(m.fechaEstado)]];
+    if (estado === 'Adscrito') { filas.push(['Miembro desde', fecha(m.fechaIngresoSIG)]); filas.push(['Alcance aprobado', String(m.alcanceAprobado || m.serviciosSolicitados || '—').replace(/\|/g, ', ')]); }
+    if ((estado === 'Suspendido' || estado === 'Retirado') && x.motivo) filas.push(['Motivo', x.motivo]);
+    const link = SIG_DEC.PORTAL;
+    const html = '<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;border:1px solid #dde3ee;border-radius:12px;overflow:hidden;color:#1b2333">' +
+      '<div style="background:#0a1a3d;color:#fff;padding:18px 22px"><div style="font-size:12px;opacity:.8">' + e(SIG.RED) + '</div><div style="font-size:18px;font-weight:bold;margin-top:4px">' + e(C.t) + '</div></div>' +
+      '<div style="height:4px;background:' + C.c + '"></div>' +
+      '<div style="padding:20px 22px;font-size:14px;line-height:1.55"><p style="margin:0 0 12px">Hola, equipo de <b>' + e(nombre) + '</b>:</p>' +
+      C.p.map(t => '<p style="margin:0 0 12px">' + t + '</p>').join('') +
+      '<table cellpadding="7" style="border-collapse:collapse;width:100%;font-size:13px;margin:6px 0 16px">' + filas.map((f, i) => '<tr' + (i % 2 ? '' : ' bgcolor="#f3f6fb"') + '><td style="color:#5b6577;width:38%">' + e(f[0]) + '</td><td><b>' + e(f[1]) + '</b></td></tr>').join('') + '</table>' +
+      '<div style="font-weight:bold;margin:0 0 6px;color:' + C.c + '">¿Qué sigue?</div><ol style="margin:0 0 16px;padding-left:20px">' + C.s.map(t => '<li style="margin:0 0 6px">' + t + '</li>').join('') + '</ol>' +
+      '<p style="margin:0 0 16px"><a href="' + link + '" style="background:#1d5bd8;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;display:inline-block">Ir al Portal de Proyectos</a></p>' +
+      '<p style="margin:0;color:#5b6577;font-size:12px">Si tiene preguntas, responda a la función central desde el portal. Este mensaje se generó automáticamente y quedó registrado en la bitácora del SIG.</p>' +
+      '<p style="margin:14px 0 0">Cordialmente,<br><b>Función central del SIG</b><br>' + e(SIG.TITULAR) + ' · ENTALPIA LABS</p></div></div>';
+    const texto = 'Hola, equipo de ' + nombre + ':\n\n' + C.p.map(t => t.replace(/<[^>]+>/g, '')).join('\n\n') + '\n\n' + filas.map(f => f[0] + ': ' + f[1]).join('\n') +
+      '\n\n¿Qué sigue?\n' + C.s.map((t, i) => (i + 1) + '. ' + t.replace(/<[^>]+>/g, '')).join('\n') + '\n\nPortal: ' + link + '\n\nCordialmente,\nFunción central del SIG · ' + SIG.TITULAR;
+    MailApp.sendEmail({ to: dest[0], bcc: dest.slice(1).join(','), subject: '[SIG] ' + C.t + ' · ' + m.miembroId, htmlBody: html, body: texto, name: 'SIG · ENTALPIA LABS', noReply: true });
+    sigBitacora_(u.email, m.miembroId, 'correo_estado_enviado', { estado: estado, a: dest.length });
+  } catch (err) { Logger.log('Correo de estado: ' + err.message); }
+}
+
+// =====================================================================================
+//  RECORDATORIO DE ESTATUS A TODOS LOS USUARIOS (a demanda del administrador)
+//  Cada usuario registrado recibe un correo con una constancia en PDF de su estatus en el Hub:
+//  su cuenta, su organización, el estado frente al SIG y qué sigue. Modo prueba: solo al administrador.
+// =====================================================================================
+function sigEstatusDe_(email) {
+  const v = sigVinculo_(email), m = v ? sigMiembro_(v.miembroId) : null;
+  const pend = !v && sigLeer_('MiembroUsuarios').find(x => x.email === email && x.estado === 'pendiente');
+  return { v: v, m: m, pend: pend ? sigMiembro_(pend.miembroId) : null };
+}
+function sigConstanciaHtml_(usr, st, fecha, mensaje) {
+  const e = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const f = v => { const d = new Date(v); return v && !isNaN(d) ? Utilities.formatDate(d, Session.getScriptTimeZone(), 'dd/MM/yyyy') : '—'; };
+  const m = st.m, est = m ? m.estadoSIG : '';
+  const filas = [['Nombre', usr.nombre || '—'], ['Correo de la cuenta', usr.email], ['Cuenta del portal', 'Registrada' + (usr.rol === 'admin' ? ' · administrador' : '')]];
+  if (m) {
+    filas.push(['Organización', m.razonSocial + (m.nombreComercial && m.nombreComercial !== m.razonSocial ? ' (' + m.nombreComercial + ')' : '')], ['Código de miembro', m.miembroId], ['NIT / cédula', m.nit || '—'],
+      ['Su rol en la organización', st.v.rolMiembro === 'responsable' ? 'Responsable' : 'Integrante del equipo'], ['Estado frente al SIG', est], ['Estado vigente desde', f(m.fechaEstado)]);
+    if (est === 'Adscrito') filas.push(['Miembro adscrito desde', f(m.fechaIngresoSIG)], ['Alcance aprobado', String(m.alcanceAprobado || '—').replace(/\|/g, ', ')]);
+    else if (m.serviciosSolicitados) filas.push(['Alcance solicitado', String(m.serviciosSolicitados).replace(/\|/g, ', ')]);
+  } else filas.push(['Organización', st.pend ? 'Solicitud de unión pendiente con ' + st.pend.razonSocial + ' (' + st.pend.miembroId + ')' : 'Sin organización vinculada']);
+  const sigue = m ? (SIG_CORREO_ESTADO[est] || { s: [] }).s : st.pend
+    ? ['El responsable de ' + e(st.pend.razonSocial) + ' debe aprobar su solicitud desde el portal.', 'Mientras tanto puede consultar las instrucciones del portal.']
+    : ['Si representa una empresa o trabaja como independiente, registre su organización en <b>Mi organización</b> para iniciar el proceso de adhesión al SIG.', 'Si pertenece a una organización ya registrada, solicite unirse con su código de miembro (MBR-…).'];
+  const desc = { 'Aspirante': 'Primer paso de la adhesión: registro recibido, pendiente del convenio de adhesión.', 'Implementación': 'Convenio firmado: la organización está implementando el SIG en sus proyectos.',
+    'Evaluación': 'Solicitud de admisión en revisión por la función central.', 'Adscrito': 'Miembro de pleno derecho del SIG dentro del alcance aprobado.',
+    'Suspendido': 'Membresía suspendida temporalmente: no puede usar la leyenda ni declarar el SIG.', 'Retirado': 'La organización ya no pertenece al SIG.' }[est] || 'Usuario registrado en el portal, aún sin organización adherida al SIG.';
+  return '<html><body style="font-family:Arial,sans-serif;color:#1b2333;font-size:10.5pt">' +
+    '<table width="100%" cellpadding="10" style="border-collapse:collapse"><tr><td bgcolor="#0a1a3d"><font color="#ffffff"><b style="font-size:14pt">Constancia de estatus en el Hub</b><br><span style="font-size:9pt">' + e(SIG.RED) + ' · ' + e(SIG.TITULAR) + '</span></font></td></tr></table>' +
+    '<p style="font-size:9pt;color:#5b6577">Fecha de emisión: ' + e(fecha) + ' · Emitida por la función central del SIG a través del Portal de Proyectos de ENTALPIA LABS.</p>' +
+    (mensaje ? '<p style="border-left:3px solid #1d5bd8;padding-left:8px">' + e(mensaje).replace(/\n/g, '<br>') + '</p>' : '') +
+    '<p><b>Estatus:</b> ' + e(m ? est : 'Usuario registrado') + ' — ' + desc + '</p>' +
+    '<table width="100%" cellpadding="6" style="border-collapse:collapse;font-size:10pt">' + filas.map((x, i) => '<tr' + (i % 2 ? '' : ' bgcolor="#eef2f8"') + '><td width="38%"><font color="#5b6577">' + e(x[0]) + '</font></td><td><b>' + e(x[1]) + '</b></td></tr>').join('') + '</table>' +
+    '<p style="margin-top:14px"><b>¿Qué sigue?</b></p><ol>' + sigue.map(t => '<li style="margin-bottom:4px">' + t + '</li>').join('') + '</ol>' +
+    '<p style="font-size:8.5pt;color:#5b6577;margin-top:18px">Esta constancia refleja la información registrada en el portal en la fecha de emisión. El estado vigente de una organización puede verificarse en el portal: ' + e(SIG_DEC.PORTAL) + '. El envío queda registrado en la bitácora del SIG.</p></body></html>';
+}
+function sigRecordatorioEstados(u, b) {
+  const C = CacheService.getScriptCache(), prueba = !!b.prueba;
+  if (!prueba && C.get('rec_envio')) throw new Error('Ya hay un envío de recordatorios en curso o recién hecho. Espera unos minutos.');
+  const mensaje = String(b.mensaje || '').trim().slice(0, 1000);
+  const todos = rows('Usuarios').map(x => ({ email: String(x.email || '').trim().toLowerCase(), nombre: x.nombre, rol: x.rol })).filter((x, i, a) => /^\S+@\S+\.\S+$/.test(x.email) && a.findIndex(y => y.email === x.email) === i);
+  const P = PropertiesService.getScriptProperties(), pendGuard = JSON.parse(P.getProperty('REC_PENDIENTES') || '[]');
+  const lista = prueba ? todos.filter(x => x.email === String(u.email).toLowerCase()) : b.pendientes ? todos.filter(x => pendGuard.indexOf(x.email) >= 0) : todos;
+  if (!lista.length) throw new Error('No hay usuarios a quienes enviar.');
+  const cuota = MailApp.getRemainingDailyQuota();
+  if (!prueba) C.put('rec_envio', '1', 600);
+  const fecha = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+  const out = { enviados: 0, fallidos: [], pendientes: 0, total: lista.length, cuota: cuota }, quedan = [];
+  const t0 = Date.now();
+  lista.forEach((usr, i) => {
+    if (i >= cuota || Date.now() - t0 > 300000) { out.pendientes++; quedan.push(usr.email); return; }
+    try {
+      const st = sigEstatusDe_(usr.email), m = st.m;
+      const pdf = Utilities.newBlob(sigConstanciaHtml_(usr, st, fecha, mensaje), 'text/html', 'c.html').getAs('application/pdf')
+        .setName(('Constancia de estatus - ' + (m ? m.miembroId + ' ' + String(m.razonSocial).slice(0, 40) : String(usr.nombre || usr.email).slice(0, 40))).replace(/[\\/:*?"<>|]/g, '') + '.pdf');
+      const estado = m ? m.estadoSIG : 'Usuario registrado';
+      const html = '<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.55;color:#1b2333;max-width:600px">' +
+        '<p>Hola' + (usr.nombre ? ', ' + String(usr.nombre).replace(/[<>&]/g, '') : '') + ':</p>' +
+        '<p>Le compartimos un recordatorio de su estatus en el ' + SIG.RED + '. Su estatus actual es <b>' + estado + '</b>' + (m ? ' (' + m.miembroId + ' · ' + String(m.razonSocial).replace(/[<>&]/g, '') + ')' : '') + '.</p>' +
+        (mensaje ? '<p style="border-left:3px solid #1d5bd8;padding-left:10px">' + mensaje.replace(/[<>&]/g, '').replace(/\n/g, '<br>') + '</p>' : '') +
+        '<p>En el PDF adjunto encontrará la constancia con sus datos y los siguientes pasos que aplican a su caso.</p>' +
+        '<p><a href="' + SIG_DEC.PORTAL + '" style="background:#1d5bd8;color:#fff;text-decoration:none;padding:9px 16px;border-radius:8px;display:inline-block">Ir al Portal de Proyectos</a></p>' +
+        '<p>Cordialmente,<br><b>Función central del SIG</b><br>' + SIG.TITULAR + ' · ENTALPIA LABS</p></div>';
+      MailApp.sendEmail({ to: usr.email, subject: '[SIG] Recordatorio de su estatus en el Hub · ' + estado + (prueba ? ' (prueba)' : ''), htmlBody: html,
+        body: 'Su estatus actual es ' + estado + '. Encontrará el detalle en el PDF adjunto.\nPortal: ' + SIG_DEC.PORTAL, attachments: [pdf], name: 'SIG · ENTALPIA LABS', noReply: true });
+      out.enviados++;
+    } catch (x) { out.fallidos.push(usr.email + ': ' + x.message); }
+  });
+  sigBitacora_(u.email, '', prueba ? 'recordatorio_estatus_prueba' : 'recordatorio_estatus_enviado', { enviados: out.enviados, fallidos: out.fallidos.length, pendientes: out.pendientes, total: out.total, mensaje: mensaje.slice(0, 200) });
+  if (!prueba) { if (quedan.length) P.setProperty('REC_PENDIENTES', JSON.stringify(quedan)); else P.deleteProperty('REC_PENDIENTES'); }
+  out.porEnviar = prueba ? pendGuard.length : quedan.length;
+  out.cuotaRestante = MailApp.getRemainingDailyQuota();
+  return out;
+}
+
 /** Aviso por correo a los administradores del portal (función central) para validar y cambiar el estado del miembro. */
 function sigAvisarAdmins_(u, asunto, intro, filas, miembroId) {
   try {
@@ -342,6 +483,7 @@ function sigCrearMiembro(u, b) {
     sigAgregar_('MiembroUsuarios', { miembroId: id, email: u.email, rolMiembro: 'responsable', estado: 'activo', fecha: ahora });
   } finally { lock.releaseLock(); }
   sigBitacora_(u.email, id, 'miembro_creado', { razonSocial: b.razonSocial, nit: nit });
+  try { sigCorreoEstado_(u, sigMiembro_(id), 'Aspirante', {}); } catch (x) {}
   sigAvisarAdmins_(u, 'Nueva organización por validar: ' + id + ' · ' + String(b.razonSocial).slice(0, 60),
     'Se creó una cuenta oficial de organización en el SIG y quedó en estado <b>Aspirante</b>. Revise los datos y cambie su estado (por ejemplo a Implementación, tras firmar el convenio de adhesión) a la mayor brevedad.',
     [['Código', id], ['Razón social / nombre', b.razonSocial], ['NIT / cédula', nit], ['Tipo de persona', b.tipoPersona], ['Representante', b.representante || '—'],
@@ -470,6 +612,7 @@ function sigCambiarEstado(u, miembroId, estado, motivo, alcance, forzar) {
   var datos = { de: m.estadoSIG, a: estado, motivo: motivo, alcance: c.alcanceAprobado || '' };
   if (sinLogo) datos.requisitoOmitido = 'logo';
   sigBitacora_(u.email, miembroId, 'estado_cambiado', datos);
+  if (m.estadoSIG !== estado) sigCorreoEstado_(u, Object.assign({}, m, c), estado, { motivo: motivo, anterior: m.estadoSIG });
   return sigListaMiembros();
 }
 // El administrador carga el logo de un miembro (versionado, nunca se sobrescribe). Solo admin (lo valida el enrutador).
