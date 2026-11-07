@@ -543,6 +543,13 @@ window.vgRecibirIsoflux=recibir;
 function revisar(){try{var raw=localStorage.getItem('vapor_from_isoflux');if(!raw)return;var o=JSON.parse(raw);if(o&&o.t&&Date.now()-o.t<600000&&o.t!=window.__vfi){window.__vfi=o.t;recibir(o.payload);}}catch(e){}}
 window.addEventListener('message',function(e){var d=e&&e.data;if(d&&d.__isofluxToVapor)recibir(d.__isofluxToVapor);},false);
 window.addEventListener('focus',function(){setTimeout(revisar,150);});setTimeout(revisar,400);
+/* SINCRONIZACIÓN EN VIVO: dentro del panel flotante de Isoflux, cada cambio del tanque se
+   envía al instante (con debounce) para que el tanque de Isoflux sea el mismo y refleje la
+   iteración en tiempo real, sin pulsar «Enviar». */
+(function(){var inIframe=(window.parent&&window.parent!==window);if(!inIframe)return;var dl;
+ function pushLive(){clearTimeout(dl);dl=setTimeout(function(){try{var p=payload();if(p&&!p.error){p.live=true;window.parent.postMessage({__isofluxVapor:p},'*');}}catch(e){}},220);}
+ ['input','change'].forEach(function(ev){document.addEventListener(ev,function(e){var t=e.target;if(t&&t.id&&/^(or|D|L|f|N|wp|Ta|m|U|Pa|Pm|ug|pn|pc)$/.test(t.id))pushLive();},true);});
+ window.vgPushLive=pushLive;setTimeout(pushLive,800);/* sincronización inicial al cargar */})();
 /* botón para enviar el tanque a Isoflux */
 var quiere=/isoflux/i.test(location.hash+location.search)||(window.opener&&window.opener!==window);
 if(quiere){var b=document.createElement('button');b.id='vg2iso';b.textContent='⇄ Enviar el tanque a Isoflux';b.style.cssText='position:fixed;right:14px;bottom:14px;z-index:99999;background:#1f6fd1;color:#fff;border:none;border-radius:12px;padding:12px 16px;font:600 14px system-ui;box-shadow:0 10px 30px #0007;cursor:pointer';
