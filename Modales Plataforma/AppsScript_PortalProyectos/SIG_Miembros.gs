@@ -374,11 +374,11 @@ function sigCorreoEstado_(u, m, estado, x) {
 //  Cada usuario registrado recibe un correo con una constancia en PDF de su estatus en el Hub:
 //  su cuenta, su organización, el estado frente al SIG y qué sigue. Modo prueba: solo al administrador.
 // =====================================================================================
-// ---------- MARCA ISOFLUX / ENTALPÍA LAB (logos y formato de los documentos de Isoflux) ----------
+// ---------- MARCA DEL SGC (logos de Entalpía y del Hub Pioneer's; mismo formato visual de la plataforma) ----------
 const SIG_MARCA = { OSC: '#0c111a', NAR: '#ffaa3c', CEL: '#96c8ff', AZ: '#1b4a9a', BORDE: '#d0d8e4', ALT: '#f5f8fc',
   PIE: "Hub de Ingeniería Pioneer's · un desarrollo de Industrias I.A. Col",
   LOGOS: { ent: 'marca_entalpia.jpg', pio: 'marca_pioneers.jpg' } };
-/** Logos de la marca (los mismos de Isoflux), leídos del repositorio del portal y guardados en caché 6 h. */
+/** Logos de la marca (Entalpía y Hub Pioneer's), leídos del repositorio del portal y guardados en caché 6 h. */
 function sigMarcaLogos_() {
   const C = CacheService.getScriptCache(), out = {};
   Object.keys(SIG_MARCA.LOGOS).forEach(k => {
@@ -394,18 +394,18 @@ function sigMarcaLogos_() {
   });
   return out;
 }
-/** Encabezado y pie con el formato de los documentos de Isoflux. modo 'pdf' usa data URI; 'mail' usa cid:ent / cid:pio. */
+/** Encabezado y pie de los documentos del SGC. modo 'pdf' usa data URI; 'mail' usa cid:ent / cid:pio. */
 function sigMarcaHtml_(L, modo, titulo, sub) {
   const M = SIG_MARCA, e = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const src = k => !L[k] ? '' : modo === 'mail' ? 'cid:' + k : 'data:image/jpeg;base64,' + L[k];
   const cab = '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr><td bgcolor="' + M.OSC + '" style="padding:16px 20px">' +
     '<table cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>' +
     (src('ent') ? '<td width="66" valign="middle"><img src="' + src('ent') + '" width="62" height="59" style="display:block;width:62px;height:59px;border-radius:6px"></td>' : '') +
-    '<td valign="middle" style="padding-left:14px;font-family:Arial,sans-serif"><font color="' + M.NAR + '"><b style="font-size:17px;letter-spacing:.5px">Isoflux · ENTALPÍA LAB</b></font><br>' +
+    '<td valign="middle" style="padding-left:14px;font-family:Arial,sans-serif"><font color="' + M.NAR + '"><b style="font-size:15px;letter-spacing:.5px">SGC · ENTALPIA LABS</b></font><br>' +
     '<font color="#ffffff"><b style="font-size:19px">' + e(titulo) + '</b></font><br><font color="' + M.CEL + '" style="font-size:11px">' + e(sub || '') + '</font></td></tr></table></td></tr>' +
     '<tr><td bgcolor="' + M.AZ + '" height="4" style="height:4px;font-size:1px;line-height:1px">&nbsp;</td></tr></table>';
   const pie = '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:18px"><tr><td colspan="2" bgcolor="' + M.AZ + '" height="1" style="height:1px;font-size:1px;line-height:1px">&nbsp;</td></tr>' +
-    '<tr><td style="padding-top:6px;font-family:Arial,sans-serif;font-size:9px;color:#5f5f5f">Documento elaborado en ENTALPÍA LAB · Portal de Proyectos del SIG</td>' +
+    '<tr><td style="padding-top:6px;font-family:Arial,sans-serif;font-size:9px;color:#5f5f5f">Sistema de Gestión de Calidad · Portal de Proyectos ENTALPIA LABS</td>' +
     '<td align="right" style="padding-top:6px;font-family:Arial,sans-serif;font-size:9px;color:#6e6e6e;white-space:nowrap">' +
     (src('pio') ? '<img src="' + src('pio') + '" width="20" height="18" style="width:20px;height:18px;vertical-align:middle;margin-right:5px">' : '') + e(M.PIE) + '</td></tr></table>';
   return { cab: cab, pie: pie };
