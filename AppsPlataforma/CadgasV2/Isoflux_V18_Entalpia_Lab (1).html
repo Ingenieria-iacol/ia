@@ -15586,4 +15586,39 @@ try{const e25=(window.ISO_VER||[]).find(x=>x.v=='23.8');if(e25&&!e25.img.length)
 try{const e24=(window.ISO_VER||[]).find(x=>x.v=='23.7');if(e24&&!e24.img.length)e24.img=[I.u7i.src,I.u7m.src,I.u7c.src,I.u7d.src,I.u7p.src];}catch(e){}
 try{const e=(window.ISO_VER||[]).find(x=>x.v=='21.0');if(e&&!e.img.length)e.img=[I.pl.src,I.tz.src,I.col2.src];const e4=(window.ISO_VER||[]).find(x=>x.v=='21.4');if(e4&&!e4.img.length)e4.img=[I.uni.src,I.dron.src,I.flu.src];const e19=(window.ISO_VER||[]).find(x=>x.v=='23.2');if(e19&&!e19.img.length)e19.img=[I.r2d.src,I.r2v.src,I.r2e.src,I.r2s.src,I.r2p.src];const e22=(window.ISO_VER||[]).find(x=>x.v=='23.5');if(e22&&!e22.img.length)e22.img=[I.t5s.src,I.t5p.src,I.t5d.src];const e21=(window.ISO_VER||[]).find(x=>x.v=='23.4');if(e21&&!e21.img.length)e21.img=[I.s4e.src,I.s4c.src,I.s4v.src,I.s4s.src];const e20=(window.ISO_VER||[]).find(x=>x.v=='23.3');if(e20&&!e20.img.length)e20.img=[I.r3m.src,I.r3p.src,I.r3c.src];const e18=(window.ISO_VER||[]).find(x=>x.v=='23.1');if(e18&&!e18.img.length)e18.img=[I.q1a.src,I.q1b.src,I.q1f.src,I.q1l.src];const e17=(window.ISO_VER||[]).find(x=>x.v=='23.0');if(e17&&!e17.img.length)e17.img=[I.p3a.src,I.p3m.src];const e16=(window.ISO_VER||[]).find(x=>x.v=='22.6');if(e16&&!e16.img.length)e16.img=[I.d6b.src,I.d6p.src];const e14=(window.ISO_VER||[]).find(x=>x.v=='22.4');if(e14&&!e14.img.length)e14.img=[I.c4c.src,I.c4p.src,I.c4l.src];const e13=(window.ISO_VER||[]).find(x=>x.v=='22.3');if(e13&&!e13.img.length)e13.img=[I.f3a.src];const e12=(window.ISO_VER||[]).find(x=>x.v=='22.2');if(e12&&!e12.img.length)e12.img=[I.r2v.src,I.r2s.src,I.r2f.src];const e11=(window.ISO_VER||[]).find(x=>x.v=='22.1');if(e11&&!e11.img.length)e11.img=[I.o1p.src,I.o1s.src,I.o1h.src];const e10=(window.ISO_VER||[]).find(x=>x.v=='22.0');if(e10&&!e10.img.length)e10.img=[I.i0c.src,I.i0p.src];const e9=(window.ISO_VER||[]).find(x=>x.v=='21.9');if(e9&&!e9.img.length)e9.img=[I.s9a.src,I.s9d.src];const e8=(window.ISO_VER||[]).find(x=>x.v=='21.8');if(e8&&!e8.img.length)e8.img=[I.p8p.src,I.p8v.src,I.p8c.src];const e7=(window.ISO_VER||[]).find(x=>x.v=='21.7');if(e7&&!e7.img.length)e7.img=[I.flur.src,I.flu.src];const e6=(window.ISO_VER||[]).find(x=>x.v=='21.6');if(e6&&!e6.img.length)e6.img=[I.c6.src,I.c6u.src];const e5=(window.ISO_VER||[]).find(x=>x.v=='21.5');if(e5&&!e5.img.length)e5.img=[I.menu5.src,I.simc.src,I.cred.src,I.enl.src];const e3=(window.ISO_VER||[]).find(x=>x.v=='21.3');if(e3&&!e3.img.length)e3.img=[I.voz.src,I.rosa.src,I.alt.src];const e2=(window.ISO_VER||[]).find(x=>x.v=='21.2');if(e2&&!e2.img.length)e2.img=[I.bmi.src,I.bad.src,I.bco.src];const e1=(window.ISO_VER||[]).find(x=>x.v=='21.1');if(e1&&!e1.img.length)e1.img=[I.top.src,I.vis.src,I.cal.src,I.col2.src];}catch(x){}
 try{$('hbd').innerHTML=manHTML();}catch(e){}})();</script>
+<script>
+/* ===== V33.24 · Unidades de flujo por tiempo (m³/h, m³/día, m³/mes) =====
+   - En «Potencia nominal» se puede ingresar el consumo como flujo de gas: m³/h, m³/día o
+     m³/mes (se convierten a potencia con el poder calorífico PCI del gas activo).
+   - En el caudal se agregan m³/día y m³/mes además de m³/h.
+   El sistema de unidades (v62) entrega siempre el valor en la unidad base del modelo, así que
+   escribir el consumo en m³/día o m³/mes alimenta el cálculo ya convertido. */
+(function(){
+ const PCI=()=>{try{const p=(typeof CF!='undefined'&&+CF.pci)||10.4;return p>0?p:10.4;}catch(e){return 10.4;}}; /* kWh/m³ */
+ function init(V){
+  const D=V.D;if(!D)return false;let listo=true;
+  /* --- POTENCIA (dim. W, base W): flujo de gas → potencia con PCI --- */
+  if(D.W&&D.W.u&&!D.W.__fluj){D.W.__fluj=1;
+   const F={'m³/h (gas)':()=>PCI()*1000,'m³/día (gas)':()=>PCI()*1000/24,'m³/mes (gas)':()=>PCI()*1000/720}; /* W por 1 unidad */
+   Object.keys(F).forEach(u=>{try{Object.defineProperty(D.W.u,u,{get:F[u],enumerable:true,configurable:true});}catch(e){}});
+   try{Object.assign(V.AL,{'m³/h (gas)':'m³/h (gas)','m3/h (gas)':'m³/h (gas)','m³/día (gas)':'m³/día (gas)','m³/dia (gas)':'m³/día (gas)','m3/dia (gas)':'m³/día (gas)','m³/mes (gas)':'m³/mes (gas)','m3/mes (gas)':'m³/mes (gas)'});}catch(e){}
+   if(D.W.sel.indexOf('m³/h (gas)')<0)D.W.sel=D.W.sel.concat(['m³/h (gas)','m³/día (gas)','m³/mes (gas)']);
+  }
+  /* --- CAUDAL (dim. Q, base m³/s): agregar por día y por mes --- */
+  if(D.Q&&D.Q.u&&!D.Q.__tmp){D.Q.__tmp=1;
+   try{if(!('m³/día' in D.Q.u))D.Q.u['m³/día']=1/86400;if(!('m³/mes' in D.Q.u))D.Q.u['m³/mes']=1/2592000;}catch(e){}
+   try{Object.assign(V.AL,{'m³/día':'m³/día','m³/dia':'m³/día','m3/dia':'m³/día','m³/mes':'m³/mes','m3/mes':'m³/mes'});}catch(e){}
+   /* D.Q.sel puede ser un getter (lo define v133); se envuelve para incluir día y mes */
+   try{const cur=Object.getOwnPropertyDescriptor(D.Q,'sel');
+    if(cur&&cur.get){const g0=cur.get;Object.defineProperty(D.Q,'sel',{get(){const s=(g0.call(D.Q)||[]).slice();return s.indexOf('m³/día')<0?s.concat(['m³/día','m³/mes']):s;},configurable:true});}
+    else if(Array.isArray(D.Q.sel)&&D.Q.sel.indexOf('m³/día')<0){D.Q.sel=D.Q.sel.concat(['m³/día','m³/mes']);}
+   }catch(e){}
+  }
+  try{V.barrer&&V.barrer();}catch(e){}
+  return !!(D.W&&D.W.__fluj&&D.Q&&D.Q.__tmp);
+ }
+ let k=0;const t=setInterval(()=>{try{if((window.V62u&&init(window.V62u))||++k>60)clearInterval(t);}catch(e){clearInterval(t);}},200);
+})();
+
+</script>
 </body></html>
