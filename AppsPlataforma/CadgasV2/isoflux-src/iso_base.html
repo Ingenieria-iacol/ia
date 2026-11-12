@@ -15111,7 +15111,14 @@ window.VSIM29={abrir,fisica,transitorio,demanda,autonomia,veredicto,repaint};
  function draw(n,on,sc,ctx){
   try{
   ctx=ctx||window.ctx;if(!ctx)return;
-  sc=sc||1;const R=10.5*sc,L=40*sc,SAD=9*sc;                 /* radio y largo del icono (px) */
+  /* El tanque es un objeto REAL: su tamaño en pantalla = dimensiones en metros × escala del mundo (V.s),
+     igual que las tuberías. Así conserva proporción y no cambia de aspecto con el zoom. Las dimensiones
+     reales salen de VaporGLP (vap.D, vap.L) o se derivan de la capacidad; si no hay nada, un tanque típico. */
+  const rec=(n.sp&&n.sp.rec)||{},vap=(n.sp&&n.sp.vapor)||{};
+  let Dm=+vap.D||0,Lm=+vap.L||0;
+  if(!(Dm>0)||!(Lm>0)){const gal=+rec.cap||+vap.gal||0;if(gal>0){const Vm=gal*0.00378541;Dm=Math.cbrt(4*Vm/(3*Math.PI));Lm=3*Dm;}else{Dm=1.3;Lm=4;}}
+  const s=(typeof V!='undefined'&&V.s)||30;
+  const R=Math.max(2,(Dm/2)*s),L=Math.max(6,Lm*s);sc=R/10.5;const SAD=9*sc;  /* radio y largo reales (px = m × V.s) */
   const C=P(n.x,n.y,n.z);const {u,vc,wc,vert}=frame(n),cF=camF();
   const e1=[C[0]+pm(u)[0]*(-L/2),C[1]+pm(u)[1]*(-L/2)],e2=[C[0]+pm(u)[0]*(L/2),C[1]+pm(u)[1]*(L/2)];
   const dir=t=>[Math.cos(t)*vc[0]+Math.sin(t)*wc[0],Math.cos(t)*vc[1]+Math.sin(t)*wc[1],Math.cos(t)*vc[2]+Math.sin(t)*wc[2]];
