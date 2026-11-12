@@ -15101,8 +15101,11 @@ window.VSIM29={abrir,fisica,transitorio,demanda,autonomia,veredicto,repaint};
 
  function frame(n){const vert=/Vertical/i.test((n.sp&&n.sp.rec&&n.sp.rec.ori)||'');
   if(vert)return {u:[0,1,0],vc:[1,0,0],wc:[0,0,1],vert:1};
-  /* eje largo horizontal: azimut configurable (sp.rec.az grados) o X por defecto */
-  const az=(+(n.sp&&n.sp.rec&&n.sp.rec.az)||0)*PI/180,u=[Math.cos(az),0,Math.sin(az)];
+  /* eje largo horizontal: por defecto PERPENDICULAR a la línea de alimentación (el tubo conectado);
+     «Giro del eje» (sp.rec.az, en grados) gira el tanque a partir de esa posición. */
+  let fx=0,fz=0;try{(S.pipes||[]).forEach(p=>{let o=null;if(p.a===n.id)o=N(p.b);else if(p.b===n.id)o=N(p.a);if(o){const dx=o.x-n.x,dz=o.z-n.z,h=Math.hypot(dx,dz);if(h>1e-3){fx+=dx/h;fz+=dz/h;}}});}catch(e){}
+  const fh=Math.hypot(fx,fz),base=fh>1e-3?Math.atan2(fx,-fz):0;   /* perpendicular a la alimentación, o X si no hay */
+  const az=base+(+(n.sp&&n.sp.rec&&n.sp.rec.az)||0)*PI/180,u=[Math.cos(az),0,Math.sin(az)];
   const vc=[0,1,0],wc=norm(cross(u,vc));return {u,vc,wc,vert:0};}
 
  function draw(n,on,sc,ctx){
