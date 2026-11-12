@@ -3715,11 +3715,14 @@ window.EQ3D=(function(){
   if(!f)f=[1,0];const r=(+e.rot||0)*Math.PI/180;if(r){const c=Math.cos(r),sn=Math.sin(r);f=[f[0]*c-f[1]*sn,f[0]*sn+f[1]*c];}
   const sv=[f[1],-f[0]],g=.03,a0=g,a1=g+D,b0=-W/2,b1=W/2,u0=-hin,u1=H-hin;
   const Q=(a,b,u)=>P(n.x+f[0]*a+sv[0]*b,n.y+u,n.z+f[1]*a+sv[1]*b);
+  /* visibilidad robusta: cada cara se ve si su normal REAL (del mundo) mira a la cámara, sin importar el giro */
+  const _m=PM(),_cv=(()=>{const r0=[_m[0],_m[2],_m[4]],r1=[_m[1],_m[3],_m[5]],c=[r0[1]*r1[2]-r0[2]*r1[1],r0[2]*r1[0]-r0[0]*r1[2],r0[0]*r1[1]-r0[1]*r1[0]],L=Math.hypot(c[0],c[1],c[2])||1;return[c[0]/L,c[1]/L,c[2]/L];})();
+  const _L2W=(la,lb,lu)=>[la*f[0]+lb*sv[0],lu,la*f[1]+lb*sv[1]],_bc=[(a0+a1)/2,0,(u0+u1)/2];
+  const _vis=(o3,e1,e2,w,h)=>{let nn=[e1[1]*e2[2]-e1[2]*e2[1],e1[2]*e2[0]-e1[0]*e2[2],e1[0]*e2[1]-e1[1]*e2[0]];const fc=[o3[0]+e1[0]*w/2+e2[0]*h/2,o3[1]+e1[1]*w/2+e2[1]*h/2,o3[2]+e1[2]*w/2+e2[2]*h/2],rl=[fc[0]-_bc[0],fc[1]-_bc[1],fc[2]-_bc[2]];if(nn[0]*rl[0]+nn[1]*rl[1]+nn[2]*rl[2]<0)nn=[-nn[0],-nn[1],-nn[2]];const nw=_L2W(nn[0],nn[1],nn[2]);return(nw[0]*_cv[0]+nw[1]*_cv[1]+nw[2]*_cv[2])<0;};
   /* caras: origen + eje1 (derecha del observador) + eje2 (abajo), tamaños w×h en metros */
   const F=[['top',[a0,b0,u1],[0,1,0],[1,0,0],W,D],['front',[a1,b0,u1],[0,1,0],[0,0,-1],W,H],['back',[a0,b1,u1],[0,-1,0],[0,0,-1],W,H],['right',[a1,b1,u1],[-1,0,0],[0,0,-1],D,H],['left',[a0,b0,u1],[1,0,0],[0,0,-1],D,H]].map(([k,o3,e1,e2,w,h])=>{
    const O=Q(...o3),X=Q(o3[0]+e1[0],o3[1]+e1[1],o3[2]+e1[2]),Y=Q(o3[0]+e2[0],o3[1]+e2[1],o3[2]+e2[2]),ax=[X[0]-O[0],X[1]-O[1]],ay=[Y[0]-O[0],Y[1]-O[1]];
-   return{k,O,ax,ay,w,h,cr:ax[0]*ay[1]-ax[1]*ay[0]};});
-  const sg=Math.sign(F[0].cr)||1;F.forEach(fc=>fc.vis=fc.cr*sg>1e-6);
+   return{k,O,ax,ay,w,h,vis:_vis(o3,e1,e2,w,h),cr:ax[0]*ay[1]-ax[1]*ay[0]};});
   return{e,d,W,D,H,hin,Q,F,kind:d[4],a0,a1,u0,u1,back:F[2].vis};}
  const poly=(fc)=>{const{O,ax,ay,w,h}=fc;return[[O[0],O[1]],[O[0]+ax[0]*w,O[1]+ax[1]*w],[O[0]+ax[0]*w+ay[0]*h,O[1]+ax[1]*w+ay[1]*h],[O[0]+ay[0]*h,O[1]+ay[1]*h]];};
  const LUZ={top:1.06,front:.9,back:.74,right:.8,left:.86};
