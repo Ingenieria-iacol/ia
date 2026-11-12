@@ -12336,6 +12336,7 @@ const _pn=panel;panel=function(){_pn.apply(this,arguments);try{const pp=g('pp');
  ${r.sust=='Otra sustancia'?`<label>¿Cuál sustancia?</label><input data-r="otra" value="${E(r.otra||'')}" placeholder="Ej. glicol, vapor, agua helada">`:''}
  <label title="Texto que se dibuja sobre el tanque">Rótulo en el dibujo</label><input data-r="rot" maxlength="14" value="${E(r.rot)}" placeholder="${E((SUST[r.sust]||[''])[0])}">
  <div class="g25r"><div><label>Capacidad</label><input data-r="cap" type="number" min="0" step="any" value="${r.cap||''}" placeholder="0"></div><div><label>Unidad</label><select data-r="ucap">${UCAP.map(u=>`<option ${u==(r.ucap||'gal')?'selected':''}>${u}</option>`).join('')}</select></div></div>
+ <div class="g25r"><div><label title="Diámetro real del cuerpo (para el dibujo 3D a escala). En blanco = se calcula de la capacidad.">Diámetro real (m)</label><input data-r="diam" type="number" min="0" step="0.01" value="${r.diam||''}" placeholder="auto"></div><div><label title="Largo real del cuerpo (para el dibujo 3D a escala). En blanco = se calcula de la capacidad.">Largo real (m)</label><input data-r="largo" type="number" min="0" step="0.01" value="${r.largo||''}" placeholder="auto"></div></div>
  <div class="g25r"><div><label>Llenado máx. (%)</label><input data-r="llen" type="number" min="0" max="100" value="${r.llen||''}" placeholder="${/GLP|Propano|Butano/.test(r.sust)?85:95}"></div><div><label>Presión de diseño (psi)</label><input data-r="pdis" type="number" min="0" step="any" value="${r.pdis||''}" placeholder="${/GLP|Propano/.test(r.sust)?250:''}"></div></div>
  <div class="g25r"><div><label>Temperatura (°C)</label><input data-r="temp" type="number" step="any" value="${r.temp||''}"></div><div><label>Orientación</label><select data-r="ori">${['Horizontal','Vertical'].map(o=>`<option ${o==(r.ori||'Horizontal')?'selected':''}>${o}</option>`).join('')}</select></div></div>
  <div class="g25r"><div><label>Soporte / base</label><select data-r="base">${[['silletas','Silletas'],['patas','Patas'],['faldon','Faldón']].map(o=>`<option value="${o[0]}" ${o[0]==(r.base||(/Vertical/.test(r.ori||'')?'faldon':'silletas'))?'selected':''}>${o[1]}</option>`).join('')}</select></div><div><label>Giro del eje (°)</label><input data-r="az" type="number" step="5" value="${r.az||''}" placeholder="0"></div></div>
@@ -15115,7 +15116,7 @@ window.VSIM29={abrir,fisica,transitorio,demanda,autonomia,veredicto,repaint};
      igual que las tuberías. Así conserva proporción y no cambia de aspecto con el zoom. Las dimensiones
      reales salen de VaporGLP (vap.D, vap.L) o se derivan de la capacidad; si no hay nada, un tanque típico. */
   const rec=(n.sp&&n.sp.rec)||{},vap=(n.sp&&n.sp.vapor)||{};
-  let Dm=+vap.D||0,Lm=+vap.L||0;
+  let Dm=+rec.diam||+vap.D||0,Lm=+rec.largo||+vap.L||0;
   if(!(Dm>0)||!(Lm>0)){const gal=+rec.cap||+vap.gal||0;if(gal>0){const Vm=gal*0.00378541;Dm=Math.cbrt(4*Vm/(3*Math.PI));Lm=3*Dm;}else{Dm=1.3;Lm=4;}}
   const s=(typeof V!='undefined'&&V.s)||30;
   const R=Math.max(2,(Dm/2)*s),L=Math.max(6,Lm*s);sc=R/10.5;const SAD=9*sc;  /* radio y largo reales (px = m × V.s) */
