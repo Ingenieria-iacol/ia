@@ -4000,7 +4000,8 @@ document.querySelectorAll('details.ac').forEach(d=>{let tIn=0,tOut=0;const sm=d.
 #srov .sr:hover,#srov .sr.k{background:rgba(47,134,232,.18)}#srov .sr small{opacity:.65}#srov input{width:100%;padding:9px 11px;border-radius:8px}
 </style>
 <script>/* V26: recarga automática, registro de versiones, buscador, Esc → Seleccionar, longitud editable, plantillas de reducción, tee de reducción */
-window.APP_VER='33.33';window.ISO_VER=[{"v":"33.33","f":"2026-11-13","t":"Ficha del elemento: encabezado con foto o, si no hay, su ícono 3D","c":["El encabezado del panel de propiedades ahora siempre muestra una imagen del elemento: su foto de terreno si la tiene (como antes) y, cuando no hay foto, un pequeño dibujo isométrico según el tipo (tanque, válvula, regulador, medidor, manómetro, vaporizador, tubería, nodo/te, reducción, transición, unión, brida, flexible, electrocorrector, punto de presión y equipo de consumo).","Si no hay foto, tocar el ícono abre directamente el selector para agregar una."]},
+window.APP_VER='33.34';window.ISO_VER=[{"v":"33.34","f":"2026-11-13","t":"Candado de licencia infalsificable (Etapa 1): token firmado por el servidor (RSA) y verificado en el equipo","c":["El servidor del portal puede firmar la activación con su clave privada RSA; el equipo la verifica con la clave pública embebida (WebCrypto). Ya no basta con copiar un valor en el navegador para fingir una licencia: solo el servidor puede producir una firma válida.","Totalmente retrocompatible: mientras no se despliegue la clave pública, el candado se comporta EXACTAMENTE como antes. Ningún usuario activo queda fuera.","Gracia sin conexión ajustada de 45 a 14 días para las activaciones heredadas.","Cuando el modo firmado esté activo, una copia descargada y abierta como archivo local (sin servidor) no podrá validarse: la licencia falla cerrada."]},
+{"v":"33.33","f":"2026-11-13","t":"Ficha del elemento: encabezado con foto o, si no hay, su ícono 3D","c":["El encabezado del panel de propiedades ahora siempre muestra una imagen del elemento: su foto de terreno si la tiene (como antes) y, cuando no hay foto, un pequeño dibujo isométrico según el tipo (tanque, válvula, regulador, medidor, manómetro, vaporizador, tubería, nodo/te, reducción, transición, unión, brida, flexible, electrocorrector, punto de presión y equipo de consumo).","Si no hay foto, tocar el ícono abre directamente el selector para agregar una."]},
 {"v":"33.32","f":"2026-11-13","t":"Explorador: el foco apunta con precisión al componente","c":["El recorrido del Explorador ahora ubica el resaltado (foco) exactamente sobre cada botón o menú: vuelve a medir la posición mientras el menú abre y el diseño asienta, y sigue el desplazamiento y el cambio de tamaño de la ventana (antes podía quedar desfasado)."]},
 {"v":"33.31","f":"2026-11-13","t":"«Explorador»: tour guiado por las funciones (menú Vista) + guía en PDF","c":["En el menú Vista hay un botón «🧭 Explorador» que inicia un recorrido guiado: resalta cada menú, botón y modal (barra de trabajo, dibujo, tanques/VaporGLP, simulación, memoria de cálculo, Psinapsis, cronograma, normas, entregables…) con una tarjeta que explica para qué sirve, con Anterior/Siguiente y progreso.","Desde el recorrido se descarga la «Guía del Explorador» en PDF (tema Entalpía, con logo), incrustada para funcionar sin conexión (módulo v147_explorador.js)."]},
 {"v":"33.30","f":"2026-11-13","t":"Descargar «Perfil de usuario (PDF)» desde el menú de Ayuda","c":["En el menú de Ayuda (❓) hay un botón «📄 Perfil de usuario (PDF)» que descarga la ficha «Perfil de usuario y requisitos del sistema» con el tema e identidad Entalpía. El PDF va incrustado, así que funciona sin conexión."]},
@@ -12999,15 +13000,31 @@ if(!ir()){let k=0;const t=setInterval(()=>{if(ir()||++k>80)clearInterval(t);},30
    Ante cualquier error inesperado el candado NO bloquea (falla en abierto) para no dejar fuera a un usuario legítimo. */
 (function(){
 const g=id=>document.getElementById(id);
-const LK='isoflux_lic',GRACIA=45*24*3600*1000;/* 45 días de gracia sin conexión tras la última validación */
+const LK='isoflux_lic',GRACIA=14*24*3600*1000;/* gracia sin conexión para activación heredada (modo compatible) */
+/* === Etapa 1 · licencia infalsificable: el servidor firma un token (RSA) y el cliente lo verifica (WebCrypto). ===
+   La activación deja de ser falsificable: ya no basta con escribir algo en localStorage, hay que tener una firma
+   que solo el servidor (clave privada) puede producir. El cliente solo trae la CLAVE PÚBLICA, que no sirve para forjar.
+   Mientras PUBKEY_SPKI esté vacío, el candado funciona EXACTAMENTE como antes (modo compatible, sin riesgo). */
+const PUBKEY_SPKI='';/* ↞ pegar aquí la clave pública RSA del portal (base64 SPKI DER) para activar el modo firmado */
+const STRICT=!!PUBKEY_SPKI;
+let _pk=null;
+const b64ToBytes=s=>{try{s=String(s).replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return Uint8Array.from(atob(s),c=>c.charCodeAt(0));}catch(e){return null;}};
+async function importPk(){if(_pk)return _pk;if(!PUBKEY_SPKI)return null;try{_pk=await crypto.subtle.importKey('spki',b64ToBytes(PUBKEY_SPKI),{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['verify']);}catch(e){_pk=null;}return _pk;}
+async function verToken(tok){try{const pk=await importPk();if(!pk||!tok||String(tok).indexOf('.')<0)return null;const p=String(tok).split('.');const data=new TextEncoder().encode(p[0]);const sig=b64ToBytes(p[1]);if(!sig)return null;const ok=await crypto.subtle.verify({name:'RSASSA-PKCS1-v1_5'},pk,sig,data);if(!ok)return null;const pl=JSON.parse(new TextDecoder().decode(b64ToBytes(p[0])));if(!pl||!pl.exp||(+pl.exp*1000)<=Date.now())return null;return pl;}catch(e){return null;}}
 const CORREO='ingenieriaiacol@gmail.com';
 const leer=()=>{try{return JSON.parse(localStorage.getItem(LK)||'null');}catch(e){return null;}};
 const guardar=o=>{try{o?localStorage.setItem(LK,JSON.stringify(o)):localStorage.removeItem(LK);}catch(e){}};
-const vigente=l=>!!(l&&l.email&&l.exp>Date.now());
+const vigente=l=>!STRICT&&!!(l&&l.email&&!l.tok&&l.exp>Date.now());/* activación heredada: solo válida en modo compatible */
 const sello=(email,rol)=>guardar({email:email||'',rol:rol||'',exp:Date.now()+GRACIA,act:Date.now()});
+const selloTok=(tok,pl)=>guardar({tok,email:(pl&&pl.email)||'',rol:(pl&&pl.rol)||'',exp:(+pl.exp*1000),act:Date.now()});
 /* valida una sesión del portal contra el servidor (acción autenticada ya existente) */
 async function validarServidor(){const V=window.V19sgc;if(!V||!V.api||!V.ses||!V.ses())return'sin-sesion';
- try{await V.api({a:'sgcPlanoProyectos'});return'ok';}catch(e){if(e&&e.auth)return'no-autorizada';return'sin-conexion';}}
+ try{
+  /* Etapa 1: con clave pública embebida, pedir el token firmado (infalsificable) */
+  if(PUBKEY_SPKI){try{const resp=await V.api({a:'sgcLicenciaToken'});const tk=resp&&(resp.token||resp.tok);if(tk){const pl=await verToken(tk);if(pl){selloTok(tk,pl);return'ok';}return'no-autorizada';}}catch(eT){if(eT&&eT.auth)return'no-autorizada';/* endpoint aún no desplegado → respaldo clásico */}}
+  /* chequeo clásico (modo compatible y respaldo mientras el portal no entregue token) */
+  await V.api({a:'sgcPlanoProyectos'});const s=V.ses&&V.ses();sello(s&&s.email,s&&s.rol);return'ok';
+ }catch(e){if(e&&e.auth)return'no-autorizada';return'sin-conexion';}}
 /* overlay de bloqueo */
 let ov=null;
 function bloquear(motivo){if(ov)return;document.body.classList.add('lic112');
@@ -13026,11 +13043,12 @@ function msg(t){const m=g('lic112msg');if(m)m.textContent=t||'';}
 let revisando=false;
 async function revisar(interactivo){if(revisando)return;revisando=true;try{
  const l=leer();
- /* 1 · activación vigente: trabaja; si hay conexión, se renueva en segundo plano */
- if(vigente(l)){desbloquear();validarServidor().then(r=>{if(r=='ok')sello(l.email,l.rol);else if(r=='no-autorizada'){guardar(null);bloquear('no-autorizada');}});return;}
+ /* 1 · activación vigente (token firmado, o heredada en modo compat): trabaja; renueva en segundo plano */
+ const tokPl=(l&&l.tok)?await verToken(l.tok):null;
+ if(tokPl||vigente(l)){desbloquear();validarServidor().then(r=>{if(r=='no-autorizada'){guardar(null);bloquear('no-autorizada');}});return;}
  /* 2 · sin activación vigente: hay que validar ahora */
  const r=await validarServidor();
- if(r=='ok'){const s=window.V19sgc&&V19sgc.ses&&V19sgc.ses();sello(s&&s.email,s&&s.rol);desbloquear();if(interactivo)try{bgToast('🔓 Licencia activada en este equipo.');}catch(e){}return;}
+ if(r=='ok'){desbloquear();if(interactivo)try{bgToast('🔓 Licencia activada en este equipo.');}catch(e){}return;}
  if(r=='no-autorizada'){bloquear('no-autorizada');if(interactivo)msg('La cuenta no está autorizada.');return;}
  /* sin sesión o sin conexión y sin activación previa → copia no autorizada */
  bloquear('sin-validar');if(interactivo)msg(r=='sin-conexion'?'No se pudo conectar con el portal. Revisa tu conexión e inténtalo de nuevo.':'Inicia sesión con tu cuenta del Hub para activar esta copia.');
@@ -13039,7 +13057,7 @@ async function revisar(interactivo){if(revisando)return;revisando=true;try{
 (function hookLogin(){const V=window.V19sgc;if(!V){setTimeout(hookLogin,400);return;}if(V.__lic112)return;V.__lic112=1;
  const s=V.ses&&V.ses();/* si ya hay sesión al cargar, se validará en revisar() */
  /* observa la aparición de sesión: cuando SES pasa a existir, renueva el sello */
- let ult=!!s;setInterval(()=>{const now=!!(V.ses&&V.ses());if(now&&!ult){const se=V.ses();validarServidor().then(r=>{if(r=='ok'){sello(se.email,se.rol);desbloquear();}});}ult=now;},1500);})();
+ let ult=!!s;setInterval(()=>{const now=!!(V.ses&&V.ses());if(now&&!ult){validarServidor().then(r=>{if(r=='ok')desbloquear();});}ult=now;},1500);})();
 window.LIC112={revisar,estado:()=>leer(),activar:(email,rol)=>sello(email,rol),bloquear,desbloquear};
 const css=document.createElement('style');css.textContent=`#lic112{position:fixed;inset:0;z-index:100000;background:#070d16f2;backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px}
 #lic112 .lic112box{max-width:520px;background:#0e1826;border:1px solid #33465f;border-radius:16px;padding:22px 24px;box-shadow:0 18px 60px #000a;color:#dfe8f3;font-size:14px;line-height:1.5}
