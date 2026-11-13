@@ -329,16 +329,12 @@ const audioPlayer = $('bg-music');
 let isMuted = false, rotacionIntervalo, lastSave = 0;
 
 function gestionarMusica() {
+  // Sonido de fondo DESACTIVADO por defecto (era molesto). Queda disponible, en silencio,
+  // y el usuario puede activarlo manualmente con el botón de audio.
   const savedTrack = safeGetItem('audio_track');
-  if (savedTrack && NATURE_TRACKS.includes(savedTrack)) {
-    audioPlayer.src = savedTrack;
-    const t = parseFloat(safeGetItem('audio_time'));
-    if (!isNaN(t)) audioPlayer.addEventListener('loadedmetadata', () => { audioPlayer.currentTime = t; }, { once: true });
-  } else cambiarPistaAleatoria();
-  const p = audioPlayer.play();
-  if (p) p.catch(() => { isMuted = true; actualizarIconoAudio(); });
-  clearInterval(rotacionIntervalo);
-  rotacionIntervalo = setInterval(() => { if (!audioPlayer.paused && !isMuted) cambiarPistaAleatoria(); }, 720000);
+  audioPlayer.src = (savedTrack && NATURE_TRACKS.includes(savedTrack)) ? savedTrack : NATURE_TRACKS[Math.floor(Math.random() * NATURE_TRACKS.length)];
+  isMuted = true;
+  actualizarIconoAudio();
 }
 function cambiarPistaAleatoria() {
   const t = NATURE_TRACKS[Math.floor(Math.random() * NATURE_TRACKS.length)];

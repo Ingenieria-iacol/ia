@@ -31,16 +31,25 @@
  }
  function rectOf(el){try{const r=el.getBoundingClientRect();if(r.width>2&&r.height>2&&r.bottom>0&&r.top<innerHeight)return r;}catch(e){}return null;}
 
+ /* mide el objetivo AHORA (se re-consulta por si el nodo cambió) y coloca el foco con precisión */
+ function place(){
+  const s=STEPS[cur];let el=null;try{el=s&&s.sel?document.querySelector(s.sel):null;}catch(e){}
+  const r=el?rectOf(el):null;
+  if(r){const p=6;spot.style.display='block';spot.style.left=(r.left-p)+'px';spot.style.top=(r.top-p)+'px';spot.style.width=(r.width+p*2)+'px';spot.style.height=(r.height+p*2)+'px';}
+  else spot.style.display='none';
+  return r;
+ }
  function go(i){
   if(restore){try{restore();}catch(e){}restore=null;}
   cur=Math.max(0,Math.min(STEPS.length-1,i));
-  const s=STEPS[cur],el=revealTarget(s.sel);
-  requestAnimationFrame(()=>{
-   const r=el?rectOf(el):null;
-   if(r){spot.style.display='block';const p=6;spot.style.left=(r.left-p)+'px';spot.style.top=(r.top-p)+'px';spot.style.width=(r.width+p*2)+'px';spot.style.height=(r.height+p*2)+'px';}
-   else spot.style.display='none';
-   renderCard(r);
-  });
+  revealTarget(STEPS[cur].sel);        /* abre los <details> ancestros si el objetivo está en un menú */
+  spot.style.transition='none';        /* sin animación hasta ubicarlo bien */
+  const r0=place();renderCard(r0);
+  /* re-ubica mientras el layout asienta (menús que abren, fuentes, reflow): evita el desfase */
+  requestAnimationFrame(()=>{positionCard(place());
+   requestAnimationFrame(()=>{positionCard(place());});});
+  setTimeout(()=>{positionCard(place());spot.style.transition='left .18s,top .18s,width .18s,height .18s';},150);
+  setTimeout(()=>{positionCard(place());},320);
  }
  function renderCard(r){
   const s=STEPS[cur],n=STEPS.length;
@@ -79,6 +88,7 @@
   b.title='Tour guiado por las funciones de Isoflux (y descarga la guia en PDF)';
   b.onclick=()=>start();tb.parentNode.insertBefore(b,tb);return true;}
  let k=0;const t=setInterval(()=>{if(addBtn()||++k>60)clearInterval(t);},300);
- addEventListener('resize',()=>{if(active)go(cur);});
+ addEventListener('resize',()=>{if(active)positionCard(place());});
+ addEventListener('scroll',()=>{if(active)positionCard(place());},true);
  window.EXPLORADOR={start,stop,dlPdf};
 })();
