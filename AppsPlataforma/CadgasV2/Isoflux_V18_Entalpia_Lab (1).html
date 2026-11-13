@@ -4000,7 +4000,8 @@ document.querySelectorAll('details.ac').forEach(d=>{let tIn=0,tOut=0;const sm=d.
 #srov .sr:hover,#srov .sr.k{background:rgba(47,134,232,.18)}#srov .sr small{opacity:.65}#srov input{width:100%;padding:9px 11px;border-radius:8px}
 </style>
 <script>/* V26: recarga automática, registro de versiones, buscador, Esc → Seleccionar, longitud editable, plantillas de reducción, tee de reducción */
-window.APP_VER='33.28';window.ISO_VER=[{"v":"33.28","f":"2026-11-12","t":"Menos ruido de etiquetas, Niveles en la barra inferior, gas unificado y presión automática del tanque","c":["Simulación: junto al botón «Tarjetas» hay un selector de cuántas tarjetas mostrar a la vez (1, 3, 5, 8, 12, 20, 40 o Todas, las más cercanas al centro). El botón «Tarjetas» sigue para verlas u ocultarlas. Por defecto se muestran las 12 más cercanas, para reducir el ruido.","El minipanel «Niveles» se integró en la barra inferior de orientación (junto a Az/El/Fijar): selector de la planta activa, «＋ Planta» y ver/ocultar los planos. El ascensor flotante de la izquierda se oculta para no duplicar.","Consistencia del gas: el «Combustible» de cada equipo de consumo ahora hereda por defecto el gas activo del cálculo (GN o GLP); antes aparecía «Gas natural» aunque el proyecto fuera GLP.","Presión de la fuente automática desde el tanque: cuando la fuente es un tanque de GLP y no se escribe una presión a mano, Isoflux toma la presión de vapor del GLP a la temperatura de operación (física de VaporGLP) y la usa como presión de suministro; varía con la temperatura y el nivel. Si hay un regulador aguas abajo, este la reduce a la presión de servicio. Con red de gas natural se sigue usando la presión del distribuidor."]},
+window.APP_VER='33.29';window.ISO_VER=[{"v":"33.29","f":"2026-11-12","t":"Paneles arrastrables: Psinapsis (tarjeta abajo-derecha) y barra de vista","c":["El asistente Psinapsis se abre como una tarjeta abajo a la derecha y se puede arrastrar tomándolo por su encabezado o por la barra; sigue plegándose con ▾ (minimizar) y ocultándose con ✕. Recuerda dónde lo dejaste.","La barra de vista de pantalla completa (Encuadrar · Orbitar · Mover · ISO · Planta · Frente · Lateral · 3D · CAD · Etiquetas · Cotas · Nodos · Girar · Salir) también se arrastra, tomándola por un espacio libre (no por los botones)."]},
+{"v":"33.28","f":"2026-11-12","t":"Menos ruido de etiquetas, Niveles en la barra inferior, gas unificado y presión automática del tanque","c":["Simulación: junto al botón «Tarjetas» hay un selector de cuántas tarjetas mostrar a la vez (1, 3, 5, 8, 12, 20, 40 o Todas, las más cercanas al centro). El botón «Tarjetas» sigue para verlas u ocultarlas. Por defecto se muestran las 12 más cercanas, para reducir el ruido.","El minipanel «Niveles» se integró en la barra inferior de orientación (junto a Az/El/Fijar): selector de la planta activa, «＋ Planta» y ver/ocultar los planos. El ascensor flotante de la izquierda se oculta para no duplicar.","Consistencia del gas: el «Combustible» de cada equipo de consumo ahora hereda por defecto el gas activo del cálculo (GN o GLP); antes aparecía «Gas natural» aunque el proyecto fuera GLP.","Presión de la fuente automática desde el tanque: cuando la fuente es un tanque de GLP y no se escribe una presión a mano, Isoflux toma la presión de vapor del GLP a la temperatura de operación (física de VaporGLP) y la usa como presión de suministro; varía con la temperatura y el nivel. Si hay un regulador aguas abajo, este la reduce a la presión de servicio. Con red de gas natural se sigue usando la presión del distribuidor."]},
 {"v":"33.27","f":"2026-11-12","t":"Tanque: casquetes lisos, dimensiones de bases/altura e iconos 3D de equipos","c":["Los extremos (casquetes) del tanque se dibujan lisos, como cabezal bombeado 2:1 estándar (antes se veían anillados).","Nuevos campos en la ficha del recipiente: «Alto del soporte (m)» y «Grosor del soporte (m)», que se reflejan a escala real en el dibujo 3D (eleva el tanque y engrosa patas/soporte); además «Altura total (m)» informativa (Ø o largo + soporte).","La paleta «Equipos de consumo» muestra ahora un pequeño dibujo isométrico 3D de cada equipo en lugar del emoji (estufa, horno, caldera, acumulador, freidora, plancha, marmita, quemador, línea matriz, etc.)."]},
 {"v":"33.26","f":"2026-11-12","t":"Correcciones V34: equipo de consumo, línea matriz y conexión del tanque","c":["El desplegable «Equipo conectado» ya conserva el equipo elegido del catálogo (antes volvía a «Ninguno» con los equipos comerciales/residenciales que no estaban en la lista corta).","La «línea matriz» admite 1 sola zona (antes forzaba un mínimo de 2 y dibujaba Z1 y Z2 aunque se pidiera un solo punto de alimentación).","La conexión entre el tanque y la red se dibuja siempre, también en reposo: el cuerpo del tanque tapaba el extremo de la tubería; ahora hay una boquilla visible con el color y grosor reales de cada tubería conectada."]},
 {"v":"33.25","f":"2026-11-11","t":"Varios tanques en un mismo manifold: capacidad combinada","c":["Cuando dos o más tanques de GLP comparten la misma red, la capacidad de suministro se evalúa como la SUMA de la vaporización de cada tanque, con su propia temperatura, nivel y geometría (VaporGLP). Se compara la demanda total contra la suma y se reemplaza el aviso por-tanque por una evaluación combinada del manifold."]},
@@ -15872,6 +15873,69 @@ try{$('hbd').innerHTML=manHTML();}catch(e){}})();</script>
  let k=0;const t=setInterval(()=>{try{render();const fl=g('niv33');if(fl&&fl.style.display!='none')fl.style.display='none';}catch(e){}if(++k>4000)clearInterval(t);},400);
  const css=document.createElement('style');css.textContent='#nivHud button.on{background:#1d5fbf;color:#fff;border-color:#8fc9ff}#nivHud select{padding:2px 4px}';document.head.appendChild(css);
  window.NIVHUD={render};
+})();
+
+</script>
+<script>
+/* ===== V33.29 · Paneles arrastrables: Psinapsis (tarjeta abajo-derecha) y barra de vista =====
+   - El asistente Psinapsis (#ps79) se ubica abajo a la derecha y se puede arrastrar tomándolo por
+     su encabezado o por la barra; sigue plegándose con ▾ (minimizar) y ocultándose con ✕.
+   - La barra de vista de pantalla completa (#fs50bar) también se arrastra tomándola por un espacio
+     libre (no por los botones).
+   El anclaje es por borde izquierdo + inferior, para que la ventana de conversación siga creciendo
+   hacia arriba y la barra no salte al abrir/cerrar. La posición se recuerda en localStorage. */
+(function(){
+ const g=id=>document.getElementById(id);
+ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ /* hace arrastrable a `el`; canStart(target) decide si el punto donde se presiona inicia el arrastre */
+ function draggable(el,canStart,key){
+  if(!el||el.dataset.drag145)return;el.dataset.drag145='1';
+  el.style.cursor='';                       /* el cursor de arrastre se pone solo sobre zonas válidas */
+  let sx=0,sy=0,bL=0,bB=0,drag=false,cand=false,moved=false;
+  const restore=()=>{try{const s=JSON.parse(localStorage.getItem(key)||'null');if(s&&isFinite(s.l)&&isFinite(s.b)){el.style.left=clamp(s.l,0,innerWidth-80)+'px';el.style.bottom=clamp(s.b,0,innerHeight-36)+'px';el.style.right='auto';el.style.top='auto';el.style.transform='none';}}catch(e){}};
+  restore();
+  el.addEventListener('pointerdown',e=>{
+   if(e.button!=0)return;if(!canStart(e.target))return;
+   const r=el.getBoundingClientRect();bL=r.left;bB=innerHeight-r.bottom;sx=e.clientX;sy=e.clientY;cand=true;moved=false;
+  });
+  window.addEventListener('pointermove',e=>{
+   if(!cand)return;const dx=e.clientX-sx,dy=e.clientY-sy;
+   if(!drag){if(Math.abs(dx)<4&&Math.abs(dy)<4)return;drag=true;document.body.style.userSelect='none';}
+   moved=true;
+   const L=clamp(bL+dx,2,innerWidth-60),B=clamp(bB-dy,2,innerHeight-36);
+   el.style.left=L+'px';el.style.bottom=B+'px';el.style.right='auto';el.style.top='auto';el.style.transform='none';
+  });
+  window.addEventListener('pointerup',()=>{
+   if(drag){try{const r=el.getBoundingClientRect();localStorage.setItem(key,JSON.stringify({l:r.left,b:innerHeight-r.bottom}));}catch(e){}}
+   if(cand)document.body.style.userSelect='';
+   cand=false;setTimeout(()=>{drag=false;},0);
+  });
+  /* si se arrastró, anula el clic que seguiría (p.ej. no togglear al soltar sobre el icono) */
+  el.addEventListener('click',e=>{if(moved){e.stopPropagation();e.preventDefault();moved=false;}},true);
+  /* reubica dentro de la pantalla si cambia el tamaño de la ventana */
+  addEventListener('resize',()=>{if(el.style.left){const r=el.getBoundingClientRect();el.style.left=clamp(r.left,2,innerWidth-60)+'px';el.style.bottom=clamp(innerHeight-r.bottom,2,innerHeight-36)+'px';}});
+ }
+
+ /* zona de agarre de Psinapsis: encabezado o barra, nunca campos/botones (salvo el icono del cerebro) */
+ function psStart(t){const z=t.closest&&t.closest('.hd,.bar');if(!z)return false;if(t.closest('input,textarea,select'))return false;if(t.closest('button')&&!t.closest('.brain'))return false;return true;}
+ /* zona de agarre de la barra de vista: cualquier parte menos los botones */
+ function barStart(t){return !(t.closest&&t.closest('button,input,select'));}
+
+ function cssOnce(){if(g('drag145css'))return;const s=document.createElement('style');s.id='drag145css';
+  s.textContent=`#ps79{left:auto;right:14px;transform:none}
+  #ps79 .hd{cursor:move}#ps79 .hd button{cursor:pointer}
+  #ps79 .bar{cursor:default}
+  #fs50bar{cursor:move}#fs50bar button{cursor:pointer}
+  #ps79 .grip145,#fs50bar .grip145{cursor:move;opacity:.5;padding:0 4px;font-weight:bold;letter-spacing:-1px}`;
+  document.head.appendChild(s);}
+
+ let k=0;const t=setInterval(()=>{
+  cssOnce();
+  const ps=g('ps79');if(ps)draggable(ps,psStart,'isoflux_ps79pos');
+  const fb=g('fs50bar');if(fb)draggable(fb,barStart,'isoflux_fs50pos');
+  if((ps&&fb)||++k>40)clearInterval(t);
+ },300);
+ window.DRAG145={draggable};
 })();
 
 </script>
