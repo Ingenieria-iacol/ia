@@ -1891,12 +1891,12 @@ const verHTML=()=>GLP_VER.map(v=>`<div class="ver"><h3><span>V${v.v}</span> ${v.
 /* manual independiente (se descarga o se imprime) */
 function manualHTML(){const logo=(document.querySelector('.brand img')||{}).src||'';
  return`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Manual · GLP líquido V${GLP_APP_VER} · Isoflux</title><style>
-body{font:14px/1.55 system-ui,Segoe UI,Arial,sans-serif;color:#1a1420;max-width:860px;margin:0 auto;padding:28px 20px;background:#fff}
-header{display:flex;gap:14px;align-items:center;border-bottom:3px solid #e3263f;padding-bottom:12px;margin-bottom:8px}header img{height:56px;border-radius:10px}
-h1{font-size:22px;margin:0;letter-spacing:.06em;color:#c2410c}header p{margin:2px 0 0;color:#555}
-h2{font-size:17px;color:#c2410c;margin:26px 0 6px;border-bottom:1px solid #eadfd6;padding-bottom:3px}h3{font-size:14px;margin:14px 0 2px}h3 span{color:#e3263f}h3 small{font-weight:400;color:#777;margin-left:8px}
-table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px}td,th{border:1px solid #d9d0d5;padding:5px 8px;text-align:left;vertical-align:top}th{background:#faf3ee}
-code{background:#f5f0f4;border-radius:4px;padding:0 4px;font-size:12.5px}nav ol{columns:2;font-size:13px}nav a{color:#7a34c8;text-decoration:none}
+body{font:14px/1.55 system-ui,Segoe UI,Arial,sans-serif;color:#16202e;max-width:860px;margin:0 auto;padding:28px 20px;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+header{display:flex;gap:14px;align-items:center;background:#0c111a;border:1px solid #1f3a5c;border-top:4px solid #1f4e9c;border-radius:12px;padding:14px 18px;margin-bottom:16px}header img{height:52px;border-radius:9px}
+h1{font-size:22px;margin:0;letter-spacing:.06em;color:#fff}header p{margin:2px 0 0;color:#9fc3e8}
+h2{font-size:17px;color:#1f4e9c;margin:26px 0 6px;border-bottom:1px solid #d8e3ef;padding-bottom:3px}h3{font-size:14px;margin:14px 0 2px}h3 span{color:#a9772a}h3 small{font-weight:400;color:#777;margin-left:8px}
+table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px}td,th{border:1px solid #d3dce6;padding:5px 8px;text-align:left;vertical-align:top}th{background:#eef3f9;color:#16314e}
+code{background:#eef2f7;border-radius:4px;padding:0 4px;font-size:12.5px;color:#16314e}nav ol{columns:2;font-size:13px}nav a{color:#1f4e9c;text-decoration:none}
 li{margin:3px 0}@media print{body{padding:0}h2{break-after:avoid}table,.ver{break-inside:avoid}nav{break-after:page}}</style></head><body>
 <header>${logo?`<img src="${logo}" alt="Entalpía Lab">`:''}<div><h1>ISOFLUX · Módulo GLP líquido</h1><p>Manual de uso · versión ${GLP_APP_VER} · ${new Date().toLocaleDateString('es-CO')} · Entalpía Lab</p></div></header>
 <nav><ol>${secs().map((s,i)=>`<li><a href="#s${i}">${s.t.replace(/^\d+\.\s*/,'')}</a></li>`).join('')}<li><a href="#glo">Glosario</a></li><li><a href="#ver">Registro de versiones</a></li></ol></nav>
