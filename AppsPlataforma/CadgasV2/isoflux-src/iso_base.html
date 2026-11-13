@@ -278,7 +278,7 @@ if(sel.k=='p'){const a=o.anc||{},t=a.tipo||'Ninguno';h+=`<hr style="border-color
 if(t!='Ninguno'){h+=OPT('a_sup','Superficie / estructura',a.sup||'Pared',['Pared','Piso','Cercha','Columna','Viga','Otro'])+(a.sup=='Otro'?`<label>¿Cuál superficie o estructura?</label><input data-k="a_supx" value="${ea(a.supx||'')}" placeholder="Ej. losa aligerada, muro en drywall, rack">`:'')+`<label>Descripción del elemento</label><input data-k="a_desc" value="${ea(a.desc)}" placeholder="Ej. viga IPE 200, muro en concreto"><label>Separación entre soportes (m) · ref. ${sep(o)}</label><input data-k="a_sep" type="number" step="0.1" value="${a.sep||''}" placeholder="${sep(o)}"><label>${t=='Aéreo'?'Largo de la cuelga (m) · de la estructura al tubo':t=='Adosado'?'Largo de la ménsula (m) · del muro al tubo':'Altura del soporte (m) · del piso al apoyo del tubo'}</label><input data-k="a_l" type="number" step="0.01" min="0" value="${a.l||''}" placeholder="${window.SOP67&&SOP67.auto?'auto '+SOP67.auto(o).toFixed(2):'automático'}">`;
 if(t!='Adosado')h+=`<label>Altura de trabajo (m) · ref. ${hmax(o)}</label><input data-k="a_h" type="number" step="0.1" value="${a.h||''}" placeholder="${hmax(o)}">`+OPT('a_asc','Método de ascenso',a.asc||'Manlift',['Manlift','Andamio','Escalera']);}}
 else if(o.type=='consumo'){const e=o.eq||{},dd=(window.EQD&&(EQD[e.nombre]||EQD.Ninguno))||[.55,.55,.55];h+=`<hr style="border-color:var(--bd)"><b>Equipo de consumo</b>`+OPT('e_nombre','Equipo conectado',e.nombre||'Ninguno',['Ninguno',...EQ])+OPT('e_rot','Orientación del equipo (la toma de gas va en su cara posterior)',e.rot||'0',['0','90','180','270'])+`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px"><div><label>Ancho (m)</label><input data-k="e_an" type="number" step="0.01" value="${e.an||''}" placeholder="${dd[0]}"></div><div><label>Fondo (m)</label><input data-k="e_fo" type="number" step="0.01" value="${e.fo||''}" placeholder="${dd[1]}"></div><div><label>Alto (m)</label><input data-k="e_al" type="number" step="0.01" value="${e.al||''}" placeholder="${dd[2]}"></div></div><button style="margin-top:6px" onclick="acoplarEq(so())">🔗 Acoplar al conector flexible</button>`;
-if(e.nombre&&e.nombre!='Ninguno')h+=`<label>Potencia nominal (kW)</label><input data-k="e_kw" type="number" value="${e.kw||''}">`+OPT('e_gas','Combustible',e.gas||'Gas natural',['Gas natural','GLP'])+OPT('e_red','Red de alimentación',e.red||'Baja presión',['Baja presión','Media presión'])+`<label>Presión de trabajo (ej. 23 mbar)</label><input data-k="e_p" value="${ea(e.p)}">`;}
+if(e.nombre&&e.nombre!='Ninguno')h+=`<label>Potencia nominal (kW)</label><input data-k="e_kw" type="number" value="${e.kw||''}">`+OPT('e_gas','Combustible',e.gas||(typeof CF!='undefined'&&CF.gas=='GLP'?'GLP':'Gas natural'),['Gas natural','GLP'])+OPT('e_red','Red de alimentación',e.red||'Baja presión',['Baja presión','Media presión'])+`<label>Presión de trabajo (ej. 23 mbar)</label><input data-k="e_p" value="${ea(e.p)}">`;}
 h+=calcx(o);if(sel.k=='n'&&(o.type=='medidor'||o.type=='regulador'||o.type=='valvula'||o.type=='brida'||o.type=='union_u'||o.type=='union'||SPXT[o.type]))h+=spx(o);return h;}
 const dirv=(a,b)=>{const d=[b.x-a.x,b.y-a.y,b.z-a.z],l=Math.hypot(...d);return l?d.map(v=>v/l):[0,0,0];};
 function bom(){const R=new Map(),add=(cat,name,spec,q,u,ref)=>{if(!(q>0))return;const k=[cat,name,spec,curN?'N':'E'].join('|');let r=R.get(k);if(!r){r={k,cat,name,spec,q:0,u,refs:[],nw:curN};R.set(k,r);}r.q=r3(r.q+q);if(ref&&!r.refs.includes(ref))r.refs.push(ref);};
@@ -294,7 +294,7 @@ curN=fN;const pm=ps.slice().sort((x,y)=>dmm(y.dia)-dmm(x.dia))[0],fs=pm?`Ø ${pm
 if(ps.length==2){const u=ps.map(p=>dirv(n,N(p.a==n.id?p.b:p.a))),c=u[0][0]*u[1][0]+u[0][1]*u[1][1]+u[0][2]*u[1][2],df=Math.round(180-Math.acos(Math.max(-1,Math.min(1,c)))*180/Math.PI);
 if(df>=5)add('Accesorios',df==90?'Codo 90°':df==45?'Semicodo 45°':`Codo ${df}°`,fs,1,'u',n.tag);if(ps[0].dia!=ps[1].dia&&n.type!='reduccion')add('Accesorios','Reducción',`Ø ${ps[0].dia}" a Ø ${ps[1].dia}"`,1,'u',n.tag);}
 else if(ps.length==3)add('Accesorios',ps.some(p=>p.dia!=pm.dia)?'Te reducida':'Te',fs,1,'u',n.tag);else if(ps.length>=4)add('Accesorios','Cruz',fs,1,'u',n.tag);else if(ps.length==1&&n.type=='te')add('Accesorios','Tapón / terminal',fs,1,'u',n.tag);
-curN=n.obra!=='Existente';const e=n.eq;if(n.type=='consumo'&&e&&e.nombre&&e.nombre!='Ninguno'){add('Equipos',e.nombre,`${e.kw||'?'} kW · ${e.gas||'Gas natural'} · ${e.red||'Baja presión'}${e.p?' · '+e.p:''}`,1,'u',n.tag);add('Accesorios','Válvula de corte de equipo',sp,1,'u',n.tag);add('Accesorios','Conexión flexible certificada',sp,1,'u',n.tag);if(e.red=='Media presión')add('Componentes','Regulador de equipo',sp,1,'u',n.tag);}});
+curN=n.obra!=='Existente';const e=n.eq;if(n.type=='consumo'&&e&&e.nombre&&e.nombre!='Ninguno'){add('Equipos',e.nombre,`${e.kw||'?'} kW · ${e.gas||(typeof CF!='undefined'&&CF.gas=='GLP'?'GLP':'Gas natural')} · ${e.red||'Baja presión'}${e.p?' · '+e.p:''}`,1,'u',n.tag);add('Accesorios','Válvula de corte de equipo',sp,1,'u',n.tag);add('Accesorios','Conexión flexible certificada',sp,1,'u',n.tag);if(e.red=='Media presión')add('Componentes','Regulador de equipo',sp,1,'u',n.tag);}});
 const O=['Tubería','Accesorios','Componentes','Equipos','Soportería','Mano de obra'];return[...R.values()].sort((a,b)=>O.indexOf(a.cat)-O.indexOf(b.cat)||a.name.localeCompare(b.name));}
 const sub=r=>r.nw?r.q*((S.prices||{})[r.k]||0):0;let curN=true;
 function showBom(){const r=bom();let h='',c='',t=0;r.forEach(x=>{if(x.cat!=c){c=x.cat;h+=`<tr class="cat"><td colspan="8">${c}</td></tr>`;}t+=sub(x);h+=`<tr><td>${ea(x.name)}</td><td>${ea(x.spec)}</td><td>${ea(x.refs.join(', '))}</td><td>${x.q}</td><td>${x.u}</td><td><input type="number" min="0" data-pk="${ea(x.k)}" value="${(S.prices||{})[x.k]||''}"></td><td>${fmt(sub(x))}</td></tr>`;});
@@ -401,7 +401,16 @@ const Qn={},Qp={};ord.forEach(u=>{const n=N(u),e=n.eq;Qn[u]=n.type=='consumo'&&e
 for(let i=ord.length-1;i>0;i--){const u=ord[i];if(!par[u])continue;Qp[par[u].p.id]=Qn[u];Qn[par[u].u]+=Qn[u];}
 const Pi_={},Po_={},Pr={},g=x=>x-CF.patm;
 const outP=(n,pin)=>{if(n.type=='regulador'&&n.sp&&n.sp.psmax){const po=n.sp.psmax*PUK[n.sp.pu||'mbar']+CF.patm;if(po>pin+.01)R.warn.push(`${n.tag}: presión de entrada (${fx(g(pin),1)} mbar) menor que la de salida configurada.`);return Math.min(po,pin);}return pin;};
-let assumed=false;roots.forEach(r=>{const P0r=(r.ps0>0?+r.ps0:CF.psum*68.9476)+CF.patm;if(!(r.ps0>0))assumed=true;Pi_[r.id]=P0r;Po_[r.id]=outP(r,P0r);Pr[r.id]=Po_[r.id];});const P0=Pi_[s.id];R.assumed=assumed;
+let assumed=false,fromTank=false;
+/* presión de vapor del tanque (mbar man) desde la física de VaporGLP, para usarla como presión de la fuente */
+const tankPv=r=>{if(!r||r.type!='tanque'||typeof CF=='undefined'||CF.gas!='GLP')return 0;try{const pv=window.VSIM29&&VSIM29.presionFuente?VSIM29.presionFuente(r):0;if(isFinite(pv)&&pv>0)return pv;}catch(e){}return 0;};
+roots.forEach(r=>{let man;
+ if(r.ps0>0){man=+r.ps0;}                                   /* presión escrita a mano: manda */
+ else{const pv=tankPv(r);
+  if(pv>0){man=pv;r.__pvTank=pv;fromTank=true;}             /* automática: presión de vapor del tanque conectado */
+  else{man=CF.psum*68.9476;assumed=true;}}                  /* si no hay tanque: suministro del distribuidor */
+ const P0r=man+CF.patm;Pi_[r.id]=P0r;Po_[r.id]=outP(r,P0r);Pr[r.id]=Po_[r.id];});
+const P0=Pi_[s.id];R.assumed=assumed;R.fromTank=fromTank;
 const ST={ok:'Cumple',v:'Velocidad alta',d:'Caída excedida',x:'Presión agotada',nf:'Sin flujo / sin suministro'};
 ord.forEach(u=>{if(!par[u])return;const{p,u:up}=par[u],Q=Qp[p.id]||0,D=idm(p),Leq=len(p)*(1+CF.eqp/100),r=p2(Po_[up],Q,D,Leq,DM[p.dia]),A=Math.PI/4*(D/1000)**2,
 v=r.P2>0?Q*(1013.25/r.P2)*((273.15+CF.T)/288.15)/3600/A:NaN;Pi_[u]=r.P2;Po_[u]=outP(N(u),r.P2);Pr[u]=N(u).type=='regulador'?Po_[u]:Pr[up];
@@ -420,7 +429,9 @@ R.pn={};ord.forEach(u=>{R.pn[u]={P:g(Pi_[u]),Q:Qn[u]};});R.src=s;R.P0=P0;R.serv=
 function ovl(p,A,B){if(!(showR||sim)||!calcR||!calcR.byP)return;const r=calcR.byP[p.id];if(!r)return;const c=r.st=='ok'?'#5ee1ff':r.st=='nf'?'#6c7a8c':'#ffd24a';ctx.save();ctx.strokeStyle=c;ctx.lineWidth=2;ctx.setLineDash(r.st=='nf'?[4,5]:[]);ctx.beginPath();ctx.moveTo(A[0],A[1]);ctx.lineTo(B[0],B[1]);ctx.stroke();ctx.restore();
 if(r.st!='nf')(LO='p'+p.id,LA=[(A[0]+B[0])/2,(A[1]+B[1])/2],LK='res',lab)(window.UF?`${UF.Q(r.Q)} · ${UF.V(r.v)} · ${UF.P(r.P2)} · ${UF.T()}`:`${fx(r.Q,1)} m³/h · ${fx(r.v,1)} m/s · ΔP ${fx(r.dp,2)}`,(A[0]+B[0])/2+6,(A[1]+B[1])/2-8,c);}
 function calcx(o){let h='<hr style="border-color:var(--bd)"><b>Cálculo de flujo</b>';
-if(sel.k=='n')h+=`<label><input type="checkbox" data-k="src" ${o.src?'checked':''} style="width:auto"> Fuente de suministro</label>`+(o.src?`<label>Presión en la fuente, manométrica (mbar)</label><input data-k="ps0" type="number" step="any" placeholder="vacío = ${fx(CF.psum,0)} psi del distribuidor" value="${o.ps0||''}">`:'');
+if(sel.k=='n'){let pvT=0;try{if(o.type=='tanque'&&typeof CF!='undefined'&&CF.gas=='GLP'){pvT=window.VSIM29&&VSIM29.presionFuente?VSIM29.presionFuente(o):0;}}catch(e){}
+ const ph=pvT>0?`vacío = automática del tanque (≈ ${fx(pvT,0)} mbar · presión de vapor)`:`vacío = ${fx(CF.psum,0)} psi del distribuidor`;
+ h+=`<label><input type="checkbox" data-k="src" ${o.src?'checked':''} style="width:auto"> Fuente de suministro</label>`+(o.src?`<label>Presión en la fuente, manométrica (mbar)</label><input data-k="ps0" type="number" step="any" placeholder="${ph}" value="${o.ps0||''}">`+(pvT>0&&!(o.ps0>0)?`<small style="opacity:.7">Tomada automáticamente del tanque (presión de vapor de GLP a su temperatura). Escribe un valor solo si quieres forzarla.</small>`:''):'');}
 else h+=`<label>Ø interno (mm) · ref. ${fx(idm(o))} (${idsrc(o)})</label><input data-k="di" type="number" step="any" value="${o.di||''}" placeholder="${fx(idm(o))}">`;return h;}
 const FP=[['psum','Presión de suministro del distribuidor (psi) — se asume en la fuente si no se define otra'],['met','Método',['Pole','Weymouth','Panhandle A','Renouard']],['gas','Gas',['GN','GLP']],['g','Densidad relativa (aire=1)'],['pci','Poder calorífico (kWh/m³)'],['T','Temperatura del gas (°C)'],['patm','Presión atmosférica local (mbar abs)'],['Z','Compresibilidad Z'],['sim','Factor de simultaneidad'],['eqp','Long. equivalente accesorios (%)'],['vmax','Velocidad máx. (m/s)'],['dpmax','Caída máx. por nivel de presión (% de la presión regulada manométrica)']];
 const EQN={Pole:'Q = 38.77·F·(Tb/Pb)·[(P1²−P2²)/(G·Tf·L·Z)]^0.5·d^2.5 ; F de Pole según tabla (3/4"-1": 9.56; 1¼"-1½": 10.50; 2": 11.47; 3": 12.43; ≥4": 12.90)',Weymouth:'Q = 38.77·F·(Tb/Pb)·[(P1²−P2²)/(G·Tf·L·Z)]^0.5·d^2.5 ; F = 11.19·d^(1/6)','Panhandle A':'Q = 38.77·F·(Tb/Pb)·[(P1²−P2²)/(G·Tf·L·Z)]^0.5·d^2.5 ; F = 6.872·Re^0.07305','Renouard':'P1²−P2² = 48.6·G·L·Q^1.82/D^4.82 (P bar abs; L m; Q m³/h; D mm) — fórmula estándar, no transcrita literalmente en el PDF'};
@@ -430,7 +441,7 @@ function paramFill(){$('cpar').innerHTML=FP.map(([k,l,o])=>`<div><label>${l}</la
 function renderCalc(){calcR=solve();const R=calcR;if(R.err){$('cres').innerHTML=`<p>${R.err}</p>`;return;}
 const w=R.warn.length?`<div style="margin:8px 0;padding:6px 10px;border:1px solid #ffd24a;border-radius:8px;color:#ffe08a">${[...new Set(R.warn)].map(ea).join('<br>')}</div>`:'<div style="margin:8px 0;color:#8fe0ff">Sin advertencias: la red cumple los criterios configurados.</div>';
 const cl=r=>r.st=='ok'?'':r.st=='nf'?' class="nf"':' class="bad"';
-$('cres').innerHTML=`<div style="margin:6px 0;font-size:12px;opacity:.8">Fuente: <b>${ea(R.src.tag)}</b> · ${fx(R.P0-CF.patm,1)} mbar man. (${fx((R.P0-CF.patm)/68.9476,1)} psi)${R.assumed?' · asumida: suministro del distribuidor':''} · ${EQN[CF.met]}</div>${w}<b>Tramos</b><table class="ct"><tr><th>Tramo</th><th>Ø nom.</th><th>Ø int. mm</th><th>Material</th><th>L m</th><th>L eq. m</th><th>Q m³/h</th><th>v m/s</th><th>P ent. mbar</th><th>P sal. mbar</th><th>ΔP mbar</th><th>Caída %</th><th>Estado</th></tr>${R.pipes.map(r=>`<tr${cl(r)}><td>${ea(r.tramo)}</td><td>${r.dn}</td><td>${fx(r.di)}</td><td>${r.mat}</td><td>${fx(r.L)}</td><td>${fx(r.Leq)}</td><td>${fx(r.Q)}</td><td>${fx(r.v,1)}</td><td>${fx(r.P1,1)}</td><td>${fx(r.P2,1)}</td><td>${fx(r.dp,2)}</td><td>${fx(r.cum,1)}</td><td>${r.est}</td></tr>`).join('')}</table><br><b>Nodos y equipos</b><table class="ct"><tr><th>Nodo</th><th>Tipo</th><th>Equipo</th><th>kW</th><th>Q m³/h</th><th>P ent. mbar</th><th>P sal. mbar</th><th>Estado</th></tr>${R.nodes.filter(n=>n.tipo!='Nodo / te'||n.Pin==n.Pin).map(n=>`<tr${n.est=='En servicio'?'':n.est=='Sin suministro'?' class="nf"':' class="bad"'}><td>${ea(n.tag)}</td><td>${n.tipo}</td><td>${ea(n.equipo)}</td><td>${n.kw}</td><td>${fx(n.Q)}</td><td>${fx(n.Pin,1)}</td><td>${fx(n.Pout,1)}</td><td>${n.est}</td></tr>`).join('')}</table>`+auditHTML(R);}
+$('cres').innerHTML=`<div style="margin:6px 0;font-size:12px;opacity:.8">Fuente: <b>${ea(R.src.tag)}</b> · ${fx(R.P0-CF.patm,1)} mbar man. (${fx((R.P0-CF.patm)/68.9476,1)} psi)${R.fromTank?' · automática: presión de vapor del tanque':R.assumed?' · asumida: suministro del distribuidor':''} · ${EQN[CF.met]}</div>${w}<b>Tramos</b><table class="ct"><tr><th>Tramo</th><th>Ø nom.</th><th>Ø int. mm</th><th>Material</th><th>L m</th><th>L eq. m</th><th>Q m³/h</th><th>v m/s</th><th>P ent. mbar</th><th>P sal. mbar</th><th>ΔP mbar</th><th>Caída %</th><th>Estado</th></tr>${R.pipes.map(r=>`<tr${cl(r)}><td>${ea(r.tramo)}</td><td>${r.dn}</td><td>${fx(r.di)}</td><td>${r.mat}</td><td>${fx(r.L)}</td><td>${fx(r.Leq)}</td><td>${fx(r.Q)}</td><td>${fx(r.v,1)}</td><td>${fx(r.P1,1)}</td><td>${fx(r.P2,1)}</td><td>${fx(r.dp,2)}</td><td>${fx(r.cum,1)}</td><td>${r.est}</td></tr>`).join('')}</table><br><b>Nodos y equipos</b><table class="ct"><tr><th>Nodo</th><th>Tipo</th><th>Equipo</th><th>kW</th><th>Q m³/h</th><th>P ent. mbar</th><th>P sal. mbar</th><th>Estado</th></tr>${R.nodes.filter(n=>n.tipo!='Nodo / te'||n.Pin==n.Pin).map(n=>`<tr${n.est=='En servicio'?'':n.est=='Sin suministro'?' class="nf"':' class="bad"'}><td>${ea(n.tag)}</td><td>${n.tipo}</td><td>${ea(n.equipo)}</td><td>${n.kw}</td><td>${fx(n.Q)}</td><td>${fx(n.Pin,1)}</td><td>${fx(n.Pout,1)}</td><td>${n.est}</td></tr>`).join('')}</table>`+auditHTML(R);}
 function showCalc(){paramFill();renderCalc();$('cshow').checked=showR;$('cm').classList.add('on');}
 $('bcal').onclick=showCalc;$('cx').onclick=()=>{$('cm').classList.remove('on');draw();};$('crun').onclick=renderCalc;
 $('cpar').addEventListener('input',e=>{const k=e.target.dataset.cf;if(!k)return;CF[k]=e.target.tagName=='SELECT'?e.target.value:+e.target.value;if(k=='gas'){Object.assign(CF,CF.gas=='GLP'?{g:1.52,pci:28}:{g:.6,pci:10.4});paramFill();}renderCalc();});
@@ -3989,7 +4000,8 @@ document.querySelectorAll('details.ac').forEach(d=>{let tIn=0,tOut=0;const sm=d.
 #srov .sr:hover,#srov .sr.k{background:rgba(47,134,232,.18)}#srov .sr small{opacity:.65}#srov input{width:100%;padding:9px 11px;border-radius:8px}
 </style>
 <script>/* V26: recarga automática, registro de versiones, buscador, Esc → Seleccionar, longitud editable, plantillas de reducción, tee de reducción */
-window.APP_VER='33.27';window.ISO_VER=[{"v":"33.27","f":"2026-11-12","t":"Tanque: casquetes lisos, dimensiones de bases/altura e iconos 3D de equipos","c":["Los extremos (casquetes) del tanque se dibujan lisos, como cabezal bombeado 2:1 estándar (antes se veían anillados).","Nuevos campos en la ficha del recipiente: «Alto del soporte (m)» y «Grosor del soporte (m)», que se reflejan a escala real en el dibujo 3D (eleva el tanque y engrosa patas/soporte); además «Altura total (m)» informativa (Ø o largo + soporte).","La paleta «Equipos de consumo» muestra ahora un pequeño dibujo isométrico 3D de cada equipo en lugar del emoji (estufa, horno, caldera, acumulador, freidora, plancha, marmita, quemador, línea matriz, etc.)."]},
+window.APP_VER='33.28';window.ISO_VER=[{"v":"33.28","f":"2026-11-12","t":"Menos ruido de etiquetas, Niveles en la barra inferior, gas unificado y presión automática del tanque","c":["Simulación: junto al botón «Tarjetas» hay un selector de cuántas tarjetas mostrar a la vez (1, 3, 5, 8, 12, 20, 40 o Todas, las más cercanas al centro). El botón «Tarjetas» sigue para verlas u ocultarlas. Por defecto se muestran las 12 más cercanas, para reducir el ruido.","El minipanel «Niveles» se integró en la barra inferior de orientación (junto a Az/El/Fijar): selector de la planta activa, «＋ Planta» y ver/ocultar los planos. El ascensor flotante de la izquierda se oculta para no duplicar.","Consistencia del gas: el «Combustible» de cada equipo de consumo ahora hereda por defecto el gas activo del cálculo (GN o GLP); antes aparecía «Gas natural» aunque el proyecto fuera GLP.","Presión de la fuente automática desde el tanque: cuando la fuente es un tanque de GLP y no se escribe una presión a mano, Isoflux toma la presión de vapor del GLP a la temperatura de operación (física de VaporGLP) y la usa como presión de suministro; varía con la temperatura y el nivel. Si hay un regulador aguas abajo, este la reduce a la presión de servicio. Con red de gas natural se sigue usando la presión del distribuidor."]},
+{"v":"33.27","f":"2026-11-12","t":"Tanque: casquetes lisos, dimensiones de bases/altura e iconos 3D de equipos","c":["Los extremos (casquetes) del tanque se dibujan lisos, como cabezal bombeado 2:1 estándar (antes se veían anillados).","Nuevos campos en la ficha del recipiente: «Alto del soporte (m)» y «Grosor del soporte (m)», que se reflejan a escala real en el dibujo 3D (eleva el tanque y engrosa patas/soporte); además «Altura total (m)» informativa (Ø o largo + soporte).","La paleta «Equipos de consumo» muestra ahora un pequeño dibujo isométrico 3D de cada equipo en lugar del emoji (estufa, horno, caldera, acumulador, freidora, plancha, marmita, quemador, línea matriz, etc.)."]},
 {"v":"33.26","f":"2026-11-12","t":"Correcciones V34: equipo de consumo, línea matriz y conexión del tanque","c":["El desplegable «Equipo conectado» ya conserva el equipo elegido del catálogo (antes volvía a «Ninguno» con los equipos comerciales/residenciales que no estaban en la lista corta).","La «línea matriz» admite 1 sola zona (antes forzaba un mínimo de 2 y dibujaba Z1 y Z2 aunque se pidiera un solo punto de alimentación).","La conexión entre el tanque y la red se dibuja siempre, también en reposo: el cuerpo del tanque tapaba el extremo de la tubería; ahora hay una boquilla visible con el color y grosor reales de cada tubería conectada."]},
 {"v":"33.25","f":"2026-11-11","t":"Varios tanques en un mismo manifold: capacidad combinada","c":["Cuando dos o más tanques de GLP comparten la misma red, la capacidad de suministro se evalúa como la SUMA de la vaporización de cada tanque, con su propia temperatura, nivel y geometría (VaporGLP). Se compara la demanda total contra la suma y se reemplaza el aviso por-tanque por una evaluación combinada del manifold."]},
 {"v":"33.24","f":"2026-11-10","t":"Unidades de flujo por tiempo (m³/h, m³/día, m³/mes)","c":["En «Potencia nominal» se puede ingresar el consumo como flujo de gas en m³/h, m³/día o m³/mes (se convierte a potencia con el poder calorífico del gas activo); el caudal también admite m³/día y m³/mes."]},
@@ -5196,8 +5208,14 @@ if(loops.length){const qT=Math.max(roots.reduce((a,r)=>a+(sub[r.id]||0),0),1e-3)
 else flows();
 const Pi_={},Po_={},Pr={},g=x=>x-CF.patm;
 const outP=(n,pin)=>{if(n.type=='regulador'&&n.sp&&n.sp.psmax){const po=n.sp.psmax*PUK[n.sp.pu||'mbar']+CF.patm;if(po>pin+.01)R.warn.push(`${n.tag}: presión de entrada (${fx(g(pin),1)} mbar) menor que la de salida configurada.`);return Math.min(po,pin);}return pin;};
-let assumed=false;roots.forEach(r=>{const P0r=(r.ps0>0?+r.ps0:CF.psum*68.9476)+CF.patm;if(!(r.ps0>0))assumed=true;Pi_[r.id]=P0r;Po_[r.id]=outP(r,P0r);Pr[r.id]=Po_[r.id];});
-const P0=Pi_[s.id];R.assumed=assumed;
+let assumed=false,fromTank=false;
+/* presión de la fuente: si es un tanque de GLP y no se escribió a mano, se toma de su presión de vapor (VaporGLP) */
+const tankPv=r=>{if(!r||r.type!='tanque'||typeof CF=='undefined'||CF.gas!='GLP')return 0;try{const pv=window.VSIM29&&VSIM29.presionFuente?VSIM29.presionFuente(r):0;return isFinite(pv)&&pv>0?pv:0;}catch(e){return 0;}};
+roots.forEach(r=>{let man;
+ if(r.ps0>0){man=+r.ps0;}
+ else{const pv=tankPv(r);if(pv>0){man=pv;r.__pvTank=pv;fromTank=true;}else{man=CF.psum*68.9476;assumed=true;}}
+ const P0r=man+CF.patm;Pi_[r.id]=P0r;Po_[r.id]=outP(r,P0r);Pr[r.id]=Po_[r.id];});
+const P0=Pi_[s.id];R.assumed=assumed;R.fromTank=fromTank;
 const ST={ok:'Cumple',v:'Velocidad alta',d:'Caída excedida',x:'Presión agotada',nf:'Sin flujo / sin suministro'},sq=kindOf()=='sq';
 const mk=(p,up,Pup,Q,ref)=>{const D=idm(p),Leq=len(p)*(1+CF.eqp/100),r=p2(Pup,Q,D,Leq,DM[p.dia],p),A=Math.PI/4*(D/1000)**2,
  v=r.P2>0?Q*(1013.25/r.P2)*((273.15+CF.T)/288.15)/3600/A:NaN,cum=(ref-r.P2)/Math.max(ref-CF.patm,1e-6)*100,st=Q<=1e-9?'nf':r.x?'x':v>CF.vmax?'v':cum>CF.dpmax?'d':'ok';
@@ -7468,7 +7486,15 @@ function tarjetas(G){window.TARJ_HIT=[];window.TARJ_DATOS=datos;if(!G.size)retur
 const _ll=layLabels;layLabels=function(){if(!window.TARJ||(typeof snapF!='undefined'&&snapF))return _ll.apply(this,arguments);const keep=[],G=new Map();(LQ||[]).forEach(it=>{if(it.k=='dim'||!it.o)keep.push(it);else{if(!G.has(it.o))G.set(it.o,[]);G.get(it.o).push(it);}});LQ=keep;_ll.apply(this,arguments);try{tarjetas(G);}catch(e){console.error('tarjetas',e);}};
 /* interruptor junto a «Etiquetas» */
 const add=()=>{const ch=document.getElementById('r39c');if(!ch||document.getElementById('btarj'))return!!ch;const b=document.createElement('button');b.id='btarj';b.textContent='Tarjetas';b.title='Reúne la información de cada tramo o componente en una tarjeta translúcida (en lugar de etiquetas sueltas)';b.classList.toggle('on',ON);
- b.onclick=()=>{ON=!ON;window.TARJ=ON;b.classList.toggle('on',ON);try{localStorage.setItem('isoflux_tarj',ON?'1':'0');}catch(e){}draw();};const bl=document.getElementById('bl');(bl&&bl.parentNode===ch)?bl.after(b):ch.appendChild(b);return true;};
+ b.onclick=()=>{ON=!ON;window.TARJ=ON;b.classList.toggle('on',ON);try{localStorage.setItem('isoflux_tarj',ON?'1':'0');}catch(e){}draw();};const bl=document.getElementById('bl');(bl&&bl.parentNode===ch)?bl.after(b):ch.appendChild(b);
+ /* selector de cuántas tarjetas mostrar (las más cercanas al centro), para reducir el ruido */
+ if(!document.getElementById('tarjN')){const sN=document.createElement('select');sN.id='tarjN';sN.title='Cuántas tarjetas mostrar a la vez (las más cercanas al centro de la pantalla). Para ocultarlas todas usa el botón «Tarjetas».';sN.style.cssText='margin-left:3px;max-width:116px';
+  let cur=12;try{const sv=localStorage.getItem('isoflux_tarjn');if(sv!=null)cur=+sv;}catch(e){}if(!(cur>0))cur=12;window.TARJ_MAX=cur;
+  const OP=[[1,'1 tarjeta'],[3,'3 tarjetas'],[5,'5 tarjetas'],[8,'8 tarjetas'],[12,'12 tarjetas'],[20,'20 tarjetas'],[40,'40 tarjetas'],[9999,'Todas']];
+  sN.innerHTML=OP.map(o=>`<option value="${o[0]}" ${(+o[0]==cur||(o[0]==9999&&cur>=9999))?'selected':''}>${o[1]}</option>`).join('');
+  sN.onchange=()=>{window.TARJ_MAX=+sN.value;try{localStorage.setItem('isoflux_tarjn',sN.value);}catch(e){}if(!window.TARJ){ON=true;window.TARJ=true;b.classList.toggle('on',true);try{localStorage.setItem('isoflux_tarj','1');}catch(e){}}draw();};
+  b.after(sN);}
+ return true;};
 if(!add()){let k=0;const t=setInterval(()=>{if(add()||++k>20)clearInterval(t);},500);}
 window.V53tarj={datos};
 })();
@@ -13404,6 +13430,9 @@ function fisica(n){
  return{vinc:false,N:1,gal,fill,M100,mass0,rho,rg,Uk,At,At0,LvM,Ta,Tl0,Tmin,Pd:(Ta>0?1.5:0.9),Pm:0.5,slopeP:0.16,
   mmax:Uk*At0*(Ta-Tmin)/LvM,ratio:0,ori:or,D,L};}
 const presion=(fis,Tl)=>Math.max(0,fis.Pm+fis.slopeP*(Tl-fis.Tmin));
+/* presión de la fuente para Isoflux: presión de vapor del GLP a la temperatura de operación del
+   líquido (bar man → mbar man). Varía con la temperatura y el nivel del tanque (vía la física). */
+function presionFuente(n){try{const f=fisica(n);if(!f)return 0;const Tl=isFinite(f.Tl0)?f.Tl0:(isFinite(f.Ta)?f.Ta:15);const bar=presion(f,Tl);return bar>0?bar*1000:0;}catch(e){return 0;}}
 
 /* ───────── integración transitoria ───────── */
 function transitorio(fis,dem,horas,dt){
@@ -13600,7 +13629,7 @@ const css=document.createElement('style');css.textContent=`#vs2{position:fixed;i
 @media(max-width:680px){#vs2 .vs2kpis,#vs2 .vs2grid{grid-template-columns:1fr 1fr}}
 #vapcanvas{background:none!important}`;document.head.appendChild(css);
 
-window.VSIM29={abrir,fisica,transitorio,demanda,autonomia,veredicto,repaint};
+window.VSIM29={abrir,fisica,transitorio,demanda,autonomia,veredicto,repaint,presionFuente};
 })();
 
 </script>
@@ -13867,7 +13896,7 @@ window.VSIM29={abrir,fisica,transitorio,demanda,autonomia,veredicto,repaint};
   if(typeof S.niv.ver!=='boolean')S.niv.ver=true;if(!(S.niv.act>=0&&S.niv.act<S.niv.list.length))S.niv.act=0;return S.niv;}
  const act=()=>{const c=cfg();return c.list[c.act];};
  window.NIV=()=>act().y;
- window.NIV33={cfg,act};
+ window.NIV33={cfg,act,activar,agregar,pinta,verToggle:()=>{cfg().ver=!cfg().ver;pinta();draw();}};
  function setEl(y){const el=g('el');if(el){el.value=+(+y).toFixed(3);try{el.dispatchEvent(new Event('input'));}catch(e){}}}
  function activar(i){const c=cfg();if(i<0||i>=c.list.length)return;c.act=i;setEl(c.list[i].y);pinta();draw();}
  /* ordena por cota descendente para la barra (arriba = planta más alta) y conserva el activo */
