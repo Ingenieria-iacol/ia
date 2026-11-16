@@ -4004,7 +4004,8 @@ document.querySelectorAll('details.ac').forEach(d=>{let tIn=0,tOut=0;const sm=d.
 #srov .sr:hover,#srov .sr.k{background:rgba(47,134,232,.18)}#srov .sr small{opacity:.65}#srov input{width:100%;padding:9px 11px;border-radius:8px}
 </style>
 <script>/* V26: recarga automática, registro de versiones, buscador, Esc → Seleccionar, longitud editable, plantillas de reducción, tee de reducción */
-window.APP_VER='33.40';window.ISO_VER=[{"v":"33.40","f":"2026-11-16","t":"Tipo de trabajo «Calibración» y tipo personalizado en la ficha","c":["Los tipos de trabajo ahora incluyen «Calibración» (base del futuro Plan de Aseguramiento Metrológico).","Al elegir «Otro» en el tipo de trabajo aparece un campo para escribir un tipo personalizado, que se guarda y se vuelve a mostrar al reabrir la ficha."]},
+window.APP_VER='33.41';window.ISO_VER=[{"v":"33.41","f":"2026-11-16","t":"Arrastre isométrico: la tubería conserva el ángulo + líneas guía al mover","c":["Al arrastrar un elemento conectado, se engancha al eje isométrico de su vecino, de modo que la tubería conserva el ángulo del isométrico (ya no queda torcida).","Durante el arrastre se muestran las líneas guía de los ejes isométricos (como al dibujar), con la distancia sobre el eje activo.","El imán a nodos o tuberías existentes conserva la prioridad; si el cursor se aleja del eje, el movimiento vuelve a ser libre."]},
+{"v":"33.40","f":"2026-11-16","t":"Tipo de trabajo «Calibración» y tipo personalizado en la ficha","c":["Los tipos de trabajo ahora incluyen «Calibración» (base del futuro Plan de Aseguramiento Metrológico).","Al elegir «Otro» en el tipo de trabajo aparece un campo para escribir un tipo personalizado, que se guarda y se vuelve a mostrar al reabrir la ficha."]},
 {"v":"33.39","f":"2026-11-16","t":"Cronograma mejorado: secciones plegables, Gantt con hitos/avance/dependencias, filtro por proyecto y campos nuevos","c":["Las actividades se agrupan (por Elemento, Tipo, Estado, Responsable o Fase) en secciones plegables, tanto en la lista como en la vista de tiempo.","La carta Gantt ahora muestra una fila por actividad con relleno de % de avance, hitos (◆) y flechas de dependencia (ruta) entre actividades encadenadas.","El cronograma respeta el proyecto de modificación activo (igual que el despiece): con un proyecto activo solo muestra sus actividades.","La ficha de trabajo tiene campos nuevos: Fase/grupo, % de avance, Depende de (actividad previa) y Es un hito. Responsable, estado y costo ya existían."]},
 {"v":"33.38","f":"2026-11-16","t":"Encabezados acordeón en los modales flotantes (colapsar a la barra de título y flotar sobre el dibujo)","c":["Cada ventana flotante (Cronograma, Cálculo, Despiece, Datos del proyecto, etc.) tiene ahora un control ▾ en su encabezado que la colapsa a solo su barra de título.","Al colapsar, la ventana flota sobre el dibujo y el fondo deja de bloquear, así se puede seguir trabajando en el plano con la ventana reducida; al expandir vuelve a su tamaño.","También se puede colapsar/expandir con doble clic en una zona libre del encabezado."]},
 {"v":"33.37","f":"2026-11-16","t":"Proyectos de modificación sobre el plano Base + Estado de obra ampliado + filtro de entregables por proyecto","c":["Estado de obra ahora tiene cinco opciones: Nueva, Existente, Por retirar, Reutilizar y Provisional. En el despiece se separan por estado y solo las «Nueva» entran al presupuesto (sin cambiar los precios ya guardados).","Las capas pueden marcarse como «proyecto de modificación» (📌) sobre el plano Base (el oficial): así ya no hay que duplicar planos para proyectar cambios.","Al activar un proyecto, el despiece, los documentos, el cálculo y el dibujo muestran solo lo que corresponde, con dos vistas conmutables: «Base + modificaciones» (cómo quedaría la obra) o «Solo el proyecto» (sus altas y bajas). Un indicador flotante avisa cuándo hay un filtro activo.","Corrección: el despiece ahora respeta las capas ocultas (antes podía sumar elementos de capas que no se estaban viendo), evitando que se mezcle información entre proyectos.","Sin proyecto activo y sin capas ocultas, todo funciona exactamente igual que antes."]},
@@ -16542,6 +16543,87 @@ try{$('hbd').innerHTML=manHTML();}catch(e){}})();</script>
  }
  let n=0;const iv=setInterval(()=>{n++;try{if(boot()||n>40)clearInterval(iv);}catch(e){if(n>40)clearInterval(iv);}},150);
  window.CRON151={installRows,installRender,boot};
+})();
+
+</script>
+<script>
+/* v152 · Arrastre isométrico + líneas guía.
+   Al arrastrar UN elemento conectado, se engancha al eje isométrico de su(s) vecino(s)
+   (la tubería conserva el ángulo del isométrico) y se dibujan las líneas guía, como al dibujar.
+   El imán a nodo/tubería existente conserva la prioridad. Envuelve movMove/movUp/draw sin tocar el núcleo. */
+(function(){
+ 'use strict';
+ if(typeof window==='undefined')return;
+ const DIRS=[[1,0,0],[0,0,1]];     /* ejes isométricos del suelo (X y Z del mundo) */
+ let GUIDE=null;                    /* {segs:[{x0,y0,x1,y1,hot}], lab:{x,y,txt}} */
+ const r3v=v=>Math.round(v*1000)/1000;
+ const stepv=()=>{try{return(typeof step==='function'&&step())||0.1;}catch(e){return 0.1;}};
+
+ /* engancha el nodo arrastrado al eje iso de un vecino y prepara las guías */
+ function isoSnap(){
+  GUIDE=null;
+  try{
+   const d=(typeof mdrag!=='undefined')?mdrag:null;
+   if(!d||!d.h||d.snapN)return;                 /* el imán tiene prioridad */
+   if(!d.ids||d.ids.size!==1)return;            /* solo un elemento */
+   const id=[...d.ids][0],n=N(id);if(!n)return;
+   /* vecinos fijos (otro extremo de cada tubería conectada) */
+   const nbs=[];S.pipes.forEach(p=>{let o=null;if(p.a===id)o=N(p.b);else if(p.b===id)o=N(p.a);if(o&&!d.ids.has(o.id))nbs.push(o);});
+   if(!nbs.length)return;
+   if(d.cx==null)return;
+   const gc=ground(d.cx,d.cy,n.y,true);         /* cursor en el mundo, plano a la altura del nodo */
+   let best=null;const st=stepv();
+   nbs.forEach(nb=>{DIRS.forEach(dir=>{
+    const t0=(gc[0]-nb.x)*dir[0]+(gc[2]-nb.z)*dir[2];
+    const t=Math.round(t0/st)*st;if(Math.abs(t)<1e-6)return;
+    const px=r3v(nb.x+dir[0]*t),pz=r3v(nb.z+dir[2]*t);
+    const sp=P(px,n.y,pz);                       /* posición candidata en pantalla */
+    const dist=Math.hypot(sp[0]-d.cx,sp[1]-d.cy);
+    if(!best||dist<best.dist)best={dist,nb,dir,px,pz,t};
+   });});
+   if(!best||best.dist>26)return;                /* solo engancha si el cursor está cerca del eje */
+   /* aplicar: el nodo queda sobre el eje iso del vecino → la tubería conserva el ángulo */
+   n.x=best.px;n.z=best.pz;
+   /* guías: los dos ejes iso que pasan por el vecino enganchado (el activo resaltado) */
+   const segs=[];const EXT=1e5;
+   DIRS.forEach(dir=>{const A=P(best.nb.x-dir[0]*EXT,best.nb.y,best.nb.z-dir[2]*EXT),B=P(best.nb.x+dir[0]*EXT,best.nb.y,best.nb.z+dir[2]*EXT);
+    segs.push({x0:A[0],y0:A[1],x1:B[0],y1:B[1],hot:dir===best.dir});});
+   const sp=P(best.px,n.y,best.pz);
+   GUIDE={segs,lab:{x:sp[0],y:sp[1],txt:Math.abs(r3v(best.t))+' m'}};
+  }catch(e){GUIDE=null;}
+ }
+
+ function render(){
+  try{
+   if(!GUIDE||typeof ctx==='undefined'||!ctx)return;
+   ctx.save();
+   GUIDE.segs.forEach(s=>{ctx.beginPath();ctx.moveTo(s.x0,s.y0);ctx.lineTo(s.x1,s.y1);
+    if(s.hot){ctx.strokeStyle='rgba(11,123,255,.9)';ctx.lineWidth=1.6;ctx.setLineDash([6,4]);}
+    else{ctx.strokeStyle='rgba(120,170,230,.35)';ctx.lineWidth=1;ctx.setLineDash([3,4]);}
+    ctx.stroke();});
+   ctx.setLineDash([]);
+   if(GUIDE.lab){const t=GUIDE.lab.txt,x=GUIDE.lab.x+12,y=GUIDE.lab.y-12;ctx.font='600 11px Inter,system-ui,Arial';const w=ctx.measureText(t).width+10;
+    ctx.fillStyle='rgba(8,18,34,.9)';ctx.strokeStyle='#2f86e8';ctx.lineWidth=1;if(ctx.roundRect){ctx.beginPath();ctx.roundRect(x,y-13,w,17,6);ctx.fill();ctx.stroke();}else{ctx.fillRect(x,y-13,w,17);}
+    ctx.fillStyle='#cfe4ff';ctx.fillText(t,x+5,y);}
+   ctx.restore();
+  }catch(e){}
+ }
+
+ let n=0;const iv=setInterval(()=>{
+  n++;
+  try{
+   if(typeof movMove==='function'&&typeof draw==='function'&&typeof movUp==='function'&&!movMove.__v152){
+    const _mm=movMove, _mu=movUp, _dr=draw;
+    movMove=function(e){let q=null;try{q=pos(e);}catch(_){}_mm.call(this,e);try{const d=(typeof mdrag!=='undefined')?mdrag:null;if(d&&q){d.cx=q[0];d.cy=q[1];}}catch(_){}isoSnap();if(GUIDE){try{_dr();}catch(_){}}};
+    movMove.__v152=1;
+    movUp=function(){GUIDE=null;const r=_mu.apply(this,arguments);return r;};
+    draw=function(){const r=_dr.apply(this,arguments);render();return r;};
+    clearInterval(iv);
+   }
+  }catch(e){}
+  if(n>60)clearInterval(iv);
+ },120);
+ window.ISOARR={isoSnap,get guide(){return GUIDE;}};
 })();
 
 </script>
