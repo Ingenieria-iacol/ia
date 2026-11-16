@@ -18,8 +18,17 @@
  }
 
  /* ---------- 1 · campos nuevos en el editor de ficha ---------- */
+ function injectTipoX(){
+  try{
+   const sel=$('fch_tipo');if(!sel||$('fch_tipox'))return;
+   sel.insertAdjacentHTML('afterend',`<input id="fch_tipox" type="text" placeholder="Especifica el tipo" style="display:none;margin-top:4px">`);
+   const sync=()=>{const x=$('fch_tipox');if(x)x.style.display=(sel.value==='Otro')?'block':'none';};
+   sel.addEventListener('change',sync);sync();
+  }catch(e){}
+ }
  function injectFields(){
   try{
+   injectTipoX();
    if(!$('fch_desc')||$('fch_fase'))return;
    const descWrap=$('fch_desc').closest('div');if(!descWrap||!descWrap.parentNode)return;
    descWrap.insertAdjacentHTML('beforebegin',
@@ -47,6 +56,11 @@
     if(dep){const sib=(o.fichas||[]).filter(x=>x.id!==(f&&f.id));
      dep.innerHTML=`<option value="">— ninguna —</option>`+sib.map(x=>`<option value="${ea(x.id)}">${ea((x.fecha||'')+' · '+(x.titulo||x.tipo||x.id))}</option>`).join('');
      dep.value=(f&&f.dep)||'';}
+    /* tipo personalizado: si el tipo guardado no está en la lista estándar, usar "Otro" + texto */
+    const tsel=$('fch_tipo'),tx=$('fch_tipox');
+    if(tsel&&tx){const FTL=(typeof FT!=='undefined'?FT:[]);const tp=f&&f.tipo;
+     if(tp&&FTL.indexOf(tp)<0){tsel.value='Otro';tx.value=tp;}else{tx.value='';}
+     tx.style.display=(tsel.value==='Otro')?'block':'none';}
    }catch(e){}
   };
   fichaOpen.__v151=1;
@@ -72,6 +86,9 @@
     f.avance=Math.max(0,Math.min(100,+($('fch_avance')&&$('fch_avance').value)||0));
     f.hito=!!($('fch_hito')&&$('fch_hito').checked);
     f.dep=($('fch_dep')&&$('fch_dep').value)||'';
+    /* tipo personalizado */
+    const tsel=$('fch_tipo'),tx=$('fch_tipox');
+    if(tsel&&tx&&tsel.value==='Otro'&&tx.value.trim())f.tipo=tx.value.trim();
     if(typeof draw==='function')draw();
     if($('crn')&&$('crn').classList.contains('on'))window.renderCrn();
    }catch(e){}

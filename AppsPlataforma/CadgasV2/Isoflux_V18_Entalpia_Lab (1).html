@@ -1478,7 +1478,7 @@ const bx1=document.createElement('button');bx1.id='bgrp';bx1.className='ed';bx1.
 $('hbd').innerHTML+=`<h4>8. Grupos, mover y acoplar (V8.1)</h4><p><b>Seleccionar grupos:</b> arrastra un recuadro sobre el dibujo; Ctrl+clic suma o quita elementos; <b>doble clic</b> en una tubería selecciona su tramo (hasta la derivación) y <b>Ctrl+doble clic</b> toda la red conectada. También hay botones ⛓ Tramo y 🕸 Red conectada.</p><p><b>Mover y acoplar:</b> elige <b>✥ Mover</b> y arrastra la selección (o un elemento suelto). Se mueve sobre el plano horizontal con el paso configurado; ⬆/⬇ en el panel la sube o baja. Cuando un nodo del grupo se acerca a otro de la red, aparece un imán y al soltar ambos se <b>sueldan</b> en un solo nodo (se conserva el componente). Las tuberías que unen el grupo con el resto se estiran. Deshacer revierte todo el movimiento.</p>`;
 
 /* ===== V9: fichas de trabajo, cronograma, foco, anotaciones ===== */
-const FT=['Mantenimiento preventivo','Mantenimiento correctivo','Reparación','Modificación','Inspección / prueba','Otro'],FE=['Programada','En curso','Realizada','Cancelada'];
+const FT=['Mantenimiento preventivo','Mantenimiento correctivo','Reparación','Modificación','Inspección / prueba','Calibración','Otro'],FE=['Programada','En curso','Realizada','Cancelada'];
 const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),hoy=()=>ymd(new Date()),dObj=s=>new Date(s+'T00:00:00'),addDays=(s,n)=>{const d=dObj(s);d.setDate(d.getDate()+n);return ymd(d);},daysBt=(a,b)=>Math.round((dObj(b)-dObj(a))/864e5);
 var fSt=f=>f.estado=='Programada'&&f.fecha<hoy()?'Vencida':f.estado,SC={Realizada:'#2e9e4f',Programada:'#2f86e8','En curso':'#e0a030',Vencida:'#e5484d',Cancelada:'#6c7a8c',Proyectada:'#9b7bff'};
 function allFichas(){const r=[];S.nodes.forEach(o=>(o.fichas||[]).forEach(f=>r.push({k:'n',id:o.id,tag:o.tag||o.id,o,f})));S.pipes.forEach(o=>(o.fichas||[]).forEach(f=>r.push({k:'p',id:o.id,tag:o.tag||o.id,o,f})));return r;}
@@ -4004,7 +4004,8 @@ document.querySelectorAll('details.ac').forEach(d=>{let tIn=0,tOut=0;const sm=d.
 #srov .sr:hover,#srov .sr.k{background:rgba(47,134,232,.18)}#srov .sr small{opacity:.65}#srov input{width:100%;padding:9px 11px;border-radius:8px}
 </style>
 <script>/* V26: recarga automática, registro de versiones, buscador, Esc → Seleccionar, longitud editable, plantillas de reducción, tee de reducción */
-window.APP_VER='33.39';window.ISO_VER=[{"v":"33.39","f":"2026-11-16","t":"Cronograma mejorado: secciones plegables, Gantt con hitos/avance/dependencias, filtro por proyecto y campos nuevos","c":["Las actividades se agrupan (por Elemento, Tipo, Estado, Responsable o Fase) en secciones plegables, tanto en la lista como en la vista de tiempo.","La carta Gantt ahora muestra una fila por actividad con relleno de % de avance, hitos (◆) y flechas de dependencia (ruta) entre actividades encadenadas.","El cronograma respeta el proyecto de modificación activo (igual que el despiece): con un proyecto activo solo muestra sus actividades.","La ficha de trabajo tiene campos nuevos: Fase/grupo, % de avance, Depende de (actividad previa) y Es un hito. Responsable, estado y costo ya existían."]},
+window.APP_VER='33.40';window.ISO_VER=[{"v":"33.40","f":"2026-11-16","t":"Tipo de trabajo «Calibración» y tipo personalizado en la ficha","c":["Los tipos de trabajo ahora incluyen «Calibración» (base del futuro Plan de Aseguramiento Metrológico).","Al elegir «Otro» en el tipo de trabajo aparece un campo para escribir un tipo personalizado, que se guarda y se vuelve a mostrar al reabrir la ficha."]},
+{"v":"33.39","f":"2026-11-16","t":"Cronograma mejorado: secciones plegables, Gantt con hitos/avance/dependencias, filtro por proyecto y campos nuevos","c":["Las actividades se agrupan (por Elemento, Tipo, Estado, Responsable o Fase) en secciones plegables, tanto en la lista como en la vista de tiempo.","La carta Gantt ahora muestra una fila por actividad con relleno de % de avance, hitos (◆) y flechas de dependencia (ruta) entre actividades encadenadas.","El cronograma respeta el proyecto de modificación activo (igual que el despiece): con un proyecto activo solo muestra sus actividades.","La ficha de trabajo tiene campos nuevos: Fase/grupo, % de avance, Depende de (actividad previa) y Es un hito. Responsable, estado y costo ya existían."]},
 {"v":"33.38","f":"2026-11-16","t":"Encabezados acordeón en los modales flotantes (colapsar a la barra de título y flotar sobre el dibujo)","c":["Cada ventana flotante (Cronograma, Cálculo, Despiece, Datos del proyecto, etc.) tiene ahora un control ▾ en su encabezado que la colapsa a solo su barra de título.","Al colapsar, la ventana flota sobre el dibujo y el fondo deja de bloquear, así se puede seguir trabajando en el plano con la ventana reducida; al expandir vuelve a su tamaño.","También se puede colapsar/expandir con doble clic en una zona libre del encabezado."]},
 {"v":"33.37","f":"2026-11-16","t":"Proyectos de modificación sobre el plano Base + Estado de obra ampliado + filtro de entregables por proyecto","c":["Estado de obra ahora tiene cinco opciones: Nueva, Existente, Por retirar, Reutilizar y Provisional. En el despiece se separan por estado y solo las «Nueva» entran al presupuesto (sin cambiar los precios ya guardados).","Las capas pueden marcarse como «proyecto de modificación» (📌) sobre el plano Base (el oficial): así ya no hay que duplicar planos para proyectar cambios.","Al activar un proyecto, el despiece, los documentos, el cálculo y el dibujo muestran solo lo que corresponde, con dos vistas conmutables: «Base + modificaciones» (cómo quedaría la obra) o «Solo el proyecto» (sus altas y bajas). Un indicador flotante avisa cuándo hay un filtro activo.","Corrección: el despiece ahora respeta las capas ocultas (antes podía sumar elementos de capas que no se estaban viendo), evitando que se mezcle información entre proyectos.","Sin proyecto activo y sin capas ocultas, todo funciona exactamente igual que antes."]},
 {"v":"33.36","f":"2026-11-16","t":"Propiedades del archivo en el panel (proyecto, fechas de creación y modificación, versión, tamaño)","c":["Cuando no hay ningún elemento seleccionado, el panel de propiedades muestra una tarjeta «📄 Propiedades del archivo» con los datos del proyecto (nombre, código, revisión, cliente, ubicación), la fecha de creación y de última modificación del dibujo, la versión del plano (si está en línea) y un resumen del contenido y el tamaño aproximado.","El dibujo registra automáticamente su fecha de creación y de última modificación dentro del propio archivo."]},
@@ -16370,8 +16371,17 @@ try{$('hbd').innerHTML=manHTML();}catch(e){}})();</script>
  }
 
  /* ---------- 1 · campos nuevos en el editor de ficha ---------- */
+ function injectTipoX(){
+  try{
+   const sel=$('fch_tipo');if(!sel||$('fch_tipox'))return;
+   sel.insertAdjacentHTML('afterend',`<input id="fch_tipox" type="text" placeholder="Especifica el tipo" style="display:none;margin-top:4px">`);
+   const sync=()=>{const x=$('fch_tipox');if(x)x.style.display=(sel.value==='Otro')?'block':'none';};
+   sel.addEventListener('change',sync);sync();
+  }catch(e){}
+ }
  function injectFields(){
   try{
+   injectTipoX();
    if(!$('fch_desc')||$('fch_fase'))return;
    const descWrap=$('fch_desc').closest('div');if(!descWrap||!descWrap.parentNode)return;
    descWrap.insertAdjacentHTML('beforebegin',
@@ -16399,6 +16409,11 @@ try{$('hbd').innerHTML=manHTML();}catch(e){}})();</script>
     if(dep){const sib=(o.fichas||[]).filter(x=>x.id!==(f&&f.id));
      dep.innerHTML=`<option value="">— ninguna —</option>`+sib.map(x=>`<option value="${ea(x.id)}">${ea((x.fecha||'')+' · '+(x.titulo||x.tipo||x.id))}</option>`).join('');
      dep.value=(f&&f.dep)||'';}
+    /* tipo personalizado: si el tipo guardado no está en la lista estándar, usar "Otro" + texto */
+    const tsel=$('fch_tipo'),tx=$('fch_tipox');
+    if(tsel&&tx){const FTL=(typeof FT!=='undefined'?FT:[]);const tp=f&&f.tipo;
+     if(tp&&FTL.indexOf(tp)<0){tsel.value='Otro';tx.value=tp;}else{tx.value='';}
+     tx.style.display=(tsel.value==='Otro')?'block':'none';}
    }catch(e){}
   };
   fichaOpen.__v151=1;
@@ -16424,6 +16439,9 @@ try{$('hbd').innerHTML=manHTML();}catch(e){}})();</script>
     f.avance=Math.max(0,Math.min(100,+($('fch_avance')&&$('fch_avance').value)||0));
     f.hito=!!($('fch_hito')&&$('fch_hito').checked);
     f.dep=($('fch_dep')&&$('fch_dep').value)||'';
+    /* tipo personalizado */
+    const tsel=$('fch_tipo'),tx=$('fch_tipox');
+    if(tsel&&tx&&tsel.value==='Otro'&&tx.value.trim())f.tipo=tx.value.trim();
     if(typeof draw==='function')draw();
     if($('crn')&&$('crn').classList.contains('on'))window.renderCrn();
    }catch(e){}
