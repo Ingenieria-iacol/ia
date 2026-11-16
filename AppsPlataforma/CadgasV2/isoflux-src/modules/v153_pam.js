@@ -90,9 +90,10 @@
  let ov=null;
  function buildModal(){
   if(ov)return;ov=document.createElement('div');ov.className='ov';ov.id='pam96';
-  ov.innerHTML=`<div class="pbx" style="width:min(1150px,97vw);max-height:92vh"><header style="cursor:grab;flex-wrap:wrap"><b style="flex:1">🔬 Plan de Aseguramiento Metrológico (P.A.M.)</b><button id="pam_norma">📖 Marco normativo</button><button id="pam_x">Cerrar</button></header><div id="pam_b" style="overflow:auto;padding:12px 16px"></div></div>`;
+  ov.innerHTML=`<div class="pbx" style="width:min(1150px,97vw);max-height:92vh"><header style="cursor:grab;flex-wrap:wrap"><b style="flex:1">🔬 Plan de Aseguramiento Metrológico (P.A.M.)</b><button id="pam_pdf" title="Descargar el plan de calibración en PDF">⬇ PDF</button><button id="pam_norma">📖 Marco normativo</button><button id="pam_x">Cerrar</button></header><div id="pam_b" style="overflow:auto;padding:12px 16px"></div></div>`;
   document.body.appendChild(ov);
   $('pam_x').onclick=()=>ov.classList.remove('on');
+  $('pam_pdf').onclick=pamPDF;
   ov.addEventListener('pointerdown',e=>{if(e.target===ov)ov.classList.remove('on');});
   $('pam_norma').onclick=()=>{const b=$('pam_b');b.innerHTML=normaHTML()+`<button style="margin-top:10px" onclick="PAM.abrir()">← Volver al tablero</button>`;};
   /* arrastre del encabezado */
@@ -115,6 +116,44 @@
  window.PAM._ir=function(id){try{ov.classList.remove('on');sel={k:'n',id};ms=[];if(typeof panel==='function')panel();if(window.V26buscar&&V26buscar.ir)try{V26buscar.ir({k:'n',id,tag:'',tipo:''});}catch(e){}if(typeof draw==='function')draw();}catch(e){}};
  function abrir(){buildModal();ov.classList.add('on');pinta();}
 
+ function pamPDF(){
+  const X=window.PDFX;if(!X||!X.engine){alert('El generador de PDF no está disponible.');return;}
+  const L=susceptibles();if(!L.length){alert('No hay instrumentos susceptibles de control metrológico para incluir en el PDF.');return;}
+  const pinf=window.PROYINFO?PROYINFO():{act:null};
+  const proj=(typeof PJ!=='undefined'&&PJ)||{};
+  const t='Plan de Aseguramiento Metrológico';
+  const sub=(proj.nombre||proj.codigo||'Red de gas')+(pinf.act?' · Proyecto: '+pinf.nom:'');
+  let D;try{D=X.engine(t);}catch(e){alert(e.message);return;}
+  try{D.id=(typeof docId==='function')?docId():'ISO';}catch(e){}
+  try{X.cover(D,t,sub);}catch(e){}
+  const cont={},est={ok:0,prox:0,venc:0,sin:0};L.forEach(o=>{const c=clasif(o);cont[c.clase]=(cont[c.clase]||0)+1;est[estado(o).k]++;});
+  try{
+   D.part('Instrumentos sujetos a control metrológico');
+   D.h2('Resumen');
+   D.kv([['Instrumentos',String(L.length)],
+    ['Metrología legal',String(cont.Legal||0)],
+    ['Metrología industrial / científica',String((cont.Industrial||0)+(cont['Industrial / Científica']||0))],
+    ['Verificación',String(cont['Verificación']||0)],
+    ['Al día / Próximas / Vencidas / Sin registro',`${est.ok} / ${est.prox} / ${est.venc} / ${est.sin}`],
+    ['Alcance',pinf.act?('Proyecto activo: '+pinf.nom):'Plano completo']]);
+   D.h2('Listado y plan de calibración');
+   D.table(['Elemento','Clase','Magnitud','Int. (m)','Última cal.','Próxima cal.','Estado','Certificado'],
+    L.map(o=>{const c=clasif(o),p=o.pam||{},s=estado(o);return [String(o.tag||o.id)+' ('+(TY[o.type]||o.type)+')',c.clase,c.mag,String(p.int!=null?p.int:c.int),p.ult||'',s.prox||'',s.txt,p.cert||''];}),
+    {styles:{fontSize:7.5,cellPadding:2.5}});
+   D.part('Marco normativo — Subsistema Nacional de la Calidad');
+   D.kv([
+    ['Subsistema Nacional de la Calidad','Decreto 1595 de 2015 (modifica el Decreto 1074 de 2015)'],
+    ['INM — Instituto Nacional de Metrología','Decreto 4175 de 2011 · metrología científica e industrial; patrones nacionales y trazabilidad'],
+    ['SIC — Superintendencia de Industria y Comercio','Autoridad de metrología legal; control metrológico de instrumentos (RTM)'],
+    ['ONAC','Acreditación de laboratorios bajo ISO/IEC 17025; firmante de ILAC e IAAC'],
+    ['Control metrológico','Resolución SIC 77507 de 2016'],
+    ['Medidores de gas','RTM en adopción vía la Circular Única de la SIC (Título VI)'],
+    ['Trazabilidad','Laboratorio acreditado por ONAC → patrones del INM → SI (cadena ILAC); incertidumbre según la GUM, términos según el VIM']]);
+   D.h2('Nota');
+   D.kv([['Vigencia','Esta guía es una ayuda de planeación. Verifica los números de resolución y los intervalos vigentes con la SIC, el INM y ONAC, pues la reglamentación metrológica se actualiza periódicamente.']]);
+   X.finish(D,t,'PAM_');
+  }catch(e){console.error('pamPDF',e);alert('No se pudo generar el PDF: '+e.message);}
+ }
  function normaHTML(){
   return `<div style="font-size:12.5px;line-height:1.5;max-width:860px">
   <h3 style="color:#8fc9ff;margin:4px 0">Esquema metrológico del Subsistema Nacional de la Calidad (Colombia)</h3>
