@@ -4004,7 +4004,8 @@ document.querySelectorAll('details.ac').forEach(d=>{let tIn=0,tOut=0;const sm=d.
 #srov .sr:hover,#srov .sr.k{background:rgba(47,134,232,.18)}#srov .sr small{opacity:.65}#srov input{width:100%;padding:9px 11px;border-radius:8px}
 </style>
 <script>/* V26: recarga automática, registro de versiones, buscador, Esc → Seleccionar, longitud editable, plantillas de reducción, tee de reducción */
-window.APP_VER='33.45';window.ISO_VER=[{"v":"33.45","f":"2026-11-16","t":"Simulación: botón «Saturar» y acordeones en todas las secciones","c":["Nuevo botón «🏷️ Saturar» en el encabezado del modal de simulación: cuando está activo muestra las etiquetas y tarjetas según la pestaña Vista; al desactivarlo oculta TODAS las etiquetas y tarjetas para ver solo el flujo, sin saturar la vista. El estado se recuerda.","Las secciones del modal que aún no eran plegables (Capacidad de la red, Funcionamiento, etc.) ahora son acordeones: haz clic en su título para contraerlas o expandirlas."]},
+window.APP_VER='33.46';window.ISO_VER=[{"v":"33.46","f":"2026-11-16","t":"P.A.M. en archivo aparte + hoja de vida completa · Saturar cubre las tarjetas de medidores · lecturas reiniciables","c":["El P.A.M. pasa a su propio archivo (pam/pam.js), cargado por el app en tiempo de ejecución, para no robustecer el HTML principal.","La hoja de vida metrológica de cada instrumento se amplía: identificación (marca, modelo, serie, rango, resolución, código), enlace al certificado, y confirmación metrológica (ISO 10012 / regla de decisión ILAC-G8): regla de decisión, veredicto conforme/no conforme, «como se encontró / como se entregó», ajuste, criticidad y responsable. El PDF del P.A.M. incluye estas secciones.","El botón «Saturar» ahora también oculta las tarjetas de lectura de los medidores (volumen y caudal), para ver solo el flujo.","Nuevo botón «⟲ Reiniciar lecturas» en el modal de simulación: pone en cero las lecturas acumuladas de los medidores (ya no se comportan como contadores infinitos)."]},
+{"v":"33.45","f":"2026-11-16","t":"Simulación: botón «Saturar» y acordeones en todas las secciones","c":["Nuevo botón «🏷️ Saturar» en el encabezado del modal de simulación: cuando está activo muestra las etiquetas y tarjetas según la pestaña Vista; al desactivarlo oculta TODAS las etiquetas y tarjetas para ver solo el flujo, sin saturar la vista. El estado se recuerda.","Las secciones del modal que aún no eran plegables (Capacidad de la red, Funcionamiento, etc.) ahora son acordeones: haz clic en su título para contraerlas o expandirlas."]},
 {"v":"33.44","f":"2026-11-16","t":"Registro de versiones renovado, con miniatura por versión","c":["El modal de versiones se rediseñó con tarjetas más amigables y una miniatura por cada versión.","La miniatura usa la imagen de la versión si existe; si no, puedes capturar el plano actual con el botón 📷 (se guarda en tu navegador) y, si no hay ninguna, se muestra una miniatura generada con el tema Entalpía (número de versión, fecha y título).","Clic en la miniatura para ampliarla; la versión instalada queda resaltada."]},
 {"v":"33.43","f":"2026-11-16","t":"P.A.M.: PDF del plan de calibración (tema Entalpía)","c":["El tablero P.A.M. tiene un botón ⬇ PDF que genera el plan de aseguramiento metrológico: portada, resumen, listado de instrumentos con su plan de calibración (clase, magnitud, intervalo, última y próxima calibración, estado y certificado) y el marco normativo. Respeta el proyecto activo."]},
 {"v":"33.42","f":"2026-11-16","t":"Plan de Aseguramiento Metrológico (P.A.M.): nuevo módulo con el esquema metrológico colombiano","c":["Nuevo módulo (archivo aparte) con el esquema del Subsistema Nacional de la Calidad: metrología legal (SIC), industrial y científica (INM), acreditación ONAC/ISO-IEC 17025 y reconocimiento ILAC.","Clasifica los elementos susceptibles de control o calibración: medidores y correctores de volumen (legal), manómetros y puntos de control de presión, sensores/transmisores (industrial) y reguladores (verificación).","El panel de propiedades de esos elementos incluye su clasificación metrológica, trazabilidad, intervalo, última/próxima calibración, certificado y laboratorio, y un botón para programar la calibración (se registra como ficha tipo Calibración en el cronograma).","Un tablero «🔬 P.A.M.» (junto al Cronograma) lista los instrumentos con su estado (al día/próxima/vencida) y respeta el proyecto activo; incluye el marco normativo con las referencias (Decreto 1595/2015, Decreto 4175/2011 del INM, Resolución SIC 77507/2016, RTM de medidores de gas)."]},
@@ -11352,8 +11353,8 @@ function marcas(){const now=performance.now(),dt=Math.min(1,(now-tAnt)/1000);tAn
  if(!simOn||!R||R.err||!R.pn)return;const pa=(window.CF&&CF.patm)||1013.25;
  S.nodes.forEach(n=>{if(n.type!='medidor'&&n.type!='electrocorrector'&&n.type!='sen_cau')return;let Q=0;if(n.type=='electrocorrector'){const m=S.nodes.find(x=>x.type=='medidor'&&S.pipes.some(p=>(p.a==x.id&&p.b==n.id)||(p.b==x.id&&p.a==n.id)))||S.nodes.find(x=>x.type=='medidor');Q=m&&R.pn[m.id]?R.pn[m.id].Q:0;if(m&&inv(m))Q=-Q;}else Q=R.pn[n.id]?R.pn[n.id].Q:0;const sg=inv(n)?-1:1;
   /* 1 s de simulación = 1 min de operación */REG[n.id]=(REG[n.id]||0)+sg*Q*dt/60;const q=P(n.x,n.y,n.z);
-  if(n.type=='electrocorrector'){const P0=R.pn[n.id]?R.pn[n.id].P:(R.P0-pa),T=288.15,Tb=288.15,Pb=1013.25,f=(P0+pa)/Pb*(Tb/T);lcd(q[0]+22,q[1]-24,`Vb ${nf(REG[n.id]*f,3)} m³`,`f=${nf(f,3)} · P ${nf(P0,0)} mbar`,inv(n));}
-  else lcd(q[0]+22,q[1]-24,`${REG[n.id]<0?'◀ ':''}${nf(REG[n.id],3)} m³`,`Q ${nf(sg*Q,3)} m³/h${inv(n)?' · REVERSA':''}`,inv(n));});}
+  if(n.type=='electrocorrector'){const P0=R.pn[n.id]?R.pn[n.id].P:(R.P0-pa),T=288.15,Tb=288.15,Pb=1013.25,f=(P0+pa)/Pb*(Tb/T);if(window.SAT!==false)lcd(q[0]+22,q[1]-24,`Vb ${nf(REG[n.id]*f,3)} m³`,`f=${nf(f,3)} · P ${nf(P0,0)} mbar`,inv(n));}
+  else if(window.SAT!==false)lcd(q[0]+22,q[1]-24,`${REG[n.id]<0?'◀ ':''}${nf(REG[n.id],3)} m³`,`Q ${nf(sg*Q,3)} m³/h${inv(n)?' · REVERSA':''}`,inv(n));});}
 if(typeof draw=='function'){const d0=draw;draw=function(){const r=d0.apply(this,arguments);try{marcas();}catch(e){}return r;};}
 window.SIM92={reg:REG,inv,esDir,BLOQ,reset:()=>{for(const k in REG)delete REG[k];}};
 })();
@@ -15746,6 +15747,7 @@ try{const e25=(window.ISO_VER||[]).find(x=>x.v=='23.8');if(e25&&!e25.img.length)
 try{const e24=(window.ISO_VER||[]).find(x=>x.v=='23.7');if(e24&&!e24.img.length)e24.img=[I.u7i.src,I.u7m.src,I.u7c.src,I.u7d.src,I.u7p.src];}catch(e){}
 try{const e=(window.ISO_VER||[]).find(x=>x.v=='21.0');if(e&&!e.img.length)e.img=[I.pl.src,I.tz.src,I.col2.src];const e4=(window.ISO_VER||[]).find(x=>x.v=='21.4');if(e4&&!e4.img.length)e4.img=[I.uni.src,I.dron.src,I.flu.src];const e19=(window.ISO_VER||[]).find(x=>x.v=='23.2');if(e19&&!e19.img.length)e19.img=[I.r2d.src,I.r2v.src,I.r2e.src,I.r2s.src,I.r2p.src];const e22=(window.ISO_VER||[]).find(x=>x.v=='23.5');if(e22&&!e22.img.length)e22.img=[I.t5s.src,I.t5p.src,I.t5d.src];const e21=(window.ISO_VER||[]).find(x=>x.v=='23.4');if(e21&&!e21.img.length)e21.img=[I.s4e.src,I.s4c.src,I.s4v.src,I.s4s.src];const e20=(window.ISO_VER||[]).find(x=>x.v=='23.3');if(e20&&!e20.img.length)e20.img=[I.r3m.src,I.r3p.src,I.r3c.src];const e18=(window.ISO_VER||[]).find(x=>x.v=='23.1');if(e18&&!e18.img.length)e18.img=[I.q1a.src,I.q1b.src,I.q1f.src,I.q1l.src];const e17=(window.ISO_VER||[]).find(x=>x.v=='23.0');if(e17&&!e17.img.length)e17.img=[I.p3a.src,I.p3m.src];const e16=(window.ISO_VER||[]).find(x=>x.v=='22.6');if(e16&&!e16.img.length)e16.img=[I.d6b.src,I.d6p.src];const e14=(window.ISO_VER||[]).find(x=>x.v=='22.4');if(e14&&!e14.img.length)e14.img=[I.c4c.src,I.c4p.src,I.c4l.src];const e13=(window.ISO_VER||[]).find(x=>x.v=='22.3');if(e13&&!e13.img.length)e13.img=[I.f3a.src];const e12=(window.ISO_VER||[]).find(x=>x.v=='22.2');if(e12&&!e12.img.length)e12.img=[I.r2v.src,I.r2s.src,I.r2f.src];const e11=(window.ISO_VER||[]).find(x=>x.v=='22.1');if(e11&&!e11.img.length)e11.img=[I.o1p.src,I.o1s.src,I.o1h.src];const e10=(window.ISO_VER||[]).find(x=>x.v=='22.0');if(e10&&!e10.img.length)e10.img=[I.i0c.src,I.i0p.src];const e9=(window.ISO_VER||[]).find(x=>x.v=='21.9');if(e9&&!e9.img.length)e9.img=[I.s9a.src,I.s9d.src];const e8=(window.ISO_VER||[]).find(x=>x.v=='21.8');if(e8&&!e8.img.length)e8.img=[I.p8p.src,I.p8v.src,I.p8c.src];const e7=(window.ISO_VER||[]).find(x=>x.v=='21.7');if(e7&&!e7.img.length)e7.img=[I.flur.src,I.flu.src];const e6=(window.ISO_VER||[]).find(x=>x.v=='21.6');if(e6&&!e6.img.length)e6.img=[I.c6.src,I.c6u.src];const e5=(window.ISO_VER||[]).find(x=>x.v=='21.5');if(e5&&!e5.img.length)e5.img=[I.menu5.src,I.simc.src,I.cred.src,I.enl.src];const e3=(window.ISO_VER||[]).find(x=>x.v=='21.3');if(e3&&!e3.img.length)e3.img=[I.voz.src,I.rosa.src,I.alt.src];const e2=(window.ISO_VER||[]).find(x=>x.v=='21.2');if(e2&&!e2.img.length)e2.img=[I.bmi.src,I.bad.src,I.bco.src];const e1=(window.ISO_VER||[]).find(x=>x.v=='21.1');if(e1&&!e1.img.length)e1.img=[I.top.src,I.vis.src,I.cal.src,I.col2.src];}catch(x){}
 try{$('hbd').innerHTML=manHTML();}catch(e){}})();</script>
+<script src="pam/pam.js" defer></script>
 <script>
 /* ===== V33.24 · Unidades de flujo por tiempo (m³/h, m³/día, m³/mes) =====
    - En «Potencia nominal» se puede ingresar el consumo como flujo de gas: m³/h, m³/día o
@@ -16632,197 +16634,6 @@ try{$('hbd').innerHTML=manHTML();}catch(e){}})();</script>
 
 </script>
 <script>
-/* v153 · Plan de Aseguramiento Metrológico (P.A.M.)
-   Esquema metrológico del Subsistema Nacional de la Calidad (Colombia) aplicado a la red:
-   clasifica los elementos susceptibles de control/calibración, los integra al panel de
-   propiedades y a un tablero que respeta el filtro de proyecto activo, y permite programar
-   calibraciones (se registran como fichas de trabajo tipo "Calibración").
-   Marco: Decreto 1595/2015 (SNC) · Decreto 4175/2011 (INM) · metrología legal (SIC) ·
-   acreditación ONAC/ISO-IEC 17025 · reconocimiento ILAC · Resolución SIC 77507/2016. */
-(function(){
- 'use strict';
- if(typeof window==='undefined')return;
- const $=id=>document.getElementById(id);
- const E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
- const hoy=()=>new Date().toISOString().slice(0,10);
- const addMonths=(d,m)=>{try{const x=new Date(d+'T00:00:00');x.setMonth(x.getMonth()+ (+m||0));return x.toISOString().slice(0,10);}catch(e){return '';}};
-
- /* --- clasificación metrológica por tipo de elemento --- */
- const PAMT={
-  medidor:{clase:'Legal',mag:'Volumen / caudal de gas',patron:'Trazable al INM mediante laboratorio acreditado por ONAC (ISO/IEC 17025)',emp:'Según RTM de medidores de gas (SIC)',int:60,norma:'Metrología legal · control metrológico de la SIC · RTM de medidores de gas (Circular Única SIC, Título VI, en adopción)'},
-  electrocorrector:{clase:'Legal',mag:'Corrección de volumen (presión, temperatura, Z)',patron:'Laboratorio acreditado por ONAC',emp:'Según reglamento aplicable',int:12,norma:'Metrología legal · control metrológico de la SIC'},
-  manometro:{clase:'Industrial',mag:'Presión',patron:'Laboratorio de calibración acreditado por ONAC (ISO/IEC 17025), trazable al INM',emp:'Según la clase de exactitud del instrumento',int:12,norma:'Metrología industrial · trazabilidad al INM · ISO/IEC 17025'},
-  ptopres:{clase:'Industrial',mag:'Presión',patron:'Laboratorio acreditado por ONAC',emp:'Según la clase del manómetro instalado',int:12,norma:'Metrología industrial'},
-  sen_pre:{clase:'Industrial',mag:'Presión (transmisor)',patron:'Laboratorio acreditado por ONAC, trazable al INM',emp:'Según especificación del transmisor',int:12,norma:'Metrología industrial · ISO/IEC 17025'},
-  sen_temp:{clase:'Industrial / Científica',mag:'Temperatura',patron:'Laboratorio acreditado por ONAC, trazable al INM',emp:'Según especificación del sensor',int:12,norma:'Metrología industrial/científica · ISO/IEC 17025'},
-  sen_cau:{clase:'Industrial',mag:'Caudal / flujo',patron:'Laboratorio acreditado por ONAC, trazable al INM',emp:'Según especificación',int:12,norma:'Metrología industrial'},
-  sen_vel:{clase:'Industrial',mag:'Velocidad',patron:'Laboratorio acreditado por ONAC',emp:'Según especificación',int:12,norma:'Metrología industrial'},
-  sen_otro:{clase:'Industrial',mag:'Variable de proceso',patron:'Laboratorio acreditado por ONAC',emp:'Según especificación',int:12,norma:'Metrología industrial'},
-  regulador:{clase:'Verificación',mag:'Presión de ajuste (set-point)',patron:'Verificación con patrón de presión trazable',emp:'Banda de regulación del fabricante',int:12,norma:'Verificación funcional (no es instrumento de medición sujeto a control legal)'}
- };
- const CLASE_COL={Legal:'#e0a030',Industrial:'#2f86e8','Industrial / Científica':'#a970ff',Verificación:'#2fbf62'};
-
- function clasif(o){if(!o)return null;const t=o.type;if(PAMT[t])return PAMT[t];
-  /* un punto de control de presión con manómetro también aplica */
-  if(t==='ptopres')return PAMT.ptopres;return null;}
- function susceptibles(){try{return S.nodes.filter(n=>clasif(n)&&!(window.CAPOFF&&CAPOFF(n)));}catch(e){return [];}}
-
- /* --- estado de calibración --- */
- function estado(o){const p=o.pam||{};if(!p.ult)return{k:'sin',txt:'Sin registro',col:'#8a97a8'};
-  const prox=addMonths(p.ult,p.int||clasif(o).int);const h=hoy();
-  if(prox<h)return{k:'venc',txt:'Vencida',col:'#e5484d',prox};
-  const d=new Date(prox+'T00:00:00')-new Date(h+'T00:00:00');
-  if(d<=45*864e5)return{k:'prox',txt:'Próxima',col:'#e0a030',prox};
-  return{k:'ok',txt:'Al día',col:'#2e9e4f',prox};}
-
- /* --- API de edición (desde el panel) --- */
- window.PAM={
-  set(id,field,val){try{const o=N(id);if(!o)return;o.pam=o.pam||{};if(field==='int')val=Math.max(0,+val||0);o.pam[field]=val;if(typeof hs==='function')hs();if(typeof draw==='function')draw();if($('pam96')&&$('pam96').classList.contains('on'))pinta();}catch(e){}},
-  programar(k,id){try{if(typeof fichaOpen!=='function')return;fichaOpen(k,id,null);const t=$('fch_tipo');if(t){t.value='Calibración';t.dispatchEvent(new Event('change'));}const o=N(id),c=clasif(o);if(c&&$('fch_tit')&&!$('fch_tit').value)$('fch_tit').value='Calibración de '+(TY[o.type]||'instrumento')+' '+(o.tag||'');}catch(e){}},
-  clasif,estado,susceptibles,abrir
- };
-
- /* --- sección en el panel de propiedades --- */
- function panelSec(o){
-  const c=clasif(o);if(!c)return '';const p=o.pam||{},k=o[0];const id=o.id;const st=estado(o);const kk=(typeof sel!=='undefined'&&sel)?sel.k:'n';
-  return `<hr style="border-color:var(--bd)"><div style="display:flex;align-items:center;gap:8px"><b>🔬 Aseguramiento metrológico (P.A.M.)</b><span style="margin-left:auto;font-size:11px;font-weight:700;color:${st.col}">${st.txt}</span></div>`+
-   `<div style="font-size:11px;margin:4px 0;display:flex;flex-wrap:wrap;gap:6px"><span style="padding:1px 7px;border-radius:9px;background:${CLASE_COL[c.clase]||'#555'}33;border:1px solid ${CLASE_COL[c.clase]||'#555'};color:#e4eefa">Metrología ${E(c.clase)}</span><span style="opacity:.8">${E(c.mag)}</span></div>`+
-   `<div style="font-size:11px;opacity:.75;margin:2px 0 6px">Trazabilidad: ${E(c.patron)}<br>EMP: ${E(c.emp)}</div>`+
-   `<div class="g2" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">`+
-   `<div><label>Intervalo (meses)</label><input type="number" min="0" value="${E(p.int!=null?p.int:c.int)}" oninput="PAM.set('${id}','int',this.value)"></div>`+
-   `<div><label>Última calibración</label><input type="date" value="${E(p.ult||'')}" onchange="PAM.set('${id}','ult',this.value)"></div>`+
-   `<div><label>N° certificado</label><input type="text" value="${E(p.cert||'')}" onchange="PAM.set('${id}','cert',this.value)"></div>`+
-   `<div><label>Laboratorio (acreditado ONAC)</label><input type="text" value="${E(p.lab||'')}" onchange="PAM.set('${id}','lab',this.value)"></div>`+
-   `<div><label>Incertidumbre</label><input type="text" value="${E(p.incert||'')}" placeholder="± ..." onchange="PAM.set('${id}','incert',this.value)"></div>`+
-   `<div><label>Clase / EMP real</label><input type="text" value="${E(p.empr||'')}" onchange="PAM.set('${id}','empr',this.value)"></div>`+
-   `</div>`+
-   (st.prox?`<div style="font-size:11px;opacity:.8;margin-top:4px">Próxima calibración: <b>${E(st.prox)}</b></div>`:'')+
-   `<button style="width:100%;margin-top:6px" onclick="PAM.programar('${kk}','${id}')">📅 Programar calibración</button>`+
-   `<div style="font-size:10.5px;opacity:.6;margin-top:4px">${E(c.norma)}</div>`;
- }
-
- /* envolver panel() para añadir la sección al final cuando aplica */
- let n0=0;const iv=setInterval(()=>{n0++;
-  try{
-   if(typeof panel==='function'&&!panel.__v153pam){
-    const _pn=panel;panel=function(){const r=_pn.apply(this,arguments);try{
-     const pp=$('pp');if(pp){const o=(typeof so==='function')?so():null;const multi=(typeof ms!=='undefined'&&ms&&ms.length>1);
-      if(o&&!multi&&(typeof sel!=='undefined'&&sel&&sel.k=='n')&&clasif(o))pp.insertAdjacentHTML('beforeend',panelSec(o));}
-    }catch(e){}return r;};
-    panel.__v153pam=1;
-    injectBtn();buildModal();
-    clearInterval(iv);
-   }
-  }catch(e){}
-  if(n0>60)clearInterval(iv);
- },140);
-
- /* --- botón para abrir el tablero P.A.M. (junto al Cronograma) --- */
- function injectBtn(){try{const bc=$('bcrn');if(!bc||$('bpam'))return;const b=document.createElement(bc.tagName);b.id='bpam';b.textContent='🔬 P.A.M.';b.title='Plan de Aseguramiento Metrológico';if(bc.className)b.className=bc.className;b.onclick=abrir;bc.after(b);}catch(e){}}
-
- /* --- tablero / modal P.A.M. --- */
- let ov=null;
- function buildModal(){
-  if(ov)return;ov=document.createElement('div');ov.className='ov';ov.id='pam96';
-  ov.innerHTML=`<div class="pbx" style="width:min(1150px,97vw);max-height:92vh"><header style="cursor:grab;flex-wrap:wrap"><b style="flex:1">🔬 Plan de Aseguramiento Metrológico (P.A.M.)</b><button id="pam_pdf" title="Descargar el plan de calibración en PDF">⬇ PDF</button><button id="pam_norma">📖 Marco normativo</button><button id="pam_x">Cerrar</button></header><div id="pam_b" style="overflow:auto;padding:12px 16px"></div></div>`;
-  document.body.appendChild(ov);
-  $('pam_x').onclick=()=>ov.classList.remove('on');
-  $('pam_pdf').onclick=pamPDF;
-  ov.addEventListener('pointerdown',e=>{if(e.target===ov)ov.classList.remove('on');});
-  $('pam_norma').onclick=()=>{const b=$('pam_b');b.innerHTML=normaHTML()+`<button style="margin-top:10px" onclick="PAM.abrir()">← Volver al tablero</button>`;};
-  /* arrastre del encabezado */
-  try{const bx=ov.querySelector('.pbx'),h=bx.querySelector('header');let s=null,dx=0,dy=0;h.addEventListener('pointerdown',e=>{if(e.target.closest('button,select,input'))return;s=[e.clientX-dx,e.clientY-dy];h.setPointerCapture(e.pointerId);});h.addEventListener('pointermove',e=>{if(!s)return;dx=e.clientX-s[0];dy=e.clientY-s[1];bx.style.transform=`translate(${dx}px,${dy}px)`;});h.addEventListener('pointerup',()=>s=null);}catch(e){}
- }
- function pinta(){
-  const b=$('pam_b');if(!b)return;const L=susceptibles();
-  const pinf=window.PROYINFO?PROYINFO():{act:null};
-  const banner=pinf.act?`<div style="margin:0 0 8px;padding:6px 10px;border:1px solid #2f86e8;border-radius:8px;background:rgba(18,58,102,.3);font-size:12px">🎯 Filtrado por proyecto activo: <b>${E(pinf.nom)}</b></div>`:'';
-  if(!L.length){b.innerHTML=banner+'<p>No hay elementos susceptibles de control metrológico en '+(pinf.act?'este proyecto':'el plano')+'. Los medidores, correctores de volumen, manómetros, puntos de control de presión, sensores/transmisores y reguladores aparecen aquí.</p>';return;}
-  const cont={Legal:0,Industrial:0,'Industrial / Científica':0,'Verificación':0},est={ok:0,prox:0,venc:0,sin:0};
-  L.forEach(o=>{const c=clasif(o);cont[c.clase]=(cont[c.clase]||0)+1;est[estado(o).k]++;});
-  const chip=(t,n,col)=>`<span style="display:inline-block;margin:0 10px 6px 0;font-size:12px"><b style="color:${col}">${n}</b> ${E(t)}</span>`;
-  let h=banner+`<div style="margin-bottom:8px">${chip('Legal',cont.Legal,CLASE_COL.Legal)}${chip('Industrial',cont.Industrial,CLASE_COL.Industrial)}${chip('Ind./Científica',cont['Industrial / Científica'],CLASE_COL['Industrial / Científica'])}${chip('Verificación',cont['Verificación'],CLASE_COL['Verificación'])} &nbsp;|&nbsp; ${chip('al día',est.ok,'#2e9e4f')}${chip('próximas',est.prox,'#e0a030')}${chip('vencidas',est.venc,'#e5484d')}${chip('sin registro',est.sin,'#8a97a8')}</div>`;
-  h+=`<table class="ct"><tr><th>Elemento</th><th>Clase metrológica</th><th>Magnitud</th><th>Intervalo</th><th>Última</th><th>Próxima</th><th>Estado</th><th>Certificado</th></tr>`+
-   L.map(o=>{const c=clasif(o),p=o.pam||{},st=estado(o);return `<tr style="cursor:pointer" onclick="PAM._ir('${o.id}')"><td>${E(o.tag||o.id)} <span style="opacity:.6">(${E(TY[o.type]||o.type)})</span></td><td style="color:${CLASE_COL[c.clase]};font-weight:600">${E(c.clase)}</td><td>${E(c.mag)}</td><td>${E(p.int!=null?p.int:c.int)} m</td><td>${E(p.ult||'—')}</td><td>${E(st.prox||'—')}</td><td style="color:${st.col};font-weight:700">${E(st.txt)}</td><td>${E(p.cert||'')}</td></tr>`;}).join('')+`</table>`;
-  h+=`<div style="font-size:11px;opacity:.6;margin-top:8px">Haz clic en una fila para ir al elemento. El tablero respeta el proyecto activo. Pulsa «📖 Marco normativo» para ver el esquema del Subsistema Nacional de la Calidad.</div>`;
-  b.innerHTML=h;
- }
- window.PAM._ir=function(id){try{ov.classList.remove('on');sel={k:'n',id};ms=[];if(typeof panel==='function')panel();if(window.V26buscar&&V26buscar.ir)try{V26buscar.ir({k:'n',id,tag:'',tipo:''});}catch(e){}if(typeof draw==='function')draw();}catch(e){}};
- function abrir(){buildModal();ov.classList.add('on');pinta();}
-
- function pamPDF(){
-  const X=window.PDFX;if(!X||!X.engine){alert('El generador de PDF no está disponible.');return;}
-  const L=susceptibles();if(!L.length){alert('No hay instrumentos susceptibles de control metrológico para incluir en el PDF.');return;}
-  const pinf=window.PROYINFO?PROYINFO():{act:null};
-  const proj=(typeof PJ!=='undefined'&&PJ)||{};
-  const t='Plan de Aseguramiento Metrológico';
-  const sub=(proj.nombre||proj.codigo||'Red de gas')+(pinf.act?' · Proyecto: '+pinf.nom:'');
-  let D;try{D=X.engine(t);}catch(e){alert(e.message);return;}
-  try{D.id=(typeof docId==='function')?docId():'ISO';}catch(e){}
-  try{X.cover(D,t,sub);}catch(e){}
-  const cont={},est={ok:0,prox:0,venc:0,sin:0};L.forEach(o=>{const c=clasif(o);cont[c.clase]=(cont[c.clase]||0)+1;est[estado(o).k]++;});
-  try{
-   D.part('Instrumentos sujetos a control metrológico');
-   D.h2('Resumen');
-   D.kv([['Instrumentos',String(L.length)],
-    ['Metrología legal',String(cont.Legal||0)],
-    ['Metrología industrial / científica',String((cont.Industrial||0)+(cont['Industrial / Científica']||0))],
-    ['Verificación',String(cont['Verificación']||0)],
-    ['Al día / Próximas / Vencidas / Sin registro',`${est.ok} / ${est.prox} / ${est.venc} / ${est.sin}`],
-    ['Alcance',pinf.act?('Proyecto activo: '+pinf.nom):'Plano completo']]);
-   D.h2('Listado y plan de calibración');
-   D.table(['Elemento','Clase','Magnitud','Int. (m)','Última cal.','Próxima cal.','Estado','Certificado'],
-    L.map(o=>{const c=clasif(o),p=o.pam||{},s=estado(o);return [String(o.tag||o.id)+' ('+(TY[o.type]||o.type)+')',c.clase,c.mag,String(p.int!=null?p.int:c.int),p.ult||'',s.prox||'',s.txt,p.cert||''];}),
-    {styles:{fontSize:7.5,cellPadding:2.5}});
-   D.part('Marco normativo — Subsistema Nacional de la Calidad');
-   D.kv([
-    ['Subsistema Nacional de la Calidad','Decreto 1595 de 2015 (modifica el Decreto 1074 de 2015)'],
-    ['INM — Instituto Nacional de Metrología','Decreto 4175 de 2011 · metrología científica e industrial; patrones nacionales y trazabilidad'],
-    ['SIC — Superintendencia de Industria y Comercio','Autoridad de metrología legal; control metrológico de instrumentos (RTM)'],
-    ['ONAC','Acreditación de laboratorios bajo ISO/IEC 17025; firmante de ILAC e IAAC'],
-    ['Control metrológico','Resolución SIC 77507 de 2016'],
-    ['Medidores de gas','RTM en adopción vía la Circular Única de la SIC (Título VI)'],
-    ['Trazabilidad','Laboratorio acreditado por ONAC → patrones del INM → SI (cadena ILAC); incertidumbre según la GUM, términos según el VIM']]);
-   D.h2('Nota');
-   D.kv([['Vigencia','Esta guía es una ayuda de planeación. Verifica los números de resolución y los intervalos vigentes con la SIC, el INM y ONAC, pues la reglamentación metrológica se actualiza periódicamente.']]);
-   X.finish(D,t,'PAM_');
-  }catch(e){console.error('pamPDF',e);alert('No se pudo generar el PDF: '+e.message);}
- }
- function normaHTML(){
-  return `<div style="font-size:12.5px;line-height:1.5;max-width:860px">
-  <h3 style="color:#8fc9ff;margin:4px 0">Esquema metrológico del Subsistema Nacional de la Calidad (Colombia)</h3>
-  <p>El <b>Subsistema Nacional de la Calidad (SNC)</b> articula normalización, reglamentos técnicos, acreditación, evaluación de la conformidad, metrología y vigilancia. Marco general: <b>Decreto 1595 de 2015</b> (modifica el Decreto Único 1074 de 2015).</p>
-  <h4 style="color:#8fc9ff;margin:8px 0 2px">Actores</h4>
-  <ul style="margin:2px 0 6px 16px;padding:0">
-   <li><b>INM — Instituto Nacional de Metrología</b> (Decreto 4175 de 2011): metrología científica e industrial; custodia de los patrones nacionales y trazabilidad.</li>
-   <li><b>SIC — Superintendencia de Industria y Comercio</b>: autoridad de <b>metrología legal</b>; control metrológico de instrumentos de medición en uso (reglamentos técnicos metrológicos, RTM).</li>
-   <li><b>ONAC — Organismo Nacional de Acreditación de Colombia</b>: acredita laboratorios de calibración y ensayo bajo <b>ISO/IEC 17025</b>; firmante de los acuerdos de reconocimiento de <b>ILAC</b> e <b>IAAC</b>.</li>
-  </ul>
-  <h4 style="color:#8fc9ff;margin:8px 0 2px">Tipos de metrología</h4>
-  <ul style="margin:2px 0 6px 16px;padding:0">
-   <li><b>Legal</b>: instrumentos cuyo resultado tiene efectos comerciales, fiscales o de seguridad (p. ej. <b>medidores de gas</b> y correctores de volumen). Controlados por la SIC.</li>
-   <li><b>Industrial</b>: aseguramiento de las mediciones en procesos (manómetros, transmisores de presión/temperatura/caudal). Calibración trazable al INM.</li>
-   <li><b>Científica</b>: realización y mantenimiento de patrones de más alta exactitud (INM).</li>
-  </ul>
-  <h4 style="color:#8fc9ff;margin:8px 0 2px">Trazabilidad y calibración</h4>
-  <p>La calibración se realiza en laboratorios <b>acreditados por ONAC (ISO/IEC 17025)</b>, con patrones trazables al <b>INM</b> y, por la cadena ILAC, al SI. La incertidumbre se estima según la <b>GUM</b> y la terminología según el <b>VIM</b>. El resultado se documenta en un <b>certificado de calibración</b>.</p>
-  <h4 style="color:#8fc9ff;margin:8px 0 2px">Referencias normativas</h4>
-  <ul style="margin:2px 0 6px 16px;padding:0">
-   <li>Decreto 1595 de 2015 — Subsistema Nacional de la Calidad.</li>
-   <li>Decreto 4175 de 2011 — creación del INM.</li>
-   <li>Resolución SIC 77507 de 2016 — control metrológico de instrumentos de medición.</li>
-   <li>RTM de medidores de gas — en adopción vía la Circular Única de la SIC (Título VI).</li>
-   <li>ISO/IEC 17025 — competencia de laboratorios de ensayo y calibración.</li>
-  </ul>
-  <p style="opacity:.65;font-size:11px">Esta guía es una ayuda de planeación. Verifica los números de resolución y los intervalos vigentes con la SIC, el INM y ONAC, pues la reglamentación metrológica se actualiza periódicamente.</p>
-  </div>`;
- }
-
- window.PAM.abrir=abrir;
-})();
-
-</script>
-<script>
 /* v154 · Registro de versiones más amigable, con miniatura por versión.
    Miniatura = imagen de la versión (x.img) si existe · si no, un pantallazo que capture el
    usuario (se guarda en el navegador) · si no, una miniatura generada con el tema Entalpía.
@@ -16947,8 +16758,12 @@ try{$('hbd').innerHTML=manHTML();}catch(e){}})();</script>
  function injectBtn(box){
   try{
    const h=box.querySelector('header');if(!h||h.querySelector('#sp_sat'))return;
-   const pdf=h.querySelector('#sp_pdf');const b=document.createElement('button');b.id='sp_sat';b.onclick=()=>window.SATset(window.SAT===false);
-   if(pdf)h.insertBefore(b,pdf);else h.appendChild(b);paintBtn();
+   const pdf=h.querySelector('#sp_pdf');
+   const b=document.createElement('button');b.id='sp_sat';b.onclick=()=>window.SATset(window.SAT===false);
+   const rb=document.createElement('button');rb.id='sp_reset';rb.textContent='⟲ Reiniciar lecturas';rb.title='Poner en cero las lecturas acumuladas de los medidores (no son contadores infinitos)';
+   rb.onclick=()=>{try{if(window.SIM92&&SIM92.reset){SIM92.reset();if(typeof draw==='function')draw();}}catch(e){}};
+   if(pdf){h.insertBefore(b,pdf);h.insertBefore(rb,pdf);}else{h.appendChild(b);h.appendChild(rb);}
+   paintBtn();
   }catch(e){}
  }
 

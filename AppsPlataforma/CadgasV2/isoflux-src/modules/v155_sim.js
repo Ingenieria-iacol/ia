@@ -23,8 +23,12 @@
  function injectBtn(box){
   try{
    const h=box.querySelector('header');if(!h||h.querySelector('#sp_sat'))return;
-   const pdf=h.querySelector('#sp_pdf');const b=document.createElement('button');b.id='sp_sat';b.onclick=()=>window.SATset(window.SAT===false);
-   if(pdf)h.insertBefore(b,pdf);else h.appendChild(b);paintBtn();
+   const pdf=h.querySelector('#sp_pdf');
+   const b=document.createElement('button');b.id='sp_sat';b.onclick=()=>window.SATset(window.SAT===false);
+   const rb=document.createElement('button');rb.id='sp_reset';rb.textContent='⟲ Reiniciar lecturas';rb.title='Poner en cero las lecturas acumuladas de los medidores (no son contadores infinitos)';
+   rb.onclick=()=>{try{if(window.SIM92&&SIM92.reset){SIM92.reset();if(typeof draw==='function')draw();}}catch(e){}};
+   if(pdf){h.insertBefore(b,pdf);h.insertBefore(rb,pdf);}else{h.appendChild(b);h.appendChild(rb);}
+   paintBtn();
   }catch(e){}
  }
 
