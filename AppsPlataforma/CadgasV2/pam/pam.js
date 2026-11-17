@@ -77,7 +77,7 @@
     tf(id,'resp','Responsable',p.resp));
   h+=`<button style="width:100%;margin-top:8px" onclick="PAM.programar('${kk}','${id}')">📅 Programar calibración</button>`;
   h+=`<div style="font-size:10.5px;opacity:.6;margin-top:4px">${E(c.norma)}</div>`;
-  return h;
+  return `<div id="pamsec">${h}</div>`;
  }
 
  /* envolver panel() */
