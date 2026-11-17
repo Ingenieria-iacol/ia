@@ -4004,7 +4004,8 @@ document.querySelectorAll('details.ac').forEach(d=>{let tIn=0,tOut=0;const sm=d.
 #srov .sr:hover,#srov .sr.k{background:rgba(47,134,232,.18)}#srov .sr small{opacity:.65}#srov input{width:100%;padding:9px 11px;border-radius:8px}
 </style>
 <script>/* V26: recarga automática, registro de versiones, buscador, Esc → Seleccionar, longitud editable, plantillas de reducción, tee de reducción */
-window.APP_VER='33.43';window.ISO_VER=[{"v":"33.43","f":"2026-11-16","t":"P.A.M.: PDF del plan de calibración (tema Entalpía)","c":["El tablero P.A.M. tiene un botón ⬇ PDF que genera el plan de aseguramiento metrológico: portada, resumen, listado de instrumentos con su plan de calibración (clase, magnitud, intervalo, última y próxima calibración, estado y certificado) y el marco normativo. Respeta el proyecto activo."]},
+window.APP_VER='33.44';window.ISO_VER=[{"v":"33.44","f":"2026-11-16","t":"Registro de versiones renovado, con miniatura por versión","c":["El modal de versiones se rediseñó con tarjetas más amigables y una miniatura por cada versión.","La miniatura usa la imagen de la versión si existe; si no, puedes capturar el plano actual con el botón 📷 (se guarda en tu navegador) y, si no hay ninguna, se muestra una miniatura generada con el tema Entalpía (número de versión, fecha y título).","Clic en la miniatura para ampliarla; la versión instalada queda resaltada."]},
+{"v":"33.43","f":"2026-11-16","t":"P.A.M.: PDF del plan de calibración (tema Entalpía)","c":["El tablero P.A.M. tiene un botón ⬇ PDF que genera el plan de aseguramiento metrológico: portada, resumen, listado de instrumentos con su plan de calibración (clase, magnitud, intervalo, última y próxima calibración, estado y certificado) y el marco normativo. Respeta el proyecto activo."]},
 {"v":"33.42","f":"2026-11-16","t":"Plan de Aseguramiento Metrológico (P.A.M.): nuevo módulo con el esquema metrológico colombiano","c":["Nuevo módulo (archivo aparte) con el esquema del Subsistema Nacional de la Calidad: metrología legal (SIC), industrial y científica (INM), acreditación ONAC/ISO-IEC 17025 y reconocimiento ILAC.","Clasifica los elementos susceptibles de control o calibración: medidores y correctores de volumen (legal), manómetros y puntos de control de presión, sensores/transmisores (industrial) y reguladores (verificación).","El panel de propiedades de esos elementos incluye su clasificación metrológica, trazabilidad, intervalo, última/próxima calibración, certificado y laboratorio, y un botón para programar la calibración (se registra como ficha tipo Calibración en el cronograma).","Un tablero «🔬 P.A.M.» (junto al Cronograma) lista los instrumentos con su estado (al día/próxima/vencida) y respeta el proyecto activo; incluye el marco normativo con las referencias (Decreto 1595/2015, Decreto 4175/2011 del INM, Resolución SIC 77507/2016, RTM de medidores de gas)."]},
 {"v":"33.41","f":"2026-11-16","t":"Arrastre isométrico: la tubería conserva el ángulo + líneas guía al mover","c":["Al arrastrar un elemento conectado, se engancha al eje isométrico de su vecino, de modo que la tubería conserva el ángulo del isométrico (ya no queda torcida).","Durante el arrastre se muestran las líneas guía de los ejes isométricos (como al dibujar), con la distancia sobre el eje activo.","El imán a nodos o tuberías existentes conserva la prioridad; si el cursor se aleja del eje, el movimiento vuelve a ser libre."]},
 {"v":"33.40","f":"2026-11-16","t":"Tipo de trabajo «Calibración» y tipo personalizado en la ficha","c":["Los tipos de trabajo ahora incluyen «Calibración» (base del futuro Plan de Aseguramiento Metrológico).","Al elegir «Otro» en el tipo de trabajo aparece un campo para escribir un tipo personalizado, que se guarda y se vuelve a mostrar al reabrir la ficha."]},
@@ -16817,6 +16818,105 @@ try{$('hbd').innerHTML=manHTML();}catch(e){}})();</script>
  }
 
  window.PAM.abrir=abrir;
+})();
+
+</script>
+<script>
+/* v154 · Registro de versiones más amigable, con miniatura por versión.
+   Miniatura = imagen de la versión (x.img) si existe · si no, un pantallazo que capture el
+   usuario (se guarda en el navegador) · si no, una miniatura generada con el tema Entalpía.
+   Reescribe el contenido del modal #verov al abrirlo, sin tocar el núcleo. */
+(function(){
+ 'use strict';
+ if(typeof window==='undefined'||typeof document==='undefined')return;
+ const $=id=>document.getElementById(id);
+ const E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+ const cache={};
+
+ function wrap(g,t,x,y,max,lh,maxLines){const words=String(t).split(' ');let line='',yy=y,ln=0;for(const w of words){const test=line+w+' ';if(g.measureText(test).width>max&&line){g.fillText(line.trim(),x,yy);line=w+' ';yy+=lh;ln++;if(ln>=maxLines-1){let rest=line;if(g.measureText(rest).width>max){while(rest&&g.measureText(rest+'…').width>max)rest=rest.slice(0,-1);rest=rest.trim()+'…';}g.fillText(rest.trim(),x,yy);return;}}else line=test;}g.fillText(line.trim(),x,yy);}
+
+ function placeholder(x){
+  if(cache[x.v])return cache[x.v];
+  try{
+   const W=400,H=250,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
+   let bg=g.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#13203a');bg.addColorStop(1,'#0a0d12');g.fillStyle=bg;g.fillRect(0,0,W,H);
+   let rg=g.createRadialGradient(W-78,66,8,W-78,66,180);rg.addColorStop(0,'rgba(201,161,68,.55)');rg.addColorStop(.45,'rgba(224,120,60,.22)');rg.addColorStop(1,'rgba(90,60,160,0)');g.fillStyle=rg;g.fillRect(0,0,W,H);
+   g.fillStyle='rgba(143,201,255,.9)';g.font='700 14px Inter,system-ui,Arial';g.fillText('ENTALPÍA LAB · ISOFLUX',24,38);
+   g.fillStyle='#eaf3ff';g.font='800 58px Inter,system-ui,Arial';g.fillText('v'+x.v,24,120);
+   g.fillStyle='rgba(228,238,250,.6)';g.font='500 14px Inter,system-ui,Arial';g.fillText(x.f||'',26,146);
+   g.fillStyle='rgba(228,238,250,.9)';g.font='600 14px Inter,system-ui,Arial';
+   wrap(g,x.t||'',24,182,W-44,19,3);
+   const u=c.toDataURL('image/jpeg',.82);cache[x.v]=u;return u;
+  }catch(e){return '';}
+ }
+
+ const shotKey=v=>'isoflux_vs_'+v;
+ function savedShot(v){try{return localStorage.getItem(shotKey(v))||'';}catch(e){return '';}}
+ function thumbOf(x){const im=(x.img&&x.img.length&&x.img[0])||savedShot(x.v);return im||placeholder(x);}
+ function hasShot(x){return !!((x.img&&x.img.length&&x.img[0])||savedShot(x.v));}
+
+ function mainCanvas(){let best=null;document.querySelectorAll('canvas').forEach(c=>{if(c.id==='cv')best=c;});if(best)return best;document.querySelectorAll('canvas').forEach(c=>{if(!best||c.width*c.height>best.width*best.height)best=c;});return best;}
+
+ window.__verCap=function(v){
+  try{
+   const cv=mainCanvas();if(!cv||!cv.width){return;}
+   const W=400,H=Math.max(140,Math.min(260,Math.round(W*cv.height/cv.width))),c=document.createElement('canvas');c.width=W;c.height=H;
+   const g=c.getContext('2d');g.fillStyle='#0a0d12';g.fillRect(0,0,W,H);g.drawImage(cv,0,0,W,H);
+   const u=c.toDataURL('image/jpeg',.72);
+   try{localStorage.setItem(shotKey(v),u);}catch(e){}
+   render();
+  }catch(e){}
+ };
+ window.__verClr=function(v){try{localStorage.removeItem(shotKey(v));render();}catch(e){}};
+ window.__verZoom=function(src){let z=$('verzoom');if(z){const im=z.querySelector('img');if(im)im.src=src;z.classList.add('on');}};
+
+ function css(){
+  if($('v154css'))return;const s=document.createElement('style');s.id='v154css';s.textContent=`
+  #ver_b .v2i{display:grid;grid-template-columns:200px 1fr;gap:16px;border:1px solid var(--bd,#2a3648);border-radius:14px;padding:12px;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent);transition:border-color .15s,transform .15s}
+  #ver_b .v2i:hover{border-color:#39527a}
+  #ver_b .v2i.cur{border-color:#c9a144;box-shadow:0 0 0 1px #c9a14455 inset}
+  #ver_b .v2thumb{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--bd,#2a3648);background:#0b111a;aspect-ratio:400/250}
+  #ver_b .v2thumb img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+  #ver_b .v2badge{position:absolute;left:8px;top:8px;font:800 14px Inter,system-ui,Arial;color:#eaf3ff;background:rgba(10,13,18,.72);border:1px solid #2f86e8;border-radius:9px;padding:1px 8px}
+  #ver_b .v2cur{position:absolute;right:8px;top:8px;font:700 10px Inter,system-ui,Arial;color:#0a0d12;background:#ffd24a;border-radius:9px;padding:2px 8px;letter-spacing:.04em}
+  #ver_b .v2tools{position:absolute;right:6px;bottom:6px;display:flex;gap:4px;opacity:0;transition:opacity .15s}
+  #ver_b .v2i:hover .v2tools{opacity:1}
+  #ver_b .v2tools button{font-size:12px;line-height:1;padding:3px 6px;border-radius:7px;border:1px solid #2f86e8;background:rgba(10,13,18,.82);color:#cfe4ff;cursor:pointer}
+  #ver_b .v2tools button:hover{background:#123a66}
+  #ver_b .v2body{min-width:0}
+  #ver_b .v2head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  #ver_b .v2head b{font:700 15px Inter,system-ui,Arial;color:#e4eefa}
+  #ver_b .v2date{font-size:11.5px;opacity:.6}
+  #ver_b .v2body ul{margin:2px 0 0;padding-left:18px}
+  #ver_b .v2body li{font-size:12.5px;line-height:1.5;margin:2px 0;opacity:.92}
+  @media(max-width:620px){#ver_b .v2i{grid-template-columns:1fr}}
+  `;document.head.appendChild(s);
+ }
+
+ function render(){
+  const b=$('ver_b');if(!b||typeof ISO_VER==='undefined')return;css();
+  b.innerHTML=ISO_VER.map(x=>{const cur=x.v===APP_VER;const propia=hasShot(x);
+   return `<div class="v2i${cur?' cur':''}">`+
+    `<div class="v2thumb"><img src="${thumbOf(x)}" alt="Miniatura v${E(x.v)}" onclick="__verZoom(this.src)">`+
+    `<span class="v2badge">v${E(x.v)}</span>${cur?'<span class="v2cur">INSTALADA</span>':''}`+
+    `<div class="v2tools"><button title="Usar una captura del plano actual como miniatura" onclick="__verCap('${E(x.v)}')">📷 Captura</button>${propia?`<button title="Quitar la captura y volver a la miniatura automática" onclick="__verClr('${E(x.v)}')">✕</button>`:''}</div>`+
+    `</div>`+
+    `<div class="v2body"><div class="v2head"><b>${E(x.t)}</b><span class="v2date">${E(x.f)}</span></div>`+
+    `<ul>${(x.c||[]).map(c=>`<li>${E(c)}</li>`).join('')}</ul></div>`+
+   `</div>`;
+  }).join('');
+ }
+
+ /* re-render cuando el modal se abre */
+ function hook(){
+  const vo=$('verov');if(!vo||vo.__v154)return false;vo.__v154=1;
+  const mo=new MutationObserver(()=>{if(vo.classList.contains('on'))render();});
+  mo.observe(vo,{attributes:true,attributeFilter:['class']});
+  if(vo.classList.contains('on'))render();
+  return true;
+ }
+ let n=0;const iv=setInterval(()=>{n++;try{if(hook()||n>60)clearInterval(iv);}catch(e){if(n>60)clearInterval(iv);}},150);
+ window.VER154={render};
 })();
 
 </script>
