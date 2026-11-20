@@ -395,7 +395,13 @@ const TYPES={
  filtro:{n:'Filtro en Y',lin:1,pas:1,k:3,pre:'F'},
  exceso:{n:'Válvula de exceso de flujo',lin:1,pas:1,dir:1,k:4,pre:'EF',def:{qc:''}},
  esv:{n:'Cierre de emergencia (ESV)',lin:1,pas:1,k:2,cierra:1,pre:'ESV'},
- medidor:{n:'Medidor / equipo con ΔP fijo',lin:1,pas:1,k:0,pre:'FT',def:{dp:.2}}};
+ medidor:{n:'Medidor / equipo con ΔP fijo',lin:1,pas:1,k:0,pre:'FT',def:{dp:.2}},
+ acme:{n:'Conector ACME (acople de llenado)',lin:1,pas:1,k:2,pre:'ACME'},
+ /* no es un nodo: en la paleta convierte un tramo en manguera, o acopla un tanque a la red */
+ manguera:{n:'Conector de alta presión (manguera elastomérica)',pipe:1}};
+/* mangueras elastoméricas para GLP líquido: diámetro nominal → interior (mm). Presión de trabajo típica 350 psi (24,1 bar) */
+const HOSE=[{dn:'1/2',di:12.7},{dn:'3/4',di:19.05},{dn:'1',di:25.4},{dn:'1 1/4',di:31.75},{dn:'1 1/2',di:38.1},{dn:'2',di:50.8},{dn:'3',di:76.2}],HEPS=.01,HPT=24.13;
+const hoseSize=p=>{const di=+p.mdi>0?+p.mdi:(HOSE.find(h=>h.dn==p.mdn)||HOSE[2]).di;return{dn:p.mdn||'1',di,od:di+12,t:6,tpi:0,hose:1};};
 
 const DEFM=()=>({v:2,proy:{nombre:'',cliente:'',ref:''},
  fl:{comp:{C3:70,nC4:20,iC4:10},base:'mol',Tl:20,Tmax:45,Tamb:25,U:6,alt:1000,patm:898.8},
@@ -482,7 +488,7 @@ function topo(M){
 function solve(M,dn,T,ov,opt){
  T=T||topo(M);const fr=fracs(M.fl.comp,M.fl.base),Tl=(+M.fl.Tl||0)+273.15,pr=props(fr,Tl),mat=MAT[M.mec.mat]||MAT.a80,
   patm=(+M.fl.patm||1013.25)*100,rho=pr.rho,mu=pr.mu,W=T.W.slice(),EPS=1;
- const size=p=>mat.sizes.find(s=>s.dn==(dn.get(p.id)||p.dn))||mat.sizes.find(s=>s.dn==M.crit.dnMin)||mat.sizes[2];
+ const size=p=>p.man?hoseSize(p):mat.sizes.find(s=>s.dn==(dn.get(p.id)||p.dn))||mat.sizes.find(s=>s.dn==M.crit.dnMin)||mat.sizes[2];
  const ves=n=>(TYPES[n.type]||{}).ves;
  /* presión impuesta en un recipiente (abs, en la boquilla) */
  const psat=n=>n.modo=='fix'?(+n.P||0)*BAR+patm:pbub(fr,(n.T===''||n.T==null?+M.fl.Tl:+n.T)+273.15);/* fase vapor del recipiente = saturación de su líquido */
@@ -494,8 +500,8 @@ function solve(M,dn,T,ov,opt){
  const pves=n=>opt&&opt.igual?1e6-rho*G*n.y:pgas(n)+rho*G*head(n);
  /* ----- elementos ----- */
  const L=[];
- T.P.forEach(p=>{const a=T.N.get(p.a),b=T.N.get(p.b),s=size(p),D=s.di/1000,er=mat.eps/s.di;
-  L.push({kind:'pipe',ref:p.id,a:T.sid(p,p.a),b:T.sid(p,p.b),s,D,A:Math.PI*D*D/4,er,Lg:+p.Lr>0?+p.Lr:dist(a,b),dz:b.y-a.y,
+ T.P.forEach(p=>{const a=T.N.get(p.a),b=T.N.get(p.b),s=size(p),D=s.di/1000,er=(p.man?HEPS:mat.eps)/s.di;
+  L.push({kind:'pipe',man:!!p.man,ref:p.id,a:T.sid(p,p.a),b:T.sid(p,p.b),s,D,A:Math.PI*D*D/4,er,Lg:+p.Lr>0?+p.Lr:dist(a,b),dz:b.y-a.y,
    K:(+p.k||0)+T.ft.get(p.id)*fTurb(er),kab:(ves(a)?.5:0)+(ves(b)?1:0),kba:(ves(b)?.5:0)+(ves(a)?1:0)});});
  const byPipe=new Map(L.map(l=>[l.ref,l]));
  T.split.forEach((sp,id)=>{const n=T.N.get(id),t=TYPES[n.type],l1=byPipe.get(sp.ent),l2=byPipe.get(sp.sal),sm=l1.D<=l2.D?l1:l2;
@@ -577,7 +583,7 @@ function solve(M,dn,T,ov,opt){
  const TK=i=>Tn.has(i)?Tn.get(i):Tl,PB=i=>pbn.has(i)?pbn.get(i):pbub(fr,TK(i));
  EL.forEach((l,i)=>{const m=l.m;
   if(l.kind=='pipe'){const v=Math.abs(m)/(rho*l.A),Re=rho*v*l.D/mu,dPf=fr_(l,m),dPm=(l.K+(m>=0?l.kab:l.kba))*rho*v*v/2;
-   res.pipes.set(l.ref,{m,v,Re,f:Re>0?fric(Re,l.er):0,K:l.K+(m>=0?l.kab:l.kba),dPf,dPm,dPz:rho*G*l.dz,L:l.Lg,dn:l.s.dn,di:l.s.di,
+   res.pipes.set(l.ref,{man:l.man,m,v,Re,f:Re>0?fric(Re,l.er):0,K:l.K+(m>=0?l.kab:l.kba),dPf,dPm,dPz:rho*G*l.dz,L:l.Lg,dn:l.s.dn,di:l.s.di,
     grad:l.Lg>0?dPf/l.Lg*100:0,Pa:Pn.get(l.a),Pb:Pn.get(l.b),T:TK(m>=0?l.a:l.b)-273.15,zona:T.zD.has(l.ref)?'D':'S'});}});
  M.nodes.forEach(nd=>{if(!ids.has(nd.id)||!Pn.has(nd.id))return;const P=Pn.get(nd.id),Po=Pn.get(nd.id+'#o');
   const r={P,Po,T:TK(nd.id)-273.15,Pbub:PB(nd.id),marg:Math.min(P-PB(nd.id),Po==null?1e99:Po-PB(nd.id+'#o'))};
@@ -632,7 +638,7 @@ function orient(M,dn){const auto=n=>(TYPES[n.type]||{}).dir&&n.dir!='man';let T=
 }
 function run(M){
  let T=topo(M);const mat=MAT[M.mec.mat]||MAT.a80,sizes=mat.sizes,c=M.crit,iMin=Math.max(0,sizes.findIndex(s=>s.dn==c.dnMin));
- const auto=T.P.filter(p=>p.dn=='auto'||!sizes.some(s=>s.dn==p.dn)),dn=new Map(auto.map(p=>[p.id,sizes[Math.min(iMin+2,sizes.length-1)].dn]));
+ const auto=T.P.filter(p=>!p.man&&(p.dn=='auto'||!sizes.some(s=>s.dn==p.dn))),dn=new Map(auto.map(p=>[p.id,sizes[Math.min(iMin+2,sizes.length-1)].dn]));
  orient(M,dn);T=topo(M);
  let R=solve(M,dn,T);const rho=()=>R.pr.rho,mu=()=>R.pr.mu;
  const best=(p,m)=>{const lim=T.zD.has(p.id)?+c.vD:+c.vS;
@@ -665,6 +671,10 @@ function checks(M,R){const F=GLP.mkF(R.pr.rho,R.patm);
    else add('warn',`Unión ${n.id} sin tuberías`,'Punto suelto sin ninguna tubería conectada; bórralo si no lo necesitas.',n.id);});
   if(M.nodes.length&&!iso)add('ok','Conectividad de la red','Todos los tanques, bombas, válvulas y demás equipos del dibujo están interconectados por tuberías: no hay elementos sueltos.');}
  if(R.conv){
+  /* mangueras: presión de operación frente a la presión de trabajo nominal */
+  M.pipes.filter(p=>p.man).forEach(p=>{const r=R.pipes.get(p.id);if(!r)return;const Pm=Math.max(r.Pa,r.Pb)-R.patm,lim=(+p.mpt>0?+p.mpt:HPT)*BAR;
+   if(Pm>lim)add('bad',`Manguera ${p.id}: presión sobre su nominal`,`Opera a ${F.Pg(Pm)} y su presión de trabajo es ${F.Pg(lim)}. Usa una manguera de mayor presión nominal (GLP líquido: 350 psi como mínimo) o reduce la presión.`,p.id);
+   else add('ok',`Manguera ${p.id}: presión dentro de su nominal`,`Opera a ${F.Pg(Pm)} de ${F.Pg(lim)} de trabajo (${(Pm/lim*100).toFixed(0)} %). Verifica fecha de prueba hidrostática y estado de los acoples.`,p.id);});
   /* velocidades */
   let nv=0;R.pipes.forEach((r,id)=>{const lim=r.zona=='D'?+c.vD:+c.vS;if(r.v>lim+1e-9){nv++;add('bad',`Velocidad alta en ${id}`,`${F.v(r.v)} en Ø ${r.dn}" (límite ${F.v(lim)} en ${r.zona=='D'?'descarga':'succión / lado saturado'}).`,id);}
    else if(r.zona=='D'&&r.grad>c.grad*BAR+1e-6&&!R.auto.has(id))add('warn',`Fricción alta en ${id}`,`${F.grad(r.grad)} (límite ${F.grad(c.grad*BAR)}).`,id);});
@@ -713,13 +723,13 @@ function checks(M,R){const F=GLP.mkF(R.pr.rho,R.patm);
  M.nodes.forEach(n=>{if(n.type!='vaporizador'||!n.vz||!R.conv)return;const v=vapcat(M).find(x=>x.id==n.vz);if(v&&v.Pmax!==''&&v.Pmax!=null&&R.PopMax>+v.Pmax*BAR+1)add('bad',`${n.tag||n.id}: presión máxima del vaporizador`,`La presión máxima de operación (${F.Pg(R.PopMax,1)}) supera la admisible del equipo (${F.Pg(+v.Pmax*BAR,1)}).`,n.id);});
  R.Pdis=(M.mec.Pdis!==''&&+M.mec.Pdis>0)?+M.mec.Pdis*BAR:(pumpsN.length?350:250)*PSI;R.PdisAuto=!(M.mec.Pdis!==''&&+M.mec.Pdis>0);
  add(R.PopMax<=R.Pdis?'ok':'bad','Presión de diseño',`Máxima de operación ${F.Pg(R.PopMax)} (saturación a ${F.T(+M.fl.Tmax)}${pumpsN.length?' + bomba a caudal cero':''}) frente a ${F.Pg(R.Pdis)} de diseño.`);
- R.mech=[];const used=[...new Set([...R.pipes.values()].map(r=>r.dn))];
+ R.mech=[];const used=[...new Set([...R.pipes.values()].filter(r=>!r.man).map(r=>r.dn))];
  if(mat.acero){const S=137.9e6,E=+M.mec.Ej||1,Y=.4;used.forEach(d=>{const s=mat.sizes.find(q=>q.dn==d),hr=M.mec.junta=='rosc'?.8*25.4/s.tpi:0,td=s.t*.875-hr-(+M.mec.ca||0),
    tr=R.Pdis*s.od/(2*(S*E+R.Pdis*Y))*FS(M,'esp'),mawp=td>0?2*S*E*td/(s.od-2*Y*td):0;R.mech.push({dn:d,t:s.t,td,tr,mawp,ok:td>=tr});});
   const bad=R.mech.filter(q=>!q.ok);if(R.mech.length)add(bad.length?'bad':'ok','Espesor de pared (ASME B31.3)',bad.length?'No cumple: Ø '+bad.map(q=>q.dn+'"').join(', ')+'.':'Todos los diámetros usados cumplen con la presión de diseño.');
   if(M.mec.junta=='rosc'&&M.mec.mat=='a40')add('warn','Tubería roscada en cédula 40','Para GLP líquido con uniones roscadas la práctica de NFPA 58 es cédula 80; cédula 40 se reserva para unión soldada.');}
  else if(used.length)add('warn','Cobre en línea de líquido','Verifica la presión nominal del tubo y de las uniones frente a la presión de diseño, y que la norma aplicable lo admita para líquido.');
- const big=[...R.pipes.values()].sort((a,b)=>b.v-a.v)[0];
+ const big=[...R.pipes.values()].filter(r=>!r.man).sort((a,b)=>b.v-a.v)[0];
  if(big){const s=mat.sizes.find(q=>q.dn==big.dn),Dt=s.di/s.t,dPdT=(pr.beta-3*mat.alpha)/(pr.kT+Dt/mat.E),a=1/Math.sqrt(pr.rho*(pr.kS+Dt/mat.E)),
    Pop=Math.max(...[...R.nodes.values()].flatMap(r=>[r.P,r.Po==null?r.P:r.Po]))-patm,Pali=(+M.mec.Pali||27.6)*BAR,
    Lt=[...R.pipes.values()].reduce((x,r)=>x+r.L,0),tcr=2*Lt/a,dJ=pr.rho*a*big.v,tc=Math.max(+M.mec.tc||0,0),dP=tc<=tcr?dJ:dJ*tcr/tc;
@@ -882,7 +892,7 @@ function ejemploConsumo(){const M=DEFM();
  pp(tk,a);pp(a,v1);pp(v1,f1);const s4=pp(f1,p1);const d1=pp(p1,ch);pp(ch,t1);pp(t1,e1);pp(e1,v2);pp(v2,c1);pp(t1,e2);pp(e2,v3);pp(v3,c2);
  const N=id=>M.nodes.find(n=>n.id==id);N(p1).ent=s4;N(ch).ent=d1;
  M.proy.nombre='Suministro continuo a usuario final (ejemplo)';return M;}
-Object.assign(GLP,{VTIP,VAPDEF,KGGAL,vapcat,vapEval,FS,npshNeed,contra,TYPES,DEFM,topo,solveNet:solve,run,dist,ejemplo,ejemploLlenado,ejemploCisterna,ejemploTransporte,ejemploConsumo,simulate,simInit,simStep,vgeo,vlevel,vhead});
+Object.assign(GLP,{HOSE,HEPS,HPT,hoseSize,VTIP,VAPDEF,KGGAL,vapcat,vapEval,FS,npshNeed,contra,TYPES,DEFM,topo,solveNet:solve,run,dist,ejemplo,ejemploLlenado,ejemploCisterna,ejemploTransporte,ejemploConsumo,simulate,simInit,simStep,vgeo,vlevel,vhead});
 })();
 
 </script>
@@ -985,6 +995,8 @@ function node(n,O,vw,u,o){const A=scene(O,vw),f=Math.max(o.s/46,.6),t=n.type;
   break;}
  case'reten':{bridas(8,pr+2.6*f);A.cyl(au(-8,0),au(8,0),5.6*f,c('bronce'));A.sph(au(-1,5,0),4.8*f,c('bronce'));A.disc(au(8.3,0),U,3*f,COL.amar,{z:.6});break;}
  case'exceso':{bridas(8,pr+2.4*f);A.cyl(au(-8,0),au(8,0),5.2*f,c('acero'));A.cyl(au(-2,0),au(3,0),6.4*f,c('rojo'));break;}
+ case'acme':{A.cyl(au(-10,0),au(-4,0),pr+1.4*f,COL.acero);A.cyl(au(-4,0),au(5,0),pr+4.2*f,c('bronce'));[-2.2,.6,3.4].forEach(x=>A.disc(au(x,0),U,pr+4.7*f,sh(COL.bronce,-.4),{ring:1.4,z:.2}));
+  A.box(au(7,0),mul(U,2.2*f),mul(UP,pr+3.4*f),mul(W,pr+3.4*f),COL.acero);A.cyl(au(9,0),au(13,0),pr+1.4*f,COL.acero);break;}
  case'filtro':{bridas(9,pr+2.4*f);A.cyl(au(-9,0),au(9,0),4.8*f,c('gris'));A.cyl(au(0,0),au(8,-10),3.8*f,c('gris'));A.cyl(au(8,-10),au(9.6,-12),4.6*f,COL.osc);break;}
  case'medidor':{bridas(8,pr+2.4*f);A.cyl(au(0,-2,0),au(0,9,0),7.6*f,c('acero'),{cap:'#f4f7fb'});A.cyl(au(-8,0),au(8,0),4*f,c('gris'),{z:-3});break;}
  case'vaporizador':{A.box(au(0,13,0),mul(U,10*f),mul(UP,12*f),mul(W,8.5*f),c('vapo'));A.box(au(0,.8,0),mul(U,11*f),mul(UP,1*f),mul(W,9.5*f),COL.osc);A.cyl(au(4,25,0),au(4,34,0),3*f,COL.acero);A.cyl(au(-5,25,0),au(-5,29,0),2*f,COL.rojo);A.cyl(au(-13,6,0),au(-10,6,0),pr+1.4,COL.acero);break;}
@@ -1104,6 +1116,19 @@ function acoplar(id){const n=node(id);if(!n)return;const dg=q=>M.pipes.filter(p=
  else{const sv=DRAW;DRAW=null;addPipe(n.id,b.id);DRAW=sv;toast(`🔗 ${n.tag||n.id} unido a la red con una tubería de ${fL(bd)}. Revísala en la ficha del tramo.`);}
  SEL={k:'n',id:n.id};changed(true);}
 /* une dos nodos: «keep» conserva su tipo y datos y queda en la posición «at»; las tuberías de «drop» pasan a «keep» */
+/* «Acoplamiento a red» desde la ficha del tanque: manguera de alta presión entre el tanque y la red, con conector ACME en el lado de la red.
+   Extremo libre de tubería más cercano → se vuelve ACME y la manguera llega a él. Si no hay extremos libres pero el tanque ya tiene
+   una tubería rígida, esa tubería pasa a ser la manguera. Si no hay nada, se crea el ACME a 3 m para seguir trazando desde allí. */
+function acopRed(id){const n=node(id);if(!n)return;const dg=q=>M.pipes.filter(p=>p.a==q||p.b==q).length,mine=new Set(M.pipes.filter(p=>p.a==n.id||p.b==n.id).flatMap(p=>[p.a,p.b]));
+ const C=M.nodes.filter(u=>u.id!=n.id&&!mine.has(u.id)&&u.type=='union'&&dg(u.id)==1);hs();let hp=null,E=null,how='';
+ if(C.length){E=C[0];let bd=1/0;C.forEach(u=>{const d=GLP.dist(n,u);if(d<bd){bd=d;E=u;}});setType(E,'acme');const sv=DRAW;DRAW=null;hp=addPipe(n.id,E.id);DRAW=sv;how='al extremo de red más cercano';}
+ else{const rp=M.pipes.find(p=>(p.a==n.id||p.b==n.id)&&!p.man);
+  if(rp){hp=rp;E=node(rp.a==n.id?rp.b:rp.a);if(E&&E.type=='union'&&dg(E.id)==2)setType(E,'acme');how='convirtiendo su tubería de salida';}
+  else{E=addNode(n.x+3,n.y,n.z);setType(E,'acme');const sv=DRAW;DRAW=null;hp=addPipe(n.id,E.id);DRAW=sv;how='con un conector ACME a 3 m: continúa la tubería desde él';}}
+ if(!hp){HIST.pop();toast('No se pudo crear la manguera.');return;}
+ hp.man=1;hp.srv='liq';hp.dn='auto';if(!hp.mdn)hp.mdn='1';if(hp.mdi==null)hp.mdi='';if(hp.mpt==null)hp.mpt='';hp.Lr=r3(Math.max(GLP.dist(n,E)*1.1,3));
+ SEL={k:'p',id:hp.id};TAB='el';AST.el='Elemento';changed(true);toast(`🔗 ${n.tag||n.id} acoplado a la red con manguera de alta presión (${how}). Ajusta su longitud y diámetro en esta ficha.`);}
+function toHose(p,on){if(!p)return;hs();if(on){p.man=1;if(!p.mdn)p.mdn='1';if(p.mdi==null)p.mdi='';if(p.mpt==null)p.mpt='';if(!(+p.Lr>0))p.Lr=r3(Math.max(GLP.dist(node(p.a),node(p.b)),1));}else{p.man=0;}SEL={k:'p',id:p.id};TAB='el';AST.el='Elemento';changed(true);}
 function mergeNodes(keep,drop,at){const k=node(keep),d=node(drop);if(!k||!d||k===d)return false;const p=at||k;k.x=p.x;k.y=p.y;k.z=p.z;
  M.pipes.forEach(q=>{if(q.a==d.id)q.a=k.id;if(q.b==d.id)q.b=k.id;});const seen=new Set();
  M.pipes=M.pipes.filter(q=>{if(q.a==q.b)return false;const key=[q.a,q.b].sort().join('|');if(seen.has(key))return false;seen.add(key);return true;});
@@ -1128,6 +1153,8 @@ function glyph(n,st,fr){/* fr: fracción de llenado (0…1) para dibujar el nive
  case'vbola':return`<path d="${BT}" ${n.cerrada?f:c} stroke="${st}"/><circle r="3" ${f}/>`;
  case'vglobo':return`<path d="${BT}" ${n.cerrada?f:c} stroke="${st}"/><circle r="4.5" ${f}/>`;
  case'reten':return`<path d="M-9 -6L2 0L-9 6Z" ${c}/><path d="M3 -7V7" stroke="${st}" stroke-width="2"/>`;
+ case'acme':return`<path d="M-14 -4H-6V4H-14Z" ${c}/><path d="M-6 -8H4L8 -4V4L4 8H-6Z" ${c}/><path d="M-3 -8V8M0 -8V8M3 -8V8" stroke="${st}" stroke-width="1"/><path d="M8 -3H14V3H8Z" ${c}/>`;
+ case'manguera':return`<path d="M-15 2C-10 -10 -4 12 1 0S10 -11 15 -1" fill="none" stroke="${st}" stroke-width="5" stroke-linecap="round"/><path d="M-15 2C-10 -10 -4 12 1 0S10 -11 15 -1" fill="none" stroke="var(--pn)" stroke-width="1.4" stroke-dasharray="1.6 2.2"/>`;
  case'filtro':return`<path d="M-9 -5H9V5H-9Z" ${c}/><path d="M-5 5L-1 -5M0 5L4 -5" stroke="${st}" stroke-width="1.2"/>`;
  case'exceso':return`<path d="${BT}" ${c}/><path d="M-5 -10H4M1 -13L5 -10L1 -7" stroke="${st}" stroke-width="1.4" fill="none"/>`;
  case'esv':return`<path d="${BT}" ${n.cerrada?f:c} stroke="${st}"/><path d="M0 0V-8" stroke="${st}" stroke-width="1.5"/><rect x="-5" y="-17" width="10" height="9" ${c}/>`;
@@ -1164,6 +1191,8 @@ function draw(){
   const pw=p.srv=='vap'?2.4:Math.max(3.4,(res&&res.di?res.di/1000:.03)*1.15*V.s),L2=`x1="${A[0].toFixed(1)}" y1="${A[1].toFixed(1)}" x2="${B[0].toFixed(1)}" y2="${B[1].toFixed(1)}"`;PW.set(p.id,pw);let ps='';
   if(s)ps+=`<line ${L2} stroke="var(--sel)" stroke-width="${(pw+7).toFixed(1)}" opacity=".35" stroke-linecap="round"/>`;
   if(p.srv=='vap')ps+=`<line ${L2} stroke="${col}" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="7 5"/>`;
+  else if(p.man){/* manguera elastomérica: cuerpo negro corrugado con franja naranja */const hw=Math.max(pw,4.2);
+   ps+=`<line ${L2} stroke="#06080c" stroke-width="${(hw+1.6).toFixed(1)}" stroke-linecap="round"/><line ${L2} stroke="${tr||bad.has(p.id)?col:'#262c37'}" stroke-width="${hw.toFixed(1)}" stroke-linecap="round"/><line ${L2} stroke="#4a5263" stroke-width="${(hw*.8).toFixed(1)}" stroke-dasharray="1.4 ${Math.max(1.6,hw*.45).toFixed(1)}"/><line ${L2} stroke="#ff9a1f" stroke-width="${Math.max(1,hw*.16).toFixed(1)}" opacity=".9"/>`;}
   else{/* tubo con volumen: borde en sombra, cuerpo y brillo del lado de la luz */let nx=-(B[1]-A[1])/(len||1),ny=(B[0]-A[0])/(len||1);if(nx+ny>0){nx=-nx;ny=-ny;}const o=pw*.2;
    ps+=`<line ${L2} stroke="#05070c" stroke-width="${pw.toFixed(1)}" stroke-linecap="round"/><line ${L2} stroke="${col}" stroke-width="${(pw*.8).toFixed(1)}" stroke-linecap="round"/><line ${L2} stroke="#000" stroke-width="${(pw*.8).toFixed(1)}" stroke-linecap="round" opacity=".22"/><line x1="${(A[0]+nx*o*.4).toFixed(1)}" y1="${(A[1]+ny*o*.4).toFixed(1)}" x2="${(B[0]+nx*o*.4).toFixed(1)}" y2="${(B[1]+ny*o*.4).toFixed(1)}" stroke="${col}" stroke-width="${(pw*.5).toFixed(1)}" stroke-linecap="round"/><line x1="${(A[0]+nx*o).toFixed(1)}" y1="${(A[1]+ny*o).toFixed(1)}" x2="${(B[0]+nx*o).toFixed(1)}" y2="${(B[1]+ny*o).toFixed(1)}" stroke="#fff" stroke-width="${(pw*.16).toFixed(1)}" stroke-linecap="round" opacity=".55"/>`;}
   IT.push({d:(dep(a.x,a.y,a.z)+dep(b.x,b.y,b.z))/2,s:ps});
@@ -1174,7 +1203,7 @@ function draw(){
    for(let q=fx?-1:0;q<k+(fx?1:0);q++)sy+=`<use href="#gs" x="${(x0+q*per).toFixed(1)}"/>`;
    gf+=`<g transform="translate(${U[0].toFixed(1)} ${U[1].toFixed(1)}) rotate(${an.toFixed(1)})"><clipPath id="${gid}"><rect x="1" y="-14" width="${Math.max(len-2,1).toFixed(1)}" height="20"/></clipPath><g clip-path="url(#${gid})"><g class="gf${fx&&!(LIVE&&LIVE.pause)?' on':''}" style="animation-duration:${dur.toFixed(3)}s;animation-delay:-${(now%dur).toFixed(3)}s">${sy}</g></g></g>`;}
   if(lab&&res&&len>120){const off=Math.abs(B[0]-A[0])<4?[10,4,'start']:[0,-9,'middle'];
-   const fw=res.m>=0,flow=Math.abs(res.m)>1e-7,l1=flow?`${res.dn}" · ${fQ(Math.abs(res.m))} · ${fQ(Math.abs(res.m),q2())}`:`${res.dn}" · sin flujo`,l2=flow?`${fVl(res.v)} · ${fPa(fw?res.Pa:res.Pb)} → ${fPa(fw?res.Pb:res.Pa)}`:'';
+   const fw=res.m>=0,flow=Math.abs(res.m)>1e-7,hz=p.man?'Mang. ':'',l1=flow?`${hz}${res.dn}" · ${fQ(Math.abs(res.m))} · ${fQ(Math.abs(res.m),q2())}`:`${hz}${res.dn}" · sin flujo`,l2=flow?`${fVl(res.v)} · ${fPa(fw?res.Pa:res.Pb)} → ${fPa(fw?res.Pb:res.Pa)}`:'';
    /* evita que dos etiquetas se monten: prueba encima y debajo del tramo; si no cabe, se omite (está en la ficha y en la tabla) */
    const w=Math.max(l1.length,l2.length)*5.6,mid=off[2]=='middle',bx=mid?mx-w/2:mx+off[0],hh=l2?26:13;
    for(const y0 of mid?[my-30,my+10]:[my-10,my-40,my+20]){const bb=[bx,y0,bx+w,y0+hh];if(LB.some(q=>bb[0]<q[2]&&bb[2]>q[0]&&bb[1]<q[3]&&bb[3]>q[1]))continue;LB.push(bb);
@@ -1246,6 +1275,10 @@ cv.addEventListener('pointerdown',e=>{const m=loc(e),t=e.target,pid=t.dataset&&t
  if(TOOL=='pipe'){if(DRAW){commit(t);return;}
   hs();let n;if(nid)n=node(nid);else if(pid)n=splitPipe(pipe(pid),tOnPipe(pipe(pid),m));else{const w=unprj(m[0],m[1],+M.nivel||0);n=addNode(snap(w.x),w.y,snap(w.z));}
   DRAW={from:n.id,srv:pid?pipe(pid).srv:'liq'};TYPED='';changed(true);return;}
+ if(TOOL=='eq:manguera'){const nn=nid&&node(nid);setTool('sel');
+  if(pid){toHose(pipe(pid),true);toast('Tramo convertido en manguera de alta presión. Ajusta longitud y diámetro en su ficha.');}
+  else if(nn&&(TYPES[nn.type]||{}).ves)acopRed(nn.id);
+  else toast('Haz clic sobre un tramo de tubería para volverlo manguera, o sobre un tanque para acoplarlo a la red.');return;}
  if(TOOL.startsWith('eq:')){const ty=TOOL.slice(3);hs();let n;if(nid)n=node(nid);else if(pid)n=splitPipe(pipe(pid),tOnPipe(pipe(pid),m));else{const w=unprj(m[0],m[1],+M.nivel||0);n=addNode(snap(w.x),w.y,snap(w.z));}
   setType(n,ty);SEL={k:'n',id:n.id};setTool('sel');TAB='el';AST.el='Elemento';changed(true);return;}
  if(LIVE&&nid&&operable(node(nid))){operar(node(nid));return;}
@@ -1297,7 +1330,7 @@ function miniDraw(){const c=$('mini');if(!c||!M)return;$('vmini').classList.togg
  for(const n of M.nodes){const p=pn(n);P.set(n.id,p);if(p[0]<x0)x0=p[0];if(p[0]>x1)x1=p[0];if(p[1]<y0)y0=p[1];if(p[1]>y1)y1=p[1];}V=s0;
  const pad=10,sc=Math.min((W-2*pad)/Math.max(x1-x0,1e-6),(H-2*pad)/Math.max(y1-y0,1e-6)),ox=(W-(x1-x0)*sc)/2-x0*sc,oy=(H-(y1-y0)*sc)/2-y0*sc;MINIT={sc,ox,oy};
  x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,W,H);x.lineCap='round';const cs=getComputedStyle(document.documentElement),col={liq:cs.getPropertyValue('--sP')||'#4ad0ff',ret:cs.getPropertyValue('--sR')||'#c48cff',vap:cs.getPropertyValue('--sV')||'#9a90ad'};
- x.lineWidth=1.4;for(const p of M.pipes){const a=P.get(p.a),b=P.get(p.b);if(!a||!b)continue;x.strokeStyle=col[p.srv||'liq']||col.liq;x.beginPath();x.moveTo(a[0]*sc+ox,a[1]*sc+oy);x.lineTo(b[0]*sc+ox,b[1]*sc+oy);x.stroke();}
+ x.lineWidth=1.4;for(const p of M.pipes){const a=P.get(p.a),b=P.get(p.b);if(!a||!b)continue;x.strokeStyle=p.man?'#ff9a1f':col[p.srv||'liq']||col.liq;x.beginPath();x.moveTo(a[0]*sc+ox,a[1]*sc+oy);x.lineTo(b[0]*sc+ox,b[1]*sc+oy);x.stroke();}
  for(const n of M.nodes){const t=TYPES[n.type]||{};if(n.type=='union')continue;const p=P.get(n.id);x.fillStyle=t.ves?'#ff9a1f':t.con?'#3ddc84':'#e8eef8';const z=t.ves?3.4:2;x.fillRect(p[0]*sc+ox-z,p[1]*sc+oy-z,2*z,2*z);}
  const vx=(0-V.ox)/V.s*sc+ox,vy=(0-V.oy)/V.s*sc+oy,vw=r.width/V.s*sc,vh=r.height/V.s*sc;x.fillStyle='#ffe93a14';x.strokeStyle='#ffe93a';x.lineWidth=1.4;
  if(vw>2&&vh>2){x.fillRect(vx,vy,vw,vh);x.strokeRect(vx,vy,vw,vh);}else{x.beginPath();x.arc(vx+vw/2,vy+vh/2,4,0,7);x.stroke();}}
@@ -1327,7 +1360,7 @@ addEventListener('keydown',e=>{const inF=/INPUT|SELECT|TEXTAREA/.test((e.target|
 $('bundo').onclick=()=>undo(HIST,REDO);$('bredo').onclick=()=>undo(REDO,HIST);$('bdel').onclick=del;$('lab').onchange=draw;$('gsym').onchange=()=>{try{localStorage.setItem('glpliq_gsym',$('gsym').value);}catch(e){}draw();};try{const v=localStorage.getItem('glpliq_gsym');if(v)$('gsym').value=v;}catch(e){}
 $('paso').oninput=e=>{M.paso=Math.max(.01,(+e.target.value||.5*kL())/kL());save();};$('nivel').oninput=e=>{M.nivel=(+e.target.value||0)/kL();save();draw();};
 /* paleta de equipos */
-$('pal').innerHTML='<b>Paleta del diseñador</b>'+[['Recipientes y fuentes',['tanque','cisterna','cond']],['Impulsión y retorno',['bomba','bypass']],['Consumos',['vaporizador','consumo']],['Válvulas y equipos',['vbola','vglobo','reten','exceso','esv','filtro','medidor']]]
+$('pal').innerHTML='<b>Paleta del diseñador</b>'+[['Recipientes y fuentes',['tanque','cisterna','cond']],['Impulsión y retorno',['bomba','bypass']],['Consumos',['vaporizador','consumo']],['Válvulas y equipos',['vbola','vglobo','reten','exceso','esv','filtro','medidor']],['Conexiones y mangueras',['acme','manguera']]]
  .map(([t,l])=>`<details class="acc"><summary><span>${t}</span></summary><div class="accb">`+l.map(k=>`<button data-eq="${k}" title="${E(TYPES[k].n)}"><svg width="30" height="26" viewBox="-17 -17 34 34"><g transform="scale(${k=='tanque'?.62:k=='cisterna'?.56:.9})">${glyph({type:k},'currentColor')}</g></svg>${E(TYPES[k].n.replace(' (diferencial)','').replace(' de almacenamiento','').replace(' / equipo con ΔP fijo','').replace('Cierre de emergencia (ESV)','ESV'))}</button>`).join('')+'</div></details>').join('');
 /* solo un grupo abierto a la vez */
 $('pal').addEventListener('toggle',e=>{if(e.target.open)$('pal').querySelectorAll('details.acc[open]').forEach(d=>{if(d!==e.target)d.open=false;});},true);
@@ -1395,14 +1428,22 @@ function panel(){
  if(TAB=='el'){
   if(!SEL)h=`<div class="card"><h2>Cómo dibujar</h2><p class="hint" style="font-size:12px;color:var(--tx)">1. Elige <b>Tanque</b> en la paleta y haz clic en el plano.<br>2. Con <b>╱ Tubería</b> haz clic en el punto inicial, elige <b>⬆ Subir</b>, <b>➡ Nivel</b> o <b>⬇ Bajar</b> (o las flechas del teclado) y mueve el cursor; cada clic fija un tramo. Los puntos existentes se imantan (aro verde). Escribe un número y Enter para la longitud exacta. Clic derecho sin arrastrar o Esc termina.<br>3. Coloca <b>bombas, válvulas y filtros</b> haciendo clic sobre una tubería: la parten en ese punto.<br>4. Termina cada ramal en un <b>vaporizador</b> o <b>consumo</b>, y dibuja los <b>retornos</b> al tanque (cambia el «Servicio» de la tubería).<br>5. Selecciona cualquier elemento para editar sus datos aquí.<br>6. <b>Gira la vista</b> arrastrando con el botón derecho (o con ◍ Orbitar); ISO y PL vuelven a la vista isométrica y a la planta.</p><p class="hint">Codos y tees se deducen de la geometría. El cálculo se actualiza con cada cambio.</p></div>`;
   else if(SEL.k=='p'){const p=pipe(SEL.id),a=node(p.a),b=node(p.b),Lg=GLP.dist(a,b),dns=MAT[M.mec.mat].sizes.map(s=>[s.dn,s.dn+'"']);
-   h=`<div class="card"><h2>Tubería ${E(p.id)}</h2><div class="fg">${sel_('Diámetro','data-e="dn"',p.dn,[['auto','Automático'],...dns])}${sel_('Servicio','data-e="srv"',p.srv,Object.entries(SRV).map(([k,v])=>[k,v[0]]))}
+   if(p.man){const hz=GLP.hoseSize(p);h=`<div class="card"><h2>〰 Conector de alta presión ${E(p.id)}</h2><p class="hint">Manguera elastomérica para GLP líquido entre ${E(a.tag||a.id)} y ${E(b.tag||b.id)}.</p><div class="fg">${uinp('Longitud','data-e="Lr"',p.Lr,'len',{ph:nf(cL(Lg),2)+' (dibujo)',min:0,tt:'Longitud real de la manguera. Vacío = la del dibujo.'})}${sel_('Diámetro nominal','data-e="mdn"',p.mdn||'1',GLP.HOSE.map(q=>[q.dn,q.dn+'"']))}
+    ${inp('Diámetro interior (mm)','data-e="mdi"',p.mdi,{ph:nf(hz.di,2)+' (nominal)',min:0,step:.1,tt:'Vacío = interior típico del diámetro nominal. Usa el dato del fabricante.'})}${uinp('Presión de trabajo','data-e="mpt"',p.mpt,'p',{ph:nf(toU('p',GLP.HPT),1)+' (350 psi)',min:0,tt:'Presión de trabajo nominal de la manguera. Se verifica contra la presión de operación.'})}
+    ${inp('K de acoples','data-e="k"',p.k,{step:.5,min:0,tt:'Pérdidas de los acoples y terminales de la manguera.'})}${sel_('Servicio','data-e="srv"',p.srv,Object.entries(SRV).map(([k,v])=>[k,v[0]]))}</div>
+    <button data-unhose="${E(p.id)}" data-on="0" style="width:100%;margin-top:8px">Convertir en tubería rígida</button></div>`;}
+   else h=`<div class="card"><h2>Tubería ${E(p.id)}</h2><div class="fg">${sel_('Diámetro','data-e="dn"',p.dn,[['auto','Automático'],...dns])}${sel_('Servicio','data-e="srv"',p.srv,Object.entries(SRV).map(([k,v])=>[k,v[0]]))}
     ${inp('K adicional','data-e="k"',p.k,{step:.5,min:0,tt:'Accesorios no dibujados (codos extra, mangueras, etc.)'})}${uinp('Longitud real','data-e="Lr"',p.Lr,'len',{ph:nf(cL(Lg),2)+' (dibujo)',min:0,tt:'Vacío = longitud del dibujo'})}</div></div>
    <div class="card"><h2>Alturas del tramo</h2><div class="fg">${uinp('Elevación inicio · '+E(a.tag||a.id),'data-ny="'+a.id+'"',a.y,'len',{tt:'Altura del eje de la tubería en su punto inicial. Al cambiarla se mueve ese nodo.'})}${uinp('Elevación fin · '+E(b.tag||b.id),'data-ny="'+b.id+'"',b.y,'len',{tt:'Altura del eje de la tubería en su punto final. Al cambiarla se mueve ese nodo.'})}</div>
-    <p class="hint">La elevación es la coordenada vertical de cada extremo. El desnivel del tramo (fin − inicio) aparece en los resultados; positivo = el líquido sube.</p></div>`;}
+    <p class="hint">La elevación es la coordenada vertical de cada extremo. El desnivel del tramo (fin − inicio) aparece en los resultados; positivo = el líquido sube.</p>${p.man?'':`<button data-unhose="${E(p.id)}" data-on="1" style="width:100%;margin-top:6px">〰 Convertir en conector de alta presión (manguera)</button>`}</div>`;}
   else{const n=node(SEL.id),t=TYPES[n.type]||TYPES.union;
    const nd=M.pipes.filter(p=>p.a==n.id||p.b==n.id).length;
-   if(!nd&&n.type!='union')h+=`<div class="card" style="border-color:var(--bad)"><h2>⚠ Sin acoplar a la red</h2><p class="hint">Ninguna tubería toca este equipo, por eso no participa en el cálculo.</p><button data-acop="${E(n.id)}" class="pri" style="width:100%;margin-top:6px">🔗 Acoplar a la red</button><p class="hint" style="margin-top:6px">Se une al extremo libre de tubería más cercano. También puedes trazar una tubería hasta el tanque: al acercar el cursor a su cuerpo aparece el aro verde «acoplar».</p></div>`;
-   h+=`<div class="card"><h2>${E(t.n)}</h2><div class="fg">${inp('Etiqueta','data-e="tag"',n.tag,{text:1})}${sel_('Tipo','data-e="type"',n.type,Object.entries(TYPES).map(([k,v])=>[k,v.n]))}</div>
+   if(t.ves){const hs_=M.pipes.filter(p=>p.man&&(p.a==n.id||p.b==n.id));
+    h+=`<div class="card"${nd?'':' style="border-color:var(--bad)"'}><h2>🔗 Acoplamiento a red</h2>${nd?'':'<p class="hint">⚠ Ninguna tubería toca este recipiente: no participa en el cálculo.</p>'}`
+     +(hs_.length?hs_.map(p=>`<button data-ref="${E(p.id)}" style="width:100%;margin-top:4px;text-align:left">〰 Manguera ${E(p.id)} · ${E(p.mdn||'1')}" · ${nf(cL(+p.Lr>0?+p.Lr:GLP.dist(node(p.a),node(p.b))),2)} ${uL()} — editar</button>`).join(''):'')
+     +`<button data-acred="${E(n.id)}" class="pri" style="width:100%;margin-top:6px">🔗 Acoplamiento a red</button><p class="hint" style="margin-top:6px">Une el recipiente a la red con un <b>conector de alta presión</b> (manguera elastomérica) y un <b>conector ACME</b> en el lado de la red. Llega al extremo libre de tubería más cercano; la longitud y el diámetro se ajustan en la ficha de la manguera.</p></div>`;}
+   if(!nd&&n.type!='union'&&!t.ves)h+=`<div class="card" style="border-color:var(--bad)"><h2>⚠ Sin acoplar a la red</h2><p class="hint">Ninguna tubería toca este equipo, por eso no participa en el cálculo.</p><button data-acop="${E(n.id)}" class="pri" style="width:100%;margin-top:6px">🔗 Acoplar a la red</button><p class="hint" style="margin-top:6px">Se une al extremo libre de tubería más cercano. También puedes trazar una tubería hasta el tanque: al acercar el cursor a su cuerpo aparece el aro verde «acoplar».</p></div>`;
+   h+=`<div class="card"><h2>${E(t.n)}</h2><div class="fg">${inp('Etiqueta','data-e="tag"',n.tag,{text:1})}${sel_('Tipo','data-e="type"',n.type,Object.entries(TYPES).filter(([k,v])=>!v.pipe).map(([k,v])=>[k,v.n]))}</div>
     <div class="fg g3" style="margin-top:6px">${uinp('X','data-e="x"',n.x,'len')}${uinp('Z','data-e="z"',n.z,'len')}${uinp(t.ves?'Elev. boquilla':'Elevación','data-e="y"',n.y,'len',{tt:'Altura sobre el nivel de referencia (0). Es la que define los desniveles de la red.'})}</div><div class="fg" style="margin-top:6px">`;
    if(n.type=='cisterna')h+=`<p class="hint w2">Fuente móvil de descargue (trasiego cisterna → red). Capacidad típica: 38 m³ (≈10 000 gal) en tracto-camión; ajústala a la placa del carrotanque. La <b>elevación</b> es la de la válvula de fondo / acople de la manguera.</p>`;
    if(t.ves)h+=sel_('Presión del recipiente','data-e="modo"',n.modo,[['sat','Saturación a su temperatura'],['fix','Presión fija']],{w2:1})+(n.modo=='fix'?uinp('Presión','data-e="P"',n.P,'p'):uinp('Temperatura','data-e="T"',n.T,'T',{ph:nf(cT(+M.fl.Tl),0)+' (fluido)',tt:'Vacío = temperatura del líquido definida en Proyecto'}))+uinp('Ajuste válvula de alivio','data-e="prv"',n.prv,'p',{ph:nf(toU('p',17.2),0)+' (250 psig)',tt:'La simulación avisa si la presión del recipiente lo alcanza'})+uinp('Capacidad','data-e="cap"',n.cap,'vol',{suf:' de agua',ph:'ilimitada',min:0,tt:'Vacío = depósito de nivel constante. Con capacidad se habilita la simulación de llenado y vaciado.'})
@@ -1462,7 +1503,7 @@ function chart(title,unit,series,t){const W=330,H=132,ml=38,mr=46,mt=20,mb=20,pw
 const operable=n=>{const t=TYPES[n.type]||{};return!!(t.cierra||n.type=='bomba'||(n.type=='exceso'&&n._efc));};
 function ariete(n,v,que){/* golpe de ariete del cierre: Joukowsky ρ·a·Δv; cierre lento (Michaud) si t > 2L/a */
  const r=LIVE.r,S=LIVE.S,ps=M.pipes.filter(p=>p.a==n.id||p.b==n.id).map(p=>r.pipes.get(p.id)).filter(Boolean);if(!ps.length||v<.01)return;
- const x=ps.sort((a,b)=>b.v-a.v)[0],sz=R.mat.sizes.find(q=>q.dn==x.dn),a=1/Math.sqrt(R.pr.rho*(R.pr.kS+sz.di/sz.t/R.mat.E)),L=[...r.pipes.values()].reduce((s,q)=>s+q.L,0),
+ const x=(ps.some(q=>!q.man)?ps.filter(q=>!q.man):ps).sort((a,b)=>b.v-a.v)[0],sz=(!x.man&&R.mat.sizes.find(q=>q.dn==x.dn))||{di:x.di,t:6},a=1/Math.sqrt(R.pr.rho*(R.pr.kS+sz.di/sz.t/R.mat.E)),L=[...r.pipes.values()].reduce((s,q)=>s+q.L,0),
   tcr=2*L/a,dJ=R.pr.rho*a*v,tc=Math.max(+M.mec.tc||0,0),dP=tc<=tcr?dJ:dJ*tcr/tc,Pmx=Math.max(...[...r.nodes.values()].flatMap(q=>[q.P,q.Po==null?q.P:q.Po]))-R.patm+dP;
  S.ev.push({t:S.t,s:Pmx>R.Pdis?'bad':Pmx>R.Pdis*.8?'warn':'info',ref:n.id,m:`${que} con ${fVl(v)} en ${nf(tc,1)} s: golpe de ariete +${fdP(dP,1)} → pico ${fPg(Pmx,1)}${Pmx>R.Pdis?' (supera la presión de diseño de '+fPg(R.Pdis,1)+')':''}. Celeridad ${fVl(a,0)}.`});}
 function operar(n,estado){if(!LIVE)return;const t=TYPES[n.type],S=LIVE.S,nm=n.tag||n.id,r=LIVE.r,x=r&&r.EL.find(l=>l.n&&l.n.id==n.id),A=x?x.A:0,v=x&&A?Math.abs(x.m)/(R.pr.rho*A):0;
@@ -1677,12 +1718,12 @@ $('bside').onclick=()=>sidePanel(!sideOn());$('bhide').onclick=()=>sidePanel(fal
   catch(e){toast('✖ Tu navegador no permite pantalla completa aquí (puede estar embebido sin permiso). Prueba F11.');}};
  ['fullscreenchange','webkitfullscreenchange'].forEach(e=>document.addEventListener(e,paint));})();
 $('sb').addEventListener('change',e=>{if(e.target.dataset.ny&&TAB=='rs')results();});
-$('sb').addEventListener('click',e=>{const ac=e.target.closest&&e.target.closest('[data-acop]');if(ac){acoplar(ac.dataset.acop);return;}if(e.target.dataset.ny)return;const el=e.target.closest('[data-ref]');if(!el)return;const id=el.dataset.ref;SEL=node(id)?{k:'n',id}:pipe(id)?{k:'p',id}:null;if(SEL){TAB='el';AST.el='Elemento';panel();draw();}});
+$('sb').addEventListener('click',e=>{const ac=e.target.closest&&e.target.closest('[data-acop]');if(ac){acoplar(ac.dataset.acop);return;}const ar=e.target.closest&&e.target.closest('[data-acred]');if(ar){acopRed(ar.dataset.acred);return;}const uh=e.target.closest&&e.target.closest('[data-unhose]');if(uh){toHose(pipe(uh.dataset.unhose),uh.dataset.on=='1');return;}if(e.target.dataset.ny)return;const el=e.target.closest('[data-ref]');if(!el)return;const id=el.dataset.ref;SEL=node(id)?{k:'n',id}:pipe(id)?{k:'p',id}:null;if(SEL){TAB='el';AST.el='Elemento';panel();draw();}});
 $('sb').addEventListener('input',e=>{const el=e.target,k=el.dataset.k,ek=el.dataset.e;
  if(el.dataset.ny){if(el.value===''||!node(el.dataset.ny))return;if(el!==document._lastIn){hs();document._lastIn=el;}node(el.dataset.ny).y=r3(toSI('len',+el.value));
   const sm=!!SIM;SIM=null;SIMI=null;try{R=GLP.run(M);}catch(x){}save();draw();const er=$('eres');if(er)er.innerHTML=elResults();return;}
  if(!k&&!ek)return;
- const txt=el.type=='text'||(el.tagName=='SELECT'&&!/Ej$/.test(k||'')),blank=['T','K','Pmin','Lr','mec.Pdis','cap','D','ap','qc','prv'].includes(ek||k);
+ const txt=el.type=='text'||(el.tagName=='SELECT'&&!/Ej$/.test(k||'')),blank=['T','K','Pmin','Lr','mec.Pdis','cap','D','ap','qc','prv','mdi','mpt'].includes(ek||k);
  let val=el.type=='checkbox'?el.checked:txt?el.value:(el.value===''?(blank?'':0):+el.value);
  if(el.dataset.u&&typeof val=='number')val=+toSI(el.dataset.u,val).toPrecision(9);
  if(!HIST.length||el!==document._lastIn){hs();document._lastIn=el;}
@@ -1691,7 +1732,7 @@ $('sb').addEventListener('input',e=>{const el=e.target,k=el.dataset.k,ek=el.data
   if(k=='fl.alt'){M.fl.patm=Math.round(GLP.patmAlt(M.fl.alt)*10)/10;const q=$('sb').querySelector('[data-k="fl.patm"]');if(q)q.value=toU('patm',M.fl.patm);}
   if(k=='mec.mat'){const dns=MAT[M.mec.mat].sizes.map(s=>s.dn);M.pipes.forEach(p=>{if(p.dn!='auto'&&!dns.includes(p.dn))p.dn='auto';});if(!dns.includes(M.crit.dnMin))M.crit.dnMin=dns[Math.min(1,dns.length-1)];rebuild=true;}}
  else if(SEL){const o=SEL.k=='n'?node(SEL.id):pipe(SEL.id);
-  const had=SEL.k=='n'&&!!GLP.vgeo(o);if(ek=='type'){setType(o,val);rebuild=true;}else o[ek]=val;if(ek=='modo'||ek=='vap'||ek=='dir'||(ek=='cap'&&had!=!!GLP.vgeo(o)))rebuild=true;}
+  const had=SEL.k=='n'&&!!GLP.vgeo(o);if(ek=='type'){setType(o,val);rebuild=true;}else o[ek]=val;if(ek=='modo'||ek=='vap'||ek=='dir'||ek=='mdn'||(ek=='cap'&&had!=!!GLP.vgeo(o)))rebuild=true;}
  changed(false,rebuild);});
 
 /* ---------- ciclo de cálculo ---------- */
@@ -1800,6 +1841,7 @@ try{if(HOST)HOST.postMessage({__glpliqReady:true},'*');}catch(e){}
 (()=>{
 const $=id=>document.getElementById(id);
 window.GLP_VER=[
+ {v:'2.21',f:'2026-11-19',t:'Conectores ACME, mangueras de alta presión y «Acoplamiento a red»',c:['Nuevo «Conector ACME (acople de llenado)»: equipo en línea con K editable y su sólido 3D.','Nuevo «Conector de alta presión (manguera elastomérica)»: convierte un tramo en manguera con longitud real, diámetro nominal (1/2" a 3"), diámetro interior, presión de trabajo y K de acoples editables en su propia ficha.','La manguera se calcula con su diámetro interior y rugosidad de elastómero, no entra en el dimensionamiento automático de tubería rígida y se verifica contra su presión de trabajo (350 psi por defecto).','Ficha del tanque y del carrotanque: «🔗 Acoplamiento a red» crea la manguera hasta el extremo libre más cercano con un conector ACME del lado de la red.','La manguera se dibuja negra, corrugada y con franja naranja.']},
  {v:'2.20',f:'2026-11-19',t:'Arrastrar elementos del dibujo',c:['Con Seleccionar, los equipos y uniones se arrastran por el plano y las tuberías conectadas los siguen; arrastrar una tubería mueve sus dos extremos.','Alt + arrastrar cambia la elevación.','El movimiento respeta el paso de la cuadrícula.','Soltar un equipo sobre el extremo de una tubería lo acopla a la red (aro verde «soltar para acoplar»).','Esc cancela el arrastre en curso; Ctrl+Z lo deshace.']},
  {v:'2.19',f:'2026-11-19',t:'Zoom para planos de kilómetros y acoplamiento tanque–red',c:['Zoom desde ≈50 km en pantalla hasta detalle milimétrico (antes 5–260 px/m); rueda proporcional y pellizco en panel táctil.','Ctrl + arrastrar acerca a una ventana; ⌖ / Z acerca al elemento seleccionado; teclas + y −.','Minimapa ▣ (M) con la ventana visible; clic o arrastre para desplazarse.','Escala gráfica con relación 1:N; clic para fijar una escala exacta.','Cuadrícula adaptativa 1-2-5 con líneas mayores, solo en la zona visible.','Rendimiento en redes grandes: se dibuja solo lo visible y los tramos largos se recortan a la pantalla.','Acoplamiento tanque–red: el cuerpo completo del tanque imanta la tubería (aro verde «acoplar a …»); la vista previa y los rótulos ya no bloquean el clic sobre el tanque.','Botón «🔗 Acoplar a la red» en la ficha de un equipo suelto.','Nuevo equipo «Carrotanque (cisterna)» en «Recipientes y fuentes»: fuente móvil para descargue, dibujada como cisterna sobre chasis con cabina, ruedas y válvula de fondo; el ejemplo de descargue ya lo usa.']},
  {v:'2.18',f:'2026-11-11',t:'Indicador de conectividad, bases de tanques y modelos de ejemplo',c:['Nueva verificación «Conectividad de la red»: si un tanque, bomba, válvula u otro equipo quedó dibujado sin ninguna tubería tocándolo, aparece en rojo (o la unión suelta, en amarillo) con el nombre del elemento; si todo está bien unido, lo confirma en verde.','Corrección: la base de los tanques horizontales y verticales ahora baja hasta el nivel real del piso en vez de quedar pegada al casco; los tanques elevados ya no se ven flotando.','«❔ Ayuda ▸ Modelos de ejemplo»: además de los dos ejemplos existentes, se agregan «Descargue de carrotanque a tanque fijo» (trasiego cisterna → tanque), «Transporte de caudal por tubería» (solo transporte, presión fija en ambos extremos) y «Suministro a usuario final» (dos consumos con su propia presión mínima). Cada uno se carga con un clic.']},
@@ -1842,6 +1884,7 @@ const MAN=[
 <li>Termina cada ramal en un <b>vaporizador</b> o <b>consumo</b> y dibuja los <b>retornos</b> al tanque (cambia el «Servicio» de la tubería).</li></ol>
 <p><b>Vista.</b> Arrastra con el <b>botón derecho</b> para girar, o usa <b>◍ Orbitar</b>. <b>ISO</b> vuelve a la vista isométrica, <b>PL</b> muestra la planta, <b>⟳</b> gira sola y <b>⤢</b> encuadra. Arrastrar el fondo (o botón central, o Mayús) mueve la vista; la rueda acerca y aleja.</p>
 <p><b>Planos de gran extensión.</b> El zoom va desde varios kilómetros en pantalla hasta el detalle de un accesorio. <b>Ctrl + arrastrar</b> (⌘ en Mac) acerca a la ventana que dibujes; <b>⌖</b> o la tecla <b>Z</b> acerca al elemento seleccionado; <b>+</b> y <b>−</b> también acercan y alejan. El <b>minimapa ▣</b> (tecla M) muestra toda la red con la ventana visible en amarillo: haz clic o arrastra en él para desplazarte. Abajo a la derecha está la <b>escala gráfica</b> con la relación 1:N; haz clic en ella para fijar una escala exacta. La cuadrícula se adapta sola al zoom (cada quinta línea es más marcada).</p>
+<p><b>Conexiones y mangueras.</b> En la paleta, «Conexiones y mangueras» trae el <b>Conector ACME</b> (acople de llenado; se coloca sobre una tubería como cualquier válvula, con su K editable) y el <b>Conector de alta presión</b> (manguera elastomérica): haz clic sobre un tramo para volverlo manguera, o sobre un tanque para acoplarlo a la red. La manguera se calcula con su propio diámetro interior, su longitud real y rugosidad de elastómero, y se verifica contra su presión de trabajo (350 psi por defecto). En la ficha de cualquier tanque o carrotanque, <b>«🔗 Acoplamiento a red»</b> crea la manguera hasta el extremo libre de red más cercano y pone un conector ACME en ese extremo.</p>
 <p><b>Arrastrar elementos.</b> Con <b>Seleccionar</b>, arrastra cualquier tanque, carrotanque, bomba, válvula, consumo o unión para moverlo por el plano; las tuberías conectadas lo siguen. Arrastrar una tubería mueve sus dos extremos. Con <b>Alt</b> presionado el arrastre cambia la elevación. Los movimientos respetan el «Paso» de la cuadrícula. Si sueltas un equipo sobre el extremo de una tubería (aro verde «soltar para acoplar») queda acoplado a la red. <b>Esc</b> durante el arrastre lo cancela y <b>Ctrl+Z</b> lo deshace.</p>
 <p><b>Carrotanque.</b> En «Recipientes y fuentes» está el <b>Carrotanque (cisterna)</b>: se calcula como un recipiente (presión de saturación, nivel, llenado en la simulación) y se dibuja como cisterna sobre chasis. Su nodo es la válvula de fondo; conecta allí la manguera o tubería de descargue.</p>
 <p><b>Acoplamiento tanque–red.</b> Al trazar una tubería, acercar el cursor (o el extremo del tramo) al cuerpo de un tanque lo imanta: aparece un aro verde con «acoplar a …» y el clic une la tubería a la boquilla del tanque. Si un equipo quedó suelto, su ficha muestra «🔗 Acoplar a la red», que lo une al extremo libre de tubería más cercano.</p>
