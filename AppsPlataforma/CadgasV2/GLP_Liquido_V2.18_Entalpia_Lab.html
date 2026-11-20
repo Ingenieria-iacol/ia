@@ -1037,7 +1037,7 @@ const toSI=(k,v)=>k=='p'?v/(1e5*uP()[0]):k=='q'?(UN.q[M.un.q][0]=='m'?v/UN.q[M.u
 const uOf=(k,o={})=>k=='p'?(o.dif?uP()[1]:uP()[2]):k=='q'?M.un.q:k=='qv'?qv():k=='len'?uL():k=='T'?M.un.T:k=='vel'?M.un.vel:k=='mm'?uS():k=='grad'?uG():k=='patm'?uPat():M.un.vol+(o.suf||'');
 GLP.nf=nf;GLP.mkF=(rho,patm)=>({Pa:(p,d)=>fPg(p-patm,d),Pg:(p,d)=>fPg(p,d),dP:(p,d)=>fdP(p,d),Q:m=>fQ(m,null,rho),Qv:m=>fQ(m,qv(),rho),V:v=>fV(v),L:(m,d)=>fL(m,d),v:x=>fVl(x),T:c=>fT(c,0),dT:c=>fDT(c),perT:p=>fPT(p),grad:p=>fG(p)});
 const KEY='glpliq_red',C30=Math.cos(Math.PI/6),cv=$('cv');
-let M=null,R=null,LIVE=null,SIM=null,SIMI=null,SIMOPT={tmax:12},SEL=null,TOOL='sel',TAB='rs',DRAW=null,TYPED='',HIST=[],REDO=[],V={s:46,ox:300,oy:300},tT=0,PAN=null,MOUSE=null,NG=[],ZB=null,RQ=0;
+let M=null,R=null,LIVE=null,SIM=null,SIMI=null,SIMOPT={tmax:12},SEL=null,TOOL='sel',TAB='rs',DRAW=null,TYPED='',HIST=[],REDO=[],V={s:46,ox:300,oy:300},tT=0,PAN=null,MOUSE=null,NG=[],ZB=null,RQ=0,DRG=null;
 /* zoom para planos de gran extensión: de 0,002 px/m (≈50 km en pantalla) a 800 px/m (detalle milimétrico) */
 const ZMIN=.002,ZMAX=800,CM=160;
 const niceStep=v=>{if(!(v>0)||!isFinite(v))return 1;const e=Math.pow(10,Math.floor(Math.log10(v))),f=v/e;return(f<=1?1:f<=2?2:f<=5?5:10)*e;};
@@ -1103,6 +1103,11 @@ function acoplar(id){const n=node(id);if(!n)return;const dg=q=>M.pipes.filter(p=
  if(bd<=lim){M.pipes.forEach(p=>{if(p.a==b.id)p.a=n.id;if(p.b==b.id)p.b=n.id;});n.x=b.x;n.y=b.y;n.z=b.z;M.nodes=M.nodes.filter(u=>u.id!=b.id);toast(`🔗 ${n.tag||n.id} acoplado al extremo de la red (${fL(bd)} de ajuste).`);}
  else{const sv=DRAW;DRAW=null;addPipe(n.id,b.id);DRAW=sv;toast(`🔗 ${n.tag||n.id} unido a la red con una tubería de ${fL(bd)}. Revísala en la ficha del tramo.`);}
  SEL={k:'n',id:n.id};changed(true);}
+/* une dos nodos: «keep» conserva su tipo y datos y queda en la posición «at»; las tuberías de «drop» pasan a «keep» */
+function mergeNodes(keep,drop,at){const k=node(keep),d=node(drop);if(!k||!d||k===d)return false;const p=at||k;k.x=p.x;k.y=p.y;k.z=p.z;
+ M.pipes.forEach(q=>{if(q.a==d.id)q.a=k.id;if(q.b==d.id)q.b=k.id;});const seen=new Set();
+ M.pipes=M.pipes.filter(q=>{if(q.a==q.b)return false;const key=[q.a,q.b].sort().join('|');if(seen.has(key))return false;seen.add(key);return true;});
+ M.nodes=M.nodes.filter(n=>n.id!=d.id);return true;}
 function del(){if(!SEL)return;hs();
  if(SEL.k=='p')M.pipes=M.pipes.filter(p=>p.id!=SEL.id);
  else{M.pipes=M.pipes.filter(p=>p.a!=SEL.id&&p.b!=SEL.id);M.nodes=M.nodes.filter(n=>n.id!=SEL.id);}
@@ -1205,7 +1210,7 @@ function draw(){
  const stt={ok:'✔ Cumple',warn:'! Con observaciones',bad:'✖ No cumple'};
  $('dic').innerHTML=R&&M.pipes.length?(LIVE?`<span class="pill sim">● EN VIVO · t = ${tfmt(LIVE.S.t)}${LIVE.pause?' · en pausa':''}</span>`:SIMI!=null&&SIM&&!SIM.err?`<span class="pill sim">⏱ Simulación · t = ${tfmt(SIM.t[SIMI])}</span>`:`<span class="pill ${R.estado}">${stt[R.estado]}</span>`)+Rv.pumps.map(p=>`<span class="pill ${p.NPSHa>=GLP.npshNeed(M,p.npshr)-1e-9?'ok':'bad'}" title="NPSH: presión disponible en la succión de la bomba por encima de la de ebullición del líquido, en metros de columna. Debe superar el NPSH requerido por la bomba.">${E(p.tag)} · NPSH ${fL(p.NPSHa)} · ${fQ(p.m,qv())}</span>`).join(''):'';
  const hm=TOOL=='orbit'?'Arrastra para girar la vista · rueda para acercar · Esc vuelve a Seleccionar':TOOL=='pipe'?(DRAW?'⬆ Subir · ➡ Nivel · ⬇ Bajar (o las flechas) y mueve el cursor · clic fija el tramo · escribe una longitud y Enter · los puntos existentes se imantan (aro verde) · clic derecho o Esc termina':'Clic en un nodo, en una tubería o en el plano para iniciar la tubería'):
-  TOOL.startsWith('eq:')?`Clic en el plano, en un nodo o sobre una tubería para colocar: ${TYPES[TOOL.slice(3)].n}`:'Clic para seleccionar · arrastra el fondo para mover · botón derecho para girar · rueda para acercar · Ctrl + arrastrar: zoom a ventana · Z: acercar a la selección';
+  TOOL.startsWith('eq:')?`Clic en el plano, en un nodo o sobre una tubería para colocar: ${TYPES[TOOL.slice(3)].n}`:'Clic para seleccionar · arrastra un elemento para moverlo (Alt: elevación; suéltalo sobre un punto para acoplar) · arrastra el fondo para mover · botón derecho para girar · rueda para acercar · Ctrl + arrastrar: zoom a ventana · Z: acercar a la selección';
  $('hint').innerHTML=`<span>${hm}</span>`+(TYPED?`<span style="color:var(--sel)">Longitud: ${E(TYPED)} ${uL()}</span>`:'');
 }
 /* vista previa del tramo que se está trazando */
@@ -1244,9 +1249,16 @@ cv.addEventListener('pointerdown',e=>{const m=loc(e),t=e.target,pid=t.dataset&&t
  if(TOOL.startsWith('eq:')){const ty=TOOL.slice(3);hs();let n;if(nid)n=node(nid);else if(pid)n=splitPipe(pipe(pid),tOnPipe(pipe(pid),m));else{const w=unprj(m[0],m[1],+M.nivel||0);n=addNode(snap(w.x),w.y,snap(w.z));}
   setType(n,ty);SEL={k:'n',id:n.id};setTool('sel');TAB='el';AST.el='Elemento';changed(true);return;}
  if(LIVE&&nid&&operable(node(nid))){operar(node(nid));return;}
- if(nid||pid){SEL=nid?{k:'n',id:nid}:{k:'p',id:pid};if(!LIVE){TAB='el';AST.el='Elemento';panel();}else{const er=$('eres');if(er)er.innerHTML=elResults();}draw();return;}
+ if(nid||pid){SEL=nid?{k:'n',id:nid}:{k:'p',id:pid};if(!LIVE){TAB='el';AST.el='Elemento';panel();}else{const er=$('eres');if(er)er.innerHTML=elResults();}
+  /* arrastre: el nodo (o los dos extremos de la tubería) se mueve sobre su plano horizontal; con Alt cambia la elevación */
+  if(!LIVE&&TOOL=='sel'&&e.button==0){const ids=nid?[nid]:(q=>q?[q.a,q.b]:[])(pipe(pid)),y0=node(ids[0]).y;DRG={ids,m0:m,w0:unprj(m[0],m[1],y0),y0,o:ids.map(i=>{const n=node(i);return{x:n.x,y:n.y,z:n.z};}),mv:false,alt:e.altKey};try{cv.setPointerCapture(e.pointerId);}catch(_){}}
+  draw();return;}
  PAN={x:e.clientX,y:e.clientY,ox:V.ox,oy:V.oy,mv:false};try{cv.setPointerCapture(e.pointerId);}catch(_){}cv.classList.add('pan');});
 cv.addEventListener('pointermove',e=>{MOUSE=loc(e);
+ if(DRG){const m=MOUSE,dpx=Math.hypot(m[0]-DRG.m0[0],m[1]-DRG.m0[1]);if(!DRG.mv&&dpx<5)return;if(!DRG.mv){DRG.mv=true;hs();cv.classList.add('pan');}
+  if(DRG.alt||e.altKey){const k=Math.abs(VW.m[3])||1,dy=-(m[1]-DRG.m0[1])/(V.s*k),d=snap(dy);DRG.ids.forEach((id,i)=>{node(id).y=r3(DRG.o[i].y+d);});}
+  else{const w=unprj(m[0],m[1],DRG.y0),dx=snap(w.x-DRG.w0.x),dz=snap(w.z-DRG.w0.z);DRG.ids.forEach((id,i)=>{const n=node(id);n.x=r3(DRG.o[i].x+dx);n.z=r3(DRG.o[i].z+dz);});}
+  HOV=DRG.ids.length==1?nearNode(m,DRG.ids[0]):null;reqDraw();requestAnimationFrame(()=>{const pv=$('pv');if(pv&&HOV&&node(HOV)){const Q=pn(node(HOV));pv.innerHTML=`<circle cx="${Q[0]}" cy="${Q[1]}" r="13" fill="none" stroke="#3ddc84" stroke-width="2.6"/><text class="tg" x="${Q[0]+14}" y="${Q[1]-12}" style="fill:#3ddc84">soltar para acoplar</text>`;}});return;}
  if(ZB){ZB.x2=MOUSE[0];ZB.y2=MOUSE[1];let r=document.getElementById('zbx');if(!r){r=document.createElementNS('http://www.w3.org/2000/svg','rect');r.id='zbx';r.setAttribute('fill','#2f86e822');r.setAttribute('stroke','#5aa8ff');r.setAttribute('stroke-width','1.5');r.setAttribute('stroke-dasharray','6 4');cv.appendChild(r);}
   r.setAttribute('x',Math.min(ZB.x,ZB.x2));r.setAttribute('y',Math.min(ZB.y,ZB.y2));r.setAttribute('width',Math.abs(ZB.x2-ZB.x));r.setAttribute('height',Math.abs(ZB.y2-ZB.y));return;}
  let hn=(e.target&&e.target.dataset&&e.target.dataset.n)||null;
@@ -1257,7 +1269,14 @@ cv.addEventListener('pointermove',e=>{MOUSE=loc(e);
  
  if(ROT){const dx=e.clientX-ROT.x,dy=e.clientY-ROT.y;ROT.mv+=Math.abs(dx)+Math.abs(dy);ROT.x=e.clientX;ROT.y=e.clientY;if(ROT.mv>3){setView(YAW-dx*.006,PIT+dy*.005);reqDraw();}return;}
  if(PAN){const dx=e.clientX-PAN.x,dy=e.clientY-PAN.y;if(Math.abs(dx)+Math.abs(dy)>3)PAN.mv=true;V.ox=PAN.ox+dx;V.oy=PAN.oy+dy;reqDraw();}else if(DRAW)preview();});
-const endPan=()=>{if(ZB){const z=ZB;ZB=null;const w=Math.abs((z.x2??z.x)-z.x),h=Math.abs((z.y2??z.y)-z.y);if(w>8&&h>8){const r=cv.getBoundingClientRect();V.ox+=r.width/2-(z.x+z.x2)/2;V.oy+=r.height/2-(z.y+z.y2)/2;zoom(Math.min(r.width/w,r.height/h));}else draw();return;}if(ROT){const fin=ROT.mv<4&&ROT.b==2&&DRAW;ROT=null;if(fin){DRAW=null;TYPED='';}cv.classList.remove('pan');draw();return;}if(PAN&&!PAN.mv&&SEL){SEL=null;panel();}PAN=null;cv.classList.remove('pan');draw();};
+const endPan=()=>{if(DRG){const d=DRG;DRG=null;cv.classList.remove('pan');if(!d.mv){draw();return;}
+  /* acople al soltar: un nodo soltado sobre otro se une a él (gana el equipo; si ambos son uniones, queda el de destino) */
+  let msg='';if(d.ids.length==1&&HOV&&node(HOV)&&HOV!=d.ids[0]){const a=node(d.ids[0]),b=node(HOV);
+   if(a.type=='union'){mergeNodes(b.id,a.id,b);SEL={k:'n',id:b.id};msg=`🔗 Extremo acoplado a ${b.tag||b.id}.`;}
+   else if(b.type=='union'){mergeNodes(a.id,b.id,b);SEL={k:'n',id:a.id};msg=`🔗 ${a.tag||a.id} acoplado a la red.`;}
+   else msg='Dos equipos no se pueden fundir en un solo punto: une ambos con una tubería.';}
+  HOV=null;changed(true);if(msg)toast(msg);return;}
+ if(ZB){const z=ZB;ZB=null;const w=Math.abs((z.x2??z.x)-z.x),h=Math.abs((z.y2??z.y)-z.y);if(w>8&&h>8){const r=cv.getBoundingClientRect();V.ox+=r.width/2-(z.x+z.x2)/2;V.oy+=r.height/2-(z.y+z.y2)/2;zoom(Math.min(r.width/w,r.height/h));}else draw();return;}if(ROT){const fin=ROT.mv<4&&ROT.b==2&&DRAW;ROT=null;if(fin){DRAW=null;TYPED='';}cv.classList.remove('pan');draw();return;}if(PAN&&!PAN.mv&&SEL){SEL=null;panel();}PAN=null;cv.classList.remove('pan');draw();};
 cv.addEventListener('pointerup',endPan);cv.addEventListener('pointercancel',endPan);
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('dblclick',()=>{if(DRAW){DRAW=null;TYPED='';draw();}});
@@ -1301,6 +1320,7 @@ addEventListener('keydown',e=>{const inF=/INPUT|SELECT|TEXTAREA/.test((e.target|
  if(TOOL=='pipe'&&/^Arrow/.test(e.key)){e.preventDefault();setMode(e.key=='ArrowUp'?'up':e.key=='ArrowDown'?'dn':'lvl');return;}
  if(e.key=='+'||e.key=='='){zoom(1.25);return;}if(e.key=='-'||e.key=='_'){zoom(.8);return;}
  if(!e.altKey&&e.key.toLowerCase()=='z'){zoomSel();return;}if(!e.altKey&&e.key.toLowerCase()=='m'){$('vmini').click();return;}
+ if(e.key=='Escape'&&DRG){if(DRG.mv){DRG.ids.forEach((id,i)=>Object.assign(node(id),DRG.o[i]));HIST.pop();}DRG=null;HOV=null;cv.classList.remove('pan');draw();return;}
  if(e.key=='Escape'){if(DRAW){DRAW=null;TYPED='';draw();}else setTool('sel');}
  else if(e.key=='Delete'||e.key=='Backspace')del();
  else if(e.key.toLowerCase()=='t')setTool('pipe');else if(e.key.toLowerCase()=='p')sidePanel(!sideOn());else if(e.key.toLowerCase()=='f'){fit();draw();}});
@@ -1780,6 +1800,7 @@ try{if(HOST)HOST.postMessage({__glpliqReady:true},'*');}catch(e){}
 (()=>{
 const $=id=>document.getElementById(id);
 window.GLP_VER=[
+ {v:'2.20',f:'2026-11-19',t:'Arrastrar elementos del dibujo',c:['Con Seleccionar, los equipos y uniones se arrastran por el plano y las tuberías conectadas los siguen; arrastrar una tubería mueve sus dos extremos.','Alt + arrastrar cambia la elevación.','El movimiento respeta el paso de la cuadrícula.','Soltar un equipo sobre el extremo de una tubería lo acopla a la red (aro verde «soltar para acoplar»).','Esc cancela el arrastre en curso; Ctrl+Z lo deshace.']},
  {v:'2.19',f:'2026-11-19',t:'Zoom para planos de kilómetros y acoplamiento tanque–red',c:['Zoom desde ≈50 km en pantalla hasta detalle milimétrico (antes 5–260 px/m); rueda proporcional y pellizco en panel táctil.','Ctrl + arrastrar acerca a una ventana; ⌖ / Z acerca al elemento seleccionado; teclas + y −.','Minimapa ▣ (M) con la ventana visible; clic o arrastre para desplazarse.','Escala gráfica con relación 1:N; clic para fijar una escala exacta.','Cuadrícula adaptativa 1-2-5 con líneas mayores, solo en la zona visible.','Rendimiento en redes grandes: se dibuja solo lo visible y los tramos largos se recortan a la pantalla.','Acoplamiento tanque–red: el cuerpo completo del tanque imanta la tubería (aro verde «acoplar a …»); la vista previa y los rótulos ya no bloquean el clic sobre el tanque.','Botón «🔗 Acoplar a la red» en la ficha de un equipo suelto.','Nuevo equipo «Carrotanque (cisterna)» en «Recipientes y fuentes»: fuente móvil para descargue, dibujada como cisterna sobre chasis con cabina, ruedas y válvula de fondo; el ejemplo de descargue ya lo usa.']},
  {v:'2.18',f:'2026-11-11',t:'Indicador de conectividad, bases de tanques y modelos de ejemplo',c:['Nueva verificación «Conectividad de la red»: si un tanque, bomba, válvula u otro equipo quedó dibujado sin ninguna tubería tocándolo, aparece en rojo (o la unión suelta, en amarillo) con el nombre del elemento; si todo está bien unido, lo confirma en verde.','Corrección: la base de los tanques horizontales y verticales ahora baja hasta el nivel real del piso en vez de quedar pegada al casco; los tanques elevados ya no se ven flotando.','«❔ Ayuda ▸ Modelos de ejemplo»: además de los dos ejemplos existentes, se agregan «Descargue de carrotanque a tanque fijo» (trasiego cisterna → tanque), «Transporte de caudal por tubería» (solo transporte, presión fija en ambos extremos) y «Suministro a usuario final» (dos consumos con su propia presión mínima). Cada uno se carga con un clic.']},
  {v:'2.17',f:'2026-11-11',t:'Dibujo como ISOFLUX: vista giratoria, trazado por modos y equipos en 3D',c:['La vista gira: arrastra con el botón derecho o usa «◍ Orbitar». Botones «ISO» (vista isométrica), «PL» (planta), «⟳» (rotación automática) y «⤢» (encuadrar).','Misma proyección de ISOFLUX (órbita por azimut y elevación); la vista elegida se recuerda.','Trazado igual que en ISOFLUX: clic en el punto inicial, «⬆ Subir», «➡ Nivel» o «⬇ Bajar» (o las flechas) y clic para fijar cada tramo; imán con aro verde sobre puntos existentes; número + Enter para la longitud exacta; clic derecho sin arrastrar o Esc termina.','Los equipos ya no son símbolos planos: tanques, bombas, válvulas, filtros, medidores, vaporizadores y consumos son sólidos 3D que se orientan con su tubería y giran con la vista.','Las tuberías se dibujan como tubos con volumen, con grosor según su diámetro, y todo se pinta por profundidad.','Todo el dibujo está a la misma escala real: tanques según su diámetro y longitud, tuberías según su diámetro y equipos con su tamaño aproximado; al acercar o alejar todo crece o se reduce junto. Solo hay un tamaño mínimo para que los equipos pequeños no desaparezcan al alejar.','Los tanques muestran el nivel de líquido dentro del cuerpo; las válvulas de bola cerradas giran su palanca y la ponen en rojo.','Mover la vista: arrastrar el fondo, botón central o Mayús + arrastrar.'],},
@@ -1821,6 +1842,7 @@ const MAN=[
 <li>Termina cada ramal en un <b>vaporizador</b> o <b>consumo</b> y dibuja los <b>retornos</b> al tanque (cambia el «Servicio» de la tubería).</li></ol>
 <p><b>Vista.</b> Arrastra con el <b>botón derecho</b> para girar, o usa <b>◍ Orbitar</b>. <b>ISO</b> vuelve a la vista isométrica, <b>PL</b> muestra la planta, <b>⟳</b> gira sola y <b>⤢</b> encuadra. Arrastrar el fondo (o botón central, o Mayús) mueve la vista; la rueda acerca y aleja.</p>
 <p><b>Planos de gran extensión.</b> El zoom va desde varios kilómetros en pantalla hasta el detalle de un accesorio. <b>Ctrl + arrastrar</b> (⌘ en Mac) acerca a la ventana que dibujes; <b>⌖</b> o la tecla <b>Z</b> acerca al elemento seleccionado; <b>+</b> y <b>−</b> también acercan y alejan. El <b>minimapa ▣</b> (tecla M) muestra toda la red con la ventana visible en amarillo: haz clic o arrastra en él para desplazarte. Abajo a la derecha está la <b>escala gráfica</b> con la relación 1:N; haz clic en ella para fijar una escala exacta. La cuadrícula se adapta sola al zoom (cada quinta línea es más marcada).</p>
+<p><b>Arrastrar elementos.</b> Con <b>Seleccionar</b>, arrastra cualquier tanque, carrotanque, bomba, válvula, consumo o unión para moverlo por el plano; las tuberías conectadas lo siguen. Arrastrar una tubería mueve sus dos extremos. Con <b>Alt</b> presionado el arrastre cambia la elevación. Los movimientos respetan el «Paso» de la cuadrícula. Si sueltas un equipo sobre el extremo de una tubería (aro verde «soltar para acoplar») queda acoplado a la red. <b>Esc</b> durante el arrastre lo cancela y <b>Ctrl+Z</b> lo deshace.</p>
 <p><b>Carrotanque.</b> En «Recipientes y fuentes» está el <b>Carrotanque (cisterna)</b>: se calcula como un recipiente (presión de saturación, nivel, llenado en la simulación) y se dibuja como cisterna sobre chasis. Su nodo es la válvula de fondo; conecta allí la manguera o tubería de descargue.</p>
 <p><b>Acoplamiento tanque–red.</b> Al trazar una tubería, acercar el cursor (o el extremo del tramo) al cuerpo de un tanque lo imanta: aparece un aro verde con «acoplar a …» y el clic une la tubería a la boquilla del tanque. Si un equipo quedó suelto, su ficha muestra «🔗 Acoplar a la red», que lo une al extremo libre de tubería más cercano.</p>
 <p><b>Equipos en 3D.</b> Todos los equipos son sólidos que giran con la vista y se orientan según su tubería. El tanque muestra su nivel de líquido; una válvula de bola cerrada gira la palanca y la muestra en rojo. Codos y tees se deducen de la geometría.</p>`},
