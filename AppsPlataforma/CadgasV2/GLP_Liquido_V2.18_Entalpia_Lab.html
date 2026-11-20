@@ -43,6 +43,10 @@ details.mn>div button{text-align:left}
 .pill{display:inline-block;padding:1px 9px;border-radius:99px;font-size:11.5px;border:1px solid var(--bd);white-space:nowrap;background:#0a0d12cc}.pill.sim{border-color:#4f9bff;color:#8fe0ff}
 .pill.ok{border-color:#2e9e4f;color:#9be7b0}.pill.warn{border-color:#a8842f;color:var(--warn)}.pill.bad{border-color:#b3463d;color:var(--bad)}
 #zoom{position:absolute;left:10px;top:8px;display:flex;flex-direction:column;gap:4px}#zoom button{width:30px;padding:3px 0}
+#cv text,#pv,#zbx{pointer-events:none}
+#mini{position:absolute;right:10px;bottom:62px;width:210px;height:150px;background:#0a0d12e8;border:1px solid #2f86e870;border-radius:8px;cursor:crosshair;display:none;z-index:3;touch-action:none}#mini.on{display:block}
+#scl{position:absolute;right:10px;bottom:34px;background:#0a0d12d9;border:1px solid #2f86e840;border-radius:6px;padding:3px 8px;font-size:11px;color:var(--mu);cursor:pointer;display:flex;align-items:center;gap:8px;z-index:3;white-space:nowrap}
+#scl i{display:block;height:6px;border:1.6px solid var(--tx);border-top:none;box-sizing:border-box}#scl b{color:var(--tx);font-weight:600}
 #side{border-left:1px solid var(--bd);background:var(--pn2);display:flex;flex-direction:column;min-height:0;min-width:0}
 #bside2{position:absolute;right:0;top:44px;z-index:4;border-radius:8px 0 0 8px;border-right:none;padding:10px 5px;display:none;writing-mode:vertical-rl;font-size:11px;letter-spacing:.06em;background:var(--btn);color:#fff;border-color:#5aa6ff}body.noside #bside2{display:block}
 #tabs #bhide{flex:none;padding:4px 8px;border-radius:7px}
@@ -189,8 +193,8 @@ details.fd p{color:#cdd9ea;font-size:12px}details.fd code{background:var(--pn2);
 <div id="pal"></div>
 <div id="wrap">
  <div id="cvw"><svg id="cv" role="img" aria-label="Dibujo isométrico de la red de GLP líquido"></svg>
-  <div id="zoom"><button id="zin" title="Acercar">＋</button><button id="zout" title="Alejar">－</button><button id="zfit" title="Encuadrar todo el sistema (F)">⤢</button><button id="vorb" title="Orbitar: arrastra para girar la vista. También con el botón derecho del ratón.">◍</button><button id="viso" title="Vista isométrica" style="font-size:9.5px">ISO</button><button id="vpl" title="Vista en planta (desde arriba)" style="font-size:9.5px">PL</button><button id="vrot" title="Rotar el dibujo automáticamente">⟳</button></div>
-  <div id="dic"></div><div id="hint"></div><button id="bside2" title="Mostrar el panel de datos y resultados">◀ Panel</button></div>
+  <div id="zoom"><button id="zin" title="Acercar (+)">＋</button><button id="zout" title="Alejar (−)">－</button><button id="zfit" title="Encuadrar todo el sistema (F)">⤢</button><button id="zsel" title="Acercar al elemento seleccionado (Z). Ctrl + arrastrar en el plano: acercar a una ventana.">⌖</button><button id="vmini" title="Minimapa de la red (M)">▣</button><button id="vorb" title="Orbitar: arrastra para girar la vista. También con el botón derecho del ratón.">◍</button><button id="viso" title="Vista isométrica" style="font-size:9.5px">ISO</button><button id="vpl" title="Vista en planta (desde arriba)" style="font-size:9.5px">PL</button><button id="vrot" title="Rotar el dibujo automáticamente">⟳</button></div>
+  <canvas id="mini" title="Minimapa: clic o arrastra para moverte por la red"></canvas><div id="scl" title="Escala gráfica medida sobre el eje X de la vista. Clic para fijar una escala 1:N"></div><div id="dic"></div><div id="hint"></div><button id="bside2" title="Mostrar el panel de datos y resultados">◀ Panel</button></div>
  <div id="side"><div id="tabs"><button data-tab="el">Elemento</button><button data-tab="pr">Proyecto</button><button data-tab="rs">Resultados</button><button data-tab="sm">Simulación</button><button id="bhide" title="Ocultar el panel para ampliar el dibujo">▶</button></div><div id="sb"></div></div>
 </div>
 
@@ -379,6 +383,7 @@ const {MAT,fracs,props,pbub,fric,fTurb,BAR,PSI,G}=GLP;
 const TYPES={
  union:{n:'Unión / cambio de dirección'},
  tanque:{n:'Tanque de almacenamiento',ves:1,pre:'TK',def:{nivel:.5,modo:'sat',T:'',P:5,cap:'',D:'',ori:'h',fill:50,fmax:85,fmin:5,boq:'inf',vap:'ret',cond:95}},
+ cisterna:{n:'Carrotanque (cisterna)',ves:1,pre:'CT',def:{nivel:.5,modo:'sat',T:'',P:5,cap:38,D:2.2,ori:'h',fill:85,fmax:85,fmin:10,boq:'inf',vap:'ret',cond:95}},
  cond:{n:'Tanque de condensados',ves:1,pre:'TC',def:{nivel:.2,modo:'fix',T:'',P:1.5,cap:'',D:'',ori:'h',fill:50,fmax:85,fmin:5,boq:'inf',vap:'ret',cond:95}},
  bomba:{n:'Bomba',lin:1,dir:1,pre:'P',def:{modo:'curva',dP:5,dP0:8.6,dPn:5,Qn:60,npshr:.6,eta:45}},
  bypass:{n:'Válvula de by-pass (diferencial)',lin:1,dir:1,pre:'BP',def:{set:5.5}},
@@ -656,7 +661,7 @@ function checks(M,R){const F=GLP.mkF(R.pr.rho,R.patm);
  if(!M.nodes.some(n=>(TYPES[n.type]||{}).ves))add('info','Dibuja la red','Coloca al menos un tanque, traza las tuberías y agrega los consumos para obtener resultados.');
  /* conectividad física: ¿todo equipo dibujado toca de verdad una tubería? (independiente de si el cálculo converge) */
  {let iso=0;M.nodes.forEach(n=>{const d=R.T.deg(n.id);if(d>0)return;iso++;
-   if(n.type!='union')add('bad',`${n.tag||n.id}: sin ninguna tubería conectada`,'Este equipo está dibujado pero ninguna tubería toca su nodo, así que no participa en el cálculo. Verifica que el extremo de la tubería quede exactamente sobre él (usa el imán de ajuste al trazar, se ve como un anillo verde).',n.id);
+   if(n.type!='union')add('bad',`${n.tag||n.id}: sin ninguna tubería conectada`,'Este equipo está dibujado pero ninguna tubería toca su nodo, así que no participa en el cálculo. Selecciónalo y usa «🔗 Acoplar a la red», o traza la tubería hasta su cuerpo: el imán de acoplamiento lo marca con un aro verde.',n.id);
    else add('warn',`Unión ${n.id} sin tuberías`,'Punto suelto sin ninguna tubería conectada; bórralo si no lo necesitas.',n.id);});
   if(M.nodes.length&&!iso)add('ok','Conectividad de la red','Todos los tanques, bombas, válvulas y demás equipos del dibujo están interconectados por tuberías: no hay elementos sueltos.');}
  if(R.conv){
@@ -849,7 +854,7 @@ function ejemploLlenado(){const M=DEFM();
 function ejemploCisterna(){const M=DEFM();
  const nd=(x,y,z,type,tag,extra)=>{const n=Object.assign({id:'N'+(++M.seq.n),x,y,z,type:type||'union',tag:tag||''},JSON.parse(JSON.stringify((TYPES[type||'union']||{}).def||{})),extra||{});M.nodes.push(n);return n.id;};
  const pp=(a,b,srv)=>{const p={id:'T'+(++M.seq.p),a,b,dn:'auto',srv:srv||'liq',k:0,Lr:''};M.pipes.push(p);return p.id;};
- const cist=nd(0,.3,0,'tanque','Carrotanque',{cap:10,D:1.8,fill:90,fmax:95,fmin:5}),a=nd(1,0,0),esv=nd(2,0,0,'esv','ESV-1'),
+ const cist=nd(0,.3,0,'cisterna','Carrotanque',{cap:10,D:1.8,fill:90,fmax:95,fmin:5,ori:'h'}),a=nd(1,0,0),esv=nd(2,0,0,'esv','ESV-1'),
   f1=nd(3,0,0,'filtro','F-1'),p1=nd(4,0,0,'bomba','P-1',{dP0:6,dPn:4,Qn:45,npshr:.4,eta:50}),
   ef=nd(5,0,0,'exceso','EF-1',{qc:9000}),ch=nd(6,0,0,'reten','CH-1'),v1=nd(7,0,0,'vbola','V-1'),t1=nd(8,0,0),
   e1=nd(8,2,6),tk2=nd(8,2.5,6,'tanque','TK-1',{cap:40,D:2.4,fill:20,fmax:85,fmin:5});
@@ -956,6 +961,20 @@ function node(n,O,vw,u,o){const A=scene(O,vw),f=Math.max(o.s/46,.6),t=n.type;
    [-.32,.32].forEach(k=>A.box(add(mul(X,k*Lc),[0,(padTop+padBot)/2,0]),mul(X,2.2*f),[0,cyH,0],mul(Z,Zw),COL.osc));A.cyl([0,-gy,0],[0,3*f+2,0],pr+1.2,COL.acero);
    A.cap(a,b,R,c('tanque'),{fill:o.fill,id:n.id});A.cyl(add(mul(X,Lc*.18),[0,cy+R-1,0]),add(mul(X,Lc*.18),[0,cy+R+4.5*f,0]),1.9*f,COL.rojo);A.cyl(add(mul(X,-Lc*.2),[0,cy+R-1,0]),add(mul(X,-Lc*.2),[0,cy+R+3*f,0]),2.6*f,COL.acero);}
   break;}
+ case'cisterna':{/* carrotanque: tanque horizontal sobre chasis, cabina al frente (−X del tanque), tándem trasero y válvula de fondo en el nodo */
+  const g=o.geo,D=Math.min(g?g.D:2.2,4.2),Lg=g?g.L*D/(g.D||D):7,R=Math.max(D/2*o.s,7),Lc=cl(Lg/D,1.4,7)*2*R-2*R,gy=Math.max((+n.y||0)*o.s,0),gr=-gy;
+  const X=o.tx||[1,0,0],Z=nrm(cross(X,[0,1,0])),Y=[0,1,0],tc=Math.max(R+3*f,gr+2.05*R),tb=tc-R,hl=Lc/2+R,P3=(x,y,z)=>add(add(mul(X,x),mul(Y,y)),mul(Z,z||0));
+  const chy=tb-.13*R,cab=-hl-.95*R,rw=Math.max(.42*R,2.5),ya=gr+rw,TIRE='#1b2029';
+  A.box(P3((cab-.8*R+hl)/2,chy,0),mul(X,(hl-cab+.8*R)/2),mul(Y,.11*R),mul(Z,.42*R),COL.osc);/* chasis */
+  [hl*.5,hl*.82,cab+.1*R].forEach(xa=>{const gap=(chy-.11*R)-(ya+rw*.2);if(gap>0)A.box(P3(xa,ya+rw*.2+gap/2,0),mul(X,.12*R),mul(Y,gap/2),mul(Z,.3*R),COL.osc);
+   [-1,1].forEach(sz=>{const c0=P3(xa,ya,sz*.5*R),c1=P3(xa,ya,sz*.72*R);A.cyl(c0,c1,rw,TIRE,{cap:'#3a4252'});A.disc(sz>0?c1:c0,Z,rw*.45,'#aeb8c6',{z:.3});});});
+  A.box(P3(cab,(chy+.11*R+tc+.55*R)/2,0),mul(X,.8*R),mul(Y,(tc+.55*R-chy-.11*R)/2),mul(Z,.55*R),K||'#d64541');/* cabina */
+  A.box(P3(cab-.8*R-.03*R,tc+.1*R,0),mul(X,.03*R),mul(Y,.32*R),mul(Z,.46*R),'#24344c');/* parabrisas */
+  A.box(P3(hl+.12*R,chy-.02*R,0),mul(X,.08*R),mul(Y,.16*R),mul(Z,.5*R),COL.amar);/* parachoques trasero */
+  if(tb>.5)A.cyl([0,0,0],[0,tb+1,0],pr+1.2,COL.acero);/* válvula interna de fondo hacia la manguera / red */
+  A.cap(P3(-Lc/2,tc,0),P3(Lc/2,tc,0),R,c('tanque'),{fill:o.fill,id:n.id});
+  A.cyl(P3(Lc*.25,tc+R-1,0),P3(Lc*.25,tc+R+4*f,0),1.9*f,COL.rojo);A.cyl(P3(-Lc*.15,tc+R-1,0),P3(-Lc*.15,tc+R+2.4*f,0),2.8*f,COL.acero);
+  break;}
  case'bomba':{A.box(add(au(0,-11,0),mul(W,9*f)),mul(U,9*f),mul(UP,1.4*f),mul(W,17*f),COL.osc);A.cyl(au(-13,0),au(-8,0),pr+1.6,COL.acero);A.cyl(au(8,0),au(13,0),pr+1.6,COL.acero);
   A.cyl(au(0,0,-4.5),au(0,0,4.5),10*f,c('bomba'),{cap:sh(c('bomba'),.25)});A.cyl(au(0,0,4.5),au(0,0,8),4*f,COL.acero);A.cyl(au(0,0,8),au(0,0,25),7.4*f,c('motor'));A.disc(au(0,0,25.2),W,5*f,COL.osc,{z:.5});break;}
  case'vbola':case'vglobo':case'esv':case'bypass':{bridas(7,pr+2.6*f);A.sph([0,0,0],(t=='vglobo'?7.4:6.4)*f,c('bronce'));A.cyl(au(0,5,0),au(0,12,0),1.7*f,COL.acero);
@@ -1018,7 +1037,16 @@ const toSI=(k,v)=>k=='p'?v/(1e5*uP()[0]):k=='q'?(UN.q[M.un.q][0]=='m'?v/UN.q[M.u
 const uOf=(k,o={})=>k=='p'?(o.dif?uP()[1]:uP()[2]):k=='q'?M.un.q:k=='qv'?qv():k=='len'?uL():k=='T'?M.un.T:k=='vel'?M.un.vel:k=='mm'?uS():k=='grad'?uG():k=='patm'?uPat():M.un.vol+(o.suf||'');
 GLP.nf=nf;GLP.mkF=(rho,patm)=>({Pa:(p,d)=>fPg(p-patm,d),Pg:(p,d)=>fPg(p,d),dP:(p,d)=>fdP(p,d),Q:m=>fQ(m,null,rho),Qv:m=>fQ(m,qv(),rho),V:v=>fV(v),L:(m,d)=>fL(m,d),v:x=>fVl(x),T:c=>fT(c,0),dT:c=>fDT(c),perT:p=>fPT(p),grad:p=>fG(p)});
 const KEY='glpliq_red',C30=Math.cos(Math.PI/6),cv=$('cv');
-let M=null,R=null,LIVE=null,SIM=null,SIMI=null,SIMOPT={tmax:12},SEL=null,TOOL='sel',TAB='rs',DRAW=null,TYPED='',HIST=[],REDO=[],V={s:46,ox:300,oy:300},tT=0,PAN=null,MOUSE=null;
+let M=null,R=null,LIVE=null,SIM=null,SIMI=null,SIMOPT={tmax:12},SEL=null,TOOL='sel',TAB='rs',DRAW=null,TYPED='',HIST=[],REDO=[],V={s:46,ox:300,oy:300},tT=0,PAN=null,MOUSE=null,NG=[],ZB=null,RQ=0;
+/* zoom para planos de gran extensión: de 0,002 px/m (≈50 km en pantalla) a 800 px/m (detalle milimétrico) */
+const ZMIN=.002,ZMAX=800,CM=160;
+const niceStep=v=>{if(!(v>0)||!isFinite(v))return 1;const e=Math.pow(10,Math.floor(Math.log10(v))),f=v/e;return(f<=1?1:f<=2?2:f<=5?5:10)*e;};
+function reqDraw(){if(RQ)return;RQ=requestAnimationFrame(()=>{RQ=0;draw();});}
+/* recorte de un segmento a la ventana (Liang–Barsky): solo se dibuja lo visible, aunque el tramo mida kilómetros */
+function clipS(A,B,x0,y0,x1,y1){let t0=0,t1=1;const dx=B[0]-A[0],dy=B[1]-A[1],p=[-dx,dx,-dy,dy],q=[A[0]-x0,x1-A[0],A[1]-y0,y1-A[1]];
+ for(let i=0;i<4;i++){if(Math.abs(p[i])<1e-12){if(q[i]<0)return null;continue;}const r=q[i]/p[i];if(p[i]<0){if(r>t1)return null;if(r>t0)t0=r;}else{if(r<t0)return null;if(r<t1)t1=r;}}return[t0,t1];}
+/* imán de acoplamiento: zonas de captura en pantalla de cada nodo (el cuerpo completo en tanques) */
+function nearNode(m,ex,onlyFree){if(!m)return null;let b=null,bd=1;for(const g of NG){if(g.id==ex)continue;if(onlyFree){const n=node(g.id);if(!n||n.type!='union')continue;}const d=Math.hypot(m[0]-g.x,m[1]-g.y)/g.r;if(d<bd){bd=d;b=g.id;}}return b;}
 const HOST=(()=>{try{return window.opener||(window.parent!==window?window.parent:null);}catch(e){return null;}})();
 const node=id=>M.nodes.find(n=>n.id==id),pipe=id=>M.pipes.find(p=>p.id==id);
 const toast=m=>{const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(tT);tT=setTimeout(()=>t.style.display='none',4500);};
@@ -1050,10 +1078,11 @@ const unprj=(sx,sy,y0)=>{const m=VW.m,u=(sx-V.ox)/V.s-y0*m[2],w=(sy-V.oy)/V.s-y0
 function setView(ny,np){const B=M&&M.nodes.length?M.nodes:[{x:0,y:0,z:0}],c=['x','y','z'].map(k=>(Math.min(...B.map(n=>n[k]))+Math.max(...B.map(n=>n[k])))/2),a=prj(...c);
  YAW=ny;PIT=Math.min(1.5708,Math.max(.14,np));VW=GLP3D.view(YAW,PIT);const b=prj(...c);V.ox+=a[0]-b[0];V.oy+=a[1]-b[1];try{localStorage.setItem('glpliq_view',JSON.stringify([YAW,PIT]));}catch(e){}}
 const snap=v=>{const p=+M.paso||.5;return r3(Math.round(v/p)*p);};
-function fit(){const r=cv.getBoundingClientRect(),w=r.width||800,h=r.height||500;if(!M.nodes.length){V={s:46,ox:w/2,oy:h/2};return;}
- const s0=V;V={s:1,ox:0,oy:0};const P=M.nodes.map(pn);V=s0;
- const x0=Math.min(...P.map(p=>p[0])),x1=Math.max(...P.map(p=>p[0])),y0=Math.min(...P.map(p=>p[1])),y1=Math.max(...P.map(p=>p[1]));
- const s=Math.min(90,Math.max(8,Math.min((w-170)/Math.max(x1-x0,1),(h-150)/Math.max(y1-y0,1))));V={s,ox:w/2-(x0+x1)/2*s,oy:h/2-(y0+y1)/2*s+8};}
+function fitPts(N,smin,smax){const r=cv.getBoundingClientRect(),w=r.width||800,h=r.height||500;const s0=V;V={s:1,ox:0,oy:0};let x0=1/0,x1=-1/0,y0=1/0,y1=-1/0;
+ for(const n of N){const p=pn(n);if(p[0]<x0)x0=p[0];if(p[0]>x1)x1=p[0];if(p[1]<y0)y0=p[1];if(p[1]>y1)y1=p[1];}V=s0;
+ const s=Math.min(smax,Math.max(smin,Math.min((w-170)/Math.max(x1-x0,1),(h-150)/Math.max(y1-y0,1))));V={s,ox:w/2-(x0+x1)/2*s,oy:h/2-(y0+y1)/2*s+8};}
+function fit(){const r=cv.getBoundingClientRect(),w=r.width||800,h=r.height||500;if(!M.nodes.length){V={s:46,ox:w/2,oy:h/2};return;}fitPts(M.nodes,ZMIN,90);}
+function zoomSel(){if(!SEL){fit();draw();return;}const N=SEL.k=='n'?[node(SEL.id)]:(p=>p?[node(p.a),node(p.b)]:[])(pipe(SEL.id));if(!N.length||N.some(n=>!n))return;fitPts(N,ZMIN,SEL.k=='n'?80:140);draw();}
 
 /* ---------- edición del modelo ---------- */
 function addNode(x,y,z,type){const ex=M.nodes.find(n=>Math.abs(n.x-x)<1e-6&&Math.abs(n.y-y)<1e-6&&Math.abs(n.z-z)<1e-6);if(ex)return ex;
@@ -1066,6 +1095,14 @@ function addPipe(a,b){if(a==b||M.pipes.some(p=>p.a==a&&p.b==b||p.a==b&&p.b==a))r
 function splitPipe(p,t){const a=node(p.a),b=node(p.b),L=GLP.dist(a,b);let d=snap(L*t);const ps=+M.paso||.5;if(d<=0||d>=L)d=L>2*ps?Math.min(Math.max(d,ps),snap(L-ps)):L/2;
  const f=d/L,n=addNode(a.x+(b.x-a.x)*f,a.y+(b.y-a.y)*f,a.z+(b.z-a.z)*f);if(n.id==a.id||n.id==b.id)return n;
  const q={...p,id:'T'+(++M.seq.p),a:n.id,b:p.b};M.nodes.forEach(m=>{if(m.id==p.b&&m.ent==p.id)m.ent=q.id;});p.b=n.id;p.Lr='';q.Lr='';M.pipes.push(q);return n;}
+/* acopla un equipo suelto a la red: si el extremo libre más cercano está a pocos metros, el equipo se une a ese extremo;
+   si está lejos, se traza una tubería de unión entre ambos */
+function acoplar(id){const n=node(id);if(!n)return;const dg=q=>M.pipes.filter(p=>p.a==q||p.b==q).length,t=TYPES[n.type]||{};
+ const C=M.nodes.filter(u=>u.id!=n.id&&u.type=='union'&&dg(u.id)==1);if(!C.length){toast('No hay extremos de tubería libres para acoplar. Traza una tubería hasta el equipo: el tanque se imanta al acercar el cursor.');return;}
+ let b=C[0],bd=1/0;C.forEach(u=>{const d=GLP.dist(n,u);if(d<bd){bd=d;b=u;}});const geo=t.ves?GLP.vgeo(n):null,lim=Math.max(2,geo?geo.D*1.5:1.5);hs();
+ if(bd<=lim){M.pipes.forEach(p=>{if(p.a==b.id)p.a=n.id;if(p.b==b.id)p.b=n.id;});n.x=b.x;n.y=b.y;n.z=b.z;M.nodes=M.nodes.filter(u=>u.id!=b.id);toast(`🔗 ${n.tag||n.id} acoplado al extremo de la red (${fL(bd)} de ajuste).`);}
+ else{const sv=DRAW;DRAW=null;addPipe(n.id,b.id);DRAW=sv;toast(`🔗 ${n.tag||n.id} unido a la red con una tubería de ${fL(bd)}. Revísala en la ficha del tramo.`);}
+ SEL={k:'n',id:n.id};changed(true);}
 function del(){if(!SEL)return;hs();
  if(SEL.k=='p')M.pipes=M.pipes.filter(p=>p.id!=SEL.id);
  else{M.pipes=M.pipes.filter(p=>p.a!=SEL.id&&p.b!=SEL.id);M.nodes=M.nodes.filter(n=>n.id!=SEL.id);}
@@ -1077,6 +1114,7 @@ function glyph(n,st,fr){/* fr: fracción de llenado (0…1) para dibujar el nive
  const liq=(x,y,w,h,rx)=>fr==null?'':`<clipPath id="tk${n.id}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/></clipPath><rect x="${x}" y="${(y+h*(1-Math.min(Math.max(fr,0),1))).toFixed(1)}" width="${w}" height="${(h*Math.min(Math.max(fr,0),1)).toFixed(1)}" fill="#4ad0ff" opacity=".6" clip-path="url(#tk${n.id})"/>`;const c=`fill="var(--pn)" stroke="${st}" stroke-width="1.8" stroke-linejoin="round"`,f=`fill="${st}"`;
  switch(n.type){
  case'tanque':return`<rect x="-24" y="-10" width="48" height="20" rx="10" ${c}/>${liq(-24,-10,48,20,10)}${fr==null?`<path d="M-24 0H24" stroke="${st}" stroke-width="1" opacity=".5"/>`:`<rect x="-24" y="-10" width="48" height="20" rx="10" fill="none" stroke="${st}" stroke-width="1.8"/>`}`;
+ case'cisterna':return`<rect x="-27" y="-6" width="9" height="12" rx="1.5" ${c}/><path d="M-26 -4H-20.5V0H-26Z" ${f} opacity=".55"/><path d="M-28 7H26" stroke="${st}" stroke-width="2.2"/><rect x="-17" y="-12" width="42" height="17" rx="8.5" ${c}/>${liq(-17,-12,42,17,8.5)}${fr==null?`<path d="M-17 -3.5H25" stroke="${st}" stroke-width="1" opacity=".5"/>`:`<rect x="-17" y="-12" width="42" height="17" rx="8.5" fill="none" stroke="${st}" stroke-width="1.8"/>`}${[-22,10,17].map(x=>`<circle cx="${x}" cy="10" r="3.6" fill="var(--pn)" stroke="${st}" stroke-width="1.6"/>`).join('')}`;
  case'cond':return`<rect x="-9" y="-15" width="18" height="30" rx="9" ${c}/>${liq(-9,-15,18,30,9)}${fr==null?`<path d="M-9 4H9" stroke="${st}" stroke-width="1" opacity=".5"/>`:`<rect x="-9" y="-15" width="18" height="30" rx="9" fill="none" stroke="${st}" stroke-width="1.8"/>`}`;
  case'bomba':return n.off?`<circle r="11" fill="var(--pn)" stroke="${st}" stroke-width="1.8" stroke-dasharray="3 3"/><path d="M-4 -6L7 0L-4 6Z" fill="none" stroke="${st}" stroke-width="1.3"/>`:`<circle r="11" ${c}/><path d="M-4 -6L7 0L-4 6Z" ${f}/>`;
  case'bypass':return`<path d="${BT}" ${c}/><path d="M0 0V-11M-5 -11H5M-3 -8H3M-3 -5H3" stroke="${st}" stroke-width="1.5" fill="none"/>`;
@@ -1099,17 +1137,24 @@ function draw(){
  if(R&&SIMI==null)R.checks.forEach(c=>{if(c.ref&&c.s=='bad')bad.add(c.ref);if(c.ref&&c.s=='warn')warn.add(c.ref);});
  let g='';
  /* cuadrícula sobre el plano de trabajo */
- const lv=+M.nivel||0,xs=M.nodes.map(n=>n.x),zs=M.nodes.map(n=>n.z),x0=Math.floor(Math.min(0,...xs))-2,x1=Math.ceil(Math.max(6,...xs))+2,z0=Math.floor(Math.min(0,...zs))-2,z1=Math.ceil(Math.max(6,...zs))+2;
- const st=Math.max(1,Math.ceil(Math.max(x1-x0,z1-z0)/40));let gl='';
- for(let x=x0;x<=x1;x+=st){const a=prj(x,lv,z0),b=prj(x,lv,z1);gl+=`M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`;}
- for(let z=z0;z<=z1;z+=st){const a=prj(x0,lv,z),b=prj(x1,lv,z);gl+=`M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`;}
- g+=`<path d="${gl}" stroke="var(--grid)" stroke-width="1" fill="none"/>`;
+ NG=[];const lv=+M.nivel||0;
+ /* cuadrícula adaptativa: cubre solo la ventana visible y el paso (1-2-5) se ajusta al zoom; cada 5 líneas una línea mayor */
+ {const m=VW.m,cs=[[0,0],[W,0],[0,H],[W,H]].map(c=>unprj(c[0],c[1],lv)),ax=Math.max(.15,Math.min(Math.hypot(m[0],m[1]),Math.hypot(m[4],m[5])));
+  const gx0=Math.min(...cs.map(c=>c.x)),gx1=Math.max(...cs.map(c=>c.x)),gz0=Math.min(...cs.map(c=>c.z)),gz1=Math.max(...cs.map(c=>c.z));
+  let st=niceStep(26/(V.s*ax));while((gx1-gx0)/st>300||(gz1-gz0)/st>300)st=niceStep(st*1.01);
+  let gl='',gm='';const ln=(a,b)=>`M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
+  if(isFinite(gx0)&&isFinite(gz0)){for(let i=Math.floor(gx0/st);i*st<=gx1;i++){const x=i*st,l=ln(prj(x,lv,gz0),prj(x,lv,gz1));if(i%5)gl+=l;else gm+=l;}
+   for(let i=Math.floor(gz0/st);i*st<=gz1;i++){const z=i*st,l=ln(prj(gx0,lv,z),prj(gx1,lv,z));if(i%5)gl+=l;else gm+=l;}}
+  g+=`<path d="${gl}" stroke="var(--grid)" stroke-width="1" fill="none" opacity=".6"/><path d="${gm}" stroke="var(--grid)" stroke-width="1.5" fill="none"/>`;}
  /* tríada de ejes */
  g+=`<g transform="translate(52 ${H-70})" stroke-width="1.6">${[['X',VW.m[0],VW.m[1],'#ff8a80'],['Z',VW.m[4],VW.m[5],'#8fc9ff'],['Elev.',VW.m[2],VW.m[3],'#57d28a']].map(a=>`<line x2="${(a[1]*30).toFixed(1)}" y2="${(a[2]*30).toFixed(1)}" stroke="${a[3]}"/><text x="${(a[1]*40).toFixed(1)}" y="${(a[2]*40+4).toFixed(1)}" text-anchor="middle">${a[0]}</text>`).join('')}</g>`;const IT=[],GR=new Set(),PW=new Map();let hits='',hitsV='';
  /* tuberías */
  let gf='',GC=0;const GS={chev:'<path id="gs" d="M-4 -11.5L1.5 -7L-4 -2.5" fill="none" stroke="#ff2d2d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',tri:'<path id="gs" d="M-4 -11.5L3 -7L-4 -2.5Z" fill="#ff2d2d"/>',flecha:'<path id="gs" d="M-7 -7H2M-2 -11L3 -7L-2 -3" fill="none" stroke="#ff2d2d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',punto:'<circle id="gs" cx="0" cy="-7" r="2.6" fill="#ff2d2d"/>'};
  const lab=$('lab').checked,LB=M.nodes.filter(n=>n.type!='union').map(n=>{const P=pn(n);return[P[0]-45,P[1]-30,P[0]+45,P[1]+62];});let tx='';
- M.pipes.forEach(p=>{const a=node(p.a),b=node(p.b);if(!a||!b)return;const A=pn(a),B=pn(b),s=SEL&&SEL.k=='p'&&SEL.id==p.id,res=Rv&&Rv.pipes.get(p.id);
+ M.pipes.forEach(p=>{const a=node(p.a),b=node(p.b);if(!a||!b)return;let A=pn(a),B=pn(b);const s=SEL&&SEL.k=='p'&&SEL.id==p.id,res=Rv&&Rv.pipes.get(p.id);
+  PW.set(p.id,p.srv=='vap'?2.4:Math.max(3.4,(res&&res.di?res.di/1000:.03)*1.15*V.s));
+  const cl=clipS(A,B,-CM,-CM,W+CM,H+CM);if(!cl)return;const LF=Math.hypot(B[0]-A[0],B[1]-A[1]),du0=cl[0]*LF,du1=(1-cl[1])*LF;
+  if(cl[0]>0||cl[1]<1){const dx=B[0]-A[0],dy=B[1]-A[1];B=[A[0]+dx*cl[1],A[1]+dy*cl[1]];A=[A[0]+dx*cl[0],A[1]+dy*cl[0]];}
   const tr=trapP.get(p.id),col=tr?'#ff9a1f':bad.has(p.id)?'var(--bad)':SRV[p.srv||'liq'][1],mx=(A[0]+B[0])/2,my=(A[1]+B[1])/2,len=Math.hypot(B[0]-A[0],B[1]-A[1]);
   const pw=p.srv=='vap'?2.4:Math.max(3.4,(res&&res.di?res.di/1000:.03)*1.15*V.s),L2=`x1="${A[0].toFixed(1)}" y1="${A[1].toFixed(1)}" x2="${B[0].toFixed(1)}" y2="${B[1].toFixed(1)}"`;PW.set(p.id,pw);let ps='';
   if(s)ps+=`<line ${L2} stroke="var(--sel)" stroke-width="${(pw+7).toFixed(1)}" opacity=".35" stroke-linecap="round"/>`;
@@ -1120,7 +1165,7 @@ function draw(){
   if(fx&&res&&Math.abs(res.m)>1e-7&&len>12){const d=res.m>0?1:-1,an=Math.atan2((B[1]-A[1])*d,(B[0]-A[0])*d)*180/Math.PI;
    /* guías de flujo como en ISOFLUX: símbolos rojos repetidos junto a la tubería, en el sentido físico del flujo; con «Flujo» avanzan con el caudal */
    /* velocidad real del tramo a la escala del dibujo: píxeles/s = v [m/s] × escala [px/m] */
-   const U=d>0?A:B,per=20,k=Math.max(1,Math.floor(len/per)),x0=(len-(k-1)*per)/2,spd=Math.max(res.v*V.s,.5),dur=Math.max(per/spd,.05),gid='gc'+(GC++);let sy='';
+   const U=d>0?A:B,per=20,k0=Math.max(1,Math.floor(LF/per)),du=d>0?du0:du1,x0=((((LF-(k0-1)*per)/2-du)%per)+per)%per,k=Math.max(1,Math.floor((len-x0)/per)+1),spd=Math.max(res.v*V.s,.5),dur=Math.max(per/spd,.05),gid='gc'+(GC++);let sy='';
    for(let q=fx?-1:0;q<k+(fx?1:0);q++)sy+=`<use href="#gs" x="${(x0+q*per).toFixed(1)}"/>`;
    gf+=`<g transform="translate(${U[0].toFixed(1)} ${U[1].toFixed(1)}) rotate(${an.toFixed(1)})"><clipPath id="${gid}"><rect x="1" y="-14" width="${Math.max(len-2,1).toFixed(1)}" height="20"/></clipPath><g clip-path="url(#${gid})"><g class="gf${fx&&!(LIVE&&LIVE.pause)?' on':''}" style="animation-duration:${dur.toFixed(3)}s;animation-delay:-${(now%dur).toFixed(3)}s">${sy}</g></g></g>`;}
   if(lab&&res&&len>120){const off=Math.abs(B[0]-A[0])<4?[10,4,'start']:[0,-9,'middle'];
@@ -1130,10 +1175,11 @@ function draw(){
    for(const y0 of mid?[my-30,my+10]:[my-10,my-40,my+20]){const bb=[bx,y0,bx+w,y0+hh];if(LB.some(q=>bb[0]<q[2]&&bb[2]>q[0]&&bb[1]<q[3]&&bb[3]>q[1]))continue;LB.push(bb);
     tx+=`<text x="${mx+off[0]}" y="${y0+10}" text-anchor="${off[2]}">${l1}</text>`+(l2?`<text x="${mx+off[0]}" y="${y0+23}" text-anchor="${off[2]}">${l2}</text>`:'');break;}}
   if(tr&&len>60)tx+=`<text x="${mx}" y="${my-8}" text-anchor="middle" style="fill:#ffb86b;font-weight:600">atrapado · ${fPa(tr.P)} · ${fT(tr.T)}</text>`;
-  hits+=`<line data-p="${p.id}" x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" stroke="transparent" stroke-width="14"/>`;});
+  hits+=`<line data-p="${p.id}" x1="${A[0].toFixed(1)}" y1="${A[1].toFixed(1)}" x2="${B[0].toFixed(1)}" y2="${B[1].toFixed(1)}" stroke="transparent" stroke-width="14"/>`;});
  /* nodos: sólidos 3D orientados según la tubería y proyectados con la vista */
  const fz=Math.max(.6,V.s/46);
  M.nodes.forEach(n=>{const P=pn(n),s=SEL&&SEL.k=='n'&&SEL.id==n.id,t=TYPES[n.type]||TYPES.union,res=Rv&&Rv.nodes.get(n.id);
+  {const mg=CM+(t.ves?4.2*V.s:40*fz);if(P[0]<-mg||P[0]>W+mg||P[1]<-mg||P[1]>H+mg)return;}
   const shut=(t.cierra&&n.cerrada)||n._efc,hc=bad.has(n.id)?'var(--bad)':warn.has(n.id)?'var(--warn)':null,con=M.pipes.filter(q=>q.a==n.id||q.b==n.id);
   /* dirección de la tubería que llega: la de entrada según el flujo; si no, la primera conectada */
   let u=null;const sp=R&&R.T.split.get(n.id),pe=(sp&&pipe(sp.ent))||con[0];if(pe){const o=node(pe.a==n.id?pe.b:pe.a);if(o){u=[n.x-o.x,n.y-o.y,n.z-o.z];if(!t.lin&&!t.con&&pe.b!=n.id)u=u;}}
@@ -1141,7 +1187,8 @@ function draw(){
   /* eje del tanque horizontal: perpendicular a su primera tubería horizontal */
   let tax=[1,0,0];if(t.ves){const h=con.map(q=>{const o=node(q.a==n.id?q.b:q.a);return o?[o.x-n.x,o.z-n.z]:[0,0];}).find(d=>Math.hypot(d[0],d[1])>1e-6);if(h&&Math.abs(h[0])>Math.abs(h[1]))tax=[0,0,1];}
   const pr=Math.max(1.9,...con.map(q=>(PW.get(q.id)||4)/2)),geo=t.ves?GLP.vgeo(n):null,so=GLP3D.node(n,P,VW,u,{s:V.s,pr,fill:frc,shut,off:n.off,geo,tx:tax});so.grads.forEach(c=>GR.add(c));
-  const Rk=t.ves?Math.max(n.type=='cond'?5:7,Math.min(geo?geo.D:(n.type=='cond'?.6:1.2),4.2)/2*V.s):0,cy=t.ves?P[1]+VW.m[3]*(Rk+3*fz)*(geo&&geo.v||(!geo&&n.type=='cond')?1.8:1):P[1];
+  const Rk=t.ves?Math.max(n.type=='cond'?5:7,Math.min(geo?geo.D:(n.type=='cond'?.6:1.2),4.2)/2*V.s):0,cy=t.ves?P[1]+VW.m[3]*(n.type=='cisterna'?Math.max(Rk+3*fz,2.05*Rk-Math.max((+n.y||0)*V.s,0)):(Rk+3*fz)*(geo&&geo.v||(!geo&&n.type=='cond')?1.8:1)):P[1];
+  NG.push({id:n.id,x:P[0],y:P[1],r:n.type=='union'?12:18*Math.max(1,fz)});if(t.ves)NG.push({id:n.id,x:P[0],y:cy,r:(n.type=='cisterna'?Rk*1.7:Rk)+10,ves:1});
   let ns='';if(s)ns+=`<circle cx="${P[0].toFixed(1)}" cy="${cy.toFixed(1)}" r="${(n.type=='union'?9:t.ves?Rk+12:20*fz).toFixed(1)}" fill="var(--sel)" opacity=".28"/>`;
   if(hc&&n.type!='union')ns+=`<circle cx="${P[0].toFixed(1)}" cy="${cy.toFixed(1)}" r="${(t.ves?Rk+9:17*fz).toFixed(1)}" fill="none" stroke="${hc}" stroke-width="2" stroke-dasharray="5 4" opacity=".95"/>`;
   IT.push({d:dep(n.x,n.y,n.z)+.02,s:ns+so.s});
@@ -1153,12 +1200,12 @@ function draw(){
   hits+=`<circle data-n="${n.id}" cx="${P[0]}" cy="${P[1]}" r="${n.type=='union'?9:15}" fill="transparent"/>`;if(t.ves)hitsV+=`<circle data-n="${n.id}" data-big="1" cx="${P[0]}" cy="${cy.toFixed(1)}" r="${(Rk+4).toFixed(1)}" fill="transparent"/>`;});
  /* orden de pintura por profundidad: lo más lejano primero */
  g+=IT.sort((a,b)=>a.d-b.d).map(x=>x.s).join('')+hitsV+hits;
- g+=`<defs>${GS[$('gsym').value]||GS.chev}${GLP3D.gradDefs(GR)}</defs>`+gf+tx+'<g id="pv"></g>';cv.innerHTML=g;preview();
+ g+=`<defs>${GS[$('gsym').value]||GS.chev}${GLP3D.gradDefs(GR)}</defs>`+gf+tx+'<g id="pv"></g>';cv.innerHTML=g;preview();sclUpd();miniDraw();
  /* dictamen y ayuda */
  const stt={ok:'✔ Cumple',warn:'! Con observaciones',bad:'✖ No cumple'};
  $('dic').innerHTML=R&&M.pipes.length?(LIVE?`<span class="pill sim">● EN VIVO · t = ${tfmt(LIVE.S.t)}${LIVE.pause?' · en pausa':''}</span>`:SIMI!=null&&SIM&&!SIM.err?`<span class="pill sim">⏱ Simulación · t = ${tfmt(SIM.t[SIMI])}</span>`:`<span class="pill ${R.estado}">${stt[R.estado]}</span>`)+Rv.pumps.map(p=>`<span class="pill ${p.NPSHa>=GLP.npshNeed(M,p.npshr)-1e-9?'ok':'bad'}" title="NPSH: presión disponible en la succión de la bomba por encima de la de ebullición del líquido, en metros de columna. Debe superar el NPSH requerido por la bomba.">${E(p.tag)} · NPSH ${fL(p.NPSHa)} · ${fQ(p.m,qv())}</span>`).join(''):'';
  const hm=TOOL=='orbit'?'Arrastra para girar la vista · rueda para acercar · Esc vuelve a Seleccionar':TOOL=='pipe'?(DRAW?'⬆ Subir · ➡ Nivel · ⬇ Bajar (o las flechas) y mueve el cursor · clic fija el tramo · escribe una longitud y Enter · los puntos existentes se imantan (aro verde) · clic derecho o Esc termina':'Clic en un nodo, en una tubería o en el plano para iniciar la tubería'):
-  TOOL.startsWith('eq:')?`Clic en el plano, en un nodo o sobre una tubería para colocar: ${TYPES[TOOL.slice(3)].n}`:'Clic para seleccionar · arrastra el fondo para mover · botón derecho para girar · rueda para acercar';
+  TOOL.startsWith('eq:')?`Clic en el plano, en un nodo o sobre una tubería para colocar: ${TYPES[TOOL.slice(3)].n}`:'Clic para seleccionar · arrastra el fondo para mover · botón derecho para girar · rueda para acercar · Ctrl + arrastrar: zoom a ventana · Z: acercar a la selección';
  $('hint').innerHTML=`<span>${hm}</span>`+(TYPED?`<span style="color:var(--sel)">Longitud: ${E(TYPED)} ${uL()}</span>`:'');
 }
 /* vista previa del tramo que se está trazando */
@@ -1170,7 +1217,8 @@ function previewEnd(){if(!DRAW||!MOUSE)return null;const f=node(DRAW.from);if(!f
  const e={x:f.x,y:f.y,z:f.z};e[best.k]=r3(e[best.k]+L);return{e,L,ax:best.k,f};}
 function preview(){const pv=$('pv');if(!pv)return;let h='';
  /* imán: aro verde sobre el punto existente al que se conectará */
- if(TOOL=='pipe'&&HOV&&node(HOV)&&(!DRAW||HOV!=DRAW.from)){const Q=pn(node(HOV));h+=`<circle cx="${Q[0]}" cy="${Q[1]}" r="11" fill="none" stroke="#3ddc84" stroke-width="2.4"/>`;}
+ if((TOOL=='pipe'||TOOL.startsWith('eq:'))&&HOV&&node(HOV)&&(!DRAW||HOV!=DRAW.from)){const Q=pn(node(HOV)),gv=NG.find(q=>q.id==HOV&&q.ves);h+=`<circle cx="${Q[0]}" cy="${Q[1]}" r="11" fill="none" stroke="#3ddc84" stroke-width="2.4"/>`;
+  if(gv)h+=`<circle cx="${gv.x.toFixed(1)}" cy="${gv.y.toFixed(1)}" r="${(gv.r-4).toFixed(1)}" fill="#3ddc8414" stroke="#3ddc84" stroke-width="2" stroke-dasharray="6 4"/><text class="tg" x="${gv.x.toFixed(1)}" y="${(gv.y-gv.r-2).toFixed(1)}" text-anchor="middle" style="fill:#3ddc84">acoplar a ${E(node(HOV).tag||HOV)}</text>`;}
  const q=previewEnd();if(q&&q.L&&!(HOV&&node(HOV)&&HOV!=DRAW.from)){const A=pn(q.f),B=prj(q.e.x,q.e.y,q.e.z);
   h+=`<line x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" stroke="var(--sel)" stroke-width="2.4" stroke-dasharray="6 4"/><circle cx="${B[0]}" cy="${B[1]}" r="4" fill="var(--sel)"/><text class="tg" x="${B[0]+10}" y="${B[1]-8}">${fL(Math.abs(q.L))} ${q.ax=='y'?(q.L>0?'↑ sube':'↓ baja'):'· eje '+q.ax.toUpperCase()}</text>`;}
  else if(DRAW&&HOV&&node(HOV)&&HOV!=DRAW.from){const A=pn(node(DRAW.from)),B=pn(node(HOV));h+=`<line x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" stroke="#3ddc84" stroke-width="2.4" stroke-dasharray="6 4"/>`;}
@@ -1180,11 +1228,13 @@ function setMode(m){MODE=m;document.querySelectorAll('[data-md]').forEach(b=>b.c
 /* ---------- interacción con el lienzo ---------- */
 const loc=e=>{const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];};
 function tOnPipe(p,m){const A=pn(node(p.a)),B=pn(node(p.b)),dx=B[0]-A[0],dy=B[1]-A[1];return Math.max(0,Math.min(1,((m[0]-A[0])*dx+(m[1]-A[1])*dy)/(dx*dx+dy*dy||1)));}
-function commit(target){const q=previewEnd();if(!q)return;let n=null;
- if(target&&target.dataset.n&&target.dataset.n!=DRAW.from)n=node(target.dataset.n);
- else if(q.L){hs();n=addNode(q.e.x,q.e.y,q.e.z);if(addPipe(DRAW.from,n.id)){DRAW.from=n.id;TYPED='';changed(true);}else{HIST.pop();DRAW.from=n.id;draw();}return;}
- if(n){hs();if(addPipe(DRAW.from,n.id)){DRAW.from=n.id;TYPED='';changed(true);}else HIST.pop();}}
-cv.addEventListener('pointerdown',e=>{const m=loc(e),t=e.target,nid=t.dataset&&t.dataset.n,pid=t.dataset&&t.dataset.p;MOUSE=m;
+function commit(target){const tid=TYPED?null:(target&&target.dataset&&target.dataset.n)||HOV;
+ /* acoplamiento: si el cursor o el extremo del tramo cae sobre un tanque o un nodo, la tubería se une a ese nodo */
+ if(tid&&tid!=DRAW.from&&node(tid)){hs();if(addPipe(DRAW.from,tid)){DRAW.from=tid;TYPED='';HOV=null;changed(true);}else HIST.pop();return;}
+ const q=previewEnd();if(!q||!q.L)return;hs();const n=addNode(q.e.x,q.e.y,q.e.z);if(addPipe(DRAW.from,n.id)){DRAW.from=n.id;TYPED='';changed(true);}else{HIST.pop();DRAW.from=n.id;draw();}}
+cv.addEventListener('pointerdown',e=>{const m=loc(e),t=e.target,pid=t.dataset&&t.dataset.p,nid=(t.dataset&&t.dataset.n)||(!pid&&(TOOL=='pipe'||TOOL.startsWith('eq:'))?nearNode(m,null,TOOL.startsWith('eq:')):null);MOUSE=m;
+ /* Ctrl (o ⌘) + arrastrar: acercar a la ventana dibujada */
+ if(e.button==0&&(e.ctrlKey||e.metaKey)){ZB={x:m[0],y:m[1]};try{cv.setPointerCapture(e.pointerId);}catch(_){}e.preventDefault();return;}
  /* girar: botón derecho o herramienta Orbitar · mover: botón central o Mayús */
  if(e.button==2||TOOL=='orbit'){ROT={x:e.clientX,y:e.clientY,mv:0,b:e.button};try{cv.setPointerCapture(e.pointerId);}catch(_){}cv.classList.add('pan');return;}
  if(e.button==1||e.shiftKey){PAN={x:e.clientX,y:e.clientY,ox:V.ox,oy:V.oy,mv:true};try{cv.setPointerCapture(e.pointerId);}catch(_){}cv.classList.add('pan');e.preventDefault();return;}
@@ -1196,15 +1246,45 @@ cv.addEventListener('pointerdown',e=>{const m=loc(e),t=e.target,nid=t.dataset&&t
  if(LIVE&&nid&&operable(node(nid))){operar(node(nid));return;}
  if(nid||pid){SEL=nid?{k:'n',id:nid}:{k:'p',id:pid};if(!LIVE){TAB='el';AST.el='Elemento';panel();}else{const er=$('eres');if(er)er.innerHTML=elResults();}draw();return;}
  PAN={x:e.clientX,y:e.clientY,ox:V.ox,oy:V.oy,mv:false};try{cv.setPointerCapture(e.pointerId);}catch(_){}cv.classList.add('pan');});
-cv.addEventListener('pointermove',e=>{MOUSE=loc(e);const hn=e.target&&e.target.dataset&&e.target.dataset.n||null;if(hn!=HOV){HOV=hn;if(TOOL=='pipe'&&!ROT&&!PAN)preview();}
- if(ROT){const dx=e.clientX-ROT.x,dy=e.clientY-ROT.y;ROT.mv+=Math.abs(dx)+Math.abs(dy);ROT.x=e.clientX;ROT.y=e.clientY;if(ROT.mv>3){setView(YAW-dx*.006,PIT+dy*.005);draw();}return;}
- if(PAN){const dx=e.clientX-PAN.x,dy=e.clientY-PAN.y;if(Math.abs(dx)+Math.abs(dy)>3)PAN.mv=true;V.ox=PAN.ox+dx;V.oy=PAN.oy+dy;draw();}else if(DRAW)preview();});
-const endPan=()=>{if(ROT){const fin=ROT.mv<4&&ROT.b==2&&DRAW;ROT=null;if(fin){DRAW=null;TYPED='';}cv.classList.remove('pan');draw();return;}if(PAN&&!PAN.mv&&SEL){SEL=null;panel();}PAN=null;cv.classList.remove('pan');draw();};
+cv.addEventListener('pointermove',e=>{MOUSE=loc(e);
+ if(ZB){ZB.x2=MOUSE[0];ZB.y2=MOUSE[1];let r=document.getElementById('zbx');if(!r){r=document.createElementNS('http://www.w3.org/2000/svg','rect');r.id='zbx';r.setAttribute('fill','#2f86e822');r.setAttribute('stroke','#5aa8ff');r.setAttribute('stroke-width','1.5');r.setAttribute('stroke-dasharray','6 4');cv.appendChild(r);}
+  r.setAttribute('x',Math.min(ZB.x,ZB.x2));r.setAttribute('y',Math.min(ZB.y,ZB.y2));r.setAttribute('width',Math.abs(ZB.x2-ZB.x));r.setAttribute('height',Math.abs(ZB.y2-ZB.y));return;}
+ let hn=(e.target&&e.target.dataset&&e.target.dataset.n)||null;
+ if(!hn&&!ROT&&!PAN&&(TOOL=='pipe'||TOOL.startsWith('eq:'))){hn=nearNode(MOUSE,DRAW&&DRAW.from,TOOL.startsWith('eq:'));
+  /* el extremo del tramo (ajustado al eje) también se imanta al cuerpo del tanque */
+  if(!hn&&DRAW&&!TYPED){const q=previewEnd();if(q&&q.L)hn=nearNode(prj(q.e.x,q.e.y,q.e.z),DRAW.from);}}
+ if(hn!=HOV){HOV=hn;if((TOOL=='pipe'||TOOL.startsWith('eq:'))&&!ROT&&!PAN)preview();}
+ 
+ if(ROT){const dx=e.clientX-ROT.x,dy=e.clientY-ROT.y;ROT.mv+=Math.abs(dx)+Math.abs(dy);ROT.x=e.clientX;ROT.y=e.clientY;if(ROT.mv>3){setView(YAW-dx*.006,PIT+dy*.005);reqDraw();}return;}
+ if(PAN){const dx=e.clientX-PAN.x,dy=e.clientY-PAN.y;if(Math.abs(dx)+Math.abs(dy)>3)PAN.mv=true;V.ox=PAN.ox+dx;V.oy=PAN.oy+dy;reqDraw();}else if(DRAW)preview();});
+const endPan=()=>{if(ZB){const z=ZB;ZB=null;const w=Math.abs((z.x2??z.x)-z.x),h=Math.abs((z.y2??z.y)-z.y);if(w>8&&h>8){const r=cv.getBoundingClientRect();V.ox+=r.width/2-(z.x+z.x2)/2;V.oy+=r.height/2-(z.y+z.y2)/2;zoom(Math.min(r.width/w,r.height/h));}else draw();return;}if(ROT){const fin=ROT.mv<4&&ROT.b==2&&DRAW;ROT=null;if(fin){DRAW=null;TYPED='';}cv.classList.remove('pan');draw();return;}if(PAN&&!PAN.mv&&SEL){SEL=null;panel();}PAN=null;cv.classList.remove('pan');draw();};
 cv.addEventListener('pointerup',endPan);cv.addEventListener('pointercancel',endPan);
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('dblclick',()=>{if(DRAW){DRAW=null;TYPED='';draw();}});
-function zoom(f,cx,cy){const r=cv.getBoundingClientRect();cx=cx==null?r.width/2:cx;cy=cy==null?r.height/2:cy;const s=Math.min(260,Math.max(5,V.s*f)),k=s/V.s;V.ox=cx-(cx-V.ox)*k;V.oy=cy-(cy-V.oy)*k;V.s=s;draw();}
-cv.addEventListener('wheel',e=>{e.preventDefault();const m=loc(e);zoom(e.deltaY<0?1.15:1/1.15,m[0],m[1]);},{passive:false});
+function zoom(f,cx,cy,lazy){const r=cv.getBoundingClientRect();cx=cx==null?r.width/2:cx;cy=cy==null?r.height/2:cy;const s=Math.min(ZMAX,Math.max(ZMIN,V.s*f)),k=s/V.s;V.ox=cx-(cx-V.ox)*k;V.oy=cy-(cy-V.oy)*k;V.s=s;lazy?reqDraw():draw();}
+/* rueda proporcional (ratón, panel táctil y pellizco con Ctrl): pasos suaves para recorrer de kilómetros a milímetros */
+cv.addEventListener('wheel',e=>{e.preventDefault();const m=loc(e),dy=e.deltaY*(e.deltaMode==1?33:e.deltaMode==2?400:1);zoom(Math.exp(-Math.max(-300,Math.min(300,dy))*(e.ctrlKey?.01:.0018)),m[0],m[1],1);},{passive:false});
+$('zsel').onclick=zoomSel;$('vmini').onclick=()=>{MINI=!MINI;try{localStorage.setItem('glpliq_mini',MINI?'1':'0');}catch(e){}miniDraw();};
+$('scl').onclick=()=>{const a=prompt('Escala de la vista (1:N). Escribe N:',String(Math.round(3779.5/V.s)));const N=parseFloat(String(a||'').replace(/[^\d.,]/g,'').replace(',','.'));if(N>0)zoom(3779.5/N/V.s);};
+/* escala gráfica y relación 1:N (pantalla de 96 ppp) */
+function sclUpd(){const el=$('scl');if(!el||!M)return;const m=VW.m,pxm=V.s*Math.max(.15,Math.hypot(m[0],m[1])),k=kL(),u=uL(),n=niceStep(90/pxm*k),px=n/k*pxm;
+ const lab=u=='m'&&n>=1000?nf(n/1000,n%1000?1:0)+' km':nf(n,n<1?(n<.1?3:2):0)+' '+u,N=3779.5/V.s,p=Math.pow(10,Math.max(0,Math.floor(Math.log10(N))-1)),Nr=Math.max(1,Math.round(N/p)*p);
+ el.innerHTML=`<i style="width:${px.toFixed(0)}px"></i><b>${lab}</b><span>1:${Nr.toLocaleString('es-CO')}</span>`;}
+/* minimapa: toda la red y la ventana visible; clic o arrastre para desplazarse */
+let MINI=true,MINIT=null,MDRAG=false;try{MINI=localStorage.getItem('glpliq_mini')!='0';}catch(e){}
+function miniDraw(){const c=$('mini');if(!c||!M)return;$('vmini').classList.toggle('on',MINI);const on=MINI&&M.nodes.length>1;c.classList.toggle('on',on);if(!on)return;
+ const dpr=window.devicePixelRatio||1,W=c.clientWidth||210,H=c.clientHeight||150;if(c.width!=Math.round(W*dpr)){c.width=Math.round(W*dpr);c.height=Math.round(H*dpr);}
+ const x=c.getContext('2d'),r=cv.getBoundingClientRect(),s0=V,P=new Map();V={s:1,ox:0,oy:0};let x0=1/0,x1=-1/0,y0=1/0,y1=-1/0;
+ for(const n of M.nodes){const p=pn(n);P.set(n.id,p);if(p[0]<x0)x0=p[0];if(p[0]>x1)x1=p[0];if(p[1]<y0)y0=p[1];if(p[1]>y1)y1=p[1];}V=s0;
+ const pad=10,sc=Math.min((W-2*pad)/Math.max(x1-x0,1e-6),(H-2*pad)/Math.max(y1-y0,1e-6)),ox=(W-(x1-x0)*sc)/2-x0*sc,oy=(H-(y1-y0)*sc)/2-y0*sc;MINIT={sc,ox,oy};
+ x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,W,H);x.lineCap='round';const cs=getComputedStyle(document.documentElement),col={liq:cs.getPropertyValue('--sP')||'#4ad0ff',ret:cs.getPropertyValue('--sR')||'#c48cff',vap:cs.getPropertyValue('--sV')||'#9a90ad'};
+ x.lineWidth=1.4;for(const p of M.pipes){const a=P.get(p.a),b=P.get(p.b);if(!a||!b)continue;x.strokeStyle=col[p.srv||'liq']||col.liq;x.beginPath();x.moveTo(a[0]*sc+ox,a[1]*sc+oy);x.lineTo(b[0]*sc+ox,b[1]*sc+oy);x.stroke();}
+ for(const n of M.nodes){const t=TYPES[n.type]||{};if(n.type=='union')continue;const p=P.get(n.id);x.fillStyle=t.ves?'#ff9a1f':t.con?'#3ddc84':'#e8eef8';const z=t.ves?3.4:2;x.fillRect(p[0]*sc+ox-z,p[1]*sc+oy-z,2*z,2*z);}
+ const vx=(0-V.ox)/V.s*sc+ox,vy=(0-V.oy)/V.s*sc+oy,vw=r.width/V.s*sc,vh=r.height/V.s*sc;x.fillStyle='#ffe93a14';x.strokeStyle='#ffe93a';x.lineWidth=1.4;
+ if(vw>2&&vh>2){x.fillRect(vx,vy,vw,vh);x.strokeRect(vx,vy,vw,vh);}else{x.beginPath();x.arc(vx+vw/2,vy+vh/2,4,0,7);x.stroke();}}
+function miniGo(e){if(!MINIT)return;const c=$('mini'),b=c.getBoundingClientRect(),r=cv.getBoundingClientRect(),px=(e.clientX-b.left-MINIT.ox)/MINIT.sc,py=(e.clientY-b.top-MINIT.oy)/MINIT.sc;V.ox=r.width/2-px*V.s;V.oy=r.height/2-py*V.s;reqDraw();}
+$('mini').addEventListener('pointerdown',e=>{MDRAG=true;try{$('mini').setPointerCapture(e.pointerId);}catch(_){}miniGo(e);});$('mini').addEventListener('pointermove',e=>{if(MDRAG)miniGo(e);});
+['pointerup','pointercancel'].forEach(k=>$('mini').addEventListener(k,()=>{MDRAG=false;}));$('mini').addEventListener('wheel',e=>{e.preventDefault();zoom(Math.exp(-Math.max(-300,Math.min(300,e.deltaY))*.0018),null,null,1);},{passive:false});
 $('zin').onclick=()=>zoom(1.25);$('zout').onclick=()=>zoom(.8);$('zfit').onclick=()=>{fit();draw();};
 /* vistas como ISOFLUX: Orbitar, Vista ISO, Planta y rotación automática */
 function spinLoop(){if(!SPIN)return;if(!ROT&&!DRAW){setView(YAW+.004,PIT);draw();}requestAnimationFrame(spinLoop);}
@@ -1219,14 +1299,16 @@ addEventListener('keydown',e=>{const inF=/INPUT|SELECT|TEXTAREA/.test((e.target|
  if(inF)return;
  if(DRAW){if(/^[\d.,]$/.test(e.key)){TYPED+=e.key;draw();return;}if(e.key=='Backspace'){TYPED=TYPED.slice(0,-1);draw();e.preventDefault();return;}if(e.key=='Enter'){commit(null);return;}}
  if(TOOL=='pipe'&&/^Arrow/.test(e.key)){e.preventDefault();setMode(e.key=='ArrowUp'?'up':e.key=='ArrowDown'?'dn':'lvl');return;}
+ if(e.key=='+'||e.key=='='){zoom(1.25);return;}if(e.key=='-'||e.key=='_'){zoom(.8);return;}
+ if(!e.altKey&&e.key.toLowerCase()=='z'){zoomSel();return;}if(!e.altKey&&e.key.toLowerCase()=='m'){$('vmini').click();return;}
  if(e.key=='Escape'){if(DRAW){DRAW=null;TYPED='';draw();}else setTool('sel');}
  else if(e.key=='Delete'||e.key=='Backspace')del();
  else if(e.key.toLowerCase()=='t')setTool('pipe');else if(e.key.toLowerCase()=='p')sidePanel(!sideOn());else if(e.key.toLowerCase()=='f'){fit();draw();}});
 $('bundo').onclick=()=>undo(HIST,REDO);$('bredo').onclick=()=>undo(REDO,HIST);$('bdel').onclick=del;$('lab').onchange=draw;$('gsym').onchange=()=>{try{localStorage.setItem('glpliq_gsym',$('gsym').value);}catch(e){}draw();};try{const v=localStorage.getItem('glpliq_gsym');if(v)$('gsym').value=v;}catch(e){}
 $('paso').oninput=e=>{M.paso=Math.max(.01,(+e.target.value||.5*kL())/kL());save();};$('nivel').oninput=e=>{M.nivel=(+e.target.value||0)/kL();save();draw();};
 /* paleta de equipos */
-$('pal').innerHTML='<b>Paleta del diseñador</b>'+[['Recipientes',['tanque','cond']],['Impulsión y retorno',['bomba','bypass']],['Consumos',['vaporizador','consumo']],['Válvulas y equipos',['vbola','vglobo','reten','exceso','esv','filtro','medidor']]]
- .map(([t,l])=>`<details class="acc"><summary><span>${t}</span></summary><div class="accb">`+l.map(k=>`<button data-eq="${k}" title="${E(TYPES[k].n)}"><svg width="30" height="26" viewBox="-17 -17 34 34"><g transform="scale(${k=='tanque'?.62:.9})">${glyph({type:k},'currentColor')}</g></svg>${E(TYPES[k].n.replace(' (diferencial)','').replace(' de almacenamiento','').replace(' / equipo con ΔP fijo','').replace('Cierre de emergencia (ESV)','ESV'))}</button>`).join('')+'</div></details>').join('');
+$('pal').innerHTML='<b>Paleta del diseñador</b>'+[['Recipientes y fuentes',['tanque','cisterna','cond']],['Impulsión y retorno',['bomba','bypass']],['Consumos',['vaporizador','consumo']],['Válvulas y equipos',['vbola','vglobo','reten','exceso','esv','filtro','medidor']]]
+ .map(([t,l])=>`<details class="acc"><summary><span>${t}</span></summary><div class="accb">`+l.map(k=>`<button data-eq="${k}" title="${E(TYPES[k].n)}"><svg width="30" height="26" viewBox="-17 -17 34 34"><g transform="scale(${k=='tanque'?.62:k=='cisterna'?.56:.9})">${glyph({type:k},'currentColor')}</g></svg>${E(TYPES[k].n.replace(' (diferencial)','').replace(' de almacenamiento','').replace(' / equipo con ΔP fijo','').replace('Cierre de emergencia (ESV)','ESV'))}</button>`).join('')+'</div></details>').join('');
 /* solo un grupo abierto a la vez */
 $('pal').addEventListener('toggle',e=>{if(e.target.open)$('pal').querySelectorAll('details.acc[open]').forEach(d=>{if(d!==e.target)d.open=false;});},true);
 $('pal').onclick=e=>{const b=e.target.closest('button[data-eq]');if(b)setTool(TOOL=='eq:'+b.dataset.eq?'sel':'eq:'+b.dataset.eq);};
@@ -1298,10 +1380,13 @@ function panel(){
    <div class="card"><h2>Alturas del tramo</h2><div class="fg">${uinp('Elevación inicio · '+E(a.tag||a.id),'data-ny="'+a.id+'"',a.y,'len',{tt:'Altura del eje de la tubería en su punto inicial. Al cambiarla se mueve ese nodo.'})}${uinp('Elevación fin · '+E(b.tag||b.id),'data-ny="'+b.id+'"',b.y,'len',{tt:'Altura del eje de la tubería en su punto final. Al cambiarla se mueve ese nodo.'})}</div>
     <p class="hint">La elevación es la coordenada vertical de cada extremo. El desnivel del tramo (fin − inicio) aparece en los resultados; positivo = el líquido sube.</p></div>`;}
   else{const n=node(SEL.id),t=TYPES[n.type]||TYPES.union;
-   h=`<div class="card"><h2>${E(t.n)}</h2><div class="fg">${inp('Etiqueta','data-e="tag"',n.tag,{text:1})}${sel_('Tipo','data-e="type"',n.type,Object.entries(TYPES).map(([k,v])=>[k,v.n]))}</div>
+   const nd=M.pipes.filter(p=>p.a==n.id||p.b==n.id).length;
+   if(!nd&&n.type!='union')h+=`<div class="card" style="border-color:var(--bad)"><h2>⚠ Sin acoplar a la red</h2><p class="hint">Ninguna tubería toca este equipo, por eso no participa en el cálculo.</p><button data-acop="${E(n.id)}" class="pri" style="width:100%;margin-top:6px">🔗 Acoplar a la red</button><p class="hint" style="margin-top:6px">Se une al extremo libre de tubería más cercano. También puedes trazar una tubería hasta el tanque: al acercar el cursor a su cuerpo aparece el aro verde «acoplar».</p></div>`;
+   h+=`<div class="card"><h2>${E(t.n)}</h2><div class="fg">${inp('Etiqueta','data-e="tag"',n.tag,{text:1})}${sel_('Tipo','data-e="type"',n.type,Object.entries(TYPES).map(([k,v])=>[k,v.n]))}</div>
     <div class="fg g3" style="margin-top:6px">${uinp('X','data-e="x"',n.x,'len')}${uinp('Z','data-e="z"',n.z,'len')}${uinp(t.ves?'Elev. boquilla':'Elevación','data-e="y"',n.y,'len',{tt:'Altura sobre el nivel de referencia (0). Es la que define los desniveles de la red.'})}</div><div class="fg" style="margin-top:6px">`;
+   if(n.type=='cisterna')h+=`<p class="hint w2">Fuente móvil de descargue (trasiego cisterna → red). Capacidad típica: 38 m³ (≈10 000 gal) en tracto-camión; ajústala a la placa del carrotanque. La <b>elevación</b> es la de la válvula de fondo / acople de la manguera.</p>`;
    if(t.ves)h+=sel_('Presión del recipiente','data-e="modo"',n.modo,[['sat','Saturación a su temperatura'],['fix','Presión fija']],{w2:1})+(n.modo=='fix'?uinp('Presión','data-e="P"',n.P,'p'):uinp('Temperatura','data-e="T"',n.T,'T',{ph:nf(cT(+M.fl.Tl),0)+' (fluido)',tt:'Vacío = temperatura del líquido definida en Proyecto'}))+uinp('Ajuste válvula de alivio','data-e="prv"',n.prv,'p',{ph:nf(toU('p',17.2),0)+' (250 psig)',tt:'La simulación avisa si la presión del recipiente lo alcanza'})+uinp('Capacidad','data-e="cap"',n.cap,'vol',{suf:' de agua',ph:'ilimitada',min:0,tt:'Vacío = depósito de nivel constante. Con capacidad se habilita la simulación de llenado y vaciado.'})
-     +(GLP.vgeo(n)?uinp('Diámetro interior','data-e="D"',n.D,'len',{ph:nf(cL(GLP.vgeo(n).D),2)+' (estimado)',min:0})+sel_('Posición','data-e="ori"',n.ori,[['h','Horizontal'],['v','Vertical']])+inp('Llenado inicial (%)','data-e="fill"',n.fill,{step:1,min:0})
+     +(GLP.vgeo(n)?uinp('Diámetro interior','data-e="D"',n.D,'len',{ph:nf(cL(GLP.vgeo(n).D),2)+' (estimado)',min:0})+(n.type=='cisterna'?'':sel_('Posición','data-e="ori"',n.ori,[['h','Horizontal'],['v','Vertical']]))+inp('Llenado inicial (%)','data-e="fill"',n.fill,{step:1,min:0})
       +inp('Llenado máximo (%)','data-e="fmax"',n.fmax,{step:1,min:0,tt:'Límite de llenado en volumen. 85 % es el valor habitual; confírmalo con la tabla de la norma según densidad y temperatura.'})+inp('Nivel mínimo (%)','data-e="fmin"',n.fmin,{step:1,min:0,tt:'La simulación se detiene al llegar a este contenido'})
       +sel_('Conexión de la tubería','data-e="boq"',n.boq,[['inf','Inferior (bajo el líquido)'],['sup','Superior (llenado por arriba)']],{tt:'Inferior: la cabeza de líquido actúa sobre la boquilla. Superior: descarga en la fase vapor.'})
       +sel_('Fase vapor al llenarse','data-e="vap"',n.vap,[['ret','Con retorno de vapor (igualación)'],['sin','Sin retorno de vapor']],{w2:1,tt:'Sin retorno, el vapor se comprime y condensa parcialmente: la presión del receptor sube durante el llenado'})
@@ -1572,7 +1657,7 @@ $('bside').onclick=()=>sidePanel(!sideOn());$('bhide').onclick=()=>sidePanel(fal
   catch(e){toast('✖ Tu navegador no permite pantalla completa aquí (puede estar embebido sin permiso). Prueba F11.');}};
  ['fullscreenchange','webkitfullscreenchange'].forEach(e=>document.addEventListener(e,paint));})();
 $('sb').addEventListener('change',e=>{if(e.target.dataset.ny&&TAB=='rs')results();});
-$('sb').addEventListener('click',e=>{if(e.target.dataset.ny)return;const el=e.target.closest('[data-ref]');if(!el)return;const id=el.dataset.ref;SEL=node(id)?{k:'n',id}:pipe(id)?{k:'p',id}:null;if(SEL){TAB='el';AST.el='Elemento';panel();draw();}});
+$('sb').addEventListener('click',e=>{const ac=e.target.closest&&e.target.closest('[data-acop]');if(ac){acoplar(ac.dataset.acop);return;}if(e.target.dataset.ny)return;const el=e.target.closest('[data-ref]');if(!el)return;const id=el.dataset.ref;SEL=node(id)?{k:'n',id}:pipe(id)?{k:'p',id}:null;if(SEL){TAB='el';AST.el='Elemento';panel();draw();}});
 $('sb').addEventListener('input',e=>{const el=e.target,k=el.dataset.k,ek=el.dataset.e;
  if(el.dataset.ny){if(el.value===''||!node(el.dataset.ny))return;if(el!==document._lastIn){hs();document._lastIn=el;}node(el.dataset.ny).y=r3(toSI('len',+el.value));
   const sm=!!SIM;SIM=null;SIMI=null;try{R=GLP.run(M);}catch(x){}save();draw();const er=$('eres');if(er)er.innerHTML=elResults();return;}
@@ -1695,6 +1780,7 @@ try{if(HOST)HOST.postMessage({__glpliqReady:true},'*');}catch(e){}
 (()=>{
 const $=id=>document.getElementById(id);
 window.GLP_VER=[
+ {v:'2.19',f:'2026-11-19',t:'Zoom para planos de kilómetros y acoplamiento tanque–red',c:['Zoom desde ≈50 km en pantalla hasta detalle milimétrico (antes 5–260 px/m); rueda proporcional y pellizco en panel táctil.','Ctrl + arrastrar acerca a una ventana; ⌖ / Z acerca al elemento seleccionado; teclas + y −.','Minimapa ▣ (M) con la ventana visible; clic o arrastre para desplazarse.','Escala gráfica con relación 1:N; clic para fijar una escala exacta.','Cuadrícula adaptativa 1-2-5 con líneas mayores, solo en la zona visible.','Rendimiento en redes grandes: se dibuja solo lo visible y los tramos largos se recortan a la pantalla.','Acoplamiento tanque–red: el cuerpo completo del tanque imanta la tubería (aro verde «acoplar a …»); la vista previa y los rótulos ya no bloquean el clic sobre el tanque.','Botón «🔗 Acoplar a la red» en la ficha de un equipo suelto.','Nuevo equipo «Carrotanque (cisterna)» en «Recipientes y fuentes»: fuente móvil para descargue, dibujada como cisterna sobre chasis con cabina, ruedas y válvula de fondo; el ejemplo de descargue ya lo usa.']},
  {v:'2.18',f:'2026-11-11',t:'Indicador de conectividad, bases de tanques y modelos de ejemplo',c:['Nueva verificación «Conectividad de la red»: si un tanque, bomba, válvula u otro equipo quedó dibujado sin ninguna tubería tocándolo, aparece en rojo (o la unión suelta, en amarillo) con el nombre del elemento; si todo está bien unido, lo confirma en verde.','Corrección: la base de los tanques horizontales y verticales ahora baja hasta el nivel real del piso en vez de quedar pegada al casco; los tanques elevados ya no se ven flotando.','«❔ Ayuda ▸ Modelos de ejemplo»: además de los dos ejemplos existentes, se agregan «Descargue de carrotanque a tanque fijo» (trasiego cisterna → tanque), «Transporte de caudal por tubería» (solo transporte, presión fija en ambos extremos) y «Suministro a usuario final» (dos consumos con su propia presión mínima). Cada uno se carga con un clic.']},
  {v:'2.17',f:'2026-11-11',t:'Dibujo como ISOFLUX: vista giratoria, trazado por modos y equipos en 3D',c:['La vista gira: arrastra con el botón derecho o usa «◍ Orbitar». Botones «ISO» (vista isométrica), «PL» (planta), «⟳» (rotación automática) y «⤢» (encuadrar).','Misma proyección de ISOFLUX (órbita por azimut y elevación); la vista elegida se recuerda.','Trazado igual que en ISOFLUX: clic en el punto inicial, «⬆ Subir», «➡ Nivel» o «⬇ Bajar» (o las flechas) y clic para fijar cada tramo; imán con aro verde sobre puntos existentes; número + Enter para la longitud exacta; clic derecho sin arrastrar o Esc termina.','Los equipos ya no son símbolos planos: tanques, bombas, válvulas, filtros, medidores, vaporizadores y consumos son sólidos 3D que se orientan con su tubería y giran con la vista.','Las tuberías se dibujan como tubos con volumen, con grosor según su diámetro, y todo se pinta por profundidad.','Todo el dibujo está a la misma escala real: tanques según su diámetro y longitud, tuberías según su diámetro y equipos con su tamaño aproximado; al acercar o alejar todo crece o se reduce junto. Solo hay un tamaño mínimo para que los equipos pequeños no desaparezcan al alejar.','Los tanques muestran el nivel de líquido dentro del cuerpo; las válvulas de bola cerradas giran su palanca y la ponen en rojo.','Mover la vista: arrastrar el fondo, botón central o Mayús + arrastrar.'],},
  {v:'2.16',f:'2026-11-11',t:'Vaporizadores: catálogo editable y verificación en el diseño',c:['Herramientas ▸ «🔥 Vaporizadores»: ventana con el estado de cada vaporizador del dibujo, el catálogo y una guía de tipos y selección.','Catálogo con 27 modelos base (eléctricos secos, fuego directo y baño de agua) con capacidad en kg/h y gal/h; se pueden agregar, editar, duplicar, eliminar, filtrar, exportar a CSV y restaurar.','Cada vaporizador del dibujo recibe un modelo de catálogo, unidades en paralelo y reserva N+1 opcional.','El cálculo comprueba capacidad frente a la demanda, presión mínima de entrada, presión máxima admisible y potencia térmica; e informa calor requerido, vapor producido y consumo propio.','Botón «Sugerido» que propone el menor modelo que cubre la demanda con 10 % de holgura.','Diagnóstico, Auditor (grupo H), Tutor de diseño (nuevo paso «Vaporizadores») e informe PDF incluyen los vaporizadores.','Corrección: las confirmaciones del tutor y los «No aplica» del auditor ahora se conservan al recargar y al deshacer.']},
@@ -1734,6 +1820,9 @@ const MAN=[
 <li>Coloca <b>bombas, válvulas y filtros</b> haciendo clic sobre una tubería: la parten en ese punto y se orientan con ella.</li>
 <li>Termina cada ramal en un <b>vaporizador</b> o <b>consumo</b> y dibuja los <b>retornos</b> al tanque (cambia el «Servicio» de la tubería).</li></ol>
 <p><b>Vista.</b> Arrastra con el <b>botón derecho</b> para girar, o usa <b>◍ Orbitar</b>. <b>ISO</b> vuelve a la vista isométrica, <b>PL</b> muestra la planta, <b>⟳</b> gira sola y <b>⤢</b> encuadra. Arrastrar el fondo (o botón central, o Mayús) mueve la vista; la rueda acerca y aleja.</p>
+<p><b>Planos de gran extensión.</b> El zoom va desde varios kilómetros en pantalla hasta el detalle de un accesorio. <b>Ctrl + arrastrar</b> (⌘ en Mac) acerca a la ventana que dibujes; <b>⌖</b> o la tecla <b>Z</b> acerca al elemento seleccionado; <b>+</b> y <b>−</b> también acercan y alejan. El <b>minimapa ▣</b> (tecla M) muestra toda la red con la ventana visible en amarillo: haz clic o arrastra en él para desplazarte. Abajo a la derecha está la <b>escala gráfica</b> con la relación 1:N; haz clic en ella para fijar una escala exacta. La cuadrícula se adapta sola al zoom (cada quinta línea es más marcada).</p>
+<p><b>Carrotanque.</b> En «Recipientes y fuentes» está el <b>Carrotanque (cisterna)</b>: se calcula como un recipiente (presión de saturación, nivel, llenado en la simulación) y se dibuja como cisterna sobre chasis. Su nodo es la válvula de fondo; conecta allí la manguera o tubería de descargue.</p>
+<p><b>Acoplamiento tanque–red.</b> Al trazar una tubería, acercar el cursor (o el extremo del tramo) al cuerpo de un tanque lo imanta: aparece un aro verde con «acoplar a …» y el clic une la tubería a la boquilla del tanque. Si un equipo quedó suelto, su ficha muestra «🔗 Acoplar a la red», que lo une al extremo libre de tubería más cercano.</p>
 <p><b>Equipos en 3D.</b> Todos los equipos son sólidos que giran con la vista y se orientan según su tubería. El tanque muestra su nivel de líquido; una válvula de bola cerrada gira la palanca y la muestra en rojo. Codos y tees se deducen de la geometría.</p>`},
 {t:'4. Componentes',b:`<table><tr><th>Componente</th><th>Qué hace</th><th>Datos principales</th></tr>
 <tr><td>Tanque de almacenamiento</td><td>Fuente o receptor de líquido. Su presión es la de saturación a su temperatura.</td><td>Elevación de la boquilla, temperatura, capacidad, diámetro, llenado inicial, máximo y mínimo, conexión, fase vapor.</td></tr>
