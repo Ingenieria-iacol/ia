@@ -226,7 +226,7 @@ $('pp').addEventListener('focusin',e=>{if(e.target.dataset.k)hs();});
 function dl(n,t,m){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click();}
 $('bu').onclick=undo;$('bl').onclick=()=>{labs=!labs;$('bl').classList.toggle('on',labs);draw();};
 /* Guardar: ver bgSave (V7) */
-$('bc').onclick=()=>$('ff').click();$('ff').onchange=e=>e.target.files[0].text().then(t=>{hs();const d=JSON.parse(t);S={nodes:d.nodes||[],pipes:d.pipes||[],anns:d.anns||[],seq:d.seq||1000,prices:d.prices||{}};['capas','spt','sptc','blocks','piso','muros','zonas','escenario','arqDef'].forEach(k=>{if(d[k])S[k]=d[k];});loadPJ(d);if(Array.isArray(d.fondos))bgSaved(d.fondos);cajOn=!!d.caj;$('bcaj').classList.toggle('on',cajOn);sel=null;ms=[];panel();draw();});
+$('bc').onclick=()=>$('ff').click();$('ff').onchange=e=>e.target.files[0].text().then(t=>{hs();const d=JSON.parse(t);S={nodes:d.nodes||[],pipes:d.pipes||[],anns:d.anns||[],seq:d.seq||1000,prices:d.prices||{}};['capas','spt','sptc','blocks','piso','muros','zonas','escenario','arqDef','simscn'].forEach(k=>{if(d[k])S[k]=d[k];});loadPJ(d);if(Array.isArray(d.fondos))bgSaved(d.fondos);cajOn=!!d.caj;$('bcaj').classList.toggle('on',cajOn);sel=null;ms=[];panel();draw();});
 const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
 $('bv').onclick=()=>dl('red_gas.csv','Tipo,ID,Tag,Diametro_in,Material,Presion,Longitud_m,X,Y,Z,Notas\n'+S.pipes.map(p=>['Tubería',p.id,p.tag,p.dia,p.mat,(window.presTxt&&presTxt(p))||'',len(p),'','','',p.notes].map(q).join(',')).concat(S.nodes.filter(n=>n.type!='te').map(n=>[TY[n.type],n.id,n.tag,n.dia,n.mat,n.press,'',n.x,n.y,n.z,n.notes].map(q).join(','))).join('\n'),'text/csv');
 $('bp').onclick=()=>{const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download=FNP('isometrico.png');a.click();};
@@ -4004,7 +4004,8 @@ document.querySelectorAll('details.ac').forEach(d=>{let tIn=0,tOut=0;const sm=d.
 #srov .sr:hover,#srov .sr.k{background:rgba(47,134,232,.18)}#srov .sr small{opacity:.65}#srov input{width:100%;padding:9px 11px;border-radius:8px}
 </style>
 <script>/* V26: recarga automática, registro de versiones, buscador, Esc → Seleccionar, longitud editable, plantillas de reducción, tee de reducción */
-window.APP_VER='33.48';window.ISO_VER=[{"v":"33.48","f":"2026-11-17","t":"Leyenda de guías: qué significa cada línea punteada","c":["Nueva sección plegable «Leyenda de guías» en el panel de Representación (pestaña Vista): explica con una muestra de color cada línea del dibujo — plomo de altura, guía de arrastre/dibujo, tramo existente, sentido del flujo, alerta de traslape, resultados de cálculo (sin flujo / revisar), guías de fondo y los ejes X/Z/Y.","Complementa el botón «Plomos» para que cualquiera interprete las líneas de varios colores sin preguntar."]},
+window.APP_VER='33.49';window.ISO_VER=[{"v":"33.49","f":"2026-11-22","t":"Panel de control de la simulación: buscador y escenarios planificados","c":["El modal de simulación se potencia como panel de control para redes grandes: nuevo buscador/filtro de válvulas y equipos por nombre o tipo, que filtra las filas en vivo.","Nueva sección «🎬 Escenarios de operación»: guarda el estado completo (válvulas abiertas/cerradas y nivel de cada equipo) con un nombre y aplícalo cuando quieras, para preparar y comparar maniobras planificadas. Los escenarios se guardan dentro del dibujo.","Recordatorio: el modal ya permitía operar cada válvula y equipo uno a uno, tocar el dibujo para operar y llevar bitácora; esto lo hace práctico en redes grandes."]},
+{"v":"33.48","f":"2026-11-17","t":"Leyenda de guías: qué significa cada línea punteada","c":["Nueva sección plegable «Leyenda de guías» en el panel de Representación (pestaña Vista): explica con una muestra de color cada línea del dibujo — plomo de altura, guía de arrastre/dibujo, tramo existente, sentido del flujo, alerta de traslape, resultados de cálculo (sin flujo / revisar), guías de fondo y los ejes X/Z/Y.","Complementa el botón «Plomos» para que cualquiera interprete las líneas de varios colores sin preguntar."]},
 {"v":"33.47","f":"2026-11-17","t":"Mostrar/ocultar los plomos (líneas verticales de altura)","c":["Nuevo botón «Plomos» junto a «Nodos» en el panel de Representación (pestaña Vista): muestra u oculta las líneas verticales punteadas de altura (plomos de proyección de cada punto al piso de referencia).","La preferencia se recuerda entre sesiones. No afecta a las demás guías (flujo de la simulación, tramos existentes, resultados de cálculo), que siguen su propia lógica."]},
 {"v":"33.46","f":"2026-11-16","t":"P.A.M. en archivo aparte + hoja de vida completa · Saturar cubre las tarjetas de medidores · lecturas reiniciables","c":["El P.A.M. pasa a su propio archivo (pam/pam.js), cargado por el app en tiempo de ejecución, para no robustecer el HTML principal.","La hoja de vida metrológica de cada instrumento se amplía: identificación (marca, modelo, serie, rango, resolución, código), enlace al certificado, y confirmación metrológica (ISO 10012 / regla de decisión ILAC-G8): regla de decisión, veredicto conforme/no conforme, «como se encontró / como se entregó», ajuste, criticidad y responsable. El PDF del P.A.M. incluye estas secciones.","El botón «Saturar» ahora también oculta las tarjetas de lectura de los medidores (volumen y caudal), para ver solo el flujo.","Nuevo botón «⟲ Reiniciar lecturas» en el modal de simulación: pone en cero las lecturas acumuladas de los medidores (ya no se comportan como contadores infinitos)."]},
 {"v":"33.45","f":"2026-11-16","t":"Simulación: botón «Saturar» y acordeones en todas las secciones","c":["Nuevo botón «🏷️ Saturar» en el encabezado del modal de simulación: cuando está activo muestra las etiquetas y tarjetas según la pestaña Vista; al desactivarlo oculta TODAS las etiquetas y tarjetas para ver solo el flujo, sin saturar la vista. El estado se recuerda.","Las secciones del modal que aún no eran plegables (Capacidad de la red, Funcionamiento, etc.) ahora son acordeones: haz clic en su título para contraerlas o expandirlas."]},
@@ -16888,6 +16889,149 @@ try{$('hbd').innerHTML=manHTML();}catch(e){}})();</script>
   try{const box=g('rep39');if(box){css();if(build(box)){clearInterval(iv);return;}}}catch(e){}
   if(n>80)clearInterval(iv);
  },160);
+})();
+
+</script>
+<script>
+/* v157 · Panel de control de la simulación (redes grandes · simulación planificada)
+   El modal de simulación (#simp, módulo V37) ya opera válvulas y equipos uno a uno. Este módulo lo
+   potencia para redes grandes y maniobras planificadas, SIN tocar su lógica:
+     · 🔎 Buscador/filtro de válvulas y equipos por nombre o tipo (filtra las filas en vivo).
+     · 🎬 Escenarios: guarda el estado completo (válvulas abiertas/cerradas + nivel de cada equipo) con
+       un nombre, y aplícalo cuando quieras. Permite preparar y comparar operaciones planificadas.
+   Se reinyecta tras cada repintado de V37 (que reescribe el modal). Nada de esto altera el cálculo. */
+(function(){
+ 'use strict';
+ if(typeof window==='undefined'||typeof document==='undefined')return;
+ const g=id=>document.getElementById(id);
+ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+ const SS=()=>(typeof S!=='undefined'&&S)?S:null;
+ const isVal=n=>n&&(n.type=='valvula'||n.type=='val_sismica'||n.type=='multivalvula');
+ const isEq=n=>n&&n.type=='consumo'&&n.eq&&n.eq.nombre&&n.eq.nombre!='Ninguno'&&((+n.eq.kw||0)>0||(+n.eq.qlm||0)>0);
+
+ let filtro='';
+
+ /* ---------- escenarios (persisten en el dibujo: S.simscn) ---------- */
+ const SCN=()=>{const S=SS();if(!S)return[];S.simscn=S.simscn||[];return S.simscn;};
+ function snapEstado(){const S=SS(),o={v:{},q:{}};if(!S)return o;S.nodes.forEach(n=>{if(isVal(n))o.v[n.id]=n.est||'Abierta';else if(isEq(n))o.q[n.id]=n.op||'Alta';});return o;}
+ function aplicarEstado(st){const S=SS();if(!st||!S)return;S.nodes.forEach(n=>{if(isVal(n)&&st.v&&st.v[n.id]!=null)n.est=st.v[n.id];else if(isEq(n)&&st.q&&st.q[n.id]!=null)n.op=st.q[n.id];});}
+ function resumen(st){let c=0,a=0;for(const k in (st.v||{}))if(st.v[k]=='Cerrada')c++;for(const k in (st.q||{}))if(st.q[k]=='Apagado')a++;const tv=Object.keys(st.v||{}).length,tq=Object.keys(st.q||{}).length;return `${tv-c}/${tv} válvulas abiertas · ${tq-a}/${tq} equipos encendidos`;}
+
+ function recomputar(){
+  /* fuerza recálculo y repintado reusando el motor de V37 */
+  try{if(typeof calcR!=='undefined'&&typeof solve==='function')calcR=solve();}catch(e){}
+  try{if(typeof draw==='function')draw();}catch(e){}
+  try{if(window.V37&&V37.pinta)V37.pinta();}catch(e){}
+ }
+
+ /* ---------- filtro en vivo ---------- */
+ function aplicarFiltro(box){
+  const f=filtro.trim().toLowerCase();
+  box.querySelectorAll('.rw').forEach(r=>{
+   const item=r.querySelector('[data-v],[data-q],[data-ver]');
+   if(!item){return;}
+   const t=((r.querySelector('.n')||r).textContent||'').toLowerCase();
+   r.style.display=(!f||t.indexOf(f)>=0)?'':'none';
+  });
+  box.querySelectorAll('details.vg37').forEach(d=>{
+   const rows=[...d.querySelectorAll('.rw')].filter(r=>r.querySelector('[data-v],[data-q],[data-ver]'));
+   if(!rows.length)return;
+   const vis=rows.some(r=>r.style.display!=='none');
+   d.style.display=(f&&!vis)?'none':'';
+   if(f&&vis)d.open=true;
+  });
+ }
+
+ /* ---------- UI: buscador ---------- */
+ function barraBuscar(box){
+  if(g('c157f'))return;
+  const anchor=box.querySelector('details.vg37.top');
+  if(!anchor)return; /* no hay válvulas ni equipos todavía */
+  const d=document.createElement('div');d.id='c157f';d.className='c157f';
+  d.innerHTML=`<span class="c157ic">🔎</span><input id="c157q" type="search" placeholder="Buscar válvula o equipo…" value="${esc(filtro)}"><button id="c157x" title="Limpiar" ${filtro?'':'style="visibility:hidden"'}>✕</button>`;
+  anchor.parentNode.insertBefore(d,anchor);
+  const inp=g('c157q');
+  inp.addEventListener('input',()=>{filtro=inp.value;const x=g('c157x');if(x)x.style.visibility=filtro?'':'hidden';aplicarFiltro(box);});
+  inp.addEventListener('keydown',e=>e.stopPropagation());
+  g('c157x').addEventListener('click',()=>{filtro='';inp.value='';g('c157x').style.visibility='hidden';aplicarFiltro(box);inp.focus();});
+ }
+
+ /* ---------- UI: escenarios ---------- */
+ function seccionEscenarios(box){
+  if(g('c157s'))return;
+  /* ancla: antes de la bitácora; si no, al final del modal */
+  let anchor=[...box.querySelectorAll('h4')].find(h=>/Bit[aá]cora/i.test(h.textContent));
+  const d=document.createElement('details');d.id='c157s';d.className='c157s';d.open=!!seccionEscenarios.abierto;
+  d.addEventListener('toggle',()=>{seccionEscenarios.abierto=d.open;});
+  d.innerHTML=`<summary>🎬 Escenarios de operación <small class="c157n"></small></summary><div class="c157b"></div>`;
+  if(anchor)anchor.parentNode.insertBefore(d,anchor);else box.appendChild(d);
+  renderEscenarios();
+ }
+ function renderEscenarios(){
+  const d=g('c157s');if(!d)return;const b=d.querySelector('.c157b'),L=SCN();
+  d.querySelector('.c157n').textContent=L.length?`(${L.length})`:'';
+  b.innerHTML=`<p class="c157m">Guarda el estado actual de todas las válvulas y equipos como un escenario, y aplícalo cuando quieras para ensayar una operación planificada.</p>
+   <div class="c157g"><input id="c157name" type="text" placeholder="Nombre del escenario (p. ej. «Mantenimiento zona A»)"><button id="c157save" class="c157pr">💾 Guardar estado actual</button></div>
+   ${L.length?`<div class="c157list">${L.map(s=>`<div class="c157row" data-id="${s.id}"><div class="c157t"><b>${esc(s.nombre)}</b><span>${esc(resumen(s.st||{}))}</span></div><button data-ap="${s.id}" class="c157ap" title="Aplicar este escenario al dibujo">▶ Aplicar</button><button data-dl="${s.id}" class="c157del" title="Eliminar">🗑</button></div>`).join('')}</div>`:`<p class="c157e">Aún no has guardado escenarios.</p>`}`;
+  const nm=g('c157name');if(nm)nm.addEventListener('keydown',e=>e.stopPropagation());
+  g('c157save').onclick=()=>{
+   const L2=SCN(),nombre=(g('c157name').value||'').trim()||`Escenario ${L2.length+1}`;
+   L2.push({id:'SC'+Date.now().toString(36),nombre,fecha:new Date().toISOString(),st:snapEstado()});
+   if(L2.length>40)L2.shift();
+   g('c157name').value='';renderEscenarios();
+   try{if(typeof bgToast==='function')bgToast('🎬 Escenario «'+nombre+'» guardado.');}catch(e){}
+  };
+  b.querySelectorAll('[data-ap]').forEach(btn=>btn.onclick=()=>{const s=SCN().find(x=>x.id==btn.dataset.ap);if(!s)return;try{if(typeof hs==='function')hs();}catch(e){}aplicarEstado(s.st);recomputar();try{if(typeof bgToast==='function')bgToast('▶ Escenario «'+s.nombre+'» aplicado.');}catch(e){}});
+  b.querySelectorAll('[data-dl]').forEach(btn=>btn.onclick=()=>{const L3=SCN(),i=L3.findIndex(x=>x.id==btn.dataset.dl);if(i<0)return;L3.splice(i,1);renderEscenarios();});
+ }
+
+ /* ---------- estilos ---------- */
+ function css(){
+  if(g('c157css'))return;const s=document.createElement('style');s.id='c157css';s.textContent=`
+  #simp .c157f{display:flex;align-items:center;gap:6px;margin:8px 0 6px;padding:4px 8px;background:#0e1830;border:1px solid #2a3b57;border-radius:9px}
+  #simp .c157f .c157ic{opacity:.7;font-size:13px}
+  #simp .c157f input{flex:1;background:transparent;border:0;color:#e6eefa;font-size:12.5px;outline:none;padding:3px 0}
+  #simp .c157f button{background:transparent;border:0;color:#9fb3cc;cursor:pointer;font-size:12px;padding:2px 4px}
+  #simp .c157s{margin:8px 0;border:1px solid #2a3b57;border-radius:10px;background:#0c1526;overflow:hidden}
+  #simp .c157s>summary{cursor:pointer;padding:7px 10px;font-weight:700;font-size:12.5px;color:#cfe0f5;list-style:none;user-select:none}
+  #simp .c157s>summary::-webkit-details-marker{display:none}
+  #simp .c157s>summary::before{content:'▸ ';opacity:.7}
+  #simp .c157s[open]>summary::before{content:'▾ '}
+  #simp .c157s .c157n{opacity:.6;font-weight:500;margin-left:4px}
+  #simp .c157b{padding:4px 10px 10px}
+  #simp .c157m{font-size:11px;opacity:.72;margin:2px 0 8px;line-height:1.35}
+  #simp .c157g{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  #simp .c157g input{flex:1;min-width:150px;background:#0e1830;border:1px solid #2a3b57;border-radius:8px;color:#e6eefa;font-size:12px;padding:5px 8px}
+  #simp .c157pr{background:#1f5fb0;border:1px solid #2f86e8;color:#fff;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap}
+  #simp .c157list{display:flex;flex-direction:column;gap:6px}
+  #simp .c157row{display:flex;align-items:center;gap:8px;background:#0e1830;border:1px solid #243451;border-radius:8px;padding:6px 8px}
+  #simp .c157t{flex:1;min-width:0}
+  #simp .c157t b{display:block;font-size:12.5px;color:#eef5ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #simp .c157t span{display:block;font-size:10.5px;opacity:.65}
+  #simp .c157ap{background:#14532d;border:1px solid #2fbf62;color:#c8f7d8;border-radius:7px;padding:4px 9px;font-size:11.5px;cursor:pointer;white-space:nowrap}
+  #simp .c157del{background:transparent;border:1px solid #3a2530;color:#e59aa6;border-radius:7px;padding:4px 7px;font-size:11.5px;cursor:pointer}
+  #simp .c157e{font-size:11px;opacity:.6;margin:2px 0}
+  `;document.head.appendChild(s);
+ }
+
+ /* ---------- observar el modal y reinyectar en cada repintado ---------- */
+ let busy=false;
+ function aplicar(box){
+  if(busy)return;busy=true;
+  try{barraBuscar(box);seccionEscenarios(box);aplicarFiltro(box);}catch(e){}
+  busy=false;
+ }
+ let mo=null,n=0;
+ const iv=setInterval(()=>{
+  n++;const box=g('simp');
+  if(box&&!box.__c157){box.__c157=1;css();
+   mo=new MutationObserver(()=>{if(!busy)aplicar(box);});
+   mo.observe(box,{childList:true,subtree:true});
+   aplicar(box);clearInterval(iv);return;}
+  if(n>80)clearInterval(iv);
+ },160);
+
+ window.C157={escenarios:SCN,aplicar:aplicarEstado,snap:snapEstado};
 })();
 
 </script>
